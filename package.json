@@ -1,0 +1,70 @@
+{
+  "name": "defihelper-backend",
+  "version": "1.0.0",
+  "description": "",
+  "author": "",
+  "license": "ISC",
+  "main": "index.js",
+  "scripts": {
+    "lint": "lint-staged",
+    "build": "tsc -p ./",
+    "watch": "tsc-watch -p ./ --pretty --onSuccess 'nodejs ./dist/server.js'",
+    "start": "node ./dist/server.js",
+    "queue": "node ./dist/queueBroker.js"
+  },
+  "devDependencies": {
+    "@types/command-line-args": "^5.0.0",
+    "@types/express": "^4.17.11",
+    "@types/node": "^14.14.37",
+    "@types/redis": "^2.8.29",
+    "@types/uuid": "^8.3.0",
+    "eslint": "^7.23.0",
+    "eslint-config-airbnb-typescript": "^12.3.1",
+    "eslint-config-prettier": "^8.1.0",
+    "eslint-import-resolver-typescript": "^2.4.0",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-jsx-a11y": "^6.4.1",
+    "eslint-plugin-prettier": "^3.3.1",
+    "eslint-plugin-typescript": "^0.14.0",
+    "husky": "^6.0.0",
+    "lint-staged": "^10.5.4",
+    "prettier": "^2.2.1",
+    "pretty-js": "^0.2.1",
+    "tsc-watch": "^4.2.9",
+    "typescript": "^4.2.3"
+  },
+  "dependencies": {
+    "apollo-server-express": "^2.22.2",
+    "axios": "^0.21.1",
+    "bignumber.js": "^9.0.1",
+    "body-parser": "^1.19.0",
+    "command-line-args": "^5.1.1",
+    "dataloader": "^2.0.0",
+    "dayjs": "^1.10.4",
+    "dotenv": "^8.2.0",
+    "ethers": "5.3.0",
+    "express": "^4.17.1",
+    "graphql": "^15.5.0",
+    "knex": "^0.21.0",
+    "module-alias": "^2.2.2",
+    "pg": "^8.5.1",
+    "redis": "^3.1.2",
+    "uuid": "^8.3.2"
+  },
+  "_moduleAliases": {
+    "@container": "dist/container",
+    "@services": "dist/services",
+    "@models": "dist/models",
+    "@api": "dist/api"
+  },
+  "lint-staged": {
+    "./src/**/*.ts": [
+      "eslint --ignore-path .gitignore --fix"
+    ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run lint"
+    }
+  }
+}

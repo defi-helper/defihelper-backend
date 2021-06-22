@@ -1,0 +1,17 @@
+{
+  "plugins": ["prettier"],
+  "extends": [
+    "airbnb-typescript/base",
+    "plugin:prettier/recommended",
+    "prettier",
+    "prettier/@typescript-eslint"
+  ],
+  "parserOptions": {
+    "project": "./tsconfig.json"
+  },
+  "rules": {
+    "@typescript-eslint/ban-ts-comment": "error",
+    "import/prefer-default-export": "off",
+    "max-classes-per-file": "off"
+  }
+}
