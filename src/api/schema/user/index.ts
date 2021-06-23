@@ -1,7 +1,7 @@
 import {
   GraphQLEnumType,
+  GraphQLFieldConfig,
   GraphQLInputObjectType,
-  GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
@@ -16,6 +16,8 @@ import {
   UuidType,
 } from '../types';
 import container from '@container';
+import { utils } from 'ethers';
+import { Request } from 'express';
 
 export const WalletType = new GraphQLObjectType({
   name: 'WalletType',
@@ -91,7 +93,11 @@ export const UserType = new GraphQLObjectType<User.Entity.User>({
           }),
           defaultValue: {},
         },
-        sort: SortArgument('WalletListSortInputType', ['id', 'address', 'createdAt']),
+        sort: SortArgument(
+          'WalletListSortInputType',
+          ['id', 'address', 'createdAt'],
+          [{ column: 'createdAt', order: 'asc' }],
+        ),
         pagination: PaginationArgument('WalletListPaginationInputType'),
       },
       resolve: async (user, { filter, sort, pagination }) => {
@@ -125,28 +131,6 @@ export const UserType = new GraphQLObjectType<User.Entity.User>({
   },
 });
 
-export const AuthEthereumInputType = new GraphQLInputObjectType({
-  name: 'AuthEthereumInputType',
-  fields: {
-    network: {
-      type: GraphQLNonNull(GraphQLString),
-      description: 'Blockchain network id',
-    },
-    address: {
-      type: GraphQLNonNull(GraphQLString),
-      description: 'Wallet address',
-    },
-    message: {
-      type: GraphQLNonNull(GraphQLString),
-      description: 'Message',
-    },
-    signature: {
-      type: GraphQLNonNull(GraphQLString),
-      description: 'Signed message',
-    },
-  },
-});
-
 export const AuthType = new GraphQLObjectType({
   name: 'AuthType',
   fields: {
@@ -160,3 +144,69 @@ export const AuthType = new GraphQLObjectType({
     },
   },
 });
+
+export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
+  type: AuthType,
+  args: {
+    input: {
+      type: GraphQLNonNull(
+        new GraphQLInputObjectType({
+          name: 'AuthEthereumInputType',
+          fields: {
+            network: {
+              type: GraphQLNonNull(GraphQLString),
+              description: 'Blockchain network id',
+            },
+            address: {
+              type: GraphQLNonNull(GraphQLString),
+              description: 'Wallet address',
+            },
+            message: {
+              type: GraphQLNonNull(GraphQLString),
+              description: 'Message',
+            },
+            signature: {
+              type: GraphQLNonNull(GraphQLString),
+              description: 'Signed message',
+            },
+          },
+        }),
+      ),
+    },
+  },
+  resolve: async (root, { input }, { currentUser }) => {
+    const { network, address, message, signature } = input;
+    if (typeof message !== 'string' || message.length < 5) return null;
+
+    const hash = utils.hashMessage(message);
+    const hashBytes = utils.arrayify(hash);
+    const recoveredPubKey = utils.recoverPublicKey(hashBytes, signature);
+    const recoveredAddress = utils.recoverAddress(hashBytes, signature).toLowerCase();
+    if (address.toLowerCase() !== recoveredAddress) return null;
+
+    const duplicate = await container.model
+      .walletTable()
+      .where({
+        blockchain: 'ethereum',
+        network,
+        address: recoveredAddress,
+      })
+      .first();
+
+    if (duplicate) {
+      const user = await container.model.userTable().where('id', duplicate.user).first();
+      if (!user) return null;
+
+      const sid = container.model.sessionService().generate(user);
+      return { user, sid };
+    } else {
+      const user = currentUser ?? (await container.model.userService().create(Role.User));
+      await container.model
+        .walletService()
+        .create(user, 'ethereum', network, recoveredAddress, recoveredPubKey);
+      const sid = container.model.sessionService().generate(user);
+
+      return { user, sid };
+    }
+  },
+};

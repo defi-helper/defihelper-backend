@@ -1,5 +1,5 @@
 import dayjs from 'dayjs';
-import uuid from 'uuid';
+import { validate as isUuid } from 'uuid';
 import {
   GraphQLError,
   GraphQLObjectType,
@@ -7,9 +7,6 @@ import {
   GraphQLString,
   GraphQLScalarType,
   GraphQLType,
-  GraphQLFieldConfig,
-  GraphQLField,
-  GraphQLObjectTypeConfig,
   GraphQLEnumType,
   GraphQLInt,
   GraphQLList,
@@ -24,6 +21,17 @@ export class GraphQLParseError extends GraphQLError {
   }
 }
 
+export const PaginationType = new GraphQLObjectType({
+  name: 'Pagination',
+  fields: {
+    count: {
+      type: GraphQLNonNull(GraphQLInt),
+      description: 'Count of list elements',
+      resolve: ({ count: { count } }) => parseInt(count.toString(), 10),
+    },
+  },
+});
+
 export const PaginateList = (name: string, type: GraphQLType) =>
   new GraphQLObjectType({
     name,
@@ -33,18 +41,7 @@ export const PaginateList = (name: string, type: GraphQLType) =>
         description: 'Elements',
       },
       pagination: {
-        type: GraphQLNonNull(
-          new GraphQLObjectType({
-            name: 'Pagination',
-            fields: {
-              count: {
-                type: GraphQLNonNull(GraphQLInt),
-                description: 'Count of list elements',
-                resolve: ({ count: { count } }) => parseInt(count.toString(), 10),
-              },
-            },
-          }),
-        ),
+        type: GraphQLNonNull(PaginationType),
       },
     },
   });
@@ -84,7 +81,11 @@ export const SortOrderEnum = new GraphQLEnumType({
   },
 });
 
-export const SortArgument = (name: string, columns: string[]): GraphQLArgumentConfig => ({
+export const SortArgument = (
+  name: string,
+  columns: string[],
+  defaultValue: Array<{ column: string; order: 'asc' | 'desc' }> = [],
+): GraphQLArgumentConfig => ({
   type: GraphQLList(
     GraphQLNonNull(
       new GraphQLInputObjectType({
@@ -109,7 +110,7 @@ export const SortArgument = (name: string, columns: string[]): GraphQLArgumentCo
       }),
     ),
   ),
-  defaultValue: [],
+  defaultValue,
 });
 
 export const DateTimeType = new GraphQLScalarType({
@@ -132,7 +133,7 @@ export const UuidType = new GraphQLScalarType({
   name: 'UuidType',
   description: 'Identificator',
   parseValue: (value: string) => {
-    if (!uuid.validate(value)) throw new GraphQLParseError('UUID', value);
+    if (!isUuid(value)) throw new GraphQLParseError('UUID', value);
 
     return value;
   },
@@ -147,4 +148,16 @@ export const BlockchainEnum = new GraphQLEnumType({
     (prev, name) => ({ ...prev, [name]: { value: name } }),
     {},
   ),
+});
+
+export const BlockchainFilterInputType = new GraphQLInputObjectType({
+  name: 'BlockchainFilterInputType',
+  fields: {
+    protocol: {
+      type: GraphQLNonNull(BlockchainEnum),
+    },
+    network: {
+      type: GraphQLString,
+    },
+  },
 });
