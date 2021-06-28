@@ -2,8 +2,10 @@ import container from '@container';
 import { Request } from 'express';
 import {
   GraphQLBoolean,
+  GraphQLEnumType,
   GraphQLFieldConfig,
   GraphQLInputObjectType,
+  GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
@@ -12,22 +14,29 @@ import {
   BlockchainEnum,
   BlockchainFilterInputType,
   DateTimeType,
+  MetricChartType,
+  MetricColumnType,
+  MetricGroupEnum,
   PaginateList,
   PaginationArgument,
   SortArgument,
   UuidType,
 } from '../types';
-import { protocolTableName } from '@models/Protocol/Entity';
+import { Contract, Protocol } from '@models/Protocol/Entity';
 import { AuthenticationError, ForbiddenError, UserInputError } from 'apollo-server-express';
 import { Role } from '@models/User/Entity';
 import { Blockchain } from '@models/types';
 
-export const ContractType = new GraphQLObjectType({
+export const ContractType = new GraphQLObjectType<Contract>({
   name: 'ContractType',
   fields: {
     id: {
       type: GraphQLNonNull(UuidType),
       description: 'Identificator',
+    },
+    adapter: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Adapter name',
     },
     blockchain: {
       type: GraphQLNonNull(BlockchainEnum),
@@ -56,6 +65,65 @@ export const ContractType = new GraphQLObjectType({
     hidden: {
       type: GraphQLNonNull(GraphQLBoolean),
       description: 'Is hidden',
+    },
+    metricChart: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(MetricChartType))),
+      args: {
+        metric: {
+          type: GraphQLNonNull(MetricColumnType),
+          description: 'Metric column',
+        },
+        group: {
+          type: GraphQLNonNull(MetricGroupEnum),
+          description: 'Truncate date mode',
+        },
+        filter: {
+          type: new GraphQLInputObjectType({
+            name: 'ContractMetricChartFilterInputType',
+            fields: {
+              dateAfter: {
+                type: DateTimeType,
+                description: 'Created at equals or greater',
+              },
+              dateBefore: {
+                type: DateTimeType,
+                description: 'Created at less',
+              },
+            },
+          }),
+          defaultValue: {},
+        },
+        sort: SortArgument(
+          'ContractMetricChartSortInputType',
+          ['date', 'value'],
+          [{ column: 'date', order: 'asc' }],
+        ),
+        pagination: PaginationArgument('ContractMetricChartPaginationInputType'),
+      },
+      resolve: async (contract, { metric, group, filter, sort, pagination }) => {
+        const database = container.database();
+        let select = container.model
+          .metricContractTable()
+          .column(database.raw(`DATE_TRUNC('${group}', "createdAt") AS "date"`))
+          .column(database.raw(`COUNT((data->'${metric}'->>'v')::numeric) AS "count"`))
+          .column(database.raw(`SUM((data->'${metric}'->>'v')::numeric) AS "sum"`))
+          .column(database.raw(`AVG((data->'${metric}'->>'v')::numeric) AS "avg"`))
+          .column(database.raw(`MAX((data->'${metric}'->>'v')::numeric) AS "max"`))
+          .column(database.raw(`MIN((data->'${metric}'->>'v')::numeric) AS "min"`))
+          .where('contract', contract.id)
+          .groupBy('date')
+          .orderBy(sort)
+          .limit(pagination.limit)
+          .offset(pagination.offset);
+        if (filter.dateAfter) {
+          select = select.andWhere('createdAt', '>=', filter.dateAfter.toDate());
+        }
+        if (filter.dateBefore) {
+          select = select.andWhere('createdAt', '<', filter.dateBefore.toDate());
+        }
+
+        return await select;
+      },
     },
     createdAt: {
       type: GraphQLNonNull(DateTimeType),
@@ -88,6 +156,10 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
               type: GraphQLNonNull(GraphQLString),
               description: 'Address',
             },
+            adapter: {
+              type: GraphQLNonNull(GraphQLString),
+              description: 'Adapter name',
+            },
             name: {
               type: GraphQLNonNull(GraphQLString),
               description: 'Name',
@@ -119,10 +191,10 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
     const protocol = await container.model.protocolTable().where('id', protocolId).first();
     if (!protocol) throw new UserInputError('Protocol not found');
 
-    const { blockchain, network, address, name, description, link, hidden } = input;
+    const { blockchain, network, address, adapter, name, description, link, hidden } = input;
     const created = await container.model
       .contractService()
-      .create(protocol, blockchain, network, address, name, description, link, hidden);
+      .create(protocol, blockchain, network, address, adapter, name, description, link, hidden);
 
     return created;
   },
@@ -150,6 +222,10 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
             address: {
               type: GraphQLString,
               description: 'Address',
+            },
+            adapter: {
+              type: GraphQLString,
+              description: 'Adapter name',
             },
             name: {
               type: GraphQLString,
@@ -180,15 +256,16 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
     if (currentUser.role !== Role.Admin) throw new ForbiddenError('FORBIDDEN');
 
     const contractService = container.model.contractService();
-    const contract = await contractService.table().where('id', id).first();
+    const contract = await contractService.contractTable().where('id', id).first();
     if (!contract) throw new UserInputError('Contract not found');
 
-    const { blockchain, network, address, name, description, link, hidden } = input;
+    const { blockchain, network, address, adapter, name, description, link, hidden } = input;
     const updated = await contractService.update({
       ...contract,
       blockchain: (typeof blockchain === 'string' ? blockchain : contract.blockchain) as Blockchain,
       network: typeof network === 'string' ? network : contract.network,
       address: typeof address === 'string' ? address : contract.address,
+      adapter: typeof adapter === 'string' ? adapter : contract.adapter,
       name: typeof name === 'string' ? name : contract.name,
       description: typeof description === 'string' ? description : contract.description,
       link: typeof link === 'string' ? link : contract.link,
@@ -211,7 +288,7 @@ export const ContractDeleteMutation: GraphQLFieldConfig<any, Request> = {
     if (currentUser.role !== Role.Admin) throw new ForbiddenError('FORBIDDEN');
 
     const contractService = container.model.contractService();
-    const contract = await contractService.table().where('id', id).first();
+    const contract = await contractService.contractTable().where('id', id).first();
     if (!contract) throw new UserInputError('Contract not found');
 
     await contractService.delete(contract);
@@ -220,7 +297,73 @@ export const ContractDeleteMutation: GraphQLFieldConfig<any, Request> = {
   },
 };
 
-export const ProtocolType = new GraphQLObjectType({
+export const ContractWalletLinkMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLBoolean),
+  args: {
+    contract: {
+      type: GraphQLNonNull(UuidType),
+      description: 'Target contract',
+    },
+    wallet: {
+      type: GraphQLNonNull(UuidType),
+      description: 'Target wallet',
+    },
+  },
+  resolve: async (root, { contract: contractId, wallet: walletId }, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const contract = await container.model.contractTable().where('id', contractId).first();
+    if (!contract) throw new UserInputError('Contract not found');
+
+    const wallet = await container.model.walletTable().where('id', walletId).first();
+    if (!wallet) throw new UserInputError('Wallet not found');
+
+    if (wallet.blockchain !== contract.blockchain) throw new UserInputError('Invalid blockchain');
+    if (wallet.network !== contract.network) throw new UserInputError('Invalid network');
+    if (wallet.user !== currentUser.id && currentUser.role !== Role.Admin) {
+      throw new ForbiddenError('FORBIDDEN');
+    }
+
+    await container.model.contractService().walletLink(contract, wallet);
+
+    return true;
+  },
+};
+
+export const ContractWalletUnlinkMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLBoolean),
+  args: {
+    contract: {
+      type: GraphQLNonNull(UuidType),
+      description: 'Target contract',
+    },
+    wallet: {
+      type: GraphQLNonNull(UuidType),
+      description: 'Target wallet',
+    },
+  },
+  resolve: async (root, { contract: contractId, wallet: walletId }, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const contract = await container.model.contractTable().where('id', contractId).first();
+    if (!contract) throw new UserInputError('Contract not found');
+
+    const wallet = await container.model.walletTable().where('id', walletId).first();
+    if (!wallet) throw new UserInputError('Wallet not found');
+
+    if (wallet.blockchain !== contract.blockchain) throw new UserInputError('Invalid blockchain');
+    if (wallet.network !== contract.network) throw new UserInputError('Invalid network');
+    if (wallet.user !== currentUser.id && currentUser.role !== Role.Admin) {
+      throw new ForbiddenError('FORBIDDEN');
+    }
+
+    await container.model.contractService().walletUnlink(contract, wallet);
+
+    return true;
+  },
+};
+
+export const ProtocolType = new GraphQLObjectType<Protocol>({
   name: 'ProtocolType',
   fields: {
     id: {
@@ -310,6 +453,69 @@ export const ProtocolType = new GraphQLObjectType({
         };
       },
     },
+    metricChart: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(MetricChartType))),
+      args: {
+        metric: {
+          type: GraphQLNonNull(MetricColumnType),
+          description: 'Metric column',
+        },
+        group: {
+          type: GraphQLNonNull(MetricGroupEnum),
+          description: 'Truncate date mode',
+        },
+        filter: {
+          type: new GraphQLInputObjectType({
+            name: 'ProtocolMetricChartFilterInputType',
+            fields: {
+              dateAfter: {
+                type: DateTimeType,
+                description: 'Created at equals or greater',
+              },
+              dateBefore: {
+                type: DateTimeType,
+                description: 'Created at less',
+              },
+            },
+          }),
+          defaultValue: {},
+        },
+        sort: SortArgument(
+          'ProtocolMetricChartSortInputType',
+          ['date', 'value'],
+          [{ column: 'date', order: 'asc' }],
+        ),
+        pagination: PaginationArgument('ProtocolMetricChartPaginationInputType'),
+      },
+      resolve: async (protocol, { metric, group, filter, sort, pagination }) => {
+        const database = container.database();
+        const contractSelect = container.model
+          .contractTable()
+          .columns('id')
+          .where('protocol', protocol.id);
+        let select = container.model
+          .metricContractTable()
+          .column(database.raw(`DATE_TRUNC('${group}', "createdAt") AS "date"`))
+          .column(database.raw(`COUNT((data->'${metric}'->>'v')::numeric) AS "count"`))
+          .column(database.raw(`SUM((data->'${metric}'->>'v')::numeric) AS "sum"`))
+          .column(database.raw(`AVG((data->'${metric}'->>'v')::numeric) AS "avg"`))
+          .column(database.raw(`MAX((data->'${metric}'->>'v')::numeric) AS "max"`))
+          .column(database.raw(`MIN((data->'${metric}'->>'v')::numeric) AS "min"`))
+          .whereIn('contract', contractSelect)
+          .groupBy('date')
+          .orderBy(sort)
+          .limit(pagination.limit)
+          .offset(pagination.offset);
+        if (filter.dateAfter) {
+          select = select.andWhere('createdAt', '>=', filter.dateAfter.toDate());
+        }
+        if (filter.dateBefore) {
+          select = select.andWhere('createdAt', '<', filter.dateBefore.toDate());
+        }
+
+        return await select;
+      },
+    },
     createdAt: {
       type: GraphQLNonNull(DateTimeType),
       description: 'Date of created account',
@@ -377,10 +583,10 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
       select.whereIn('id', contractSelect);
     }
     if (filter.hidden !== undefined) {
-      select = select.andWhere(`${protocolTableName}.hidden`, filter.hidden);
+      select = select.andWhere('hidden', filter.hidden);
     }
     if (filter.search !== undefined && filter.search !== '') {
-      select = select.andWhere(`${protocolTableName}.name`, 'iLike', `%${filter.search}%`);
+      select = select.andWhere('name', 'iLike', `%${filter.search}%`);
     }
 
     return {
@@ -400,6 +606,10 @@ export const ProtocolCreateMutation: GraphQLFieldConfig<any, Request> = {
         new GraphQLInputObjectType({
           name: 'ProtocolCreateInputType',
           fields: {
+            adapter: {
+              type: GraphQLNonNull(GraphQLString),
+              description: 'Adapter name',
+            },
             name: {
               type: GraphQLNonNull(GraphQLString),
               description: 'Name',
@@ -433,10 +643,10 @@ export const ProtocolCreateMutation: GraphQLFieldConfig<any, Request> = {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
     if (currentUser.role !== Role.Admin) throw new ForbiddenError('FORBIDDEN');
 
-    const { name, description, icon, link, hidden } = input;
+    const { adapter, name, description, icon, link, hidden } = input;
     const created = await container.model
       .protocolService()
-      .create('', name, description, icon, link, hidden);
+      .create(adapter, name, description, icon, link, hidden);
 
     return created;
   },
@@ -453,6 +663,10 @@ export const ProtocolUpdateMutation: GraphQLFieldConfig<any, Request> = {
         new GraphQLInputObjectType({
           name: 'ProtocolUpdateInputType',
           fields: {
+            adapter: {
+              type: GraphQLString,
+              description: 'Adapter name',
+            },
             name: {
               type: GraphQLString,
               description: 'Name',
@@ -486,9 +700,10 @@ export const ProtocolUpdateMutation: GraphQLFieldConfig<any, Request> = {
     const protocol = await protocolService.table().where('id', id).first();
     if (!protocol) throw new UserInputError('Protocol not found');
 
-    const { name, description, icon, link, hidden } = input;
+    const { adapter, name, description, icon, link, hidden } = input;
     const updated = await protocolService.update({
       ...protocol,
+      adapter: typeof adapter === 'string' ? adapter : protocol.adapter,
       name: typeof name === 'string' ? name : protocol.name,
       description: typeof description === 'string' ? description : protocol.description,
       icon: typeof icon === 'string' ? icon : protocol.icon,

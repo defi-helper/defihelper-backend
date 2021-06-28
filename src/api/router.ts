@@ -14,7 +14,18 @@ import {
   ContractCreateMutation,
   ContractUpdateMutation,
   ContractDeleteMutation,
+  ContractWalletLinkMutation,
+  ContractWalletUnlinkMutation,
 } from './schema/protocol';
+import {
+  ProposalCreateMutation,
+  ProposalDeleteMutation,
+  ProposalListQuery,
+  ProposalQuery,
+  ProposalUpdateMutation,
+  UnvoteMutation,
+  VoteMutation,
+} from './schema/proposal';
 
 export function route({ express, server }: { express: Express; server: Server }) {
   const apollo = new ApolloServer({
@@ -32,6 +43,8 @@ export function route({ express, server }: { express: Express; server: Server })
           },
           protocol: ProtocolQuery,
           protocols: ProtocolListQuery,
+          proposal: ProposalQuery,
+          proposals: ProposalListQuery,
         },
       }),
       mutation: new GraphQLObjectType({
@@ -44,6 +57,13 @@ export function route({ express, server }: { express: Express; server: Server })
           contractCreate: ContractCreateMutation,
           contractUpdate: ContractUpdateMutation,
           contractDelete: ContractDeleteMutation,
+          contractWalletLink: ContractWalletLinkMutation,
+          contractWalletUnlink: ContractWalletUnlinkMutation,
+          proposalCreate: ProposalCreateMutation,
+          proposalUpdate: ProposalUpdateMutation,
+          proposalDelete: ProposalDeleteMutation,
+          vote: VoteMutation,
+          unvote: UnvoteMutation,
         },
       }),
     }),

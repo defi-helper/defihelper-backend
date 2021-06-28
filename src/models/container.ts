@@ -46,7 +46,35 @@ export class ModelContainer extends Container<typeof AppContainer> {
 
   readonly contractTable = Models.Protocol.Entity.contractTableFactory(this.parent.database);
 
+  readonly walletContractLinkTable = Models.Protocol.Entity.walletContractLinkTableFactory(
+    this.parent.database,
+  );
+
   readonly contractService = singleton(
-    () => new Models.Protocol.Service.ContractService(this.contractTable),
+    () =>
+      new Models.Protocol.Service.ContractService(this.contractTable, this.walletContractLinkTable),
+  );
+
+  readonly proposalTable = Models.Proposal.Entity.proposalTableFactory(this.parent.database);
+
+  readonly voteTable = Models.Proposal.Entity.voteTableFactory(this.parent.database);
+
+  readonly proposalService = singleton(
+    () => new Models.Proposal.Service.ProposalService(this.proposalTable, this.voteTable),
+  );
+
+  readonly metricContractTable = Models.Metric.Entity.metricContractTableFactory(
+    this.parent.database,
+  );
+
+  readonly metricWalletTable = Models.Metric.Entity.metricWalletTableFactory(this.parent.database);
+
+  readonly metricService = singleton(
+    () =>
+      new Models.Metric.Service.MetricContractService(
+        this.metricContractTable,
+        this.metricWalletTable,
+        'http://localhost:9001',
+      ),
   );
 }

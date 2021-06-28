@@ -161,3 +161,50 @@ export const BlockchainFilterInputType = new GraphQLInputObjectType({
     },
   },
 });
+
+export const MetricColumnType = new GraphQLScalarType({
+  name: 'MetricColumnType',
+  description: 'Metric column',
+  parseValue: (value: string) => {
+    if (!/^[a-z0-9_]+$/i.test(value)) throw new GraphQLParseError('MetricColumn', value);
+
+    return value;
+  },
+  serialize: (value: string) => {
+    return value;
+  },
+});
+
+export const MetricGroupEnum = new GraphQLEnumType({
+  name: 'MetricGroupEnum',
+  values: {
+    hour: {},
+    day: {},
+    week: {},
+    year: {},
+  },
+});
+
+export const MetricChartType = new GraphQLObjectType({
+  name: 'MetricChartType',
+  fields: {
+    date: {
+      type: GraphQLNonNull(DateTimeType),
+    },
+    min: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    max: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    avg: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    sum: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    count: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+  },
+});

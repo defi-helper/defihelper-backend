@@ -25,6 +25,7 @@ export interface Contract {
   blockchain: Blockchain;
   network: string;
   address: string;
+  adapter: string;
   name: string;
   description: string;
   link: string | null;
@@ -38,3 +39,18 @@ export const contractTableName = 'protocol_contract';
 export const contractTableFactory = createTableFactory<Contract>(contractTableName);
 
 export type ContractTable = ReturnType<ReturnType<typeof contractTableFactory>>;
+
+export interface WalletContractLink {
+  id: string;
+  contract: string;
+  wallet: string;
+  createdAt: Date;
+}
+
+export const walletContractLinkTableName = 'protocol_contract_wallet_link';
+
+export const walletContractLinkTableFactory = createTableFactory<WalletContractLink>(
+  walletContractLinkTableName,
+);
+
+export type WalletContractLinkTable = ReturnType<ReturnType<typeof walletContractLinkTableFactory>>;

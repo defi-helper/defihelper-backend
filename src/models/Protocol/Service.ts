@@ -1,7 +1,14 @@
 import { Blockchain } from '@models/types';
+import { Wallet } from '@models/Wallet/Entity';
 import { Factory } from '@services/Container';
 import { v4 as uuid } from 'uuid';
-import { Protocol, ProtocolTable, Contract, ContractTable } from './Entity';
+import {
+  Protocol,
+  ProtocolTable,
+  Contract,
+  ContractTable,
+  WalletContractLinkTable,
+} from './Entity';
 
 export class ProtocolService {
   constructor(readonly table: Factory<ProtocolTable> = table) {}
@@ -46,13 +53,17 @@ export class ProtocolService {
 }
 
 export class ContractService {
-  constructor(readonly table: Factory<ContractTable> = table) {}
+  constructor(
+    readonly contractTable: Factory<ContractTable> = contractTable,
+    readonly walletLinkTable: Factory<WalletContractLinkTable> = walletLinkTable,
+  ) {}
 
   async create(
     protocol: Protocol,
     blockchain: Blockchain,
     network: string,
     address: string,
+    adapter: string,
     name: string,
     description: string = '',
     link: string | null = null,
@@ -64,6 +75,7 @@ export class ContractService {
       blockchain,
       network,
       address,
+      adapter,
       name,
       description,
       link,
@@ -71,7 +83,7 @@ export class ContractService {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    await this.table().insert(created);
+    await this.contractTable().insert(created);
 
     return created;
   }
@@ -81,12 +93,40 @@ export class ContractService {
       ...contract,
       updatedAt: new Date(),
     };
-    await this.table().where({ id: contract.id }).update(updated);
+    await this.contractTable().where({ id: contract.id }).update(updated);
 
     return updated;
   }
 
   async delete(contract: Contract) {
-    await this.table().where({ id: contract.id }).delete();
+    await this.contractTable().where({ id: contract.id }).delete();
+  }
+
+  async walletLink(contract: Contract, wallet: Wallet) {
+    const duplicate = await this.walletLinkTable()
+      .where('contract', contract.id)
+      .andWhere('wallet', wallet.id)
+      .first();
+    if (duplicate) return duplicate;
+
+    const created = {
+      id: uuid(),
+      contract: contract.id,
+      wallet: wallet.id,
+      createdAt: new Date(),
+    };
+    await this.walletLinkTable().insert(created);
+
+    return created;
+  }
+
+  async walletUnlink(contract: Contract, wallet: Wallet) {
+    const duplicate = await this.walletLinkTable()
+      .where('contract', contract.id)
+      .andWhere('wallet', wallet.id)
+      .first();
+    if (!duplicate) return;
+
+    await this.walletLinkTable().where('id', duplicate.id).delete();
   }
 }
