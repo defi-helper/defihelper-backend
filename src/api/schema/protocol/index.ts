@@ -34,6 +34,10 @@ export const ContractType = new GraphQLObjectType<Contract>({
       type: GraphQLNonNull(UuidType),
       description: 'Identificator',
     },
+    protocolId: {
+      type: GraphQLNonNull(UuidType),
+      resolve: ({ protocol }) => protocol,
+    },
     adapter: {
       type: GraphQLNonNull(GraphQLString),
       description: 'Adapter name',
