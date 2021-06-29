@@ -74,7 +74,7 @@ export class ModelContainer extends Container<typeof AppContainer> {
       new Models.Metric.Service.MetricContractService(
         this.metricContractTable,
         this.metricWalletTable,
-        'http://localhost:9001',
+        this.parent.parent.adapters.host,
       ),
   );
 }

@@ -1,5 +1,6 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
+import { Factory } from '@services/Container';
 
 export interface Params {
   contract: string;
@@ -36,10 +37,12 @@ export default async (process: Process) => {
   if (!blockchain.provider.hasOwnProperty(contract.network)) {
     throw new Error('Network not supported');
   }
-  const provider = blockchain.provider[contract.network as keyof typeof blockchain.provider];
+  const providerFactory = blockchain.provider[
+    contract.network as keyof typeof blockchain.provider
+  ] as Factory<any>;
 
-  const metric = await metricAdapter.wallet(provider, wallet.address);
+  const metric = await metricAdapter.wallet(providerFactory(), contract.address, wallet.address);
   await metricService.createWallet(contract, wallet, metric);
-
+  
   return process.done();
 };

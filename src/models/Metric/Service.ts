@@ -7,8 +7,8 @@ import axios from 'axios';
 import vm from 'vm';
 
 export interface MetricAdapter {
-  contract?: (provider: any) => Promise<MetricMap>;
-  wallet?: (provider: any, wallet: string) => Promise<MetricMap>;
+  contract?: (provider: any, contract: string) => Promise<MetricMap>;
+  wallet?: (provider: any, contract: string, wallet: string) => Promise<MetricMap>;
 }
 
 export interface Adapter {
@@ -31,7 +31,11 @@ export class MetricContractService {
       const adapterResponse = await axios.get(`${this.adapterURL}${path}`);
       if (adapterResponse.status !== 200) return new Error(adapterResponse.statusText);
 
-      const context = vm.createContext({ module: { exports: null } });
+      const context = vm.createContext({
+        module: { exports: new Error('Adapter not evaluated') },
+        console,
+        axios,
+      });
       vm.runInContext(adapterResponse.data, context);
 
       return context.module.exports;

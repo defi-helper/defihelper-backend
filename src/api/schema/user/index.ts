@@ -283,6 +283,9 @@ export const UserType = new GraphQLObjectType<User>({
                 type: GraphQLList(GraphQLNonNull(UuidType)),
                 description: 'Target wallets',
               },
+              blockchain: {
+                type: BlockchainFilterInputType,
+              },
               dateAfter: {
                 type: DateTimeType,
                 description: 'Created at equals or greater',
@@ -303,7 +306,14 @@ export const UserType = new GraphQLObjectType<User>({
         pagination: PaginationArgument('UserMetricChartPaginationInputType'),
       },
       resolve: async (user, { metric, group, filter, sort, pagination }) => {
-        const walletSelect = container.model.walletTable().columns('id').where('user', user.id);
+        let walletSelect = container.model.walletTable().columns('id').where('user', user.id);
+        if (filter.blockchain) {
+          const { protocol, network } = filter.blockchain;
+          walletSelect = walletSelect.andWhere('blockchain', protocol);
+          if (network !== undefined) {
+            walletSelect = walletSelect.andWhere('network', network);
+          }
+        }
 
         const database = container.database();
         let select = container.model

@@ -27,4 +27,7 @@ export default {
   session: {
     ttl: parseInt(process.env.SESSION_TTL ?? '600', 10),
   },
+  adapters: {
+    host: process.env.ADAPTERS_HOST ?? 'localhost',
+  },
 };

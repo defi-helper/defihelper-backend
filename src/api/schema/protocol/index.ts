@@ -468,6 +468,9 @@ export const ProtocolType = new GraphQLObjectType<Protocol>({
           type: new GraphQLInputObjectType({
             name: 'ProtocolMetricChartFilterInputType',
             fields: {
+              blockchain: {
+                type: BlockchainFilterInputType,
+              },
               dateAfter: {
                 type: DateTimeType,
                 description: 'Created at equals or greater',
@@ -489,10 +492,18 @@ export const ProtocolType = new GraphQLObjectType<Protocol>({
       },
       resolve: async (protocol, { metric, group, filter, sort, pagination }) => {
         const database = container.database();
-        const contractSelect = container.model
+        let contractSelect = container.model
           .contractTable()
           .columns('id')
           .where('protocol', protocol.id);
+        if (filter.blockchain) {
+          const { protocol, network } = filter.blockchain;
+          contractSelect = contractSelect.andWhere('blockchain', protocol);
+          if (network !== undefined) {
+            contractSelect = contractSelect.andWhere('network', network);
+          }
+        }
+
         let select = container.model
           .metricContractTable()
           .column(database.raw(`DATE_TRUNC('${group}', "createdAt") AS "date"`))
