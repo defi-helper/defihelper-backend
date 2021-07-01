@@ -155,12 +155,12 @@ export const WalletType = new GraphQLObjectType<Wallet>({
         const database = container.database();
         let select = container.model
           .metricWalletTable()
-          .column(database.raw(`DATE_TRUNC('${group}', "createdAt") AS "date"`))
-          .column(database.raw(`COUNT((data->'${metric}'->>'v')::numeric) AS "count"`))
-          .column(database.raw(`SUM((data->'${metric}'->>'v')::numeric) AS "sum"`))
-          .column(database.raw(`AVG((data->'${metric}'->>'v')::numeric) AS "avg"`))
-          .column(database.raw(`MAX((data->'${metric}'->>'v')::numeric) AS "max"`))
-          .column(database.raw(`MIN((data->'${metric}'->>'v')::numeric) AS "min"`))
+          .column(database.raw(`DATE_TRUNC('${group}', "date") AS "date"`))
+          .column(database.raw(`COUNT((data->>'${metric}')::numeric) AS "count"`))
+          .column(database.raw(`SUM((data->>'${metric}')::numeric) AS "sum"`))
+          .column(database.raw(`AVG((data->>'${metric}')::numeric) AS "avg"`))
+          .column(database.raw(`MAX((data->>'${metric}')::numeric) AS "max"`))
+          .column(database.raw(`MIN((data->>'${metric}')::numeric) AS "min"`))
           .where('wallet', wallet.id)
           .groupBy('date')
           .orderBy(sort)
@@ -170,11 +170,92 @@ export const WalletType = new GraphQLObjectType<Wallet>({
           select = select.whereIn('contract', filter.contract);
         }
         if (filter.dateAfter) {
-          select = select.andWhere('createdAt', '>=', filter.dateAfter.toDate());
+          select = select.andWhere('date', '>=', filter.dateAfter.toDate());
         }
         if (filter.dateBefore) {
-          select = select.andWhere('createdAt', '<', filter.dateBefore.toDate());
+          select = select.andWhere('date', '<', filter.dateBefore.toDate());
         }
+
+        return await select;
+      },
+    },
+    tokenMetricChart: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(MetricChartType))),
+      args: {
+        metric: {
+          type: GraphQLNonNull(MetricColumnType),
+          description: 'Metric column',
+        },
+        group: {
+          type: GraphQLNonNull(MetricGroupEnum),
+          description: 'Truncate date mode',
+        },
+        filter: {
+          type: new GraphQLInputObjectType({
+            name: 'WalletTokenMetricChartFilterInputType',
+            fields: {
+              token: {
+                type: GraphQLList(GraphQLNonNull(GraphQLString)),
+                description: 'Target token',
+              },
+              contract: {
+                type: GraphQLList(GraphQLNonNull(UuidType)),
+                description: 'Target contracts',
+              },
+              dateAfter: {
+                type: DateTimeType,
+                description: 'Created at equals or greater',
+              },
+              dateBefore: {
+                type: DateTimeType,
+                description: 'Created at less',
+              },
+            },
+          }),
+          defaultValue: {},
+        },
+        sort: SortArgument(
+          'WalletTokenMetricChartSortInputType',
+          ['date', 'value'],
+          [{ column: 'date', order: 'asc' }],
+        ),
+        pagination: PaginationArgument('WalletTokenMetricChartPaginationInputType'),
+      },
+      resolve: async (wallet, { metric, group, filter, sort, pagination }) => {
+        const database = container.database();
+        let tokenSelect = container.model
+          .metricWalletTokenTable()
+          .column('token')
+          .column(database.raw(`DATE_TRUNC('${group}', "date") AS "date"`))
+          .column(database.raw(`AVG((data->>'${metric}')::numeric) AS "value"`))
+          .where('wallet', wallet.id)
+          .groupBy('token', 'date')
+          .as('sub');
+        if (filter.contract) {
+          tokenSelect = tokenSelect.whereIn('contract', filter.contract);
+        }
+        if (filter.token) {
+          tokenSelect = tokenSelect.whereIn('token', filter.token);
+        }
+        if (filter.dateAfter) {
+          tokenSelect = tokenSelect.andWhere('date', '>=', filter.dateAfter.toDate());
+        }
+        if (filter.dateBefore) {
+          tokenSelect = tokenSelect.andWhere('date', '<', filter.dateBefore.toDate());
+        }
+        let select = container
+          .database()
+          .column('date')
+          .column(database.raw(`COUNT(value) AS "count"`))
+          .column(database.raw(`SUM(value) AS "sum"`))
+          .column(database.raw(`AVG(value) AS "avg"`))
+          .column(database.raw(`MAX(value) AS "max"`))
+          .column(database.raw(`MIN(value) AS "min"`))
+          .from(tokenSelect)
+          .groupBy('date')
+          .orderBy(sort)
+          .limit(pagination.limit)
+          .offset(pagination.offset);
 
         return await select;
       },
@@ -318,12 +399,12 @@ export const UserType = new GraphQLObjectType<User>({
         const database = container.database();
         let select = container.model
           .metricWalletTable()
-          .column(database.raw(`DATE_TRUNC('${group}', "createdAt") AS "date"`))
-          .column(database.raw(`COUNT((data->'${metric}'->>'v')::numeric) AS "count"`))
-          .column(database.raw(`SUM((data->'${metric}'->>'v')::numeric) AS "sum"`))
-          .column(database.raw(`AVG((data->'${metric}'->>'v')::numeric) AS "avg"`))
-          .column(database.raw(`MAX((data->'${metric}'->>'v')::numeric) AS "max"`))
-          .column(database.raw(`MIN((data->'${metric}'->>'v')::numeric) AS "min"`))
+          .column(database.raw(`DATE_TRUNC('${group}', "date") AS "date"`))
+          .column(database.raw(`COUNT((data->>'${metric}')::numeric) AS "count"`))
+          .column(database.raw(`SUM((data->>'${metric}')::numeric) AS "sum"`))
+          .column(database.raw(`AVG((data->>'${metric}')::numeric) AS "avg"`))
+          .column(database.raw(`MAX((data->>'${metric}')::numeric) AS "max"`))
+          .column(database.raw(`MIN((data->>'${metric}')::numeric) AS "min"`))
           .whereIn('wallet', walletSelect)
           .groupBy('date')
           .orderBy(sort)
@@ -336,11 +417,111 @@ export const UserType = new GraphQLObjectType<User>({
           select = select.whereIn('wallet', filter.wallet);
         }
         if (filter.dateAfter) {
-          select = select.andWhere('createdAt', '>=', filter.dateAfter.toDate());
+          select = select.andWhere('date', '>=', filter.dateAfter.toDate());
         }
         if (filter.dateBefore) {
-          select = select.andWhere('createdAt', '<', filter.dateBefore.toDate());
+          select = select.andWhere('date', '<', filter.dateBefore.toDate());
         }
+
+        return await select;
+      },
+    },
+    tokenMetricChart: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(MetricChartType))),
+      args: {
+        metric: {
+          type: GraphQLNonNull(MetricColumnType),
+          description: 'Metric column',
+        },
+        group: {
+          type: GraphQLNonNull(MetricGroupEnum),
+          description: 'Truncate date mode',
+        },
+        filter: {
+          type: new GraphQLInputObjectType({
+            name: 'UserTokenMetricChartFilterInputType',
+            fields: {
+              token: {
+                type: GraphQLList(GraphQLNonNull(GraphQLString)),
+                description: 'Target token',
+              },
+              contract: {
+                type: GraphQLList(GraphQLNonNull(UuidType)),
+                description: 'Target contracts',
+              },
+              blockchain: {
+                type: BlockchainFilterInputType,
+              },
+              wallet: {
+                type: GraphQLList(GraphQLNonNull(UuidType)),
+                description: 'Target wallets',
+              },
+              dateAfter: {
+                type: DateTimeType,
+                description: 'Created at equals or greater',
+              },
+              dateBefore: {
+                type: DateTimeType,
+                description: 'Created at less',
+              },
+            },
+          }),
+          defaultValue: {},
+        },
+        sort: SortArgument(
+          'UserTokenMetricChartSortInputType',
+          ['date', 'value'],
+          [{ column: 'date', order: 'asc' }],
+        ),
+        pagination: PaginationArgument('UserTokenMetricChartPaginationInputType'),
+      },
+      resolve: async (user, { metric, group, filter, sort, pagination }) => {
+        let walletSelect = container.model.walletTable().columns('id').where('user', user.id);
+        if (filter.blockchain) {
+          const { protocol, network } = filter.blockchain;
+          walletSelect = walletSelect.andWhere('blockchain', protocol);
+          if (network !== undefined) {
+            walletSelect = walletSelect.andWhere('network', network);
+          }
+        }
+
+        const database = container.database();
+        let tokenSelect = container.model
+          .metricWalletTokenTable()
+          .column('token')
+          .column(database.raw(`DATE_TRUNC('${group}', "date") AS "date"`))
+          .column(database.raw(`AVG((data->>'${metric}')::numeric) AS "value"`))
+          .whereIn('wallet', walletSelect)
+          .groupBy('token', 'date')
+          .as('sub');
+        if (filter.contract) {
+          tokenSelect = tokenSelect.whereIn('contract', filter.contract);
+        }
+        if (filter.token) {
+          tokenSelect = tokenSelect.whereIn('token', filter.token);
+        }
+        if (filter.wallet) {
+          tokenSelect = tokenSelect.whereIn('wallet', filter.wallet);
+        }
+        if (filter.dateAfter) {
+          tokenSelect = tokenSelect.andWhere('date', '>=', filter.dateAfter.toDate());
+        }
+        if (filter.dateBefore) {
+          tokenSelect = tokenSelect.andWhere('date', '<', filter.dateBefore.toDate());
+        }
+        let select = container
+          .database()
+          .column('date')
+          .column(database.raw(`COUNT(value) AS "count"`))
+          .column(database.raw(`SUM(value) AS "sum"`))
+          .column(database.raw(`AVG(value) AS "avg"`))
+          .column(database.raw(`MAX(value) AS "max"`))
+          .column(database.raw(`MIN(value) AS "min"`))
+          .from(tokenSelect)
+          .groupBy('date')
+          .orderBy(sort)
+          .limit(pagination.limit)
+          .offset(pagination.offset);
 
         return await select;
       },

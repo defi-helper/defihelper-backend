@@ -15,16 +15,9 @@ export default async (process: Process) => {
   if (!protocol) throw new Error('Protocol not found');
 
   const metricService = container.model.metricService();
-  const adapter = await metricService.getAdapter(protocol);
-  if (adapter instanceof Error) throw adapter;
-  if (adapter.metrics === undefined) return process.info('Metrics adapter not found').done();
-
-  const metricAdapter = adapter.metrics[contract.adapter];
-  if (metricAdapter === undefined) throw new Error('Target metric adapter not found');
-
-  if (metricAdapter.contract === undefined) {
-    return process.info('Contract metric adapter not found').done();
-  }
+  const protocolAdapters = await metricService.getAdapter(protocol);
+  const contractAdapterFactory = protocolAdapters[contract.adapter];
+  if (contractAdapterFactory === undefined) throw new Error('Contract adapter not found');
 
   const blockchain = container.blockchain[contract.blockchain];
   if (!blockchain.provider.hasOwnProperty(contract.network)) {
@@ -34,8 +27,11 @@ export default async (process: Process) => {
     contract.network as keyof typeof blockchain.provider
   ] as Factory<any>;
 
-  const metric = await metricAdapter.contract(providerFactory(), contract.address);
-  await metricService.createContract(contract, metric);
+  const contractAdapterData = await contractAdapterFactory(providerFactory(), contract.address);
+  if (!contractAdapterData.metrics) return process.done();
+
+  const metrics = contractAdapterData.metrics;
+  await metricService.createContract(contract, metrics, new Date());
 
   return process.done();
 };

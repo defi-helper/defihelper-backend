@@ -26,6 +26,7 @@ export interface Contract {
   network: string;
   address: string;
   adapter: string;
+  layout: string;
   name: string;
   description: string;
   link: string | null;

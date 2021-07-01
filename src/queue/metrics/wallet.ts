@@ -22,16 +22,9 @@ export default async (process: Process) => {
   }
 
   const metricService = container.model.metricService();
-  const adapter = await metricService.getAdapter(protocol);
-  if (adapter instanceof Error) throw adapter;
-  if (adapter.metrics === undefined) return process.info('Metrics adapter not found').done();
-
-  const metricAdapter = adapter.metrics[contract.adapter];
-  if (metricAdapter === undefined) throw new Error('Target metric adapter not found');
-
-  if (metricAdapter.wallet === undefined) {
-    return process.info('Wallet metric adapter not found').done();
-  }
+  const protocolAdapter = await metricService.getAdapter(protocol);
+  const contractAdapterFactory = protocolAdapter[contract.adapter];
+  if (contractAdapterFactory === undefined) throw new Error('Contract adapter not found');
 
   const blockchain = container.blockchain[contract.blockchain];
   if (!blockchain.provider.hasOwnProperty(contract.network)) {
@@ -41,8 +34,19 @@ export default async (process: Process) => {
     contract.network as keyof typeof blockchain.provider
   ] as Factory<any>;
 
-  const metric = await metricAdapter.wallet(providerFactory(), contract.address, wallet.address);
-  await metricService.createWallet(contract, wallet, metric);
-  
+  const contractAdapterData = await contractAdapterFactory(providerFactory(), contract.address);
+  if (!contractAdapterData.wallet) return process.done();
+
+  const walletAdapterData = await contractAdapterData.wallet(wallet.address);
+  if (!walletAdapterData.metrics) return process.done();
+  await metricService.createWallet(contract, wallet, walletAdapterData.metrics, new Date());
+
+  if (!walletAdapterData.tokens) return process.done();
+  await Promise.all(
+    Object.entries(walletAdapterData.tokens).map(([token, metric]) =>
+      metricService.createToken(contract, wallet, token, metric, new Date()),
+    ),
+  );
+
   return process.done();
 };

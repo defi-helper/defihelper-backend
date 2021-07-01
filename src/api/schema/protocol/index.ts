@@ -42,6 +42,10 @@ export const ContractType = new GraphQLObjectType<Contract>({
       type: GraphQLNonNull(GraphQLString),
       description: 'Adapter name',
     },
+    layout: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Layout name',
+    },
     blockchain: {
       type: GraphQLNonNull(BlockchainEnum),
       description: 'Blockchain type',
@@ -108,22 +112,22 @@ export const ContractType = new GraphQLObjectType<Contract>({
         const database = container.database();
         let select = container.model
           .metricContractTable()
-          .column(database.raw(`DATE_TRUNC('${group}', "createdAt") AS "date"`))
-          .column(database.raw(`COUNT((data->'${metric}'->>'v')::numeric) AS "count"`))
-          .column(database.raw(`SUM((data->'${metric}'->>'v')::numeric) AS "sum"`))
-          .column(database.raw(`AVG((data->'${metric}'->>'v')::numeric) AS "avg"`))
-          .column(database.raw(`MAX((data->'${metric}'->>'v')::numeric) AS "max"`))
-          .column(database.raw(`MIN((data->'${metric}'->>'v')::numeric) AS "min"`))
+          .column(database.raw(`DATE_TRUNC('${group}', "date") AS "date"`))
+          .column(database.raw(`COUNT((data->>'${metric}')::numeric) AS "count"`))
+          .column(database.raw(`SUM((data->>'${metric}')::numeric) AS "sum"`))
+          .column(database.raw(`AVG((data->>'${metric}')::numeric) AS "avg"`))
+          .column(database.raw(`MAX((data->>'${metric}')::numeric) AS "max"`))
+          .column(database.raw(`MIN((data->>'${metric}')::numeric) AS "min"`))
           .where('contract', contract.id)
           .groupBy('date')
           .orderBy(sort)
           .limit(pagination.limit)
           .offset(pagination.offset);
         if (filter.dateAfter) {
-          select = select.andWhere('createdAt', '>=', filter.dateAfter.toDate());
+          select = select.andWhere('date', '>=', filter.dateAfter.toDate());
         }
         if (filter.dateBefore) {
-          select = select.andWhere('createdAt', '<', filter.dateBefore.toDate());
+          select = select.andWhere('date', '<', filter.dateBefore.toDate());
         }
 
         return await select;
@@ -164,6 +168,10 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
               type: GraphQLNonNull(GraphQLString),
               description: 'Adapter name',
             },
+            layout: {
+              type: GraphQLNonNull(GraphQLString),
+              description: 'Layout name',
+            },
             name: {
               type: GraphQLNonNull(GraphQLString),
               description: 'Name',
@@ -195,10 +203,22 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
     const protocol = await container.model.protocolTable().where('id', protocolId).first();
     if (!protocol) throw new UserInputError('Protocol not found');
 
-    const { blockchain, network, address, adapter, name, description, link, hidden } = input;
+    const { blockchain, network, address, adapter, layout, name, description, link, hidden } =
+      input;
     const created = await container.model
       .contractService()
-      .create(protocol, blockchain, network, address, adapter, name, description, link, hidden);
+      .create(
+        protocol,
+        blockchain,
+        network,
+        address,
+        adapter,
+        layout,
+        name,
+        description,
+        link,
+        hidden,
+      );
 
     return created;
   },
@@ -230,6 +250,10 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
             adapter: {
               type: GraphQLString,
               description: 'Adapter name',
+            },
+            layout: {
+              type: GraphQLString,
+              description: 'Layout name',
             },
             name: {
               type: GraphQLString,
@@ -263,13 +287,15 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
     const contract = await contractService.contractTable().where('id', id).first();
     if (!contract) throw new UserInputError('Contract not found');
 
-    const { blockchain, network, address, adapter, name, description, link, hidden } = input;
+    const { blockchain, network, address, adapter, layout, name, description, link, hidden } =
+      input;
     const updated = await contractService.update({
       ...contract,
       blockchain: (typeof blockchain === 'string' ? blockchain : contract.blockchain) as Blockchain,
       network: typeof network === 'string' ? network : contract.network,
       address: typeof address === 'string' ? address : contract.address,
       adapter: typeof adapter === 'string' ? adapter : contract.adapter,
+      layout: typeof layout === 'string' ? layout : contract.layout,
       name: typeof name === 'string' ? name : contract.name,
       description: typeof description === 'string' ? description : contract.description,
       link: typeof link === 'string' ? link : contract.link,
@@ -510,22 +536,22 @@ export const ProtocolType = new GraphQLObjectType<Protocol>({
 
         let select = container.model
           .metricContractTable()
-          .column(database.raw(`DATE_TRUNC('${group}', "createdAt") AS "date"`))
-          .column(database.raw(`COUNT((data->'${metric}'->>'v')::numeric) AS "count"`))
-          .column(database.raw(`SUM((data->'${metric}'->>'v')::numeric) AS "sum"`))
-          .column(database.raw(`AVG((data->'${metric}'->>'v')::numeric) AS "avg"`))
-          .column(database.raw(`MAX((data->'${metric}'->>'v')::numeric) AS "max"`))
-          .column(database.raw(`MIN((data->'${metric}'->>'v')::numeric) AS "min"`))
+          .column(database.raw(`DATE_TRUNC('${group}', "date") AS "date"`))
+          .column(database.raw(`COUNT((data->>'${metric}')::numeric) AS "count"`))
+          .column(database.raw(`SUM((data->>'${metric}')::numeric) AS "sum"`))
+          .column(database.raw(`AVG((data->>'${metric}')::numeric) AS "avg"`))
+          .column(database.raw(`MAX((data->>'${metric}')::numeric) AS "max"`))
+          .column(database.raw(`MIN((data->>'${metric}')::numeric) AS "min"`))
           .whereIn('contract', contractSelect)
           .groupBy('date')
           .orderBy(sort)
           .limit(pagination.limit)
           .offset(pagination.offset);
         if (filter.dateAfter) {
-          select = select.andWhere('createdAt', '>=', filter.dateAfter.toDate());
+          select = select.andWhere('date', '>=', filter.dateAfter.toDate());
         }
         if (filter.dateBefore) {
-          select = select.andWhere('createdAt', '<', filter.dateBefore.toDate());
+          select = select.andWhere('date', '<', filter.dateBefore.toDate());
         }
 
         return await select;
