@@ -82,4 +82,35 @@ export class ModelContainer extends Container<typeof AppContainer> {
         this.parent.parent.adapters.host,
       ),
   );
+
+
+  readonly notificationTable = Models.Notification.Entity.notificationTableFactory(this.parent.database);
+  readonly contactTable = Models.Notification.Entity.contactTableFactory(this.parent.database);
+  readonly subscriptionTable = Models.Notification.Entity.subscriptionTableFactory(this.parent.database);
+  readonly webHookTable = Models.Notification.Entity.webHookTableFactory(this.parent.database);
+
+  readonly notificationService = singleton(
+      () =>
+          new Models.Notification.Service.NotificationService(
+              this.notificationTable,
+          ),
+  );
+  readonly contactService = singleton(
+      () =>
+          new Models.Notification.Service.ContactService(
+              this.contactTable,
+          ),
+  );
+  readonly subscriptionService = singleton(
+      () =>
+          new Models.Notification.Service.SubscriptionService(
+              this.subscriptionTable,
+          ),
+  );
+  readonly webHookService = singleton(
+      () =>
+          new Models.Notification.Service.WebHookService(
+              this.webHookTable,
+          ),
+  );
 }
