@@ -11,7 +11,7 @@ export enum ContactStatus {
   Inactive='inactive',
 }
 
-export interface Contact {
+export interface UserContact {
   id: string;
   user: string;
   type: ContactBroker;
@@ -45,27 +45,26 @@ export interface Notification {
   processedAt?: Date;
 }
 
-export interface WebHook {
+export interface ContractEventWebHook {
   id: string
   contract: string;
   event: string;
   createdAt: Date;
 }
 
-export interface Subscription {
+export interface UserEventSubscription {
   id: string;
-  user: string;
   webHook: string;
   contact: string;
   createdAt: Date;
 }
 
-export const contactTableName = 'contact';
+export const userContactTableName = 'user_contact';
 
-export const contactTableFactory =
-    createTableFactory<Contact>(contactTableName);
+export const userContactTableFactory =
+    createTableFactory<UserContact>(userContactTableName);
 
-export type ContactTable = ReturnType<ReturnType<typeof contactTableFactory>>;
+export type UserContactTable = ReturnType<ReturnType<typeof userContactTableFactory>>;
 
 
 
@@ -78,18 +77,18 @@ export type NotificationTable = ReturnType<ReturnType<typeof notificationTableFa
 
 
 
-export const webHookTableName = 'webhook';
+export const contractEventWebHookTableName = 'contract_event_webhook';
 
-export const webHookTableFactory =
-    createTableFactory<WebHook>(webHookTableName);
+export const contractEventWebHookTableFactory =
+    createTableFactory<ContractEventWebHook>(contractEventWebHookTableName);
 
-export type WebHookTable = ReturnType<ReturnType<typeof webHookTableFactory>>;
+export type ContractEventWebHookTable = ReturnType<ReturnType<typeof contractEventWebHookTableFactory>>;
 
 
 
-export const subscriptionTableName = 'subscription';
+export const userEventSubscriptionTableName = 'user_event_subscription';
 
-export const subscriptionTableFactory =
-    createTableFactory<Subscription>(subscriptionTableName);
+export const userEventSubscriptionTableFactory =
+    createTableFactory<UserEventSubscription>(userEventSubscriptionTableName);
 
-export type SubscriptionTable = ReturnType<ReturnType<typeof subscriptionTableFactory>>;
+export type UserEventSubscriptionTable = ReturnType<ReturnType<typeof userEventSubscriptionTableFactory>>;

@@ -2,16 +2,16 @@ import { SchemaBuilder } from 'knex';
 import { tableName as userTableName } from '@models/User/Entity';
 import {
     ContactBroker,
-    contactTableName,
+    userContactTableName,
     NotificationStatus,
     notificationTableName,
-    NotificationType, subscriptionTableName, webHookTableName
+    NotificationType, userEventSubscriptionTableName, contractEventWebHookTableName
 } from "@models/Notification/Entity";
 import { tableName } from "@models/Queue/Entity";
 import { contractTableName } from "@models/Protocol/Entity";
 
 export default async (schema: SchemaBuilder) => {
-  await schema.createTable(contactTableName, (table) => {
+  await schema.createTable(userContactTableName, (table) => {
     table.string('id', 36).notNullable();
     table.string('user', 36).notNullable();
     table
@@ -33,7 +33,7 @@ export default async (schema: SchemaBuilder) => {
     table.dateTime('createdAt').notNullable();
     table.dateTime('activatedAt').nullable();
 
-    table.primary(['id'], `${contactTableName}_pkey`);
+    table.primary(['id'], `${userContactTableName}_pkey`);
     table
         .foreign('user')
         .references(`${userTableName}.id`)
@@ -78,18 +78,18 @@ export default async (schema: SchemaBuilder) => {
     table.primary(['id'], `${notificationTableName}_pkey`);
     table
       .foreign('contact')
-      .references(`${contactTableName}.id`)
+      .references(`${userContactTableName}.id`)
       .onUpdate('CASCADE')
       .onDelete('CASCADE');
   });
 
-  await schema.createTable(webHookTableName, (table) => {
+  await schema.createTable(contractEventWebHookTableName, (table) => {
     table.string('id', 36).notNullable();
     table.string('contract', 36).notNullable();
     table.string('event', 256).notNullable();
+    table.dateTime('createdAt').notNullable();
 
-
-    table.primary(['id'], `${webHookTableName}_pkey`);
+    table.primary(['id'], `${contractEventWebHookTableName}_pkey`);
     table
       .foreign('contract')
       .references(`${contractTableName}.id`)
@@ -97,28 +97,22 @@ export default async (schema: SchemaBuilder) => {
       .onDelete('CASCADE');
   });
 
-  await schema.createTable(subscriptionTableName, (table) => {
+  await schema.createTable(userEventSubscriptionTableName, (table) => {
     table.string('id', 36).notNullable();
-    table.string('user', 36).notNullable();
     table.string('webHook', 36).notNullable();
     table.string('contact', 36).notNullable();
     table.dateTime('createdAt').notNullable();
 
 
-    table.primary(['id'], `${subscriptionTableName}_pkey`);
-    table
-      .foreign('user')
-      .references(`${userTableName}.id`)
-      .onUpdate('CASCADE')
-      .onDelete('CASCADE');
+    table.primary(['id'], `${userEventSubscriptionTableName}_pkey`);
     table
       .foreign('webHook')
-      .references(`${webHookTableName}.id`)
+      .references(`${contractEventWebHookTableName}.id`)
       .onUpdate('CASCADE')
       .onDelete('CASCADE');
     table
       .foreign('contact')
-      .references(`${contactTableName}.id`)
+      .references(`${userContactTableName}.id`)
       .onUpdate('CASCADE')
       .onDelete('CASCADE');
   });

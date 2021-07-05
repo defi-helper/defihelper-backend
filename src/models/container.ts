@@ -2,6 +2,7 @@ import { resolve } from 'path';
 import { Container, singleton } from '@services/Container';
 import AppContainer from '@container';
 import * as Models from '@models/index';
+import {ContractEventWebHookService} from "@models/Notification/Service";
 
 export class ModelContainer extends Container<typeof AppContainer> {
   readonly migrationTable = Models.Migration.Entity.tableFactory(this.parent.database);
@@ -85,9 +86,9 @@ export class ModelContainer extends Container<typeof AppContainer> {
 
 
   readonly notificationTable = Models.Notification.Entity.notificationTableFactory(this.parent.database);
-  readonly contactTable = Models.Notification.Entity.contactTableFactory(this.parent.database);
-  readonly subscriptionTable = Models.Notification.Entity.subscriptionTableFactory(this.parent.database);
-  readonly webHookTable = Models.Notification.Entity.webHookTableFactory(this.parent.database);
+  readonly userContactTable = Models.Notification.Entity.userContactTableFactory(this.parent.database);
+  readonly userEventSubscriptionTable = Models.Notification.Entity.userEventSubscriptionTableFactory(this.parent.database);
+  readonly contractEventWebHookTable = Models.Notification.Entity.contractEventWebHookTableFactory(this.parent.database);
 
   readonly notificationService = singleton(
       () =>
@@ -95,22 +96,22 @@ export class ModelContainer extends Container<typeof AppContainer> {
               this.notificationTable,
           ),
   );
-  readonly contactService = singleton(
+  readonly userContactService = singleton(
       () =>
-          new Models.Notification.Service.ContactService(
-              this.contactTable,
+          new Models.Notification.Service.UserContactService(
+              this.userContactTable,
           ),
   );
-  readonly subscriptionService = singleton(
+  readonly userEventSubscriptionService = singleton(
       () =>
-          new Models.Notification.Service.SubscriptionService(
-              this.subscriptionTable,
+          new Models.Notification.Service.UserEventSubscriptionService(
+              this.userEventSubscriptionTable,
           ),
   );
-  readonly webHookService = singleton(
+  readonly contractEventWebHookService = singleton(
       () =>
-          new Models.Notification.Service.WebHookService(
-              this.webHookTable,
+          new Models.Notification.Service.ContractEventWebHookService(
+              this.contractEventWebHookTable,
           ),
   );
 }

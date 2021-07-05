@@ -1,18 +1,18 @@
 import {Factory} from '@services/Container';
 import {
-  Contact,
+  UserContact,
   ContactBroker,
   ContactStatus,
-  ContactTable,
+  UserContactTable,
   Notification,
   NotificationPayload,
   NotificationStatus,
   NotificationTable,
   NotificationType,
-  Subscription,
-  SubscriptionTable,
-  WebHook,
-  WebHookTable
+  UserEventSubscription,
+  UserEventSubscriptionTable,
+  ContractEventWebHook,
+  ContractEventWebHookTable
 } from './Entity';
 import {v4 as uuid} from "uuid";
 import {User} from "@models/User/Entity";
@@ -23,7 +23,7 @@ export class NotificationService {
     readonly table: Factory<NotificationTable> = table,
   ) {}
 
-  async create(contact: Contact, type: NotificationType, payload: NotificationPayload): Promise<Notification> {
+  async create(contact: UserContact, type: NotificationType, payload: NotificationPayload): Promise<Notification> {
     const created: Notification = {
       id: uuid(),
       contact: contact.id,
@@ -52,27 +52,22 @@ export class NotificationService {
 }
 
 
-export class ContactService {
+export class UserContactService {
   constructor(
-      readonly table: Factory<ContactTable> = table,
+      readonly table: Factory<UserContactTable> = table,
   ) {}
 
-
-  async find(user: User, type?: ContactBroker, address?: string): Promise<Contact[]> {
-    return this.table().where({
+  async create(user: User, type: ContactBroker, address: string): Promise<UserContact> {
+    const duplicates = await this.table().where({
       user: user.id,
-      ...(type ? { type } : {}),
-      ...(address ? { address } : {}),
+      type,
+      address,
     });
-  }
-
-  async create(user: User, type: ContactBroker, address: string): Promise<Contact> {
-    const duplicates = await this.find(user, type, address);
     if (duplicates.length > 0) {
       return duplicates[0];
     }
 
-    const created: Contact = {
+    const created: UserContact = {
       id: uuid(),
       user: user.id,
       type,
@@ -87,8 +82,8 @@ export class ContactService {
     return created;
   }
 
-  async activate(contact: Contact): Promise<Contact> {
-    const activated: Contact = {
+  async activate(contact: UserContact): Promise<UserContact> {
+    const activated: UserContact = {
       ...contact,
       status: ContactStatus.Active,
       activatedAt: new Date(),
@@ -99,29 +94,17 @@ export class ContactService {
     return activated;
   }
 
-  async delete(contact: Contact): Promise<void> {
+  async delete(contact: UserContact): Promise<void> {
     await this.table().delete(contact.id);
   }
 }
 
-export class SubscriptionService {
+export class UserEventSubscriptionService {
   constructor(
-      readonly table: Factory<SubscriptionTable> = table,
+      readonly table: Factory<UserEventSubscriptionTable> = table,
   ) {}
 
-  async findByUser(user: User): Promise<Subscription[]> {
-    return this.table().where({
-      user: user.id,
-    });
-  }
-
-  async findByWebHook(webHook: WebHook): Promise<Subscription[]> {
-    return this.table().where({
-      webHook: webHook.id,
-    });
-  }
-
-  async create(contact: Contact, webHook: WebHook): Promise<Subscription> {
+  async create(contact: UserContact, webHook: ContractEventWebHook): Promise<UserEventSubscription> {
     const duplicates = await this.table().where({
       contact: contact.id,
       webHook: webHook.id,
@@ -131,9 +114,8 @@ export class SubscriptionService {
       return duplicates[0];
     }
 
-    const created: Subscription = {
+    const created: UserEventSubscription = {
       id: uuid(),
-      user: contact.user,
       contact: contact.id,
       webHook: webHook.id,
       createdAt: new Date(),
@@ -144,17 +126,17 @@ export class SubscriptionService {
     return created;
   }
 
-  async delete(subscription: Subscription): Promise<void> {
+  async delete(subscription: UserEventSubscription): Promise<void> {
     await this.table().delete(subscription.id);
   }
 }
 
-export class WebHookService {
+export class ContractEventWebHookService {
   constructor(
-      readonly table: Factory<WebHookTable> = table,
+      readonly table: Factory<ContractEventWebHookTable> = table,
   ) {}
 
-  async create(contract: Contract, event: string): Promise<WebHook> {
+  async create(contract: Contract, event: string): Promise<ContractEventWebHook> {
     const duplicates = await this.table().where({
       contract: contract.id,
       event: event,
@@ -164,7 +146,7 @@ export class WebHookService {
       return duplicates[0];
     }
 
-    const created: WebHook = {
+    const created: ContractEventWebHook = {
       id: uuid(),
       contract: contract.id,
       event,
