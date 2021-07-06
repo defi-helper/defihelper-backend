@@ -27,6 +27,7 @@ import { Request } from 'express';
 import { ContractType } from '../protocol';
 import { User, Role } from '@models/User/Entity';
 import { Wallet } from '@models/Wallet/Entity';
+import { Blockchain } from '@models/types';
 
 const TokenAliasFilterInputType = new GraphQLInputObjectType({
   name: 'UserMetricsTokenAliasFilterInputType',
@@ -291,6 +292,138 @@ export const WalletType = new GraphQLObjectType<Wallet>({
   },
 });
 
+export const UserBlockchainType = new GraphQLObjectType<{
+  blockchain: Blockchain;
+  network: string;
+  user: User;
+}>({
+  name: 'UserBlockchainType',
+  fields: {
+    name: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    blockchain: {
+      type: GraphQLNonNull(BlockchainEnum),
+      description: 'Blockchain type',
+    },
+    network: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Blockchain network id',
+    },
+    wallets: {
+      type: GraphQLNonNull(
+        PaginateList('UserBlockchainWalletListType', GraphQLNonNull(WalletType)),
+      ),
+      args: {
+        filter: {
+          type: new GraphQLInputObjectType({
+            name: 'UserBlockchainWalletListFilterInputType',
+            fields: {
+              search: {
+                type: GraphQLString,
+              },
+            },
+          }),
+          defaultValue: {},
+        },
+        sort: SortArgument(
+          'UserBlockchainWalletListSortInputType',
+          ['id', 'address', 'createdAt'],
+          [{ column: 'createdAt', order: 'asc' }],
+        ),
+        pagination: PaginationArgument('UserBlockchainWalletListPaginationInputType'),
+      },
+      resolve: async ({ user, blockchain, network }, { filter, sort, pagination }) => {
+        let select = container.model
+          .walletTable()
+          .where('user', user.id)
+          .andWhere('blockchain', blockchain)
+          .andWhere('network', network);
+        if (filter.search !== undefined && filter.search !== '') {
+          select = select.andWhere('address', 'iLike', `%${filter.search}%`);
+        }
+
+        return {
+          list: await select
+            .clone()
+            .orderBy(sort)
+            .limit(pagination.limit)
+            .offset(pagination.offset),
+          pagination: {
+            count: await select.clone().count().first(),
+          },
+        };
+      },
+    },
+    tokenMetricChart: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(MetricChartType))),
+      args: {
+        metric: {
+          type: GraphQLNonNull(MetricColumnType),
+          description: 'Metric column',
+        },
+        group: {
+          type: GraphQLNonNull(MetricGroupEnum),
+          description: 'Truncate date mode',
+        },
+        filter: {
+          type: new GraphQLInputObjectType({
+            name: 'UserBlockchainWalletTokenMetricChartFilterInputType',
+            fields: {
+              dateAfter: {
+                type: DateTimeType,
+                description: 'Created at equals or greater',
+              },
+              dateBefore: {
+                type: DateTimeType,
+                description: 'Created at less',
+              },
+            },
+          }),
+          defaultValue: {},
+        },
+        sort: SortArgument(
+          'UserBlockchainWalletTokenMetricChartSortInputType',
+          ['date', 'value'],
+          [{ column: 'date', order: 'asc' }],
+        ),
+        pagination: PaginationArgument('UserBlockchainWalletTokenMetricChartPaginationInputType'),
+      },
+      resolve: async (
+        { user, blockchain, network },
+        { metric, group, filter, sort, pagination },
+      ) => {
+        const walletSelect = container.model
+          .walletTable()
+          .columns('id')
+          .where('user', user.id)
+          .andWhere('blockchain', blockchain)
+          .andWhere('network', network);
+
+        return metricsChartSelector(
+          container.model
+            .metricWalletTokenTable()
+            .where(function () {
+              this.whereIn('wallet', walletSelect);
+              if (filter.dateAfter) {
+                this.andWhere('date', '>=', filter.dateAfter.toDate());
+              }
+              if (filter.dateBefore) {
+                this.andWhere('date', '<', filter.dateBefore.toDate());
+              }
+            })
+            .groupBy('token'),
+          group,
+          metric,
+        )
+          .orderBy(sort)
+          .limit(pagination.limit)
+          .offset(pagination.offset);
+      },
+    },
+  },
+});
+
 export const RoleType = new GraphQLEnumType({
   name: 'UserRoleEnum',
   values: {
@@ -302,6 +435,12 @@ export const RoleType = new GraphQLEnumType({
     },
   },
 });
+
+const blockchainNameMap = new Map([
+  ['ethereum:1', 'Ethereum'],
+  ['ethereum:56', 'Binance Smart Chain'],
+  ['waves:main', 'Waves'],
+]);
 
 export const UserType = new GraphQLObjectType<User>({
   name: 'UserType',
@@ -361,6 +500,27 @@ export const UserType = new GraphQLObjectType<User>({
             count: await select.clone().count().first(),
           },
         };
+      },
+    },
+    blockchains: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(UserBlockchainType))),
+      resolve: async (user) => {
+        const blockchains = await container.model
+          .walletTable()
+          .column('blockchain')
+          .column('network')
+          .where('user', user.id)
+          .groupBy('blockchain', 'network');
+
+        return blockchains.map(({ blockchain, network }) => {
+          const key = `${blockchain}:${network}`;
+          return {
+            blockchain,
+            network,
+            name: blockchainNameMap.get(key) ?? key,
+            user,
+          };
+        });
       },
     },
     metricChart: {
