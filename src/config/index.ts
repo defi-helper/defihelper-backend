@@ -21,7 +21,9 @@ export default {
   blockchain: {
     ethereum: {
       ethMainNode: process.env.ETH_NODE ?? '',
+      ethMainAvgBlockTime: 13.2,
       bscMainNode: process.env.BSC_NODE ?? '',
+      bscMainAvgBlockTime: 3,
     },
   },
   session: {

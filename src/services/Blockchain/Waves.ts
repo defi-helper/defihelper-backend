@@ -7,7 +7,7 @@ export interface Config {
 
 export class BlockchainContainer extends Container<Config> {
   readonly provider = {
-    main: this.parent.mainNode,
-    test: this.parent.testNode,
+    main: singleton(() => this.parent.mainNode),
+    test: singleton(() => this.parent.testNode),
   };
 }

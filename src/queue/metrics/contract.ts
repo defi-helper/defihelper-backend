@@ -1,13 +1,16 @@
+import { BlockchainEnum } from '@api/schema/types';
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import { Factory } from '@services/Container';
+import dayjs from 'dayjs';
 
 export interface Params {
   contract: string;
+  blockNumber: string;
 }
 
 export default async (process: Process) => {
-  const { contract: contractId } = process.task.params as Params;
+  const { contract: contractId, blockNumber } = process.task.params as Params;
   const contract = await container.model.contractTable().where('id', contractId).first();
   if (!contract) throw new Error('Contract not found');
 
@@ -26,12 +29,21 @@ export default async (process: Process) => {
   const providerFactory = blockchain.provider[
     contract.network as keyof typeof blockchain.provider
   ] as Factory<any>;
+  const provider = providerFactory();
 
-  const contractAdapterData = await contractAdapterFactory(providerFactory(), contract.address);
+  let date = new Date();
+  if (contract.blockchain === 'ethereum' && blockNumber !== 'latest') {
+    const block = await provider.getBlock(parseInt(blockNumber, 10));
+    date = dayjs.unix(block.timestamp).toDate();
+  }
+
+  const contractAdapterData = await contractAdapterFactory(providerFactory(), contract.address, {
+    blockNumber,
+  });
   if (!contractAdapterData.metrics) return process.done();
 
   const metrics = contractAdapterData.metrics;
-  await metricService.createContract(contract, metrics, new Date());
+  await metricService.createContract(contract, metrics, date);
 
   return process.done();
 };

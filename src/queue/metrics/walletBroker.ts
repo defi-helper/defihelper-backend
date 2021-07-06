@@ -6,7 +6,11 @@ export default async (process: Process) => {
   const links = await container.model.walletContractLinkTable();
   await Promise.all(
     links.map(async (link) => {
-      queue.push('metricsWallet', { contract: link.contract, wallet: link.wallet });
+      queue.push('metricsWallet', {
+        contract: link.contract,
+        wallet: link.wallet,
+        blockNumber: 'latest',
+      });
     }),
   );
 

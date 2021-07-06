@@ -58,6 +58,10 @@ export const ContractType = new GraphQLObjectType<Contract>({
       type: GraphQLNonNull(GraphQLString),
       description: 'Address',
     },
+    deployBlockNumber: {
+      type: GraphQLString,
+      description: 'Contract deployment block number',
+    },
     name: {
       type: GraphQLNonNull(GraphQLString),
       description: 'Name',
@@ -168,6 +172,11 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
               type: GraphQLNonNull(GraphQLString),
               description: 'Adapter name',
             },
+            deployBlockNumber: {
+              type: GraphQLString,
+              description: 'Contract deployment block number',
+              defaultValue: null,
+            },
             layout: {
               type: GraphQLNonNull(GraphQLString),
               description: 'Layout name',
@@ -203,8 +212,18 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
     const protocol = await container.model.protocolTable().where('id', protocolId).first();
     if (!protocol) throw new UserInputError('Protocol not found');
 
-    const { blockchain, network, address, adapter, layout, name, description, link, hidden } =
-      input;
+    const {
+      blockchain,
+      network,
+      address,
+      deployBlockNumber,
+      adapter,
+      layout,
+      name,
+      description,
+      link,
+      hidden,
+    } = input;
     const created = await container.model
       .contractService()
       .create(
@@ -212,6 +231,7 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
         blockchain,
         network,
         address,
+        deployBlockNumber,
         adapter,
         layout,
         name,
@@ -246,6 +266,10 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
             address: {
               type: GraphQLString,
               description: 'Address',
+            },
+            deployBlockNumber: {
+              type: GraphQLString,
+              description: 'Contract deployment block number',
             },
             adapter: {
               type: GraphQLString,
@@ -287,13 +311,25 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
     const contract = await contractService.contractTable().where('id', id).first();
     if (!contract) throw new UserInputError('Contract not found');
 
-    const { blockchain, network, address, adapter, layout, name, description, link, hidden } =
-      input;
+    const {
+      blockchain,
+      network,
+      address,
+      deployBlockNumber,
+      adapter,
+      layout,
+      name,
+      description,
+      link,
+      hidden,
+    } = input;
     const updated = await contractService.update({
       ...contract,
       blockchain: (typeof blockchain === 'string' ? blockchain : contract.blockchain) as Blockchain,
       network: typeof network === 'string' ? network : contract.network,
       address: typeof address === 'string' ? address : contract.address,
+      deployBlockNumber:
+        typeof deployBlockNumber === 'string' ? deployBlockNumber : contract.deployBlockNumber,
       adapter: typeof adapter === 'string' ? adapter : contract.adapter,
       layout: typeof layout === 'string' ? layout : contract.layout,
       name: typeof name === 'string' ? name : contract.name,

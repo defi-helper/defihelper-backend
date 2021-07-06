@@ -25,6 +25,7 @@ export interface Contract {
   blockchain: Blockchain;
   network: string;
   address: string;
+  deployBlockNumber: string | null;
   adapter: string;
   layout: string;
   name: string;

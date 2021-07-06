@@ -1,14 +1,16 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import { Factory } from '@services/Container';
+import dayjs from 'dayjs';
 
 export interface Params {
   contract: string;
   wallet: string;
+  blockNumber: string;
 }
 
 export default async (process: Process) => {
-  const { contract: contractId, wallet: walletId } = process.task.params as Params;
+  const { contract: contractId, wallet: walletId, blockNumber } = process.task.params as Params;
   const contract = await container.model.contractTable().where('id', contractId).first();
   if (!contract) throw new Error('Contract not found');
 
@@ -33,20 +35,34 @@ export default async (process: Process) => {
   const providerFactory = blockchain.provider[
     contract.network as keyof typeof blockchain.provider
   ] as Factory<any>;
+  const provider = providerFactory();
 
-  const contractAdapterData = await contractAdapterFactory(providerFactory(), contract.address);
+  let date = new Date();
+  if (contract.blockchain === 'ethereum' && blockNumber !== 'latest') {
+    const block = await provider.getBlock(parseInt(blockNumber, 10));
+    date = dayjs.unix(block.timestamp).toDate();
+  }
+
+  const contractAdapterData = await contractAdapterFactory(providerFactory(), contract.address, {
+    blockNumber,
+  });
   if (!contractAdapterData.wallet) return process.done();
 
   const walletAdapterData = await contractAdapterData.wallet(wallet.address);
-  if (!walletAdapterData.metrics) return process.done();
-  await metricService.createWallet(contract, wallet, walletAdapterData.metrics, new Date());
+  if (
+    typeof walletAdapterData.metrics === 'object' &&
+    Object.keys(walletAdapterData.metrics).length > 0
+  ) {
+    await metricService.createWallet(contract, wallet, walletAdapterData.metrics, date);
+  }
 
-  if (!walletAdapterData.tokens) return process.done();
-  await Promise.all(
-    Object.entries(walletAdapterData.tokens).map(([token, metric]) =>
-      metricService.createToken(contract, wallet, token, metric, new Date()),
-    ),
-  );
+  if (Array.isArray(walletAdapterData.tokens) && walletAdapterData.tokens.length > 0) {
+    await Promise.all(
+      Object.entries(walletAdapterData.tokens).map(([token, metric]) =>
+        metricService.createToken(contract, wallet, token, metric, date),
+      ),
+    );
+  }
 
   return process.done();
 };

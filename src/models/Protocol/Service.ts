@@ -1,6 +1,8 @@
+import container from '@container';
 import { Blockchain } from '@models/types';
 import { Wallet } from '@models/Wallet/Entity';
 import { Factory } from '@services/Container';
+import { Emitter } from '@services/Event';
 import { v4 as uuid } from 'uuid';
 import {
   Protocol,
@@ -8,6 +10,7 @@ import {
   Contract,
   ContractTable,
   WalletContractLinkTable,
+  WalletContractLink,
 } from './Entity';
 
 export class ProtocolService {
@@ -53,6 +56,36 @@ export class ProtocolService {
 }
 
 export class ContractService {
+  public readonly onCreated = new Emitter<Contract>((contract) => {
+    if (
+      !(contract.blockchain === 'ethereum' && contract.network === '1') ||
+      contract.deployBlockNumber === null ||
+      contract.deployBlockNumber === '0'
+    ) {
+      return;
+    }
+
+    return container.model.queueService().push('metricsContractHistory', { contract: contract.id });
+  });
+
+  public readonly onWalletLink = new Emitter<{
+    contract: Contract;
+    wallet: Wallet;
+    link: WalletContractLink;
+  }>(({ contract, link }) => {
+    if (
+      !(contract.blockchain === 'ethereum' && contract.network === '1') ||
+      contract.deployBlockNumber === null ||
+      contract.deployBlockNumber === '0'
+    ) {
+      return;
+    }
+
+    return container.model
+      .queueService()
+      .push('metricsWalletHistory', { contract: link.contract, wallet: link.wallet });
+  });
+
   constructor(
     readonly contractTable: Factory<ContractTable> = contractTable,
     readonly walletLinkTable: Factory<WalletContractLinkTable> = walletLinkTable,
@@ -63,6 +96,7 @@ export class ContractService {
     blockchain: Blockchain,
     network: string,
     address: string,
+    deployBlockNumber: string | null,
     adapter: string,
     layout: string,
     name: string,
@@ -76,6 +110,7 @@ export class ContractService {
       blockchain,
       network,
       address,
+      deployBlockNumber,
       adapter,
       layout,
       name,
@@ -86,6 +121,7 @@ export class ContractService {
       updatedAt: new Date(),
     };
     await this.contractTable().insert(created);
+    this.onCreated.emit(created);
 
     return created;
   }
@@ -118,6 +154,7 @@ export class ContractService {
       createdAt: new Date(),
     };
     await this.walletLinkTable().insert(created);
+    this.onWalletLink.emit({ contract, wallet, link: created });
 
     return created;
   }

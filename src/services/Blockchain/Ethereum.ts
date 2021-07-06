@@ -36,13 +36,20 @@ function providerFactory(host: string) {
 
 export interface Config {
   ethMainNode: string;
+  ethMainAvgBlockTime: number;
   bscMainNode: string;
+  bscMainAvgBlockTime: number;
 }
 
 export class BlockchainContainer extends Container<Config> {
   readonly provider = {
     '1': singleton(providerFactory(this.parent.ethMainNode)),
     '56': singleton(providerFactory(this.parent.bscMainNode)),
+  };
+
+  readonly avgBlockTime = {
+    '1': this.parent.ethMainAvgBlockTime,
+    '56': this.parent.bscMainAvgBlockTime,
   };
 
   readonly etherscan = singleton(() => ({

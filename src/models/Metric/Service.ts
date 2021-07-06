@@ -11,7 +11,7 @@ import { Wallet } from '@models/Wallet/Entity';
 import axios from 'axios';
 import vm from 'vm';
 
-export interface MetricData extends Object{
+export interface MetricData extends Object {
   metrics?: MetricMap;
 }
 
@@ -27,8 +27,12 @@ export interface ContractData extends MetricData {
   wallet?: (wallet: string) => Promise<WalletData>;
 }
 
+export interface ContractAdapterOptions {
+  blockNumber?: number | string;
+}
+
 export interface ContractAdapter {
-  (provider: any, contract: string): Promise<ContractData>;
+  (provider: any, contract: string, options: ContractAdapterOptions): Promise<ContractData>;
 }
 
 export interface ProtocolAdapter {
