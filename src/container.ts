@@ -7,6 +7,8 @@ import { I18nContainer } from '@services/I18n/container';
 import { ModelContainer } from '@models/container';
 import { redisConnectFactory } from '@services/Cache';
 import { ACLContainer } from '@services/ACL/container';
+import { emailServiceFactory } from "@services/Email";
+import { telegramServiceFactory } from "@services/Telegram";
 
 class AppContainer extends Container<typeof config> {
   readonly logger = singleton(consoleFactory());
@@ -14,6 +16,10 @@ class AppContainer extends Container<typeof config> {
   readonly database = singleton(pgConnectFactory(this.parent.database));
 
   readonly cache = singleton(redisConnectFactory(this.parent.cache));
+
+  readonly email = singleton(emailServiceFactory(this.parent.email));
+
+  readonly telegram = singleton(telegramServiceFactory(this.parent.telegram.token));
 
   readonly blockchain = {
     ethereum: new Blockchain.Ethereum.BlockchainContainer(this.parent.blockchain.ethereum),
