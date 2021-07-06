@@ -2,6 +2,7 @@ import { resolve } from 'path';
 import { Container, singleton } from '@services/Container';
 import AppContainer from '@container';
 import * as Models from '@models/index';
+import {ContractEventWebHookService} from "@models/Notification/Service";
 
 export class ModelContainer extends Container<typeof AppContainer> {
   readonly migrationTable = Models.Migration.Entity.tableFactory(this.parent.database);
@@ -81,5 +82,36 @@ export class ModelContainer extends Container<typeof AppContainer> {
         this.metricWalletTokenTable,
         this.parent.parent.adapters.host,
       ),
+  );
+
+
+  readonly notificationTable = Models.Notification.Entity.notificationTableFactory(this.parent.database);
+  readonly userContactTable = Models.Notification.Entity.userContactTableFactory(this.parent.database);
+  readonly userEventSubscriptionTable = Models.Notification.Entity.userEventSubscriptionTableFactory(this.parent.database);
+  readonly contractEventWebHookTable = Models.Notification.Entity.contractEventWebHookTableFactory(this.parent.database);
+
+  readonly notificationService = singleton(
+      () =>
+          new Models.Notification.Service.NotificationService(
+              this.notificationTable,
+          ),
+  );
+  readonly userContactService = singleton(
+      () =>
+          new Models.Notification.Service.UserContactService(
+              this.userContactTable,
+          ),
+  );
+  readonly userEventSubscriptionService = singleton(
+      () =>
+          new Models.Notification.Service.UserEventSubscriptionService(
+              this.userEventSubscriptionTable,
+          ),
+  );
+  readonly contractEventWebHookService = singleton(
+      () =>
+          new Models.Notification.Service.ContractEventWebHookService(
+              this.contractEventWebHookTable,
+          ),
   );
 }
