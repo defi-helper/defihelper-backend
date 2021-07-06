@@ -1,4 +1,3 @@
-import { BlockchainEnum } from '@api/schema/types';
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import { Factory } from '@services/Container';
@@ -40,10 +39,12 @@ export default async (process: Process) => {
   const contractAdapterData = await contractAdapterFactory(providerFactory(), contract.address, {
     blockNumber,
   });
-  if (!contractAdapterData.metrics) return process.done();
-
-  const metrics = contractAdapterData.metrics;
-  await metricService.createContract(contract, metrics, date);
+  if (
+    typeof contractAdapterData.metrics === 'object' &&
+    Object.keys(contractAdapterData.metrics).length > 0
+  ) {
+    await metricService.createContract(contract, contractAdapterData.metrics, date);
+  }
 
   return process.done();
 };

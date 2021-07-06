@@ -1,4 +1,5 @@
 import { Container, singleton } from '@services/Container';
+import { isKey } from '@services/types';
 import axios from 'axios';
 import { ethers } from 'ethers';
 
@@ -42,6 +43,17 @@ export interface Config {
 }
 
 export class BlockchainContainer extends Container<Config> {
+  readonly byNetwork = (network: string | number) => {
+    network = network.toString();
+    const provider = isKey(this.provider, network) ? this.provider[network] : null;
+    const avgBlockTime = isKey(this.avgBlockTime, network) ? this.avgBlockTime[network] : null;
+
+    return {
+      provider,
+      avgBlockTime,
+    };
+  };
+
   readonly provider = {
     '1': singleton(providerFactory(this.parent.ethMainNode)),
     '56': singleton(providerFactory(this.parent.bscMainNode)),

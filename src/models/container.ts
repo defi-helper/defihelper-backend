@@ -2,7 +2,7 @@ import { resolve } from 'path';
 import { Container, singleton } from '@services/Container';
 import AppContainer from '@container';
 import * as Models from '@models/index';
-import {ContractEventWebHookService} from "@models/Notification/Service";
+import { ContractEventWebHookService } from '@models/Notification/Service';
 
 export class ModelContainer extends Container<typeof AppContainer> {
   readonly migrationTable = Models.Migration.Entity.tableFactory(this.parent.database);
@@ -56,6 +56,16 @@ export class ModelContainer extends Container<typeof AppContainer> {
       new Models.Protocol.Service.ContractService(this.contractTable, this.walletContractLinkTable),
   );
 
+  readonly tokenAliasTable = Models.Token.Entity.tokenAliasTableFactory(this.parent.database);
+
+  readonly tokenAliasService = singleton(
+    () => new Models.Token.Service.TokenAliasService(this.tokenAliasTable),
+  );
+
+  readonly tokenTable = Models.Token.Entity.tokenTableFactory(this.parent.database);
+
+  readonly tokenService = singleton(() => new Models.Token.Service.TokenService(this.tokenTable));
+
   readonly proposalTable = Models.Proposal.Entity.proposalTableFactory(this.parent.database);
 
   readonly voteTable = Models.Proposal.Entity.voteTableFactory(this.parent.database);
@@ -84,34 +94,30 @@ export class ModelContainer extends Container<typeof AppContainer> {
       ),
   );
 
-
-  readonly notificationTable = Models.Notification.Entity.notificationTableFactory(this.parent.database);
-  readonly userContactTable = Models.Notification.Entity.userContactTableFactory(this.parent.database);
-  readonly userEventSubscriptionTable = Models.Notification.Entity.userEventSubscriptionTableFactory(this.parent.database);
-  readonly contractEventWebHookTable = Models.Notification.Entity.contractEventWebHookTableFactory(this.parent.database);
+  readonly notificationTable = Models.Notification.Entity.notificationTableFactory(
+    this.parent.database,
+  );
+  readonly userContactTable = Models.Notification.Entity.userContactTableFactory(
+    this.parent.database,
+  );
+  readonly userEventSubscriptionTable =
+    Models.Notification.Entity.userEventSubscriptionTableFactory(this.parent.database);
+  readonly contractEventWebHookTable = Models.Notification.Entity.contractEventWebHookTableFactory(
+    this.parent.database,
+  );
 
   readonly notificationService = singleton(
-      () =>
-          new Models.Notification.Service.NotificationService(
-              this.notificationTable,
-          ),
+    () => new Models.Notification.Service.NotificationService(this.notificationTable),
   );
   readonly userContactService = singleton(
-      () =>
-          new Models.Notification.Service.UserContactService(
-              this.userContactTable,
-          ),
+    () => new Models.Notification.Service.UserContactService(this.userContactTable),
   );
   readonly userEventSubscriptionService = singleton(
-      () =>
-          new Models.Notification.Service.UserEventSubscriptionService(
-              this.userEventSubscriptionTable,
-          ),
+    () =>
+      new Models.Notification.Service.UserEventSubscriptionService(this.userEventSubscriptionTable),
   );
   readonly contractEventWebHookService = singleton(
-      () =>
-          new Models.Notification.Service.ContractEventWebHookService(
-              this.contractEventWebHookTable,
-          ),
+    () =>
+      new Models.Notification.Service.ContractEventWebHookService(this.contractEventWebHookTable),
   );
 }

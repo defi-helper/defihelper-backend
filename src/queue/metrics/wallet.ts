@@ -40,6 +40,7 @@ export default async (process: Process) => {
   let date = new Date();
   if (contract.blockchain === 'ethereum' && blockNumber !== 'latest') {
     const block = await provider.getBlock(parseInt(blockNumber, 10));
+    if (block === null) throw new Error('Invalid block number');
     date = dayjs.unix(block.timestamp).toDate();
   }
 
@@ -56,11 +57,35 @@ export default async (process: Process) => {
     await metricService.createWallet(contract, wallet, walletAdapterData.metrics, date);
   }
 
-  if (Array.isArray(walletAdapterData.tokens) && walletAdapterData.tokens.length > 0) {
+  const tokenService = container.model.tokenService();
+  if (
+    typeof walletAdapterData.tokens === 'object' &&
+    Object.keys(walletAdapterData.tokens).length > 0
+  ) {
     await Promise.all(
-      Object.entries(walletAdapterData.tokens).map(([token, metric]) =>
-        metricService.createToken(contract, wallet, token, metric, date),
-      ),
+      Object.entries(walletAdapterData.tokens).map(async ([tokenAddress, metric]) => {
+        await metricService.createToken(contract, wallet, tokenAddress, metric, date);
+
+        const tokenDuplicate = await tokenService
+          .table()
+          .where({
+            blockchain: wallet.blockchain,
+            network: wallet.network,
+            address: tokenAddress,
+          })
+          .first();
+        if (!tokenDuplicate) {
+          await tokenService.create(
+            null,
+            wallet.blockchain,
+            wallet.network,
+            tokenAddress,
+            '',
+            '',
+            0,
+          );
+        }
+      }),
     );
   }
 

@@ -17,6 +17,7 @@ import {
   MetricChartType,
   MetricColumnType,
   MetricGroupEnum,
+  metricsChartSelector,
   PaginateList,
   PaginationArgument,
   SortArgument,
@@ -113,28 +114,22 @@ export const ContractType = new GraphQLObjectType<Contract>({
         pagination: PaginationArgument('ContractMetricChartPaginationInputType'),
       },
       resolve: async (contract, { metric, group, filter, sort, pagination }) => {
-        const database = container.database();
-        let select = container.model
-          .metricContractTable()
-          .column(database.raw(`DATE_TRUNC('${group}', "date") AS "date"`))
-          .column(database.raw(`COUNT((data->>'${metric}')::numeric) AS "count"`))
-          .column(database.raw(`SUM((data->>'${metric}')::numeric) AS "sum"`))
-          .column(database.raw(`AVG((data->>'${metric}')::numeric) AS "avg"`))
-          .column(database.raw(`MAX((data->>'${metric}')::numeric) AS "max"`))
-          .column(database.raw(`MIN((data->>'${metric}')::numeric) AS "min"`))
-          .where('contract', contract.id)
-          .groupBy('date')
+        return metricsChartSelector(
+          container.model.metricContractTable().where(function () {
+            this.where('contract', contract.id);
+            if (filter.dateAfter) {
+              this.andWhere('date', '>=', filter.dateAfter.toDate());
+            }
+            if (filter.dateBefore) {
+              this.andWhere('date', '<', filter.dateBefore.toDate());
+            }
+          }),
+          group,
+          metric,
+        )
           .orderBy(sort)
           .limit(pagination.limit)
           .offset(pagination.offset);
-        if (filter.dateAfter) {
-          select = select.andWhere('date', '>=', filter.dateAfter.toDate());
-        }
-        if (filter.dateBefore) {
-          select = select.andWhere('date', '<', filter.dateBefore.toDate());
-        }
-
-        return await select;
       },
     },
     createdAt: {
@@ -557,40 +552,36 @@ export const ProtocolType = new GraphQLObjectType<Protocol>({
         pagination: PaginationArgument('ProtocolMetricChartPaginationInputType'),
       },
       resolve: async (protocol, { metric, group, filter, sort, pagination }) => {
-        const database = container.database();
-        let contractSelect = container.model
+        const contractSelect = container.model
           .contractTable()
           .columns('id')
-          .where('protocol', protocol.id);
-        if (filter.blockchain) {
-          const { protocol, network } = filter.blockchain;
-          contractSelect = contractSelect.andWhere('blockchain', protocol);
-          if (network !== undefined) {
-            contractSelect = contractSelect.andWhere('network', network);
-          }
-        }
+          .where(function () {
+            this.where('protocol', protocol.id);
+            if (filter.blockchain) {
+              const { protocol, network } = filter.blockchain;
+              this.andWhere('blockchain', protocol);
+              if (network !== undefined) {
+                this.andWhere('network', network);
+              }
+            }
+          });
 
-        let select = container.model
-          .metricContractTable()
-          .column(database.raw(`DATE_TRUNC('${group}', "date") AS "date"`))
-          .column(database.raw(`COUNT((data->>'${metric}')::numeric) AS "count"`))
-          .column(database.raw(`SUM((data->>'${metric}')::numeric) AS "sum"`))
-          .column(database.raw(`AVG((data->>'${metric}')::numeric) AS "avg"`))
-          .column(database.raw(`MAX((data->>'${metric}')::numeric) AS "max"`))
-          .column(database.raw(`MIN((data->>'${metric}')::numeric) AS "min"`))
-          .whereIn('contract', contractSelect)
-          .groupBy('date')
+        return metricsChartSelector(
+          container.model.metricContractTable().where(function () {
+            this.whereIn('contract', contractSelect);
+            if (filter.dateAfter) {
+              this.andWhere('date', '>=', filter.dateAfter.toDate());
+            }
+            if (filter.dateBefore) {
+              this.andWhere('date', '<', filter.dateBefore.toDate());
+            }
+          }),
+          group,
+          metric,
+        )
           .orderBy(sort)
           .limit(pagination.limit)
           .offset(pagination.offset);
-        if (filter.dateAfter) {
-          select = select.andWhere('date', '>=', filter.dateAfter.toDate());
-        }
-        if (filter.dateBefore) {
-          select = select.andWhere('date', '<', filter.dateBefore.toDate());
-        }
-
-        return await select;
       },
     },
     createdAt: {

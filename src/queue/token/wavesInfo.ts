@@ -1,10 +1,13 @@
 import { Process } from '@models/Queue/Entity';
 
 export interface Params {
-  id: string;
+  token: string;
 }
 
 export default async (process: Process) => {
-  console.log(process.task.params);
+  const { token: tokenId } = process.task.params as Params;
+
+  // todo: implement
+
   return process.done();
 };
