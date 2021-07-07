@@ -12,9 +12,13 @@ import {
   GraphQLList,
   GraphQLInputObjectType,
   GraphQLArgumentConfig,
+  GraphQLFieldResolver,
+  GraphQLResolveInfo,
 } from 'graphql';
 import container from '@container';
+import { Request } from 'express';
 import { QueryBuilder } from 'knex';
+import { ForbiddenError } from 'apollo-server-express';
 
 export class GraphQLParseError extends GraphQLError {
   constructor(type: string, value: any) {
@@ -234,3 +238,15 @@ export const metricsChartSelector = (
     )
     .groupBy('date');
 };
+
+export function onlyAllowed<TSource, TArgs = { [argName: string]: any }>(
+  flag: string,
+  wrapped: GraphQLFieldResolver<TSource, Request, TArgs>,
+) {
+  const [resource, permission] = flag.split('.');
+  return (source: TSource, args: TArgs, context: Request, info: GraphQLResolveInfo) => {
+    if (!context.acl.isAllowed(resource, permission)) throw new ForbiddenError('FORBIDDEN');
+
+    return wrapped(source, args, context, info);
+  };
+}

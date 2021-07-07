@@ -7,13 +7,19 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from 'graphql';
-import { DateTimeType, PaginateList, PaginationArgument, SortArgument, UuidType } from '../types';
+import {
+  DateTimeType,
+  PaginateList,
+  PaginationArgument,
+  SortArgument,
+  UuidType,
+  onlyAllowed,
+} from '../types';
 import { UserType } from '@api/schema/user';
-import { Status, Proposal, Vote, proposalTableFactory } from '@models/Proposal/Entity';
+import { Status, Proposal, Vote } from '@models/Proposal/Entity';
 import container from '@container';
 import { Request } from 'express';
 import { AuthenticationError, ForbiddenError, UserInputError } from 'apollo-server-express';
-import { Role } from '@models/User/Entity';
 
 export const VoteType = new GraphQLObjectType<Vote>({
   name: 'VoteType',
@@ -256,14 +262,14 @@ export const ProposalCreateMutation: GraphQLFieldConfig<any, Request> = {
       ),
     },
   },
-  resolve: async (root, { input }, { currentUser }) => {
+  resolve: onlyAllowed('proposal.create', async (root, { input }, { currentUser }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
     const { title, description } = input;
     const created = await container.model.proposalService().create(title, description, currentUser);
 
     return created;
-  },
+  }),
 };
 
 export const ProposalUpdateMutation: GraphQLFieldConfig<any, Request> = {
@@ -294,18 +300,21 @@ export const ProposalUpdateMutation: GraphQLFieldConfig<any, Request> = {
       ),
     },
   },
-  resolve: async (root, { id, input }, { currentUser }) => {
+  resolve: async (root, { id, input }, { currentUser, acl }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
     const proposalService = container.model.proposalService();
     const proposal = await proposalService.proposalTable().where('id', id).first();
     if (!proposal) throw new UserInputError('Proposal not found');
-    if (proposal.author !== currentUser.id && currentUser.role !== Role.Admin) {
+    if (
+      !(proposal.author === currentUser.id && acl.isAllowed('proposal', 'update-own')) ||
+      !acl.isAllowed('proposal', 'update')
+    ) {
       throw new ForbiddenError('FORBIDDEN');
     }
 
     const { title, description, status } = input;
-    if (status !== undefined && currentUser.role !== Role.Admin) {
+    if (status !== undefined && !acl.isAllowed('proposal', 'update')) {
       throw new ForbiddenError('FORBIDDEN');
     }
     const updated = await proposalService.update({
@@ -326,9 +335,8 @@ export const ProposalDeleteMutation: GraphQLFieldConfig<any, Request> = {
       type: GraphQLNonNull(UuidType),
     },
   },
-  resolve: async (root, { id }, { currentUser }) => {
+  resolve: onlyAllowed('proposal.delete', async (root, { id }, { currentUser }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
-    if (currentUser.role !== Role.Admin) throw new ForbiddenError('FORBIDDEN');
 
     const proposalService = container.model.proposalService();
     const proposal = await proposalService.proposalTable().where('id', id).first();
@@ -337,5 +345,5 @@ export const ProposalDeleteMutation: GraphQLFieldConfig<any, Request> = {
     await proposalService.delete(proposal);
 
     return true;
-  },
+  }),
 };

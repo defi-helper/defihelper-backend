@@ -28,6 +28,7 @@ import { ContractType } from '../protocol';
 import { User, Role } from '@models/User/Entity';
 import { Wallet } from '@models/Wallet/Entity';
 import { Blockchain } from '@models/types';
+import * as locales from '../../../locales';
 
 const TokenAliasFilterInputType = new GraphQLInputObjectType({
   name: 'UserMetricsTokenAliasFilterInputType',
@@ -168,18 +169,21 @@ export const WalletType = new GraphQLObjectType<Wallet>({
       },
       resolve: async (wallet, { metric, group, filter, sort, pagination }) => {
         return metricsChartSelector(
-          container.model.metricWalletTable().where(function () {
-            this.where('wallet', wallet.id);
-            if (filter.contract) {
-              this.whereIn('contract', filter.contract);
-            }
-            if (filter.dateAfter) {
-              this.andWhere('date', '>=', filter.dateAfter.toDate());
-            }
-            if (filter.dateBefore) {
-              this.andWhere('date', '<', filter.dateBefore.toDate());
-            }
-          }),
+          container.model
+            .metricWalletTable()
+            .where(function () {
+              this.where('wallet', wallet.id);
+              if (filter.contract) {
+                this.whereIn('contract', filter.contract);
+              }
+              if (filter.dateAfter) {
+                this.andWhere('date', '>=', filter.dateAfter.toDate());
+              }
+              if (filter.dateBefore) {
+                this.andWhere('date', '<', filter.dateBefore.toDate());
+              }
+            })
+            .groupBy('contract'),
           group,
           metric,
         )
@@ -276,7 +280,7 @@ export const WalletType = new GraphQLObjectType<Wallet>({
                 this.andWhere('date', '<', filter.dateBefore.toDate());
               }
             })
-            .groupBy('token'),
+            .groupBy('contract', 'token'),
           group,
           metric,
         )
@@ -412,7 +416,7 @@ export const UserBlockchainType = new GraphQLObjectType<{
                 this.andWhere('date', '<', filter.dateBefore.toDate());
               }
             })
-            .groupBy('token'),
+            .groupBy('contract', 'wallet', 'token'),
           group,
           metric,
         )
@@ -442,6 +446,14 @@ const blockchainNameMap = new Map([
   ['waves:main', 'Waves'],
 ]);
 
+export const LocaleEnum = new GraphQLEnumType({
+  name: 'LocaleEnum',
+  values: Object.keys(locales).reduce(
+    (res, locale) => ({ ...res, [locale]: { value: locale } }),
+    {},
+  ),
+});
+
 export const UserType = new GraphQLObjectType<User>({
   name: 'UserType',
   fields: {
@@ -452,6 +464,10 @@ export const UserType = new GraphQLObjectType<User>({
     role: {
       type: GraphQLNonNull(RoleType),
       description: 'Access role',
+    },
+    locale: {
+      type: GraphQLNonNull(LocaleEnum),
+      description: 'Current user locale',
     },
     wallets: {
       type: GraphQLNonNull(PaginateList('WalletListType', GraphQLNonNull(WalletType))),
@@ -584,21 +600,24 @@ export const UserType = new GraphQLObjectType<User>({
           });
 
         return metricsChartSelector(
-          container.model.metricWalletTable().where(function () {
-            this.whereIn('wallet', walletSelect);
-            if (filter.contract) {
-              this.whereIn('contract', filter.contract);
-            }
-            if (filter.wallet) {
-              this.whereIn('wallet', filter.wallet);
-            }
-            if (filter.dateAfter) {
-              this.andWhere('date', '>=', filter.dateAfter.toDate());
-            }
-            if (filter.dateBefore) {
-              this.andWhere('date', '<', filter.dateBefore.toDate());
-            }
-          }),
+          container.model
+            .metricWalletTable()
+            .where(function () {
+              this.whereIn('wallet', walletSelect);
+              if (filter.contract) {
+                this.whereIn('contract', filter.contract);
+              }
+              if (filter.wallet) {
+                this.whereIn('wallet', filter.wallet);
+              }
+              if (filter.dateAfter) {
+                this.andWhere('date', '>=', filter.dateAfter.toDate());
+              }
+              if (filter.dateBefore) {
+                this.andWhere('date', '<', filter.dateBefore.toDate());
+              }
+            })
+            .groupBy('contract', 'wallet'),
           group,
           metric,
         )
@@ -719,7 +738,7 @@ export const UserType = new GraphQLObjectType<User>({
                 this.andWhere('date', '<', filter.dateBefore.toDate());
               }
             })
-            .groupBy('token'),
+            .groupBy('contract', 'wallet', 'token'),
           group,
           metric,
         )

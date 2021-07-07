@@ -12,6 +12,7 @@
     "target": "es5",
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "allowJs": true
+    "allowJs": true,
+    "experimentalDecorators": true
   }
 }

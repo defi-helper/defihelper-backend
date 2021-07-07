@@ -2,7 +2,6 @@ import container from '@container';
 import { Request } from 'express';
 import {
   GraphQLBoolean,
-  GraphQLEnumType,
   GraphQLFieldConfig,
   GraphQLInputObjectType,
   GraphQLList,
@@ -21,11 +20,11 @@ import {
   PaginateList,
   PaginationArgument,
   SortArgument,
+  onlyAllowed,
   UuidType,
 } from '../types';
 import { Contract, Protocol } from '@models/Protocol/Entity';
 import { AuthenticationError, ForbiddenError, UserInputError } from 'apollo-server-express';
-import { Role } from '@models/User/Entity';
 import { Blockchain } from '@models/types';
 
 export const ContractType = new GraphQLObjectType<Contract>({
@@ -200,29 +199,15 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
       ),
     },
   },
-  resolve: async (root, { protocol: protocolId, input }, { currentUser }) => {
-    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
-    if (currentUser.role !== Role.Admin) throw new ForbiddenError('FORBIDDEN');
+  resolve: onlyAllowed(
+    'contract.create',
+    async (root, { protocol: protocolId, input }, { currentUser }) => {
+      if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
-    const protocol = await container.model.protocolTable().where('id', protocolId).first();
-    if (!protocol) throw new UserInputError('Protocol not found');
+      const protocol = await container.model.protocolTable().where('id', protocolId).first();
+      if (!protocol) throw new UserInputError('Protocol not found');
 
-    const {
-      blockchain,
-      network,
-      address,
-      deployBlockNumber,
-      adapter,
-      layout,
-      name,
-      description,
-      link,
-      hidden,
-    } = input;
-    const created = await container.model
-      .contractService()
-      .create(
-        protocol,
+      const {
         blockchain,
         network,
         address,
@@ -233,10 +218,26 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
         description,
         link,
         hidden,
-      );
+      } = input;
+      const created = await container.model
+        .contractService()
+        .create(
+          protocol,
+          blockchain,
+          network,
+          address,
+          deployBlockNumber,
+          adapter,
+          layout,
+          name,
+          description,
+          link,
+          hidden,
+        );
 
-    return created;
-  },
+      return created;
+    },
+  ),
 };
 
 export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
@@ -298,9 +299,8 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
       ),
     },
   },
-  resolve: async (root, { id, input }, { currentUser }) => {
+  resolve: onlyAllowed('contract.update', async (root, { id, input }, { currentUser }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
-    if (currentUser.role !== Role.Admin) throw new ForbiddenError('FORBIDDEN');
 
     const contractService = container.model.contractService();
     const contract = await contractService.contractTable().where('id', id).first();
@@ -334,7 +334,7 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
     });
 
     return updated;
-  },
+  }),
 };
 
 export const ContractDeleteMutation: GraphQLFieldConfig<any, Request> = {
@@ -344,9 +344,8 @@ export const ContractDeleteMutation: GraphQLFieldConfig<any, Request> = {
       type: GraphQLNonNull(UuidType),
     },
   },
-  resolve: async (root, { id }, { currentUser }) => {
+  resolve: onlyAllowed('contract.delete', async (root, { id }, { currentUser }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
-    if (currentUser.role !== Role.Admin) throw new ForbiddenError('FORBIDDEN');
 
     const contractService = container.model.contractService();
     const contract = await contractService.contractTable().where('id', id).first();
@@ -355,7 +354,7 @@ export const ContractDeleteMutation: GraphQLFieldConfig<any, Request> = {
     await contractService.delete(contract);
 
     return true;
-  },
+  }),
 };
 
 export const ContractWalletLinkMutation: GraphQLFieldConfig<any, Request> = {
@@ -370,7 +369,7 @@ export const ContractWalletLinkMutation: GraphQLFieldConfig<any, Request> = {
       description: 'Target wallet',
     },
   },
-  resolve: async (root, { contract: contractId, wallet: walletId }, { currentUser }) => {
+  resolve: async (root, { contract: contractId, wallet: walletId }, { currentUser, acl }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
     const contract = await container.model.contractTable().where('id', contractId).first();
@@ -381,7 +380,10 @@ export const ContractWalletLinkMutation: GraphQLFieldConfig<any, Request> = {
 
     if (wallet.blockchain !== contract.blockchain) throw new UserInputError('Invalid blockchain');
     if (wallet.network !== contract.network) throw new UserInputError('Invalid network');
-    if (wallet.user !== currentUser.id && currentUser.role !== Role.Admin) {
+    if (
+      !(wallet.user === currentUser.id && acl.isAllowed('contract', 'walletLink-own')) ||
+      !acl.isAllowed('contract', 'walletLink')
+    ) {
       throw new ForbiddenError('FORBIDDEN');
     }
 
@@ -403,7 +405,7 @@ export const ContractWalletUnlinkMutation: GraphQLFieldConfig<any, Request> = {
       description: 'Target wallet',
     },
   },
-  resolve: async (root, { contract: contractId, wallet: walletId }, { currentUser }) => {
+  resolve: async (root, { contract: contractId, wallet: walletId }, { currentUser, acl }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
     const contract = await container.model.contractTable().where('id', contractId).first();
@@ -414,7 +416,10 @@ export const ContractWalletUnlinkMutation: GraphQLFieldConfig<any, Request> = {
 
     if (wallet.blockchain !== contract.blockchain) throw new UserInputError('Invalid blockchain');
     if (wallet.network !== contract.network) throw new UserInputError('Invalid network');
-    if (wallet.user !== currentUser.id && currentUser.role !== Role.Admin) {
+    if (
+      !(wallet.user === currentUser.id && acl.isAllowed('contract', 'walletLink-own')) ||
+      !acl.isAllowed('contract', 'walletLink')
+    ) {
       throw new ForbiddenError('FORBIDDEN');
     }
 
@@ -567,15 +572,18 @@ export const ProtocolType = new GraphQLObjectType<Protocol>({
           });
 
         return metricsChartSelector(
-          container.model.metricContractTable().where(function () {
-            this.whereIn('contract', contractSelect);
-            if (filter.dateAfter) {
-              this.andWhere('date', '>=', filter.dateAfter.toDate());
-            }
-            if (filter.dateBefore) {
-              this.andWhere('date', '<', filter.dateBefore.toDate());
-            }
-          }),
+          container.model
+            .metricContractTable()
+            .where(function () {
+              this.whereIn('contract', contractSelect);
+              if (filter.dateAfter) {
+                this.andWhere('date', '>=', filter.dateAfter.toDate());
+              }
+              if (filter.dateBefore) {
+                this.andWhere('date', '<', filter.dateBefore.toDate());
+              }
+            })
+            .groupBy('contract'),
           group,
           metric,
         )
@@ -707,9 +715,8 @@ export const ProtocolCreateMutation: GraphQLFieldConfig<any, Request> = {
       ),
     },
   },
-  resolve: async (root, { input }, { currentUser }) => {
+  resolve: onlyAllowed('protocol.create', async (root, { input }, { currentUser }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
-    if (currentUser.role !== Role.Admin) throw new ForbiddenError('FORBIDDEN');
 
     const { adapter, name, description, icon, link, hidden } = input;
     const created = await container.model
@@ -717,7 +724,7 @@ export const ProtocolCreateMutation: GraphQLFieldConfig<any, Request> = {
       .create(adapter, name, description, icon, link, hidden);
 
     return created;
-  },
+  }),
 };
 
 export const ProtocolUpdateMutation: GraphQLFieldConfig<any, Request> = {
@@ -760,9 +767,8 @@ export const ProtocolUpdateMutation: GraphQLFieldConfig<any, Request> = {
       ),
     },
   },
-  resolve: async (root, { id, input }, { currentUser }) => {
+  resolve: onlyAllowed('protocol.update', async (root, { id, input }, { currentUser }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
-    if (currentUser.role !== Role.Admin) throw new ForbiddenError('FORBIDDEN');
 
     const protocolService = container.model.protocolService();
     const protocol = await protocolService.table().where('id', id).first();
@@ -780,7 +786,7 @@ export const ProtocolUpdateMutation: GraphQLFieldConfig<any, Request> = {
     });
 
     return updated;
-  },
+  }),
 };
 
 export const ProtocolDeleteMutation: GraphQLFieldConfig<any, Request> = {
@@ -790,9 +796,8 @@ export const ProtocolDeleteMutation: GraphQLFieldConfig<any, Request> = {
       type: GraphQLNonNull(UuidType),
     },
   },
-  resolve: async (root, { id }, { currentUser }) => {
+  resolve: onlyAllowed('protocol.delete', async (root, { id }, { currentUser }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
-    if (currentUser.role !== Role.Admin) throw new ForbiddenError('FORBIDDEN');
 
     const protocolService = container.model.protocolService();
     const protocol = await protocolService.table().where('id', id).first();
@@ -801,5 +806,5 @@ export const ProtocolDeleteMutation: GraphQLFieldConfig<any, Request> = {
     await protocolService.delete(protocol);
 
     return true;
-  },
+  }),
 };

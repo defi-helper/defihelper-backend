@@ -11,7 +11,8 @@
     "watch": "tsc-watch -p ./ --pretty --onSuccess 'nodejs ./dist/server.js'",
     "start": "node ./dist/server.js",
     "queue": "node ./dist/queueBroker.js",
-    "schedule": "node ./dist/queueSchedule.js"
+    "schedule": "node ./dist/queueSchedule.js",
+    "seed": "node ./dist/cli.js seed"
   },
   "devDependencies": {
     "@types/command-line-args": "^5.0.0",

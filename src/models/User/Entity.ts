@@ -1,4 +1,5 @@
 import { tableFactory as createTableFactory } from '@services/Database';
+import { Locale } from '@services/I18n/container';
 
 export enum Role {
   User = 'user',
@@ -8,6 +9,7 @@ export enum Role {
 export interface User {
   id: string;
   role: Role;
+  locale: Locale
   updatedAt: Date;
   createdAt: Date;
 }

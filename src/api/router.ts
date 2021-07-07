@@ -4,7 +4,7 @@ import { ApolloServer } from 'apollo-server-express';
 import { json } from 'body-parser';
 import { GraphQLNonNull, GraphQLObjectType, GraphQLSchema, GraphQLString } from 'graphql';
 import { AuthEthereumMutation, UserType } from './schema/user';
-import { currentUser } from './middlewares/currentUser';
+import * as middlewares from './middlewares';
 import {
   ProtocolCreateMutation,
   ProtocolDeleteMutation,
@@ -72,5 +72,11 @@ export function route({ express, server }: { express: Express; server: Server })
     context: ({ req }) => req,
   });
   apollo.installSubscriptionHandlers(server);
-  express.use('/api', [json(), currentUser, apollo.getMiddleware({ path: '/' })]);
+  express.use('/api', [
+    json(),
+    middlewares.currentUser,
+    middlewares.i18n,
+    middlewares.acl,
+    apollo.getMiddleware({ path: '/' }),
+  ]);
 }

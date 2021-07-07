@@ -1,4 +1,5 @@
 import { Factory } from '@services/Container';
+import { Locale } from '@services/I18n/container';
 import { RedisClient } from 'redis';
 import { v4 as uuid } from 'uuid';
 import { User, Table as UserTable, Role } from './Entity';
@@ -6,10 +7,11 @@ import { User, Table as UserTable, Role } from './Entity';
 export class UserService {
   constructor(readonly table: Factory<UserTable> = table) {}
 
-  async create(role: Role) {
+  async create(role: Role, locale: Locale = 'enUS') {
     const created = {
       id: uuid(),
       role,
+      locale,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
