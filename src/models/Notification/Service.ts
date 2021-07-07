@@ -18,6 +18,7 @@ import { v4 as uuid } from "uuid";
 import { User } from "@models/User/Entity";
 import { Contract } from "@models/Protocol/Entity";
 import container from "@container";
+import {Emitter} from "@services/Event";
 
 export class NotificationService {
   constructor(
@@ -59,6 +60,20 @@ export class UserContactService {
       readonly externalSelfUrl: string,
   ) {}
 
+  public readonly onCreated = new Emitter<UserContact>(async (contact) => {
+    if (contact.type === ContactBroker.Email) {
+      await container.model.queueService().push('sendEmail', {
+        email: contact.address,
+        template: 'confirmEmailTemplate',
+        subject: 'Please confirm your email',
+        params: {
+          confirmationLink: `${this.externalSelfUrl}/verification/${contact.address}/${contact.confirmationCode}`,
+        },
+      });
+    }
+  });
+
+
   async create(type: ContactBroker, address: string, user: User): Promise<UserContact> {
     const duplicates = await this.table().where({
       user: user.id,
@@ -81,18 +96,8 @@ export class UserContactService {
 
     await this.table().insert(created);
 
-    if (created.type === ContactBroker.Email) {
-      await container.model.queueService().push('sendEmail', {
-        email: created.address,
-        template: 'CONFIRM_EMAIL_TEMPLATE',
-        subject: 'Please confirm your email',
-        params: {
-          confirmationLink: `${this.externalSelfUrl}/verification/${created.confirmationCode}`,
-        },
-      });
-
-      created.confirmationCode = '';
-    }
+    this.onCreated.emit({...created});
+    created.confirmationCode = '';;
 
     return created;
   }

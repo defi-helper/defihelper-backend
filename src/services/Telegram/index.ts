@@ -9,31 +9,35 @@ export type TelegramTemplate = keyof typeof Templates;
 export class TelegramService {
     protected bot: TelegramBot;
     constructor(token: string) {
-        this.bot = new TelegramBot(token, { polling: false });
-
-        this.bot.on("message", async message => {
-            if (message.text && message.text.indexOf('/start') > -1) {
-                const confirmationCode = message.text.replace('/start ', '');
-                const userContact = await container.model.userContactTable()
-                    .where('confirmationCode', confirmationCode)
-                    .first();
-                if (!userContact || userContact.status === ContactStatus.Active) {
-                    await this.bot.sendMessage(message.chat.id, 'This code has not found');
-                    return;
-                }
-
-                await container.model.userContactService().activate(userContact, message.chat.id.toString());
-            }
-        });
+      this.bot = new TelegramBot(token, { polling: !!token });
     }
 
-    async send(template: TelegramTemplate, data: Object, chatId: number): Promise<void> {
-        const message = Mustache.render(Templates[template], data);
+  startHandler() {
+    this.bot.on("message", async message => {
+      if (message.text && message.text.indexOf('/start') > -1) {
+        const confirmationCode = message.text.replace('/start ', '');
+        const userContact = await container.model.userContactTable()
+          .where('confirmationCode', confirmationCode)
+          .first();
+        if (!userContact || userContact.status === ContactStatus.Active) {
+          await this.bot.sendMessage(message.chat.id, 'This code has not found');
+          return;
+        }
 
-        await this.bot.sendMessage(chatId, message);
-    }
+        await container.model.userContactService().activate(userContact, message.chat.id.toString());
+      }
+    });
+  }
+
+  async send(template: TelegramTemplate, data: Object, chatId: number): Promise<void> {
+    const message = Mustache.render(await Templates[template], data);
+
+    await this.bot.sendMessage(chatId, message, {
+      parse_mode: 'HTML',
+    });
+  }
 }
 
 export function telegramServiceFactory(token: string) {
-    return () => new TelegramService(token);
+  return () => new TelegramService(token);
 }

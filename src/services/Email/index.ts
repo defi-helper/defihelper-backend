@@ -34,11 +34,11 @@ export class EmailService {
     }
 
     async send(template: EmailTemplate, data: Object, subject: string, to: string): Promise<void> {
-        const html = Mustache.render(Templates[template], data);
+        const html = Mustache.render(await Templates[template], data);
 
         const email = {
             from: this.from,
-            to: to,
+            to,
             subject,
             html,
         };
