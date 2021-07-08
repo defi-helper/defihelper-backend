@@ -76,6 +76,9 @@ export const WalletType = new GraphQLObjectType<Wallet>({
               blockchain: {
                 type: BlockchainFilterInputType,
               },
+              protocol: {
+                type: GraphQLList(GraphQLNonNull(UuidType)),
+              },
               hidden: {
                 type: GraphQLBoolean,
               },
@@ -105,6 +108,9 @@ export const WalletType = new GraphQLObjectType<Wallet>({
           if (network !== undefined) {
             select = select.andWhere('network', network);
           }
+        }
+        if (filter.protocol !== undefined) {
+          select = select.whereIn('protocol', filter.protocol);
         }
         if (filter.hidden !== undefined) {
           select = select.andWhere('hidden', filter.hidden);

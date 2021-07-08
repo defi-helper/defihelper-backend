@@ -1,5 +1,5 @@
 export interface Listener<T> {
-  (event: T): any;
+  (event: Readonly<T>): any;
 }
 
 export class Emitter<T> {
