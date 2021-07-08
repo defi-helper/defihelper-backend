@@ -9,6 +9,7 @@ import { redisConnectFactory } from '@services/Cache';
 import { ACLContainer } from '@services/ACL/container';
 import { emailServiceFactory } from "@services/Email";
 import { telegramServiceFactory } from "@services/Telegram";
+import {scannerServiceFactory} from "@services/Scanner";
 
 class AppContainer extends Container<typeof config> {
   readonly logger = singleton(consoleFactory());
@@ -20,6 +21,8 @@ class AppContainer extends Container<typeof config> {
   readonly email = singleton(emailServiceFactory(this.parent.email));
 
   readonly telegram = singleton(telegramServiceFactory(this.parent.telegram.token));
+
+  readonly scanner = singleton(scannerServiceFactory(this.parent.scanner));
 
   readonly blockchain = {
     ethereum: new Blockchain.Ethereum.BlockchainContainer(this.parent.blockchain.ethereum),

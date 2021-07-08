@@ -11,3 +11,7 @@ export * as metricsWalletHistory from './metrics/walletHistory';
 export * as metricsContract from './metrics/contract';
 export * as metricsWallet from './metrics/wallet';
 export * as sendEmail from './email/send';
+export * as sendTelegram from './telegram/send';
+export * as subscribeToEventFromScanner from './scanner/subscribe';
+export * as processEventWebHook from './notifications/webHook';
+export * as processEventNotification from './notifications/event';

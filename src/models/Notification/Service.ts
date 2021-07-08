@@ -5,7 +5,6 @@ import {
   ContractEventWebHook,
   ContractEventWebHookTable,
   Notification,
-  NotificationPayload,
   NotificationStatus,
   NotificationTable,
   NotificationType,
@@ -25,7 +24,17 @@ export class NotificationService {
     readonly table: Factory<NotificationTable> = table,
   ) {}
 
-  async create(contact: UserContact, type: NotificationType, payload: NotificationPayload): Promise<Notification> {
+  public readonly onCreated = new Emitter<Notification>(async (notification) => {
+    switch (notification.type) {
+      case NotificationType.event:
+        await container.model.queueService().push('subscribeToEventFromScanner', notification);
+        return;
+      default:
+        container.logger().error(`Unsupported notification type ${notification.type}`);
+    }
+  });
+
+  async create(contact: UserContact, type: NotificationType, payload: Object): Promise<Notification> {
     const created: Notification = {
       id: uuid(),
       contact: contact.id,
@@ -126,13 +135,13 @@ export class UserEventSubscriptionService {
   ) {}
 
   async create(contact: UserContact, webHook: ContractEventWebHook): Promise<UserEventSubscription> {
-    const duplicates = await this.table().where({
+    const duplicate = await this.table().where({
       contact: contact.id,
       webHook: webHook.id,
-    });
+    }).first()
 
-    if (duplicates.length > 0) {
-      return duplicates[0];
+    if (duplicate) {
+      return duplicate;
     }
 
     const created: UserEventSubscription = {
@@ -152,19 +161,30 @@ export class UserEventSubscriptionService {
   }
 }
 
+interface ContractEventWebHookInfo {
+  network: string;
+  address: string;
+  event: string;
+  webHookId: string,
+}
+
 export class ContractEventWebHookService {
   constructor(
       readonly table: Factory<ContractEventWebHookTable> = table,
   ) {}
 
+  public readonly onCreated = new Emitter<ContractEventWebHookInfo>(async (webHookInfo) => {
+    await container.model.queueService().push('subscribeToEventFromScanner', webHookInfo);
+  });
+
   async create(contract: Contract, event: string): Promise<ContractEventWebHook> {
-    const duplicates = await this.table().where({
+    const duplicate = await this.table().where({
       contract: contract.id,
       event: event,
-    });
+    }).first()
 
-    if (duplicates.length > 0) {
-      return duplicates[0];
+    if (duplicate) {
+      return duplicate;
     }
 
     const created: ContractEventWebHook = {
@@ -176,7 +196,12 @@ export class ContractEventWebHookService {
 
     await this.table().insert(created);
 
-    // TODO: Добавить в очередь задачу на подписку в сканере
+    this.onCreated.emit({
+      network: contract.network,
+      address: contract.address,
+      event: event,
+      webHookId: created.id,
+    });
 
     return created;
   }
