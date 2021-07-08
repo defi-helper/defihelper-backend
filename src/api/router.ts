@@ -26,6 +26,13 @@ import {
   UnvoteMutation,
   VoteMutation,
 } from './schema/proposal';
+import {
+  UserContactEmailConfirmMutation,
+  UserContactCreateMutation,
+  UserContactDeleteMutation,
+  UserContactListQuery,
+  UserContactQuery
+} from "@api/schema/notification";
 
 export function route({ express, server }: { express: Express; server: Server }) {
   const apollo = new ApolloServer({
@@ -45,6 +52,8 @@ export function route({ express, server }: { express: Express; server: Server })
           protocols: ProtocolListQuery,
           proposal: ProposalQuery,
           proposals: ProposalListQuery,
+          userContact: UserContactQuery,
+          userContacts: UserContactListQuery,
         },
       }),
       mutation: new GraphQLObjectType({
@@ -64,6 +73,9 @@ export function route({ express, server }: { express: Express; server: Server })
           proposalDelete: ProposalDeleteMutation,
           vote: VoteMutation,
           unvote: UnvoteMutation,
+          userContactCreate: UserContactCreateMutation,
+          userContactEmailConfirm: UserContactEmailConfirmMutation,
+          userContactDelete: UserContactDeleteMutation,
         },
       }),
     }),

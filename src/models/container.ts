@@ -109,7 +109,11 @@ export class ModelContainer extends Container<typeof AppContainer> {
     () => new Models.Notification.Service.NotificationService(this.notificationTable),
   );
   readonly userContactService = singleton(
-    () => new Models.Notification.Service.UserContactService(this.userContactTable),
+    () =>
+      new Models.Notification.Service.UserContactService(
+        this.userContactTable,
+        this.parent.parent.api.externalUrl
+      ),
   );
   readonly userEventSubscriptionService = singleton(
     () =>

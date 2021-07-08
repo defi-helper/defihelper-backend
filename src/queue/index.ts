@@ -10,3 +10,4 @@ export * as metricsWalletBroker from './metrics/walletBroker';
 export * as metricsWalletHistory from './metrics/walletHistory';
 export * as metricsContract from './metrics/contract';
 export * as metricsWallet from './metrics/wallet';
+export * as sendEmail from './email/send';

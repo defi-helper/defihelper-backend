@@ -15,6 +15,9 @@ container.model
     const port = container.parent.api.port;
     server.listen(port, () => console.log(`Listen ${port}`));
 
+    const telegramService = container.telegram();
+    telegramService.startHandler();
+
     /*
     const provider = container.blockchain.ethereum.provider['56']();
     const staking = container.blockchain.ethereum.contract(
