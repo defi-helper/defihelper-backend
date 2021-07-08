@@ -381,7 +381,7 @@ export const ContractWalletLinkMutation: GraphQLFieldConfig<any, Request> = {
     if (wallet.blockchain !== contract.blockchain) throw new UserInputError('Invalid blockchain');
     if (wallet.network !== contract.network) throw new UserInputError('Invalid network');
     if (
-      !(wallet.user === currentUser.id && acl.isAllowed('contract', 'walletLink-own')) ||
+      !(wallet.user === currentUser.id && acl.isAllowed('contract', 'walletLink-own')) &&
       !acl.isAllowed('contract', 'walletLink')
     ) {
       throw new ForbiddenError('FORBIDDEN');
@@ -417,7 +417,7 @@ export const ContractWalletUnlinkMutation: GraphQLFieldConfig<any, Request> = {
     if (wallet.blockchain !== contract.blockchain) throw new UserInputError('Invalid blockchain');
     if (wallet.network !== contract.network) throw new UserInputError('Invalid network');
     if (
-      !(wallet.user === currentUser.id && acl.isAllowed('contract', 'walletLink-own')) ||
+      !(wallet.user === currentUser.id && acl.isAllowed('contract', 'walletLink-own')) &&
       !acl.isAllowed('contract', 'walletLink')
     ) {
       throw new ForbiddenError('FORBIDDEN');

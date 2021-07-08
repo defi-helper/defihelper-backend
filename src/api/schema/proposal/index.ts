@@ -307,7 +307,7 @@ export const ProposalUpdateMutation: GraphQLFieldConfig<any, Request> = {
     const proposal = await proposalService.proposalTable().where('id', id).first();
     if (!proposal) throw new UserInputError('Proposal not found');
     if (
-      !(proposal.author === currentUser.id && acl.isAllowed('proposal', 'update-own')) ||
+      !(proposal.author === currentUser.id && acl.isAllowed('proposal', 'update-own')) &&
       !acl.isAllowed('proposal', 'update')
     ) {
       throw new ForbiddenError('FORBIDDEN');

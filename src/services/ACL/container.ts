@@ -14,12 +14,16 @@ export class ACLContainer extends Container<typeof AppContainer> {
   readonly user = singleton(() =>
     ACL.expand(this.guest(), {
       proposal: ['create', 'update-own'],
+      protocol: ['view'],
+      contract: ['walletLink-own'],
     }),
   );
 
   readonly admin = singleton(() =>
     ACL.expand(this.user(), {
       proposal: ['update', 'delete'],
+      protocol: ['create', 'update', 'delete'],
+      contract: ['create', 'update', 'delete', 'walletLink'],
     }),
   );
 
