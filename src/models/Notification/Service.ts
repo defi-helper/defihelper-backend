@@ -1,22 +1,24 @@
-import {Factory} from '@services/Container';
+import { Factory } from '@services/Container';
 import {
-  UserContact,
   ContactBroker,
   ContactStatus,
-  UserContactTable,
+  ContractEventWebHook,
+  ContractEventWebHookTable,
   Notification,
   NotificationPayload,
   NotificationStatus,
   NotificationTable,
   NotificationType,
+  UserContact,
+  UserContactTable,
   UserEventSubscription,
-  UserEventSubscriptionTable,
-  ContractEventWebHook,
-  ContractEventWebHookTable
+  UserEventSubscriptionTable
 } from './Entity';
-import {v4 as uuid} from "uuid";
-import {User} from "@models/User/Entity";
-import {Contract} from "@models/Protocol/Entity";
+import { v4 as uuid } from "uuid";
+import { User } from "@models/User/Entity";
+import { Contract } from "@models/Protocol/Entity";
+import container from "@container";
+import {Emitter} from "@services/Event";
 
 export class NotificationService {
   constructor(
@@ -55,9 +57,24 @@ export class NotificationService {
 export class UserContactService {
   constructor(
       readonly table: Factory<UserContactTable> = table,
+      readonly externalSelfUrl: string,
   ) {}
 
-  async create(user: User, type: ContactBroker, address: string): Promise<UserContact> {
+  public readonly onCreated = new Emitter<UserContact>(async (contact) => {
+    if (contact.type === ContactBroker.Email) {
+      await container.model.queueService().push('sendEmail', {
+        email: contact.address,
+        template: 'confirmEmailTemplate',
+        subject: 'Please confirm your email',
+        params: {
+          confirmationLink: `${this.externalSelfUrl}/verification/${contact.address}/${contact.confirmationCode}`,
+        },
+      });
+    }
+  });
+
+
+  async create(type: ContactBroker, address: string, user: User): Promise<UserContact> {
     const duplicates = await this.table().where({
       user: user.id,
       type,
@@ -79,12 +96,16 @@ export class UserContactService {
 
     await this.table().insert(created);
 
+    this.onCreated.emit({...created});
+    created.confirmationCode = '';;
+
     return created;
   }
 
-  async activate(contact: UserContact): Promise<UserContact> {
+  async activate(contact: UserContact, address?: string): Promise<UserContact> {
     const activated: UserContact = {
       ...contact,
+      address: address || contact.address,
       status: ContactStatus.Active,
       activatedAt: new Date(),
     };

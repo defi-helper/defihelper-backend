@@ -4,6 +4,12 @@ dotenv.config();
 export default {
   api: {
     port: parseInt(process.env.API_PORT ?? '9000', 10),
+    externalUrl: process.env.API_EXTERNAL_URL ?? 'https://backend-local.defihelper.io/',
+  },
+  scanner: {
+    host: process.env.SCANNER_HOST ?? 'dfh-scanner',
+    port: process.env.SCANNER_PORT ?? '9000',
+    secret: process.env.SCANNER_SECRET ?? '',
   },
   database: {
     host: process.env.DATABASE_HOST ?? 'localhost',
@@ -25,6 +31,18 @@ export default {
       bscMainNode: process.env.BSC_NODE ?? '',
       bscMainAvgBlockTime: 3,
     },
+  },
+  email: {
+    from: process.env.EMAIL_FROM ?? '',
+    host: process.env.EMAIL_SMTP_HOST ?? '',
+    port: parseInt(process.env.EMAIL_SMTP_PORT ?? '25', 10),
+    auth: {
+      user: process.env.EMAIL_SMTP_USER ?? '',
+      pass: process.env.EMAIL_SMTP_PASS ?? '',
+    }
+  },
+  telegram: {
+    token: process.env.TELEGRAM_TOKEN ?? '',
   },
   session: {
     ttl: parseInt(process.env.SESSION_TTL ?? '600', 10),
