@@ -11,7 +11,7 @@
     "build": "tsc -p ./ && npm run copyTemplates",
     "wath-start": "npm run copyTemplates && node ./dist/server.js",
     "watch": "tsc-watch -p ./ --pretty --onSuccess 'npm run wath-start'",
-    "start": "node ./dist/server.js",
+    "start": "node --inspect=0.0.0.0:9229 ./dist/server.js",
     "queue": "node ./dist/queueBroker.js",
     "schedule": "node ./dist/queueSchedule.js",
     "seed": "node ./dist/cli.js seed"

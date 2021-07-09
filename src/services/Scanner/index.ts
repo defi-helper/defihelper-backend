@@ -10,7 +10,7 @@ export interface Contract {
   address: string;
   network: string;
   name: string;
-  abi: any;
+  abi: Array<any>;
   startHeight: number;
   updatedAt: Date;
   createdAt: Date;
@@ -63,13 +63,12 @@ export class ScannerService {
     return (await this.client.get<Contract>(`/api/contract/${id}`)).data;
   }
 
-  async registerContract(network: string, address: string, name?: string): Promise<Contract> {
-    const currentBlock = await this.currentBlock(network) - 10;
+  async registerContract(network: string, address: string, name?: string, startHeight?: number): Promise<Contract> {
     const contract = await this.client.post<Contract>(`/api/contract`, {
       name: name ?? address,
       network,
       address,
-      startHeight: currentBlock,
+      startHeight: startHeight ? startHeight : await this.currentBlock(network) - 10,
       abi: ''
     });
 
@@ -86,16 +85,15 @@ export class ScannerService {
     return eventListeners[0];
   }
 
-  async registerListener(contractId: string, event: string): Promise<EventListener> {
+  async registerListener(contractId: string, event: string, syncHeight: number = 0): Promise<EventListener> {
     const contract = await this.getContract(contractId);
     if (!contract) {
       throw new Error('Contract has not found');
     }
 
-    const currentBlock = await this.currentBlock(contract.network) - 10;
-    const eventListener = await this.client.post<EventListener>(`/api/contract${contractId}/event-listener`, {
+    const eventListener = await this.client.post<EventListener>(`/api/contract/${contractId}/event-listener`, {
       name: event,
-      syncHeight: currentBlock,
+      syncHeight: syncHeight || await this.currentBlock(contract.network) - 10,
     });
 
     return eventListener.data;
@@ -118,6 +116,11 @@ export class ScannerService {
         callBackUrl
     })).data;
   }
+
+  async getContractsAddressByUserAddress(networkId: string, address: string): Promise<string[]> {
+    return (await this.client.get<string[]>(`/api/address/${address}?networkId=${networkId}`)).data;
+  }
+
 }
 
 export function scannerServiceFactory(scannerParams: ScannerParams) {

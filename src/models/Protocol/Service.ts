@@ -56,7 +56,8 @@ export class ProtocolService {
 }
 
 export class ContractService {
-  public readonly onCreated = new Emitter<Contract>((contract) => {
+  public readonly onCreated = new Emitter<Contract>(async (contract) => {
+    await container.model.queueService().push('registerContractInScanner', { contract: contract.id });
     if (
       !(contract.blockchain === 'ethereum' && contract.network === '1') ||
       contract.deployBlockNumber === null ||
