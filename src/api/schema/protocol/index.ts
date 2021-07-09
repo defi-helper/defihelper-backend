@@ -23,7 +23,13 @@ import {
   onlyAllowed,
   UuidType,
 } from '../types';
-import { Contract, Protocol } from '@models/Protocol/Entity';
+import {
+  Contract,
+  contractTableName,
+  Protocol,
+  walletContractLinkTableName,
+} from '@models/Protocol/Entity';
+import { tableName as walletTableName } from '@models/Wallet/Entity';
 import { AuthenticationError, ForbiddenError, UserInputError } from 'apollo-server-express';
 import { Blockchain } from '@models/types';
 
@@ -630,6 +636,10 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
           blockchain: {
             type: BlockchainFilterInputType,
           },
+          linked: {
+            type: UuidType,
+            description: 'Target user ID',
+          },
           hidden: {
             type: GraphQLBoolean,
           },
@@ -657,6 +667,25 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
         contractSelect = contractSelect.andWhere('network', network);
       }
       select.whereIn('id', contractSelect);
+    }
+    if (filter.linked !== undefined) {
+      select = select.whereIn(
+        'id',
+        container.model
+          .contractTable()
+          .column('protocol')
+          .innerJoin(
+            walletContractLinkTableName,
+            `${contractTableName}.id`,
+            `${walletContractLinkTableName}.contract`,
+          )
+          .innerJoin(
+            walletTableName,
+            `${walletContractLinkTableName}.wallet`,
+            `${walletTableName}.id`,
+          )
+          .where(`${walletTableName}.user`, filter.linked),
+      );
     }
     if (filter.hidden !== undefined) {
       select = select.andWhere('hidden', filter.hidden);
