@@ -31,15 +31,12 @@ export enum NotificationType {
   event='event',
 }
 
-export type NotificationPayload = {
-  [key: string]: string | boolean | number | NotificationPayload;
-}
 
 export interface Notification {
   id: string;
   contact: string;
   type: NotificationType;
-  payload: NotificationPayload;
+  payload: Object;
   status: NotificationStatus;
   createdAt: Date;
   processedAt?: Date;

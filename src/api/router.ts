@@ -31,8 +31,13 @@ import {
   UserContactCreateMutation,
   UserContactDeleteMutation,
   UserContactListQuery,
-  UserContactQuery
+  UserContactQuery,
+  UserEventSubscriptionQuery,
+  UserEventSubscriptionListQuery,
+  UserEventSubscriptionCreateMutation,
+  UserEventSubscriptionDeleteMutation
 } from "@api/schema/notification";
+import container from "@container";
 
 export function route({ express, server }: { express: Express; server: Server }) {
   const apollo = new ApolloServer({
@@ -54,6 +59,8 @@ export function route({ express, server }: { express: Express; server: Server })
           proposals: ProposalListQuery,
           userContact: UserContactQuery,
           userContacts: UserContactListQuery,
+          userEventSubscription: UserEventSubscriptionQuery,
+          userEventSubscriptions: UserEventSubscriptionListQuery,
         },
       }),
       mutation: new GraphQLObjectType({
@@ -76,6 +83,8 @@ export function route({ express, server }: { express: Express; server: Server })
           userContactCreate: UserContactCreateMutation,
           userContactEmailConfirm: UserContactEmailConfirmMutation,
           userContactDelete: UserContactDeleteMutation,
+          userEventSubscriptionCreate: UserEventSubscriptionCreateMutation,
+          userEventSubscriptionDelete: UserEventSubscriptionDeleteMutation,
         },
       }),
     }),
@@ -91,4 +100,28 @@ export function route({ express, server }: { express: Express; server: Server })
     middlewares.acl,
     apollo.getMiddleware({ path: '/' }),
   ]);
+
+  express.route('/callback/event/:webHookId').post(json(), async (req, res) => {
+    const secret = req.query.secret;
+    if (secret !== container.parent.api.secret) {
+      res.sendStatus(403);
+      return;
+    }
+
+    const webHook = await container.model.contractEventWebHookTable().where('id', req.params.webHookId);
+
+    if (!webHook) {
+      res.sendStatus(404);
+      return;
+    }
+
+    await container.model.queueService().push('processEventWebHook', {
+      eventName: req.body.eventName,
+      events: req.body.events,
+      contract: req.body.contract,
+      webHookId: req.params.webHookId
+    });
+
+    res.sendStatus(200);
+  });
 }
