@@ -11,11 +11,12 @@ export interface ScannerSubscriptionParams {
 export default async (process: Process) => {
     const subscriptionParams = process.task.params as ScannerSubscriptionParams;
 
-    const callBackUrl = `http://${container.parent.api.internalUrl}:${container.parent.api.port}/events_api/${
-        subscriptionParams.webHookId}`
+    const callBackUrl = `${container.parent.api.internalUrl}:${
+        container.parent.api.port}/callback/event/:webHookId${
+        subscriptionParams.webHookId}?secret=${container.parent.api.secret}`
 
     await container.scanner().registerCallback(
-        parseInt(subscriptionParams.network, 10),
+        subscriptionParams.network,
         subscriptionParams.address,
         subscriptionParams.event,
         callBackUrl,

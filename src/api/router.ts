@@ -101,8 +101,13 @@ export function route({ express, server }: { express: Express; server: Server })
     apollo.getMiddleware({ path: '/' }),
   ]);
 
-  // TODO: нужно бы это закрыть как-то по-лучше
-  express.route('/events_api/:webHookId').post(json(), async (req, res) => {
+  express.route('/callback/event/:webHookId').post(json(), async (req, res) => {
+    const secret = req.query.secret;
+    if (secret !== container.parent.api.secret) {
+      res.sendStatus(403);
+      return;
+    }
+
     const webHook = await container.model.contractEventWebHookTable().where('id', req.params.webHookId);
 
     if (!webHook) {
