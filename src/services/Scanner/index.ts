@@ -32,6 +32,21 @@ export interface CallBack {
   createdAt: Date;
 }
 
+export interface TransactionReceipt {
+  to: string;
+  from: string;
+  contractAddress: string,
+  transactionIndex: number,
+  root?: string,
+  logsBloom: string,
+  blockHash: string,
+  transactionHash: string,
+  blockNumber: number,
+  confirmations: number,
+  byzantium: boolean,
+  status?: number
+}
+
 
 export class ScannerService {
   protected client: AxiosInstance;
@@ -48,6 +63,10 @@ export class ScannerService {
     } catch {
       return 0;
     }
+  }
+
+  async txReceipt(network: string, txHash: string): Promise<TransactionReceipt> {
+    return (await this.client.get<TransactionReceipt>(`/api/eth/${network}/txReceipt/${txHash}`)).data;
   }
 
   async findContract(network: string, address: string): Promise<Contract | undefined> {
