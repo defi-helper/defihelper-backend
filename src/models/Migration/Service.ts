@@ -1,8 +1,10 @@
+/* eslint-disable import/no-dynamic-require */
+/* eslint-disable global-require */
 import Knex from 'knex';
 import { Factory } from '@services/Container';
 import { Log } from '@services/Log';
-import { Table, migrate } from './Entity';
 import { readdir } from 'fs';
+import { Table, migrate } from './Entity';
 
 export interface MigrationHandler {
   (schema: Knex.SchemaBuilder): Promise<void>;
@@ -12,21 +14,11 @@ export interface MigrationHandlerList {
   [name: string]: MigrationHandler;
 }
 
-export function factory(
-  logger: Factory<Log>,
-  database: Factory<Knex>,
-  table: Factory<Table>,
-  dir: string,
-  pattern: RegExp = /^M[0-9]+[A-Za-z0-9_]+\.(ts|js)$/i,
-) {
-  return () => new MigrationService(logger, database, table, dir, pattern);
-}
-
 export class MigrationService {
   constructor(
-    readonly logger: Factory<Log> = logger,
-    readonly database: Factory<Knex> = database,
-    readonly table: Factory<Table> = table,
+    readonly logger: Factory<Log>,
+    readonly database: Factory<Knex>,
+    readonly table: Factory<Table>,
     readonly dir: string,
     readonly pattern: RegExp,
   ) {}
@@ -90,4 +82,14 @@ export class MigrationService {
 
     return queue();
   }
+}
+
+export function factory(
+  logger: Factory<Log>,
+  database: Factory<Knex>,
+  table: Factory<Table>,
+  dir: string,
+  pattern: RegExp = /^M[0-9]+[A-Za-z0-9_]+\.(ts|js)$/i,
+) {
+  return () => new MigrationService(logger, database, table, dir, pattern);
 }

@@ -96,11 +96,14 @@ export class ModelContainer extends Container<typeof AppContainer> {
   readonly notificationTable = Models.Notification.Entity.notificationTableFactory(
     this.parent.database,
   );
+
   readonly userContactTable = Models.Notification.Entity.userContactTableFactory(
     this.parent.database,
   );
+
   readonly userEventSubscriptionTable =
     Models.Notification.Entity.userEventSubscriptionTableFactory(this.parent.database);
+
   readonly contractEventWebHookTable = Models.Notification.Entity.contractEventWebHookTableFactory(
     this.parent.database,
   );
@@ -108,17 +111,20 @@ export class ModelContainer extends Container<typeof AppContainer> {
   readonly notificationService = singleton(
     () => new Models.Notification.Service.NotificationService(this.notificationTable),
   );
+
   readonly userContactService = singleton(
     () =>
       new Models.Notification.Service.UserContactService(
         this.userContactTable,
-        this.parent.parent.api.externalUrl
+        this.parent.parent.api.externalUrl,
       ),
   );
+
   readonly userEventSubscriptionService = singleton(
     () =>
       new Models.Notification.Service.UserEventSubscriptionService(this.userEventSubscriptionTable),
   );
+
   readonly contractEventWebHookService = singleton(
     () =>
       new Models.Notification.Service.ContractEventWebHookService(this.contractEventWebHookTable),

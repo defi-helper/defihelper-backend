@@ -6,7 +6,7 @@
   "license": "ISC",
   "main": "index.js",
   "scripts": {
-    "lint": "lint-staged",
+    "lint": "eslint --ignore-path .gitignore --fix './src/**/*.ts'",
     "copyTemplates": "cp ./src/services/Email/templates/*.mustache ./dist/services/Email/templates/ &&  cp ./src/services/Telegram/templates/*.mustache ./dist/services/Telegram/templates/",
     "build": "tsc -p ./ && npm run copyTemplates",
     "wath-start": "npm run copyTemplates && node ./dist/server.js",
@@ -25,6 +25,7 @@
     "@types/nodemailer": "^6.4.2",
     "@types/redis": "^2.8.29",
     "@types/uuid": "^8.3.0",
+    "@typescript-eslint/eslint-plugin": "^4.28.2",
     "eslint": "^7.23.0",
     "eslint-config-airbnb-typescript": "^12.3.1",
     "eslint-config-prettier": "^8.1.0",
@@ -74,7 +75,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "npm run lint"
+      "pre-commit": "lint-staged"
     }
   }
 }

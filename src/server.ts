@@ -1,8 +1,9 @@
+/* eslint-disable no-console */
 import 'module-alias/register';
-import container from './container';
 import { createServer } from 'http';
 import Express from 'express';
 import { route } from '@api/router';
+import container from './container';
 
 container.model
   .migrationService()
@@ -12,7 +13,7 @@ container.model
     const server = createServer(express);
     route({ express, server });
 
-    const port = container.parent.api.port;
+    const { port } = container.parent.api;
     server.listen(port, () => console.log(`Listen ${port}`));
 
     const telegramService = container.telegram();

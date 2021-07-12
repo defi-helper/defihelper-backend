@@ -3,6 +3,18 @@ import { Server } from 'http';
 import { ApolloServer } from 'apollo-server-express';
 import { json } from 'body-parser';
 import { GraphQLNonNull, GraphQLObjectType, GraphQLSchema, GraphQLString } from 'graphql';
+import {
+  UserContactEmailConfirmMutation,
+  UserContactCreateMutation,
+  UserContactDeleteMutation,
+  UserContactListQuery,
+  UserContactQuery,
+  UserEventSubscriptionQuery,
+  UserEventSubscriptionListQuery,
+  UserEventSubscriptionCreateMutation,
+  UserEventSubscriptionDeleteMutation,
+} from '@api/schema/notification';
+import container from '@container';
 import { AuthEthereumMutation, UserType } from './schema/user';
 import * as middlewares from './middlewares';
 import {
@@ -26,18 +38,6 @@ import {
   UnvoteMutation,
   VoteMutation,
 } from './schema/proposal';
-import {
-  UserContactEmailConfirmMutation,
-  UserContactCreateMutation,
-  UserContactDeleteMutation,
-  UserContactListQuery,
-  UserContactQuery,
-  UserEventSubscriptionQuery,
-  UserEventSubscriptionListQuery,
-  UserEventSubscriptionCreateMutation,
-  UserEventSubscriptionDeleteMutation
-} from "@api/schema/notification";
-import container from "@container";
 
 export function route({ express, server }: { express: Express; server: Server }) {
   const apollo = new ApolloServer({
@@ -102,13 +102,15 @@ export function route({ express, server }: { express: Express; server: Server })
   ]);
 
   express.route('/callback/event/:webHookId').post(json(), async (req, res) => {
-    const secret = req.query.secret;
+    const { secret } = req.query;
     if (secret !== container.parent.api.secret) {
       res.sendStatus(403);
       return;
     }
 
-    const webHook = await container.model.contractEventWebHookTable().where('id', req.params.webHookId);
+    const webHook = await container.model
+      .contractEventWebHookTable()
+      .where('id', req.params.webHookId);
 
     if (!webHook) {
       res.sendStatus(404);
@@ -119,7 +121,7 @@ export function route({ express, server }: { express: Express; server: Server })
       eventName: req.body.eventName,
       events: req.body.events,
       contract: req.body.contract,
-      webHookId: req.params.webHookId
+      webHookId: req.params.webHookId,
     });
 
     res.sendStatus(200);

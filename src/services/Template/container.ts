@@ -1,7 +1,7 @@
-import { Container, singleton } from '@services/Container';
+import { Container } from '@services/Container';
 import AppContainer from '@container';
-import { i18nContext } from './index';
 import * as Mustache from 'mustache';
+import { i18nContext } from './index';
 
 export class TemplateContainer extends Container<typeof AppContainer> {
   readonly i18n = i18nContext;

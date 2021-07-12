@@ -7,6 +7,11 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from 'graphql';
+import { UserType } from '@api/schema/user';
+import { Status, Proposal, Vote } from '@models/Proposal/Entity';
+import container from '@container';
+import { Request } from 'express';
+import { AuthenticationError, ForbiddenError, UserInputError } from 'apollo-server-express';
 import {
   DateTimeType,
   PaginateList,
@@ -15,11 +20,6 @@ import {
   UuidType,
   onlyAllowed,
 } from '../types';
-import { UserType } from '@api/schema/user';
-import { Status, Proposal, Vote } from '@models/Proposal/Entity';
-import container from '@container';
-import { Request } from 'express';
-import { AuthenticationError, ForbiddenError, UserInputError } from 'apollo-server-express';
 
 export const VoteType = new GraphQLObjectType<Vote>({
   name: 'VoteType',

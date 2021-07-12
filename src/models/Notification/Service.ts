@@ -1,4 +1,9 @@
 import { Factory } from '@services/Container';
+import { v4 as uuid } from 'uuid';
+import { User } from '@models/User/Entity';
+import { Contract } from '@models/Protocol/Entity';
+import container from '@container';
+import { Emitter } from '@services/Event';
 import {
   ContactBroker,
   ContactStatus,
@@ -13,14 +18,9 @@ import {
   UserEventSubscription,
   UserEventSubscriptionTable,
 } from './Entity';
-import { v4 as uuid } from 'uuid';
-import { User } from '@models/User/Entity';
-import { Contract } from '@models/Protocol/Entity';
-import container from '@container';
-import { Emitter } from '@services/Event';
 
 export class NotificationService {
-  constructor(readonly table: Factory<NotificationTable> = table) {}
+  constructor(readonly table: Factory<NotificationTable>) {}
 
   public readonly onCreated = new Emitter<Notification>(async (notification) => {
     switch (notification.type) {
@@ -52,7 +52,7 @@ export class NotificationService {
   }
 
   async markAsProcessed(notification: Notification): Promise<Notification> {
-    let updated = {
+    const updated = {
       ...notification,
       status: NotificationStatus.processed,
       processedAt: new Date(),
@@ -65,10 +65,7 @@ export class NotificationService {
 }
 
 export class UserContactService {
-  constructor(
-    readonly table: Factory<UserContactTable> = table,
-    readonly externalSelfUrl: string,
-  ) {}
+  constructor(readonly table: Factory<UserContactTable>, readonly externalSelfUrl: string) {}
 
   public readonly onCreated = new Emitter<{ user: User; contact: UserContact }>(
     async ({ user, contact }) => {
@@ -133,7 +130,7 @@ export class UserContactService {
 }
 
 export class UserEventSubscriptionService {
-  constructor(readonly table: Factory<UserEventSubscriptionTable> = table) {}
+  constructor(readonly table: Factory<UserEventSubscriptionTable>) {}
 
   async create(
     contact: UserContact,
@@ -175,7 +172,7 @@ interface ContractEventWebHookInfo {
 }
 
 export class ContractEventWebHookService {
-  constructor(readonly table: Factory<ContractEventWebHookTable> = table) {}
+  constructor(readonly table: Factory<ContractEventWebHookTable>) {}
 
   public readonly onCreated = new Emitter<ContractEventWebHookInfo>(async (webHookInfo) => {
     await container.model.queueService().push('subscribeToEventFromScanner', webHookInfo);
@@ -185,7 +182,7 @@ export class ContractEventWebHookService {
     const duplicate = await this.table()
       .where({
         contract: contract.id,
-        event: event,
+        event,
       })
       .first();
 
@@ -205,7 +202,7 @@ export class ContractEventWebHookService {
     this.onCreated.emit({
       network: contract.network,
       address: contract.address,
-      event: event,
+      event,
       webHookId: created.id,
     });
 

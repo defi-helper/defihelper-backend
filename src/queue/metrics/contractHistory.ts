@@ -1,7 +1,7 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import { Factory } from '@services/Container';
-import bn from 'bignumber.js';
+import BN from 'bignumber.js';
 
 export interface Params {
   contract: string;
@@ -15,7 +15,7 @@ export default async (process: Process) => {
     return process.info('No ethereum').done();
   }
   const blockchain = container.blockchain[contract.blockchain];
-  if (!blockchain.provider.hasOwnProperty(contract.network)) {
+  if (!Object.prototype.hasOwnProperty.call(blockchain.provider, contract.network)) {
     throw new Error('Network not supported');
   }
   const network = contract.network as keyof typeof blockchain.provider;
@@ -29,21 +29,21 @@ export default async (process: Process) => {
 
   const currentBlockNumber = await provider.getBlockNumber();
   const avgBlockTime = blockchain.avgBlockTime[network];
-  const step = new bn(60)
+  const step = new BN(60)
     .div(avgBlockTime)
     .multipliedBy(60 * 24)
     .div(2)
     .toFixed(0); // ~2 metrics by day
 
   const queue = container.model.queueService();
-  let blockNumber = new bn(startBlockNumber);
+  let blockNumber = new BN(startBlockNumber);
   while (blockNumber.lt(currentBlockNumber)) {
     queue.push('metricsContract', {
       contract: contract.id,
       blockNumber: blockNumber.toFixed(0),
     });
 
-    blockNumber = new bn(blockNumber).plus(step);
+    blockNumber = new BN(blockNumber).plus(step);
   }
 
   return process.done();

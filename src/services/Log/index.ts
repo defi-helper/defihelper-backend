@@ -10,13 +10,12 @@ export interface Log {
   error(msg: string): any;
 }
 
-export function consoleFactory() {
-  return () => new ConsoleLogger();
-}
-
+/* eslint-disable no-console */
 export class ConsoleLogger implements Log {
+  protected dateFormat: string = ``;
+
   format(type: string, msg: string) {
-    return `${type} [${dayjs().format('DD-MM-YYYY HH:mm:ss Z')}]: ${msg}`;
+    return `${type} [${dayjs().format(this.dateFormat)}]: ${msg}`;
   }
 
   debug(msg: string) {
@@ -34,4 +33,8 @@ export class ConsoleLogger implements Log {
   error(msg: string) {
     console.error(this.format('ERROR', msg));
   }
+}
+
+export function consoleFactory() {
+  return () => new ConsoleLogger();
 }

@@ -1,7 +1,7 @@
 import { Container, singleton } from '@services/Container';
 import AppContainer from '@container';
-import { ACL } from './index';
 import { User, Role } from '@models/User/Entity';
+import { ACL } from './index';
 
 export class ACLContainer extends Container<typeof AppContainer> {
   readonly guest = singleton(

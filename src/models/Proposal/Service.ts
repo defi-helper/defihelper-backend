@@ -1,12 +1,12 @@
 import { Factory } from '@services/Container';
 import { v4 as uuid } from 'uuid';
 import { User } from '@models/User/Entity';
-import { Status, Proposal, ProposalTable, Vote, VoteTable } from './Entity';
+import { Status, Proposal, ProposalTable, VoteTable } from './Entity';
 
 export class ProposalService {
   constructor(
-    readonly proposalTable: Factory<ProposalTable> = proposalTable,
-    readonly voteTable: Factory<VoteTable> = voteTable,
+    readonly proposalTable: Factory<ProposalTable>,
+    readonly voteTable: Factory<VoteTable>,
   ) {}
 
   async create(title: string, description: string, author: User) {

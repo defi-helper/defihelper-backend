@@ -9,7 +9,7 @@ export enum Role {
 export interface User {
   id: string;
   role: Role;
-  locale: Locale
+  locale: Locale;
   updatedAt: Date;
   createdAt: Date;
 }

@@ -1,8 +1,7 @@
 import * as Mustache from 'mustache';
-import { Templates } from './templates';
 import nodemailer, { Transporter } from 'nodemailer';
 import container from '@container';
-import { Locale } from '@services/I18n/container';
+import { Templates } from './templates';
 
 export type EmailTemplate = keyof typeof Templates;
 
@@ -18,7 +17,9 @@ export interface EmailServiceConfig {
 
 export class EmailService {
   protected transporter?: Transporter;
+
   protected from: string;
+
   constructor(config: EmailServiceConfig) {
     if (config.host !== '') {
       this.transporter = nodemailer.createTransport({

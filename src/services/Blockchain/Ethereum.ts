@@ -44,9 +44,13 @@ export interface Config {
 
 export class BlockchainContainer extends Container<Config> {
   readonly byNetwork = (network: string | number) => {
-    network = network.toString();
-    const provider = isKey(this.provider, network) ? this.provider[network] : null;
-    const avgBlockTime = isKey(this.avgBlockTime, network) ? this.avgBlockTime[network] : null;
+    const normalizeNetwork = network.toString();
+    const provider = isKey(this.provider, normalizeNetwork)
+      ? this.provider[normalizeNetwork]
+      : null;
+    const avgBlockTime = isKey(this.avgBlockTime, normalizeNetwork)
+      ? this.avgBlockTime[normalizeNetwork]
+      : null;
 
     return {
       provider,

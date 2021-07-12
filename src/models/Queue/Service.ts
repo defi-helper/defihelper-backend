@@ -17,10 +17,7 @@ export interface BrokerOptions {
 export class Broker {
   protected isStarted: boolean = false;
 
-  constructor(
-    readonly service: QueueService = service,
-    readonly options: Partial<BrokerOptions> = {},
-  ) {
+  constructor(readonly service: QueueService, readonly options: Partial<BrokerOptions> = {}) {
     this.options = {
       interval: 1000,
       ...options,
@@ -56,7 +53,7 @@ export interface PushOptions {
 }
 
 export class QueueService {
-  constructor(readonly table: Factory<Table> = table) {}
+  constructor(readonly table: Factory<Table>) {}
 
   async push<H extends Handler>(handler: H, params: Object, options: PushOptions = {}) {
     let task: Task = {
@@ -95,7 +92,7 @@ export class QueueService {
       .orderBy('startAt', 'asc')
       .limit(1);
     if (options.handleOnly && options.handleOnly.length > 0) {
-      const handleOnly = options.handleOnly;
+      const { handleOnly } = options;
       select = select.andWhere((b) => b.whereIn('handler', handleOnly));
     }
 

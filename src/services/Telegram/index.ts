@@ -1,22 +1,24 @@
 import * as Mustache from 'mustache';
-import { Templates } from './templates';
 import TelegramBot from 'node-telegram-bot-api';
-import container from "@container";
-import {ContactStatus} from "@models/Notification/Entity";
+import container from '@container';
+import { ContactStatus } from '@models/Notification/Entity';
+import { Templates } from './templates';
 
 export type TelegramTemplate = keyof typeof Templates;
 
 export class TelegramService {
-    protected bot: TelegramBot;
-    constructor(token: string) {
-      this.bot = new TelegramBot(token, { polling: !!token });
-    }
+  protected bot: TelegramBot;
+
+  constructor(token: string) {
+    this.bot = new TelegramBot(token, { polling: !!token });
+  }
 
   startHandler() {
-    this.bot.on("message", async message => {
+    this.bot.on('message', async (message) => {
       if (message.text && message.text.indexOf('/start') > -1) {
         const confirmationCode = message.text.replace('/start ', '');
-        const userContact = await container.model.userContactTable()
+        const userContact = await container.model
+          .userContactTable()
           .where('confirmationCode', confirmationCode)
           .first();
         if (!userContact || userContact.status === ContactStatus.Active) {
@@ -24,7 +26,9 @@ export class TelegramService {
           return;
         }
 
-        await container.model.userContactService().activate(userContact, message.chat.id.toString());
+        await container.model
+          .userContactService()
+          .activate(userContact, message.chat.id.toString());
       }
     });
   }

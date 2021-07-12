@@ -1,6 +1,6 @@
 import 'module-alias/register';
-import container from './container';
 import cli from 'command-line-args';
+import container from './container';
 
 container.model
   .migrationService()
@@ -22,6 +22,8 @@ container.model
       case 'monthStart':
         await queue.push('scheduleMonthStart', {});
         break;
+      default:
+        throw new Error('Invalid period');
     }
 
     process.exit(0);

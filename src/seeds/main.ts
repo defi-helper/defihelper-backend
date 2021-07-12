@@ -6,7 +6,7 @@ export default async () => {
   const userService = container.model.userService();
   const walletService = container.model.walletService();
   const admin = await userService.create(Role.Admin, 'enUS');
-  const adminEthWallet = await walletService.create(
+  await walletService.create(
     admin,
     'ethereum',
     '1',
@@ -50,14 +50,14 @@ export default async () => {
     'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec posuere cursus ligula convallis tincidunt. Sed mattis massa vitae tortor faucibus pulvinar. Donec sagittis, lacus sed venenatis malesuada, risus libero laoreet augue, nec pharetra leo ligula molestie lorem. Mauris non mauris non sapien hendrerit commodo sed eget quam. Duis tempus metus nec feugiat rhoncus. Aenean nec orci turpis. Nam ut dui sollicitudin, efficitur nulla ac, placerat quam. Pellentesque convallis consectetur ligula et consectetur. Integer a lorem sed risus dictum porttitor. Nulla luctus sed metus tincidunt viverra. Integer rhoncus rutrum nunc, at blandit leo tincidunt at. Quisque vel turpis et tellus posuere aliquam ut in nisi. Fusce vitae mi quis lacus fermentum consectetur. Vestibulum pellentesque purus at malesuada pharetra. Suspendisse in finibus quam.',
     user,
   );
-  const vote = await proposalService.vote(proposal, user);
+  await proposalService.vote(proposal, user);
 
   // Tokens
   const tokenAliasService = container.model.tokenAliasService();
   const tokenService = container.model.tokenService();
   const tokenAliasUnstable = await tokenAliasService.create('BondAppetit Governance', 'BAG', false);
   const tokenAliasStable = await tokenAliasService.create('Bond Appetite USD', 'USDap', true);
-  const tokenStable = await tokenService.create(
+  await tokenService.create(
     tokenAliasStable,
     'ethereum',
     '1',
@@ -66,7 +66,7 @@ export default async () => {
     'USDap',
     18,
   );
-  const tokenUnstable = await tokenService.create(
+  await tokenService.create(
     tokenAliasUnstable,
     'ethereum',
     '1',

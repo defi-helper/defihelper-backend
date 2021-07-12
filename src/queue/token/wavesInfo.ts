@@ -5,7 +5,7 @@ export interface Params {
 }
 
 export default async (process: Process) => {
-  const { token: tokenId } = process.task.params as Params;
+  // const { token: tokenId } = process.task.params as Params;
 
   // todo: implement
 

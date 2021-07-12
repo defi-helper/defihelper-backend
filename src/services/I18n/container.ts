@@ -1,8 +1,8 @@
 import { Container, singleton } from '@services/Container';
 import AppContainer from '@container';
+import { User } from '@models/User/Entity';
 import { I18n } from './index';
 import * as locales from '../../locales';
-import { User } from '@models/User/Entity';
 
 export type Locale = keyof typeof locales;
 

@@ -7,20 +7,21 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from 'graphql';
-import { DateTimeType, PaginateList, PaginationArgument, SortArgument, UuidType } from '../types';
 import { UserType } from '@api/schema/user';
-import { Status } from '@models/Proposal/Entity';
 import container from '@container';
 import { Request } from 'express';
 import { AuthenticationError, UserInputError } from 'apollo-server-express';
 import {
   ContactBroker,
-  ContactStatus, contractEventWebHookTableName,
-  UserContact, userContactTableName,
+  ContactStatus,
+  contractEventWebHookTableName,
+  UserContact,
+  userContactTableName,
   UserEventSubscription,
-  userEventSubscriptionTableName
-} from "@models/Notification/Entity";
-import { Role } from "@models/User/Entity";
+  userEventSubscriptionTableName,
+} from '@models/Notification/Entity';
+import { Role } from '@models/User/Entity';
+import { DateTimeType, PaginateList, PaginationArgument, SortArgument, UuidType } from '../types';
 
 export const UserContactBrokerEnum = new GraphQLEnumType({
   name: 'UserContactBrokerEnum',
@@ -103,17 +104,20 @@ export const UserContactQuery: GraphQLFieldConfig<any, Request> = {
       ),
     },
   },
-  resolve: async (root, {filter}, {currentUser}) => {
+  resolve: async (root, { filter }, { currentUser }) => {
     if (!currentUser) {
       throw new AuthenticationError('UNAUTHENTICATED');
     }
 
-    return container.model.userContactTable().where(function () {
-      this.where('id', filter.id);
-      if (currentUser.role !== Role.Admin) {
-        this.andWhere('user', currentUser.id);
-      }
-    }).first()
+    return container.model
+      .userContactTable()
+      .where(function () {
+        this.where('id', filter.id);
+        if (currentUser.role !== Role.Admin) {
+          this.andWhere('user', currentUser.id);
+        }
+      })
+      .first();
   },
 };
 
@@ -143,16 +147,16 @@ export const UserContactListQuery: GraphQLFieldConfig<any, Request> = {
     sort: SortArgument(
       'UserContactListSortInputType',
       ['id', 'createdAt'],
-      [{column: 'createdAt', order: 'asc'}],
+      [{ column: 'createdAt', order: 'asc' }],
     ),
     pagination: PaginationArgument('UserContactListPaginationInputType'),
   },
-  resolve: async (root, {filter, sort, pagination}, {currentUser}) => {
+  resolve: async (root, { filter, sort, pagination }, { currentUser }) => {
     if (!currentUser) {
       throw new AuthenticationError('UNAUTHENTICATED');
     }
 
-    let select = container.model.userContactTable().where(function () {
+    const select = container.model.userContactTable().where(function () {
       if (filter.user && currentUser.role === Role.Admin) {
         this.where('user', filter.user);
       } else if (currentUser.role !== Role.Admin) {
@@ -167,7 +171,6 @@ export const UserContactListQuery: GraphQLFieldConfig<any, Request> = {
         this.where('status', filter.status);
       }
     });
-
 
     return {
       list: await select.clone().orderBy(sort).limit(pagination.limit).offset(pagination.offset),
@@ -199,12 +202,12 @@ export const UserContactCreateMutation: GraphQLFieldConfig<any, Request> = {
       ),
     },
   },
-  resolve: async (root, {input}, {currentUser}) => {
+  resolve: async (root, { input }, { currentUser }) => {
     if (!currentUser) {
       throw new AuthenticationError('UNAUTHENTICATED');
     }
 
-    const {type, address} = input;
+    const { type, address } = input;
     return container.model.userContactService().create(type, address, currentUser);
   },
 };
@@ -230,12 +233,15 @@ export const UserContactEmailConfirmMutation: GraphQLFieldConfig<any, Request> =
       ),
     },
   },
-  resolve: async (root, {input}) => {
-    const {confirmationCode, address} = input;
-    const contact = await container.model.userContactTable().where({
-      address,
-      confirmationCode
-    }).first()
+  resolve: async (root, { input }) => {
+    const { confirmationCode, address } = input;
+    const contact = await container.model
+      .userContactTable()
+      .where({
+        address,
+        confirmationCode,
+      })
+      .first();
 
     if (!contact || contact.type !== ContactBroker.Email) {
       return false;
@@ -254,17 +260,20 @@ export const UserContactDeleteMutation: GraphQLFieldConfig<any, Request> = {
       type: GraphQLNonNull(UuidType),
     },
   },
-  resolve: async (root, {id}, {currentUser}) => {
+  resolve: async (root, { id }, { currentUser }) => {
     if (!currentUser) {
       throw new AuthenticationError('UNAUTHENTICATED');
     }
 
-    const userContact = await container.model.userContactTable().where(function () {
-      this.where('id', id);
-      if (currentUser.role !== Role.Admin) {
-        this.where('user', currentUser.id);
-      }
-    }).first();
+    const userContact = await container.model
+      .userContactTable()
+      .where(function () {
+        this.where('id', id);
+        if (currentUser.role !== Role.Admin) {
+          this.where('user', currentUser.id);
+        }
+      })
+      .first();
 
     if (!userContact) {
       throw new UserInputError('User contact is not found');
@@ -275,7 +284,6 @@ export const UserContactDeleteMutation: GraphQLFieldConfig<any, Request> = {
     return true;
   },
 };
-
 
 export const UserEventSubscriptionType = new GraphQLObjectType<UserEventSubscription>({
   name: 'UserEventSubscriptionType',
@@ -288,16 +296,17 @@ export const UserEventSubscriptionType = new GraphQLObjectType<UserEventSubscrip
       type: GraphQLNonNull(UserContactType),
       description: 'Contact',
       resolve: (eventSubscription) => {
-        return container.model.userContactTable()
-          .where('id', eventSubscription.contact).first();
+        return container.model.userContactTable().where('id', eventSubscription.contact).first();
       },
     },
     contract: {
       type: GraphQLNonNull(GraphQLString),
       description: 'Contact',
       resolve: async (eventSubscription) => {
-        const contractWebHook = await container.model.contractEventWebHookTable()
-          .where('id', eventSubscription.webHook).first();
+        const contractWebHook = await container.model
+          .contractEventWebHookTable()
+          .where('id', eventSubscription.webHook)
+          .first();
         return contractWebHook ? contractWebHook.contract : '';
       },
     },
@@ -305,8 +314,10 @@ export const UserEventSubscriptionType = new GraphQLObjectType<UserEventSubscrip
       type: GraphQLNonNull(GraphQLString),
       description: 'Event',
       resolve: async (eventSubscription) => {
-        const contractWebHook = await container.model.contractEventWebHookTable()
-          .where('id', eventSubscription.webHook).first();
+        const contractWebHook = await container.model
+          .contractEventWebHookTable()
+          .where('id', eventSubscription.webHook)
+          .first();
         return contractWebHook ? contractWebHook.event : '';
       },
     },
@@ -333,22 +344,27 @@ export const UserEventSubscriptionQuery: GraphQLFieldConfig<any, Request> = {
       ),
     },
   },
-  resolve: async (root, {filter}, {currentUser}) => {
+  resolve: async (root, { filter }, { currentUser }) => {
     if (!currentUser) {
       throw new AuthenticationError('UNAUTHENTICATED');
     }
 
-    return container.model.userEventSubscriptionTable().where(function () {
-      this.where('id', filter.id);
-      if (currentUser.role !== Role.Admin) {
-        this.andWhere('user', currentUser.id);
-      }
-    }).first()
+    return container.model
+      .userEventSubscriptionTable()
+      .where(function () {
+        this.where('id', filter.id);
+        if (currentUser.role !== Role.Admin) {
+          this.andWhere('user', currentUser.id);
+        }
+      })
+      .first();
   },
 };
 
 export const UserEventSubscriptionListQuery: GraphQLFieldConfig<any, Request> = {
-  type: GraphQLNonNull(PaginateList('UserEventSubscriptionListQuery', GraphQLNonNull(UserEventSubscriptionType))),
+  type: GraphQLNonNull(
+    PaginateList('UserEventSubscriptionListQuery', GraphQLNonNull(UserEventSubscriptionType)),
+  ),
   args: {
     filter: {
       type: new GraphQLInputObjectType({
@@ -377,16 +393,17 @@ export const UserEventSubscriptionListQuery: GraphQLFieldConfig<any, Request> = 
     sort: SortArgument(
       'UserEventSubscriptionListSortInputType',
       ['id', 'createdAt'],
-      [{column: 'createdAt', order: 'asc'}],
+      [{ column: 'createdAt', order: 'asc' }],
     ),
     pagination: PaginationArgument('UserEventSubscriptionListPaginationInputType'),
   },
-  resolve: async (root, {filter, sort, pagination}, {currentUser}) => {
+  resolve: async (root, { filter, sort, pagination }, { currentUser }) => {
     if (!currentUser) {
       throw new AuthenticationError('UNAUTHENTICATED');
     }
 
-    const select = container.model.userEventSubscriptionTable()
+    const select = container.model
+      .userEventSubscriptionTable()
       .select(`${userEventSubscriptionTableName}.*`)
       .leftJoin(
         `${userContactTableName}`,
@@ -452,37 +469,39 @@ export const UserEventSubscriptionCreateMutation: GraphQLFieldConfig<any, Reques
       ),
     },
   },
-  resolve: async (root, {input}, {currentUser}) => {
+  resolve: async (root, { input }, { currentUser }) => {
     if (!currentUser) {
       throw new AuthenticationError('UNAUTHENTICATED');
     }
 
-    const {contact: contactId, contract: contractId, event} = input;
+    const { contact: contactId, contract: contractId, event } = input;
 
-    const contract = await container.model.contractTable()
-      .where('id', contractId)
-      .first();
+    const contract = await container.model.contractTable().where('id', contractId).first();
 
     if (!contract) {
       throw new UserInputError('Contract is not found');
     }
 
-    const contractWebHook = await container.model.contractEventWebHookService()
+    const contractWebHook = await container.model
+      .contractEventWebHookService()
       .create(contract, event);
 
-    const contact = await container.model.userContactTable().where(function () {
-      this.where('id', contactId);
-      this.where('status', ContactStatus.Active);
-      if (currentUser.role !== Role.Admin) {
-        this.andWhere('user', currentUser.id);
-      }
-    }).first();
+    const contact = await container.model
+      .userContactTable()
+      .where(function () {
+        this.where('id', contactId);
+        this.where('status', ContactStatus.Active);
+        if (currentUser.role !== Role.Admin) {
+          this.andWhere('user', currentUser.id);
+        }
+      })
+      .first();
 
     if (!contact) {
       throw new UserInputError('User contact is not found or inactive');
     }
 
-    return container.model.userEventSubscriptionService().create(contact, contractWebHook)
+    return container.model.userEventSubscriptionService().create(contact, contractWebHook);
   },
 };
 
@@ -502,14 +521,15 @@ export const UserEventSubscriptionDeleteMutation: GraphQLFieldConfig<any, Reques
       ),
     },
   },
-  resolve: async (root, {input}, {currentUser}) => {
+  resolve: async (root, { input }, { currentUser }) => {
     if (!currentUser) {
       throw new AuthenticationError('UNAUTHENTICATED');
     }
 
-    const {id} = input;
+    const { id } = input;
 
-    const subscription = await container.model.userEventSubscriptionTable()
+    const subscription = await container.model
+      .userEventSubscriptionTable()
       .select(`${userEventSubscriptionTableName}.*`)
       .leftJoin(
         `${userContactTableName}`,
@@ -521,7 +541,8 @@ export const UserEventSubscriptionDeleteMutation: GraphQLFieldConfig<any, Reques
         if (currentUser.role !== Role.Admin) {
           this.andWhere(`${userContactTableName}.user`, currentUser.id);
         }
-      }).first();
+      })
+      .first();
 
     if (!subscription) {
       throw new UserInputError('User event subscription is not found');

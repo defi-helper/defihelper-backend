@@ -1,12 +1,20 @@
 import { tableFactory as createTableFactory } from '@services/Database';
 import * as Handlers from '../../queue';
 
+export enum TaskStatus {
+  Pending = 'pending',
+  Process = 'process',
+  Done = 'done',
+  Error = 'error',
+  Collision = 'collision',
+}
+
 export function hasHandler(handler: string): handler is keyof typeof Handlers {
-  return Handlers.hasOwnProperty(handler);
+  return Object.prototype.hasOwnProperty.call(Handlers, handler);
 }
 
 export class Process {
-  constructor(readonly task: Task = task) {}
+  constructor(readonly task: Task) {}
 
   info(msg: string) {
     return new Process({
@@ -40,14 +48,6 @@ export class Process {
       updatedAt: new Date(),
     });
   }
-}
-
-export enum TaskStatus {
-  Pending = 'pending',
-  Process = 'process',
-  Done = 'done',
-  Error = 'error',
-  Collision = 'collision',
 }
 
 export interface Task {

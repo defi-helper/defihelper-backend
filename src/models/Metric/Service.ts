@@ -1,15 +1,15 @@
 import { v4 as uuid } from 'uuid';
 import { Protocol, Contract } from '@models/Protocol/Entity';
 import { Factory } from '@services/Container';
+import { Wallet } from '@models/Wallet/Entity';
+import axios from 'axios';
+import vm from 'vm';
 import {
   MetricContractTable,
   MetricMap,
   MetricWalletTable,
   MetricWalletTokenTable,
 } from './Entity';
-import { Wallet } from '@models/Wallet/Entity';
-import axios from 'axios';
-import vm from 'vm';
 
 export interface MetricData extends Object {
   metrics?: MetricMap;
@@ -41,10 +41,10 @@ export interface ProtocolAdapter {
 
 export class MetricContractService {
   constructor(
-    readonly metricContractTable: Factory<MetricContractTable> = metricContractTable,
-    readonly metricWalletTable: Factory<MetricWalletTable> = metricWalletTable,
-    readonly metricWalletTokenTable: Factory<MetricWalletTokenTable> = metricWalletTokenTable,
-    readonly adapterURL: string = adapterURL,
+    readonly metricContractTable: Factory<MetricContractTable>,
+    readonly metricWalletTable: Factory<MetricWalletTable>,
+    readonly metricWalletTokenTable: Factory<MetricWalletTokenTable>,
+    readonly adapterURL: string,
   ) {}
 
   async getAdapter(protocol: Protocol): Promise<ProtocolAdapter> {

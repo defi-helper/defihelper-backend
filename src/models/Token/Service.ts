@@ -6,7 +6,7 @@ import { Emitter } from '@services/Event';
 import container from '@container';
 
 export class TokenAliasService {
-  constructor(readonly table: Factory<TokenAliasTable> = table) {}
+  constructor(readonly table: Factory<TokenAliasTable>) {}
 
   async create(name: string, symbol: string, stable: boolean) {
     const created = {
@@ -45,9 +45,11 @@ export class TokenService {
     if (token.blockchain === 'waves') {
       return container.model.queueService().push('tokenInfoWaves', { token: token.id });
     }
+
+    return null;
   });
 
-  constructor(readonly table: Factory<TokenTable> = table) {}
+  constructor(readonly table: Factory<TokenTable>) {}
 
   async create(
     alias: TokenAlias | null,

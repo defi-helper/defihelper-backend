@@ -1,14 +1,13 @@
 import { tableFactory as createTableFactory } from '@services/Database';
 
 export enum ContactBroker {
-  Email='email',
-  Telegram='telegram',
+  Email = 'email',
+  Telegram = 'telegram',
 }
 
-
 export enum ContactStatus {
-  Active='active',
-  Inactive='inactive',
+  Active = 'active',
+  Inactive = 'inactive',
 }
 
 export interface UserContact {
@@ -23,14 +22,13 @@ export interface UserContact {
 }
 
 export enum NotificationStatus {
-  new='new',
-  processed='processed',
+  new = 'new',
+  processed = 'processed',
 }
 
 export enum NotificationType {
-  event='event',
+  event = 'event',
 }
-
 
 export interface Notification {
   id: string;
@@ -43,7 +41,7 @@ export interface Notification {
 }
 
 export interface ContractEventWebHook {
-  id: string
+  id: string;
   contract: string;
   event: string;
   createdAt: Date;
@@ -58,34 +56,32 @@ export interface UserEventSubscription {
 
 export const userContactTableName = 'user_contact';
 
-export const userContactTableFactory =
-    createTableFactory<UserContact>(userContactTableName);
+export const userContactTableFactory = createTableFactory<UserContact>(userContactTableName);
 
 export type UserContactTable = ReturnType<ReturnType<typeof userContactTableFactory>>;
 
-
-
 export const notificationTableName = 'notification';
 
-export const notificationTableFactory =
-  createTableFactory<Notification>(notificationTableName);
+export const notificationTableFactory = createTableFactory<Notification>(notificationTableName);
 
 export type NotificationTable = ReturnType<ReturnType<typeof notificationTableFactory>>;
 
-
-
 export const contractEventWebHookTableName = 'contract_event_webhook';
 
-export const contractEventWebHookTableFactory =
-    createTableFactory<ContractEventWebHook>(contractEventWebHookTableName);
+export const contractEventWebHookTableFactory = createTableFactory<ContractEventWebHook>(
+  contractEventWebHookTableName,
+);
 
-export type ContractEventWebHookTable = ReturnType<ReturnType<typeof contractEventWebHookTableFactory>>;
-
-
+export type ContractEventWebHookTable = ReturnType<
+  ReturnType<typeof contractEventWebHookTableFactory>
+>;
 
 export const userEventSubscriptionTableName = 'user_event_subscription';
 
-export const userEventSubscriptionTableFactory =
-    createTableFactory<UserEventSubscription>(userEventSubscriptionTableName);
+export const userEventSubscriptionTableFactory = createTableFactory<UserEventSubscription>(
+  userEventSubscriptionTableName,
+);
 
-export type UserEventSubscriptionTable = ReturnType<ReturnType<typeof userEventSubscriptionTableFactory>>;
+export type UserEventSubscriptionTable = ReturnType<
+  ReturnType<typeof userEventSubscriptionTableFactory>
+>;

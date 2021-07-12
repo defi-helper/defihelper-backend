@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+
 dotenv.config();
 
 export default {
@@ -40,7 +41,7 @@ export default {
     auth: {
       user: process.env.EMAIL_SMTP_USER ?? '',
       pass: process.env.EMAIL_SMTP_PASS ?? '',
-    }
+    },
   },
   telegram: {
     token: process.env.TELEGRAM_TOKEN ?? '',

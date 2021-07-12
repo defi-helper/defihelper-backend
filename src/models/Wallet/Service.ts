@@ -1,11 +1,11 @@
 import { Factory } from '@services/Container';
 import { v4 as uuid } from 'uuid';
 import { User } from '@models/User/Entity';
-import { Wallet, Table } from './Entity';
 import { Blockchain } from '@models/types';
+import { Wallet, Table } from './Entity';
 
 export class WalletService {
-  constructor(readonly table: Factory<Table> = table) {}
+  constructor(readonly table: Factory<Table>) {}
 
   async create(
     user: User,

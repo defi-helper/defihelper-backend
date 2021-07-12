@@ -8,6 +8,13 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from 'graphql';
+import container from '@container';
+import { utils } from 'ethers';
+import { Request } from 'express';
+import { User, Role } from '@models/User/Entity';
+import { Wallet } from '@models/Wallet/Entity';
+import { Blockchain } from '@models/types';
+import { ContractType } from '../protocol';
 import {
   BlockchainEnum,
   BlockchainFilterInputType,
@@ -21,13 +28,6 @@ import {
   SortArgument,
   UuidType,
 } from '../types';
-import container from '@container';
-import { utils } from 'ethers';
-import { Request } from 'express';
-import { ContractType } from '../protocol';
-import { User, Role } from '@models/User/Entity';
-import { Wallet } from '@models/Wallet/Entity';
-import { Blockchain } from '@models/types';
 import * as locales from '../../../locales';
 
 const TokenAliasFilterInputType = new GraphQLInputObjectType({
@@ -116,10 +116,9 @@ export const WalletType = new GraphQLObjectType<Wallet>({
           select = select.andWhere('hidden', filter.hidden);
         }
         if (filter.search !== undefined && filter.search !== '') {
-          select = select.andWhere((select) => {
-            select
-              .where('name', 'iLike', `%${filter.search}%`)
-              .orWhere('address', 'iLike', `%${filter.search}%`);
+          select = select.andWhere(function () {
+            this.where('name', 'iLike', `%${filter.search}%`);
+            this.orWhere('address', 'iLike', `%${filter.search}%`);
           });
         }
 
@@ -828,14 +827,13 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
 
       const sid = container.model.sessionService().generate(user);
       return { user, sid };
-    } else {
-      const user = currentUser ?? (await container.model.userService().create(Role.User));
-      await container.model
-        .walletService()
-        .create(user, 'ethereum', network, recoveredAddress, recoveredPubKey);
-      const sid = container.model.sessionService().generate(user);
-
-      return { user, sid };
     }
+    const user = currentUser ?? (await container.model.userService().create(Role.User));
+    await container.model
+      .walletService()
+      .create(user, 'ethereum', network, recoveredAddress, recoveredPubKey);
+    const sid = container.model.sessionService().generate(user);
+
+    return { user, sid };
   },
 };

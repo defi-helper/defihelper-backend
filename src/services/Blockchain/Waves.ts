@@ -8,8 +8,10 @@ export interface Config {
 
 export class BlockchainContainer extends Container<Config> {
   readonly byNetwork = (network: string | number) => {
-    network = network.toString();
-    const provider = isKey(this.provider, network) ? this.provider[network] : null;
+    const normalizeNetwork = network.toString();
+    const provider = isKey(this.provider, normalizeNetwork)
+      ? this.provider[normalizeNetwork]
+      : null;
 
     return {
       provider,

@@ -1,5 +1,4 @@
 import { Container, singleton } from '@services/Container';
-import config from './config';
 import { pgConnectFactory } from '@services/Database';
 import { consoleFactory } from '@services/Log';
 import * as Blockchain from '@services/Blockchain';
@@ -11,6 +10,7 @@ import { TemplateContainer } from '@services/Template/container';
 import { emailServiceFactory } from '@services/Email';
 import { telegramServiceFactory } from '@services/Telegram';
 import { scannerServiceFactory } from '@services/Scanner';
+import config from './config';
 
 class AppContainer extends Container<typeof config> {
   readonly logger = singleton(consoleFactory());

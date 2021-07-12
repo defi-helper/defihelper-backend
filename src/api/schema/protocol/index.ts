@@ -10,6 +10,16 @@ import {
   GraphQLString,
 } from 'graphql';
 import {
+  Contract,
+  contractTableName,
+  Protocol,
+  walletContractLinkTableName,
+} from '@models/Protocol/Entity';
+import { tableName as walletTableName } from '@models/Wallet/Entity';
+import { AuthenticationError, ForbiddenError, UserInputError } from 'apollo-server-express';
+import { Blockchain } from '@models/types';
+import {
+  PaginationType,
   BlockchainEnum,
   BlockchainFilterInputType,
   DateTimeType,
@@ -23,15 +33,6 @@ import {
   onlyAllowed,
   UuidType,
 } from '../types';
-import {
-  Contract,
-  contractTableName,
-  Protocol,
-  walletContractLinkTableName,
-} from '@models/Protocol/Entity';
-import { tableName as walletTableName } from '@models/Wallet/Entity';
-import { AuthenticationError, ForbiddenError, UserInputError } from 'apollo-server-express';
-import { Blockchain } from '@models/types';
 
 export const ContractType = new GraphQLObjectType<Contract>({
   name: 'ContractType',
@@ -496,8 +497,8 @@ export const ProtocolType = new GraphQLObjectType<Protocol>({
       resolve: async (protocol, { filter, sort, pagination }) => {
         let select = container.model.contractTable().where('protocol', protocol.id);
         if (filter.blockchain !== undefined) {
-          const { protocol, network } = filter.blockchain;
-          select = select.andWhere('blockchain', protocol);
+          const { protocol: blockchain, network } = filter.blockchain;
+          select = select.andWhere('blockchain', blockchain);
           if (network !== undefined) {
             select = select.andWhere('network', network);
           }
@@ -506,10 +507,9 @@ export const ProtocolType = new GraphQLObjectType<Protocol>({
           select = select.andWhere('hidden', filter.hidden);
         }
         if (filter.search !== undefined && filter.search !== '') {
-          select = select.andWhere((select) => {
-            select
-              .where('name', 'iLike', `%${filter.search}%`)
-              .orWhere('address', 'iLike', `%${filter.search}%`);
+          select = select.andWhere(function () {
+            this.where('name', 'iLike', `%${filter.search}%`);
+            this.orWhere('address', 'iLike', `%${filter.search}%`);
           });
         }
 
@@ -569,8 +569,8 @@ export const ProtocolType = new GraphQLObjectType<Protocol>({
           .where(function () {
             this.where('protocol', protocol.id);
             if (filter.blockchain) {
-              const { protocol, network } = filter.blockchain;
-              this.andWhere('blockchain', protocol);
+              const { protocol: blockchain, network } = filter.blockchain;
+              this.andWhere('blockchain', blockchain);
               if (network !== undefined) {
                 this.andWhere('network', network);
               }
@@ -621,7 +621,7 @@ export const ProtocolQuery: GraphQLFieldConfig<any, Request> = {
       ),
     },
   },
-  resolve: async (root, { filter }, { currentUser }) => {
+  resolve: async (root, { filter }) => {
     return container.model.protocolTable().where('id', filter.id).first();
   },
 };

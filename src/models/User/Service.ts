@@ -5,7 +5,7 @@ import { v4 as uuid } from 'uuid';
 import { User, Table as UserTable, Role } from './Entity';
 
 export class UserService {
-  constructor(readonly table: Factory<UserTable> = table) {}
+  constructor(readonly table: Factory<UserTable>) {}
 
   async create(role: Role, locale: Locale = 'enUS') {
     const created = {
@@ -37,9 +37,9 @@ export class UserService {
 
 export class SessionService {
   constructor(
-    readonly cache: Factory<RedisClient> = cache,
-    readonly prefix: string = prefix,
-    readonly ttl: number = ttl,
+    readonly cache: Factory<RedisClient>,
+    readonly prefix: string,
+    readonly ttl: number,
   ) {}
 
   generate(user: User) {
@@ -61,7 +61,7 @@ export class SessionService {
         if (err) return reject(err);
         if (id) cache.expire(key, this.ttl);
 
-        resolve(id);
+        return resolve(id);
       }),
     );
   }

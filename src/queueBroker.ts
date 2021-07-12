@@ -1,7 +1,8 @@
+/* eslint-disable no-console */
 import 'module-alias/register';
-import container from './container';
 import cli from 'command-line-args';
 import { hasHandler } from '@models/Queue/Entity';
+import container from './container';
 
 container.model
   .migrationService()
@@ -15,7 +16,7 @@ container.model
       if (hasHandler(handler)) return;
       throw new Error(`Invalid handler "${handler}"`);
     });
-    if (isNaN(options.interval)) throw new Error(`Invalid interval`);
+    if (Number.isNaN(options.interval)) throw new Error(`Invalid interval`);
 
     container.model
       .queueService()

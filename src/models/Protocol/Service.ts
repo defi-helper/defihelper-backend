@@ -14,7 +14,7 @@ import {
 } from './Entity';
 
 export class ProtocolService {
-  constructor(readonly table: Factory<ProtocolTable> = table) {}
+  constructor(readonly table: Factory<ProtocolTable>) {}
 
   async create(
     adapter: string,
@@ -62,7 +62,7 @@ export class ContractService {
       contract.deployBlockNumber === null ||
       contract.deployBlockNumber === '0'
     ) {
-      return;
+      return null;
     }
 
     return container.model.queueService().push('metricsContractHistory', { contract: contract.id });
@@ -78,7 +78,7 @@ export class ContractService {
       contract.deployBlockNumber === null ||
       contract.deployBlockNumber === '0'
     ) {
-      return;
+      return null;
     }
 
     return container.model
@@ -87,8 +87,8 @@ export class ContractService {
   });
 
   constructor(
-    readonly contractTable: Factory<ContractTable> = contractTable,
-    readonly walletLinkTable: Factory<WalletContractLinkTable> = walletLinkTable,
+    readonly contractTable: Factory<ContractTable>,
+    readonly walletLinkTable: Factory<WalletContractLinkTable>,
   ) {}
 
   async create(

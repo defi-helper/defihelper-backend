@@ -5,10 +5,7 @@ export interface Messages {
 export type Plural = (n: number) => number;
 
 export class I18n {
-  constructor(
-    public readonly messages: Messages = messages,
-    public readonly plural: Plural = plural,
-  ) {}
+  constructor(public readonly messages: Messages, public readonly plural: Plural) {}
 
   t(m: string) {
     return (this.messages[m] ?? m).toString();

@@ -1,5 +1,4 @@
 import redis from 'redis';
-import { Factory } from '@services/Container';
 
 export interface ConnectFactoryConfig {
   readonly host?: string;
