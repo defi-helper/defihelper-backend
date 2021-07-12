@@ -72,10 +72,5 @@
     "./src/**/*.ts": [
       "eslint --ignore-path .gitignore --fix"
     ]
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "npx lint-staged"
-    }
   }
 }
