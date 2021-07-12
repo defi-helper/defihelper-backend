@@ -11,7 +11,8 @@ export interface ContractRegisterParams {
 }
 
 const getEthereumContractCreationBlock = async (network: string, address: string): Promise<number | undefined> => {
-    const res = await axios.get(network === '1' ? `https://etherscan.io/address/${address}` : `https://bscscan.com/address/${address}`);
+    const explorerUrl = container.blockchain.ethereum.explorerUrlByNetwork(network);
+    const res = await axios.get(`${explorerUrl}/address/${address}`);
     const root = parse(res.data);
     const contractCreatorNode = root.querySelectorAll('div').find(div => div.text === '\nContractCreator:');
     if (!contractCreatorNode) {
@@ -36,11 +37,15 @@ const getEthereumContractCreationBlock = async (network: string, address: string
     }
 
 
-    const txId = txHref.replace('/tx/', '');
+    const txHash = txHref.replace('/tx/', '');
 
     try {
-        const txInfo = await container.scanner().txReceipt(network, txId);
-        return  txInfo.blockNumber;
+        const provider = await container.blockchain.ethereum.byNetwork(network).provider;
+        if (!provider) {
+            return undefined;
+        }
+        const txReceipt = await provider().getTransactionReceipt(txHash);
+        return txReceipt.blockNumber;
     } catch {
         return undefined;
     }
@@ -77,13 +82,12 @@ export default async (process: Process) => {
         return process.later(dayjs().add(1, "minutes").toDate());
     }
 
-    const methods: string[] = contractFromScanner.abi
+    const events: string[] = contractFromScanner.abi
         .filter(({ type }: any) => type === "event")
         .map(({ name }: any) => name);
 
-    for (const method of methods) {
-        await container.scanner().registerListener(contractFromScanner.id, method, startHeight);
-    }
+    await Promise.all(events
+        .map(event => container.scanner().registerListener(contractFromScanner.id, event, startHeight)))
 
     return process.done();
 };

@@ -65,10 +65,6 @@ export class ScannerService {
     }
   }
 
-  async txReceipt(network: string, txHash: string): Promise<TransactionReceipt> {
-    return (await this.client.get<TransactionReceipt>(`/api/eth/${network}/txReceipt/${txHash}`)).data;
-  }
-
   async findContract(network: string, address: string): Promise<Contract | undefined> {
     let contracts = (await this.client.get<Contract[]>(`/api/contract?network=${network}&address=${address}`)).data;
     if (contracts.length === 0) {

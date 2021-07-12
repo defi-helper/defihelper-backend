@@ -40,13 +40,10 @@ export interface EventUrls {
 const getExplorer = (blockchain: Blockchain, network: string) => {
   switch (blockchain) {
     case 'ethereum':
-      switch (network) {
-        case '1':
-          return 'https://etherscan.io/tx/'
-        case '56':
-          return 'https://bscscan.com/tx/'
-        default:
-          return '';
+      try {
+        return `${container.blockchain.ethereum.explorerUrlByNetwork(network)}/tx`;
+      } catch {
+        return '';
       }
     case 'waves':
       return 'https://wavesexplorer.com/tx/'
