@@ -11,18 +11,16 @@ import {
   UserContact,
   UserContactTable,
   UserEventSubscription,
-  UserEventSubscriptionTable
+  UserEventSubscriptionTable,
 } from './Entity';
-import { v4 as uuid } from "uuid";
-import { User } from "@models/User/Entity";
-import { Contract } from "@models/Protocol/Entity";
-import container from "@container";
-import {Emitter} from "@services/Event";
+import { v4 as uuid } from 'uuid';
+import { User } from '@models/User/Entity';
+import { Contract } from '@models/Protocol/Entity';
+import container from '@container';
+import { Emitter } from '@services/Event';
 
 export class NotificationService {
-  constructor(
-    readonly table: Factory<NotificationTable> = table,
-  ) {}
+  constructor(readonly table: Factory<NotificationTable> = table) {}
 
   public readonly onCreated = new Emitter<Notification>(async (notification) => {
     switch (notification.type) {
@@ -34,7 +32,11 @@ export class NotificationService {
     }
   });
 
-  async create(contact: UserContact, type: NotificationType, payload: Object): Promise<Notification> {
+  async create(
+    contact: UserContact,
+    type: NotificationType,
+    payload: Object,
+  ): Promise<Notification> {
     const created: Notification = {
       id: uuid(),
       contact: contact.id,
@@ -62,26 +64,27 @@ export class NotificationService {
   }
 }
 
-
 export class UserContactService {
   constructor(
-      readonly table: Factory<UserContactTable> = table,
-      readonly externalSelfUrl: string,
+    readonly table: Factory<UserContactTable> = table,
+    readonly externalSelfUrl: string,
   ) {}
 
-  public readonly onCreated = new Emitter<UserContact>(async (contact) => {
-    if (contact.type === ContactBroker.Email) {
-      await container.model.queueService().push('sendEmail', {
-        email: contact.address,
-        template: 'confirmEmailTemplate',
-        subject: 'Please confirm your email',
-        params: {
-          confirmationLink: `${this.externalSelfUrl}/verification/${contact.address}/${contact.confirmationCode}`,
-        },
-      });
-    }
-  });
-
+  public readonly onCreated = new Emitter<{ user: User; contact: UserContact }>(
+    async ({ user, contact }) => {
+      if (contact.type === ContactBroker.Email) {
+        await container.model.queueService().push('sendEmail', {
+          email: contact.address,
+          template: 'confirmEmailTemplate',
+          subject: 'Please confirm your email',
+          params: {
+            confirmationLink: `${this.externalSelfUrl}/verification/${contact.address}/${contact.confirmationCode}`,
+          },
+          locale: user.locale,
+        });
+      }
+    },
+  );
 
   async create(type: ContactBroker, address: string, user: User): Promise<UserContact> {
     const duplicates = await this.table().where({
@@ -105,8 +108,8 @@ export class UserContactService {
 
     await this.table().insert(created);
 
-    this.onCreated.emit({...created});
-    created.confirmationCode = '';;
+    this.onCreated.emit({ user, contact: created });
+    created.confirmationCode = '';
 
     return created;
   }
@@ -130,15 +133,18 @@ export class UserContactService {
 }
 
 export class UserEventSubscriptionService {
-  constructor(
-      readonly table: Factory<UserEventSubscriptionTable> = table,
-  ) {}
+  constructor(readonly table: Factory<UserEventSubscriptionTable> = table) {}
 
-  async create(contact: UserContact, webHook: ContractEventWebHook): Promise<UserEventSubscription> {
-    const duplicate = await this.table().where({
-      contact: contact.id,
-      webHook: webHook.id,
-    }).first()
+  async create(
+    contact: UserContact,
+    webHook: ContractEventWebHook,
+  ): Promise<UserEventSubscription> {
+    const duplicate = await this.table()
+      .where({
+        contact: contact.id,
+        webHook: webHook.id,
+      })
+      .first();
 
     if (duplicate) {
       return duplicate;
@@ -165,23 +171,23 @@ interface ContractEventWebHookInfo {
   network: string;
   address: string;
   event: string;
-  webHookId: string,
+  webHookId: string;
 }
 
 export class ContractEventWebHookService {
-  constructor(
-      readonly table: Factory<ContractEventWebHookTable> = table,
-  ) {}
+  constructor(readonly table: Factory<ContractEventWebHookTable> = table) {}
 
   public readonly onCreated = new Emitter<ContractEventWebHookInfo>(async (webHookInfo) => {
     await container.model.queueService().push('subscribeToEventFromScanner', webHookInfo);
   });
 
   async create(contract: Contract, event: string): Promise<ContractEventWebHook> {
-    const duplicate = await this.table().where({
-      contract: contract.id,
-      event: event,
-    }).first()
+    const duplicate = await this.table()
+      .where({
+        contract: contract.id,
+        event: event,
+      })
+      .first();
 
     if (duplicate) {
       return duplicate;

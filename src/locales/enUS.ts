@@ -6,5 +6,8 @@ export default {
     '_dateTime': 'MMM DD YYYY HH:mm:ss',
     'hello world': 'hello world',
     'dollar': ['dollar', 'dollars'],
+    'Confirm': 'Confirm',
+    'New {{eventName}} events in {{contractAddress}} on {{network}}:':
+      'New {{eventName}} events in {{contractAddress}} on {{network}}:',
   },
 };

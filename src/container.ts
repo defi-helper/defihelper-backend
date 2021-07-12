@@ -7,9 +7,10 @@ import { I18nContainer } from '@services/I18n/container';
 import { ModelContainer } from '@models/container';
 import { redisConnectFactory } from '@services/Cache';
 import { ACLContainer } from '@services/ACL/container';
-import { emailServiceFactory } from "@services/Email";
-import { telegramServiceFactory } from "@services/Telegram";
-import {scannerServiceFactory} from "@services/Scanner";
+import { TemplateContainer } from '@services/Template/container';
+import { emailServiceFactory } from '@services/Email';
+import { telegramServiceFactory } from '@services/Telegram';
+import { scannerServiceFactory } from '@services/Scanner';
 
 class AppContainer extends Container<typeof config> {
   readonly logger = singleton(consoleFactory());
@@ -35,6 +36,8 @@ class AppContainer extends Container<typeof config> {
   readonly i18n = new I18nContainer(this);
 
   readonly acl = new ACLContainer(this);
+
+  readonly template = new TemplateContainer(this);
 
   readonly model = new ModelContainer(this);
 }

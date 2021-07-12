@@ -11,5 +11,8 @@ export default {
     '_dateTime': 'DD-MM-YYYY HH:mm:ss',
     'hello world': 'привет мир',
     'dollar': ['доллар', 'доллара', 'долларов'],
+    'Confirm': 'Подтвердить',
+    'New {{eventName}} events in {{contractAddress}} on {{network}}:':
+      'Новое событие {{eventName}} в контракте {{contractAddress}} сети {{network}}:',
   },
 };
