@@ -19,7 +19,6 @@ import { tableName as walletTableName } from '@models/Wallet/Entity';
 import { AuthenticationError, ForbiddenError, UserInputError } from 'apollo-server-express';
 import { Blockchain } from '@models/types';
 import {
-  PaginationType,
   BlockchainEnum,
   BlockchainFilterInputType,
   DateTimeType,
