@@ -20,7 +20,6 @@ import { AuthenticationError, ForbiddenError, UserInputError } from 'apollo-serv
 import { Blockchain } from '@models/types';
 import {
   PaginationType,
-
   BlockchainEnum,
   BlockchainFilterInputType,
   DateTimeType,
