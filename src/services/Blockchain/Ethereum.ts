@@ -1,4 +1,5 @@
 import { Container, singleton } from '@services/Container';
+import { isKey } from '@services/types';
 import axios from 'axios';
 import { ethers } from 'ethers';
 
@@ -41,59 +42,34 @@ export interface Config {
   bscMainAvgBlockTime: number;
 }
 
-const ScannerURL: Record<string, URL> = {
-  '1': new URL('https://etherscan.io'),
-  '56': new URL('https://bscscan.com'),
-};
+export type Networks = keyof BlockchainContainer['networks'];
 
 export class BlockchainContainer extends Container<Config> {
+  readonly networks = {
+    '1': {
+      provider: singleton(providerFactory(this.parent.ethMainNode)),
+      avgBlockTime: this.parent.ethMainAvgBlockTime,
+      txExplorerURL: new URL('https://etherscan.io/tx'),
+      walletExplorerURL: new URL('https://etherscan.io/address'),
+      getContractAbi: useEtherscanContractAbi('https://api.etherscan.io/api'),
+    },
+    '56': {
+      provider: singleton(providerFactory(this.parent.bscMainNode)),
+      avgBlockTime: this.parent.bscMainAvgBlockTime,
+      txExplorerURL: new URL('https://bscscan.com/tx'),
+      walletExplorerURL: new URL('https://bscscan.com/address'),
+      getContractAbi: useEtherscanContractAbi('https://api.bscscan.com/api'),
+    },
+  } as const;
+
+  readonly isNetwork = (network: string | number): network is Networks => {
+    return isKey(this.networks, network.toString());
+  };
+
   readonly byNetwork = (network: string | number) => {
-    const normalizeNetwork = network.toString();
-    const provider = this.provider[normalizeNetwork] || null;
-    const avgBlockTime = this.avgBlockTime[normalizeNetwork] || null;
+    if (!this.isNetwork(network)) throw new Error('Undefined network');
 
-    return {
-      provider,
-      avgBlockTime,
-    };
-  };
-
-  readonly provider: Record<string, () => ethers.providers.JsonRpcProvider> = {
-    '1': singleton(providerFactory(this.parent.ethMainNode)),
-    '56': singleton(providerFactory(this.parent.bscMainNode)),
-  };
-
-  readonly avgBlockTime: Record<string, number> = {
-    '1': this.parent.ethMainAvgBlockTime,
-    '56': this.parent.bscMainAvgBlockTime,
-  };
-
-  readonly etherscan = singleton(() => ({
-    getContractAbi: useEtherscanContractAbi(`https://api.${ScannerURL['1'].host}/api`),
-  }));
-
-  readonly bscscan = singleton(() => ({
-    getContractAbi: useEtherscanContractAbi('https://api.bscscan.com/api'),
-  }));
-
-  readonly scanByNetwork = (network: number) => {
-    switch (network) {
-      case 1:
-        return this.etherscan();
-      case 56:
-        return this.bscscan();
-      default:
-        throw new Error(`Undefined network ${network}`);
-    }
-  };
-
-  readonly explorerUrlByNetwork = (network: string) => {
-    const url = ScannerURL[network];
-    if (!url) {
-      throw new Error(`Undefined network ${network}`);
-    }
-
-    return url.href;
+    return this.networks[network];
   };
 
   readonly contract = (

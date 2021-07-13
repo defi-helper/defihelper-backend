@@ -6,21 +6,31 @@ export interface Config {
   testNode: string;
 }
 
-export class BlockchainContainer extends Container<Config> {
-  readonly byNetwork = (network: string | number) => {
-    const normalizeNetwork = network.toString();
-    const provider = isKey(this.provider, normalizeNetwork)
-      ? this.provider[normalizeNetwork]
-      : null;
+export type Networks = keyof BlockchainContainer['networks'];
 
-    return {
-      provider,
-      avgBlockTime: null,
-    };
+export class BlockchainContainer extends Container<Config> {
+  readonly networks = {
+    main: {
+      provider: singleton(() => this.parent.mainNode),
+      avgBlockTime: 60,
+      txExplorerURL: new URL('https://wavesexplorer.com/tx'),
+      walletExplorerURL: new URL('https://wavesexplorer.com/address'),
+    },
+    test: {
+      provider: singleton(() => this.parent.testNode),
+      avgBlockTime: 60,
+      txExplorerURL: new URL('https://testnet.wavesexplorer.com/tx'),
+      walletExplorerURL: new URL('https://testnet.wavesexplorer.com/address'),
+    },
+  } as const;
+
+  readonly isNetwork = (network: string | number): network is Networks => {
+    return isKey(this.networks, network.toString());
   };
 
-  readonly provider = {
-    main: singleton(() => this.parent.mainNode),
-    test: singleton(() => this.parent.testNode),
+  readonly byNetwork = (network: string | number) => {
+    if (!this.isNetwork(network)) throw new Error('Undefined network');
+
+    return this.networks[network];
   };
 }

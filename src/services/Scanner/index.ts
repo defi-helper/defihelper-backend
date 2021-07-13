@@ -2,7 +2,6 @@ import axios, { AxiosInstance } from 'axios';
 
 export interface ScannerParams {
   host: string;
-  port: number;
 }
 
 export interface Contract {
@@ -52,7 +51,7 @@ export class ScannerService {
 
   constructor(scannerParams: ScannerParams) {
     this.client = axios.create({
-      baseURL: `${scannerParams.host}:${scannerParams.port}`,
+      baseURL: scannerParams.host,
     });
   }
 

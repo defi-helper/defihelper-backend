@@ -56,22 +56,8 @@ export class ProtocolService {
 }
 
 export class ContractService {
-  public readonly onCreated = new Emitter<Contract>(
-    (contract) =>
-      container.model.queueService().push('registerContractInScanner', { contract: contract.id }),
-    async (contract) => {
-      if (
-        !(contract.blockchain === 'ethereum' && contract.network === '1') ||
-        contract.deployBlockNumber === null ||
-        contract.deployBlockNumber === '0'
-      ) {
-        return null;
-      }
-
-      return container.model
-        .queueService()
-        .push('metricsContractHistory', { contract: contract.id });
-    },
+  public readonly onCreated = new Emitter<Contract>((contract) =>
+    container.model.queueService().push('eventsContractCreated', { contract: contract.id }),
   );
 
   public readonly onWalletLink = new Emitter<{

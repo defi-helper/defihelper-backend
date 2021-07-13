@@ -1,6 +1,6 @@
 import { v4 as uuid } from 'uuid';
 import { Factory } from '@services/Container';
-import { Task, TaskStatus, Table, Process } from './Entity';
+import { Task, TaskStatus, Table, Process, hasHandler } from './Entity';
 import * as Handlers from '../../queue';
 
 type Handler = keyof typeof Handlers;
@@ -117,6 +117,9 @@ export class QueueService {
   }
 
   createBroker(options: Partial<BrokerOptions> = {}) {
+    if (typeof options.handler === 'string' && !hasHandler(options.handler)) {
+      throw new Error(`Invalid queue handler "${options.handler}"`);
+    }
     return new Broker(this, options);
   }
 }

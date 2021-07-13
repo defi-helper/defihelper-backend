@@ -1,7 +1,7 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
-import { Factory } from '@services/Container';
 import dayjs from 'dayjs';
+import { ethers } from 'ethers';
 
 export interface Params {
   contract: string;
@@ -22,21 +22,15 @@ export default async (process: Process) => {
   if (contractAdapterFactory === undefined) throw new Error('Contract adapter not found');
 
   const blockchain = container.blockchain[contract.blockchain];
-  if (!Object.prototype.hasOwnProperty.call(blockchain.provider, contract.network)) {
-    throw new Error('Network not supported');
-  }
-  const providerFactory = blockchain.provider[
-    contract.network as keyof typeof blockchain.provider
-  ] as Factory<any>;
-  const provider = providerFactory();
+  const provider = blockchain.byNetwork(contract.network).provider();
 
   let date = new Date();
-  if (contract.blockchain === 'ethereum' && blockNumber !== 'latest') {
+  if (provider instanceof ethers.providers.JsonRpcProvider && blockNumber !== 'latest') {
     const block = await provider.getBlock(parseInt(blockNumber, 10));
     date = dayjs.unix(block.timestamp).toDate();
   }
 
-  const contractAdapterData = await contractAdapterFactory(providerFactory(), contract.address, {
+  const contractAdapterData = await contractAdapterFactory(provider, contract.address, {
     blockNumber,
   });
   if (

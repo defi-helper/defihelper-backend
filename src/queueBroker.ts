@@ -1,7 +1,6 @@
 /* eslint-disable no-console */
 import 'module-alias/register';
 import cli from 'command-line-args';
-import { hasHandler } from '@models/Queue/Entity';
 import container from './container';
 
 container.model
@@ -12,10 +11,6 @@ container.model
       { name: 'handler', type: String, multiple: true, defaultValue: [] },
       { name: 'interval', type: Number, defaultValue: 1000 },
     ]);
-    options.handler.forEach((handler: string) => {
-      if (hasHandler(handler)) return;
-      throw new Error(`Invalid handler "${handler}"`);
-    });
     if (Number.isNaN(options.interval)) throw new Error(`Invalid interval`);
 
     container.model

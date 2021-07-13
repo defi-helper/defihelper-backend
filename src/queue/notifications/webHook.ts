@@ -1,7 +1,6 @@
 import { Process } from '@models/Queue/Entity';
 import container from '@container';
 import { NotificationType } from '@models/Notification/Entity';
-import { Blockchain } from '@models/types';
 
 interface WebHook {
   address: string;
@@ -36,21 +35,6 @@ export interface EventUrls {
   txHash: string;
 }
 
-const getExplorer = (blockchain: Blockchain, network: string) => {
-  switch (blockchain) {
-    case 'ethereum':
-      try {
-        return `${container.blockchain.ethereum.explorerUrlByNetwork(network)}/tx`;
-      } catch {
-        return '';
-      }
-    case 'waves':
-      return 'https://wavesexplorer.com/tx/';
-    default:
-      return '';
-  }
-};
-
 export default async (process: Process) => {
   const eventNotificationParams = process.task.params as EventNotificationParams;
 
@@ -72,15 +56,9 @@ export default async (process: Process) => {
     .userEventSubscriptionTable()
     .where('webHook', eventNotificationParams.webHookId);
 
-  const explorerUrl = getExplorer(contract.blockchain, contract.network);
-  if (!explorerUrl) {
-    throw new Error(
-      `Explorer is not found for network ${eventNotificationParams.contract.network}`,
-    );
-  }
-
+  const { txExplorerURL } = container.blockchain[contract.blockchain].byNetwork(contract.network);
   const eventsUrls: EventUrls[] = eventNotificationParams.events.map((event) => ({
-    link: `${explorerUrl}/${event.transactionHash}`,
+    link: `${txExplorerURL}/${event.transactionHash}`,
     txHash: event.transactionHash,
   }));
 

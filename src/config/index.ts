@@ -10,8 +10,7 @@ export default {
     secret: process.env.API_SECRET ?? 'defiHelperApiSecret',
   },
   scanner: {
-    host: process.env.SCANNER_HOST ?? 'http://dfh-scanner',
-    port: parseInt(process.env.SCANNER_PORT ?? '9000', 10),
+    host: process.env.SCANNER_HOST ?? 'http://dfh-scanner:9000',
   },
   database: {
     host: process.env.DATABASE_HOST ?? 'localhost',
