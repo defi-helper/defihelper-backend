@@ -38,6 +38,7 @@ import {
   UnvoteMutation,
   VoteMutation,
 } from './schema/proposal';
+import { TokenAliasListQuery, TokenAliasQuery, TokenListQuery } from './schema/token';
 
 export function route({ express, server }: { express: Express; server: Server }) {
   const apollo = new ApolloServer({
@@ -61,6 +62,9 @@ export function route({ express, server }: { express: Express; server: Server })
           userContacts: UserContactListQuery,
           userEventSubscription: UserEventSubscriptionQuery,
           userEventSubscriptions: UserEventSubscriptionListQuery,
+          tokens: TokenListQuery,
+          tokenAlias: TokenAliasQuery,
+          tokensAlias: TokenAliasListQuery,
         },
       }),
       mutation: new GraphQLObjectType({
