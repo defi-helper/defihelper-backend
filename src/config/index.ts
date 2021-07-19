@@ -6,11 +6,11 @@ export default {
   api: {
     port: parseInt(process.env.API_PORT ?? '9000', 10),
     externalUrl: process.env.API_EXTERNAL_URL ?? 'https://backend-local.defihelper.io/',
-    internalUrl: process.env.API_INTERNAL_URL ?? 'http://dfh-backend',
+    internalUrl: process.env.API_INTERNAL_URL ?? 'https://backend-local.defihelper.io',
     secret: process.env.API_SECRET ?? 'defiHelperApiSecret',
   },
   scanner: {
-    host: process.env.SCANNER_HOST ?? 'http://dfh-scanner:9000',
+    host: process.env.SCANNER_HOST ?? 'https://scanner-local.defihelper.io',
   },
   database: {
     host: process.env.DATABASE_HOST ?? 'localhost',
