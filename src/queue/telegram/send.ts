@@ -13,6 +13,10 @@ export interface TelegramNotification {
 export default async (process: Process) => {
   const { template, params, chatId, locale } = process.task.params as TelegramNotification;
 
+  if (!chatId) {
+    throw new Error(`Incorrect chatId ${chatId}`)
+  }
+
   await container.telegram().send(
     template,
     {

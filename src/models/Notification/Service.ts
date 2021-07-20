@@ -13,11 +13,12 @@ import {
   NotificationStatus,
   NotificationTable,
   NotificationType,
-  UserContact,
+  UserContact, UserContactParams,
   UserContactTable,
   UserEventSubscription,
   UserEventSubscriptionTable,
 } from './Entity';
+import {add} from "husky";
 
 export class NotificationService {
   constructor(readonly table: Factory<NotificationTable>) {}
@@ -58,7 +59,9 @@ export class NotificationService {
       processedAt: new Date(),
     };
 
-    await this.table().update(updated);
+    await this.table().where({
+      id: notification.id,
+    }).update(updated);
 
     return updated;
   }
@@ -69,13 +72,13 @@ export class UserContactService {
 
   public readonly onCreated = new Emitter<{ user: User; contact: UserContact }>(
     async ({ user, contact }) => {
-      if (contact.type === ContactBroker.Email) {
+      if (contact.broker === ContactBroker.Email) {
         await container.model.queueService().push('sendEmail', {
           email: contact.address,
           template: 'confirmEmailTemplate',
           subject: 'Please confirm your email',
           params: {
-            confirmationLink: `${this.externalSelfUrl}/verification/${contact.address}/${contact.confirmationCode}`,
+            confirmationCode: contact.confirmationCode,
           },
           locale: user.locale,
         });
@@ -83,10 +86,17 @@ export class UserContactService {
     },
   );
 
-  async create(type: ContactBroker, address: string, user: User): Promise<UserContact> {
+  async create(broker: ContactBroker, rawAddress: string, user: User): Promise<UserContact> {
+    let address = rawAddress;
+    if (broker === ContactBroker.Telegram) {
+      address = rawAddress.indexOf('@') === -1 ? rawAddress.slice(1) : rawAddress;
+    } else {
+      address = rawAddress.toLowerCase();
+    }
+
     const duplicates = await this.table().where({
       user: user.id,
-      type,
+      broker,
       address,
     });
     if (duplicates.length > 0) {
@@ -96,7 +106,7 @@ export class UserContactService {
     const created: UserContact = {
       id: uuid(),
       user: user.id,
-      type,
+      broker,
       address,
       status: ContactStatus.Inactive,
       confirmationCode: uuid(),
@@ -111,21 +121,31 @@ export class UserContactService {
     return created;
   }
 
-  async activate(contact: UserContact, address?: string): Promise<UserContact> {
+  async activate(contact: UserContact, address?: string, params?: UserContactParams): Promise<UserContact> {
+    if (contact.status === ContactStatus.Active) {
+      return contact;
+    }
+
     const activated: UserContact = {
       ...contact,
+      params: params || contact.params,
+      confirmationCode: "",
       address: address || contact.address,
       status: ContactStatus.Active,
       activatedAt: new Date(),
     };
 
-    await this.table().update(activated);
+    await this.table().where({
+      id: activated.id,
+    }).update(activated);
 
     return activated;
   }
 
   async delete(contact: UserContact): Promise<void> {
-    await this.table().delete(contact.id);
+    await this.table().where({
+      id: contact.id,
+    }).delete();
   }
 }
 
@@ -160,7 +180,9 @@ export class UserEventSubscriptionService {
   }
 
   async delete(subscription: UserEventSubscription): Promise<void> {
-    await this.table().delete(subscription.id);
+    await this.table().where({
+      id: subscription.id,
+    }).delete();
   }
 }
 

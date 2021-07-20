@@ -10,15 +10,20 @@ export enum ContactStatus {
   Inactive = 'inactive',
 }
 
+export interface UserContactParams {
+  chatId?: string;
+}
+
 export interface UserContact {
   id: string;
   user: string;
-  type: ContactBroker;
+  broker: ContactBroker;
   address: string;
   status: ContactStatus;
   confirmationCode: string;
   createdAt: Date;
   activatedAt?: Date;
+  params?: UserContactParams;
 }
 
 export enum NotificationStatus {
