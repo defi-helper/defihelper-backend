@@ -49,7 +49,7 @@ export default async (process: Process) => {
       network: networkIdToString(notification.payload.network),
     };
 
-    switch (contact.type) {
+    switch (contact.broker) {
       case ContactBroker.Email:
         await container.model.queueService().push('sendEmail', {
           email: contact.address,
@@ -61,14 +61,14 @@ export default async (process: Process) => {
         break;
       case ContactBroker.Telegram:
         await container.model.queueService().push('sendTelegram', {
-          chatId: contact.address,
+          chatId: contact.params?.chatId || 0,
           template: 'eventTemplate',
           params,
           locale: user.locale,
         });
         break;
       default:
-        throw new Error(`Contact broker is not found ${contact.type}`);
+        throw new Error(`Contact broker is not found ${contact.broker}`);
     }
 
     return process.done();

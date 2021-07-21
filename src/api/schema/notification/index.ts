@@ -61,7 +61,7 @@ export const UserContactType = new GraphQLObjectType<UserContact>({
         return container.model.userTable().where('id', userContact.user).first();
       },
     },
-    type: {
+    broker: {
       type: GraphQLNonNull(UserContactBrokerEnum),
       description: 'Type of the contact',
     },
@@ -132,7 +132,7 @@ export const UserContactListQuery: GraphQLFieldConfig<any, Request> = {
             type: UuidType,
             description: 'User ID',
           },
-          type: {
+          broker: {
             type: UserContactBrokerEnum,
             description: 'Type',
           },
@@ -163,8 +163,8 @@ export const UserContactListQuery: GraphQLFieldConfig<any, Request> = {
         this.where('user', currentUser.id);
       }
 
-      if (filter.type) {
-        this.where('type', filter.type);
+      if (filter.broker) {
+        this.where('broker', filter.broker);
       }
 
       if (filter.status) {
@@ -189,7 +189,7 @@ export const UserContactCreateMutation: GraphQLFieldConfig<any, Request> = {
         new GraphQLInputObjectType({
           name: 'UserContactCreateInputType',
           fields: {
-            type: {
+            broker: {
               type: GraphQLNonNull(UserContactBrokerEnum),
               description: 'Type',
             },
@@ -207,23 +207,19 @@ export const UserContactCreateMutation: GraphQLFieldConfig<any, Request> = {
       throw new AuthenticationError('UNAUTHENTICATED');
     }
 
-    const { type, address } = input;
-    return container.model.userContactService().create(type, address, currentUser);
+    const { broker, address } = input;
+    return container.model.userContactService().create(broker, address, currentUser);
   },
 };
 
 export const UserContactEmailConfirmMutation: GraphQLFieldConfig<any, Request> = {
-  type: GraphQLNonNull(UserContactType),
+  type: GraphQLNonNull(GraphQLBoolean),
   args: {
     input: {
       type: GraphQLNonNull(
         new GraphQLInputObjectType({
           name: 'UserContactConfirmEmailInputType',
           fields: {
-            address: {
-              type: GraphQLNonNull(GraphQLString),
-              description: 'address',
-            },
             confirmationCode: {
               type: GraphQLNonNull(GraphQLString),
               description: 'code',
@@ -238,12 +234,11 @@ export const UserContactEmailConfirmMutation: GraphQLFieldConfig<any, Request> =
     const contact = await container.model
       .userContactTable()
       .where({
-        address,
         confirmationCode,
       })
       .first();
 
-    if (!contact || contact.type !== ContactBroker.Email) {
+    if (!contact || contact.broker !== ContactBroker.Email) {
       return false;
     }
 
