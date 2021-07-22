@@ -95,6 +95,10 @@ export function route({ express, server }: { express: Express; server: Server })
     subscriptions: '/api',
     playground: true,
     context: ({ req }) => req,
+    formatError: (err) => {
+      container.logger().error(err.toString());
+      return err;
+    },
   });
   apollo.installSubscriptionHandlers(server);
   express.use('/api', [
