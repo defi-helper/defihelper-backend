@@ -137,6 +137,21 @@ export const ContractType = new GraphQLObjectType<Contract>({
           .offset(pagination.offset);
       },
     },
+    events: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString))),
+      resolve: async (contract) => {
+        const contractFromScanner = await container
+            .scanner()
+            .findContract(contract.network, contract.address);
+        if (!contractFromScanner || !contractFromScanner.abi) {
+          return [];
+        }
+
+        return contractFromScanner.abi
+            .filter(({ type }: any) => type === 'event')
+            .map(({ name }: any) => name);
+      },
+    },
     createdAt: {
       type: GraphQLNonNull(DateTimeType),
       description: 'Date of created account',
@@ -473,6 +488,9 @@ export const ProtocolType = new GraphQLObjectType<Protocol>({
           type: new GraphQLInputObjectType({
             name: 'ContractListFilterInputType',
             fields: {
+              id: {
+                type: UuidType,
+              },
               blockchain: {
                 type: BlockchainFilterInputType,
               },
@@ -494,22 +512,28 @@ export const ProtocolType = new GraphQLObjectType<Protocol>({
         pagination: PaginationArgument('ContractListPaginationInputType'),
       },
       resolve: async (protocol, { filter, sort, pagination }) => {
-        let select = container.model.contractTable().where('protocol', protocol.id);
-        if (filter.blockchain !== undefined) {
-          const { protocol: blockchain, network } = filter.blockchain;
-          select = select.andWhere('blockchain', blockchain);
-          if (network !== undefined) {
-            select = select.andWhere('network', network);
+        let select = container.model.contractTable();
+
+        if (filter.id) {
+          select = select.where('id', filter.id);
+        } else {
+          select = container.model.contractTable().where('protocol', protocol.id);
+          if (filter.blockchain !== undefined) {
+            const {protocol: blockchain, network} = filter.blockchain;
+            select = select.andWhere('blockchain', blockchain);
+            if (network !== undefined) {
+              select = select.andWhere('network', network);
+            }
           }
-        }
-        if (filter.hidden !== undefined) {
-          select = select.andWhere('hidden', filter.hidden);
-        }
-        if (filter.search !== undefined && filter.search !== '') {
-          select = select.andWhere(function () {
-            this.where('name', 'iLike', `%${filter.search}%`);
-            this.orWhere('address', 'iLike', `%${filter.search}%`);
-          });
+          if (filter.hidden !== undefined) {
+            select = select.andWhere('hidden', filter.hidden);
+          }
+          if (filter.search !== undefined && filter.search !== '') {
+            select = select.andWhere(function () {
+              this.where('name', 'iLike', `%${filter.search}%`);
+              this.orWhere('address', 'iLike', `%${filter.search}%`);
+            });
+          }
         }
 
         return {
