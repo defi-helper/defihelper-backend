@@ -44,6 +44,8 @@
     "typescript": "^4.2.3"
   },
   "dependencies": {
+    "@waves/marshall": "^0.14.0",
+    "@waves/ts-lib-crypto": "^1.4.4-beta.1",
     "apollo-server-express": "^2.22.2",
     "axios": "^0.21.1",
     "bignumber.js": "^9.0.1",

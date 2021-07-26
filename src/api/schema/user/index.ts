@@ -14,6 +14,8 @@ import { Request } from 'express';
 import { User, Role } from '@models/User/Entity';
 import { Wallet } from '@models/Wallet/Entity';
 import { Blockchain } from '@models/types';
+import * as WavesCrypto from '@waves/ts-lib-crypto';
+import * as WavesMarshall from '@waves/marshall';
 import { ContractType } from '../protocol';
 import {
   BlockchainEnum,
@@ -832,6 +834,83 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
     await container.model
       .walletService()
       .create(user, 'ethereum', network, recoveredAddress, recoveredPubKey);
+    const sid = container.model.sessionService().generate(user);
+
+    return { user, sid };
+  },
+};
+
+export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
+  type: AuthType,
+  args: {
+    input: {
+      type: GraphQLNonNull(
+        new GraphQLInputObjectType({
+          name: 'AuthWavesInputType',
+          fields: {
+            network: {
+              type: GraphQLNonNull(GraphQLString),
+              description: 'Blockchain network id',
+            },
+            publicKey: {
+              type: GraphQLNonNull(GraphQLString),
+              description: 'Wallet public key',
+            },
+            address: {
+              type: GraphQLNonNull(GraphQLString),
+              description: 'Wallet address',
+            },
+            message: {
+              type: GraphQLNonNull(GraphQLString),
+              description: 'Message',
+            },
+            signature: {
+              type: GraphQLNonNull(GraphQLString),
+              description: 'Signed message',
+            },
+          },
+        }),
+      ),
+    },
+  },
+  resolve: async (root, { input }, { currentUser }) => {
+    const { network, address, message, publicKey, signature } = input;
+    if (typeof message !== 'string' || message.length < 5) return null;
+
+    const serializer = WavesMarshall.binary.serializerFromSchema(
+      WavesMarshall.schemas.txFields.data[1],
+    );
+    const isValidSignature = WavesCrypto.verifySignature(
+      publicKey,
+      WavesCrypto.concat(
+        [255, 255, 255, 2],
+        serializer([{ type: 'string', key: 'name', value: message }]),
+      ),
+      signature,
+    );
+    const recoveredAddress = WavesCrypto.address({ publicKey }, network);
+    if (!isValidSignature || recoveredAddress !== address) return null;
+
+    const duplicate = await container.model
+      .walletTable()
+      .where({
+        blockchain: 'waves',
+        network,
+        address: recoveredAddress,
+      })
+      .first();
+
+    if (duplicate) {
+      const user = await container.model.userTable().where('id', duplicate.user).first();
+      if (!user) return null;
+
+      const sid = container.model.sessionService().generate(user);
+      return { user, sid };
+    }
+    const user = currentUser ?? (await container.model.userService().create(Role.User));
+    await container.model
+      .walletService()
+      .create(user, 'waves', network, recoveredAddress, publicKey);
     const sid = container.model.sessionService().generate(user);
 
     return { user, sid };

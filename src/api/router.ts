@@ -15,7 +15,7 @@ import {
   UserEventSubscriptionDeleteMutation,
 } from '@api/schema/notification';
 import container from '@container';
-import { AuthEthereumMutation, UserType } from './schema/user';
+import { AuthEthereumMutation, AuthWavesMutation, UserType } from './schema/user';
 import * as middlewares from './middlewares';
 import {
   ProtocolCreateMutation,
@@ -71,6 +71,7 @@ export function route({ express, server }: { express: Express; server: Server })
         name: 'Mutation',
         fields: {
           authEth: AuthEthereumMutation,
+          authWaves: AuthWavesMutation,
           protocolCreate: ProtocolCreateMutation,
           protocolUpdate: ProtocolUpdateMutation,
           protocolDelete: ProtocolDeleteMutation,

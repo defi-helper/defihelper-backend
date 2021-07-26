@@ -3,7 +3,6 @@ import TelegramBot from 'node-telegram-bot-api';
 import container from '@container';
 import { ContactStatus } from '@models/Notification/Entity';
 import { Templates } from './templates';
-import {add} from "husky";
 
 export type TelegramTemplate = keyof typeof Templates;
 
@@ -30,7 +29,7 @@ export class TelegramService {
         await container.model
           .userContactService()
           .activate(userContact, message.from?.username || '', {
-            chatId: message.chat.id.toString()
+            chatId: message.chat.id.toString(),
           });
       }
     });
