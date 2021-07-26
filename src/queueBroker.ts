@@ -8,7 +8,8 @@ container.model
   .up()
   .then(async () => {
     const options = cli([
-      { name: 'handler', type: String, multiple: true, defaultValue: [] },
+      { name: 'include', type: String, multiple: true, defaultValue: [] },
+      { name: 'exclude', type: String, multiple: true, defaultValue: [] },
       { name: 'interval', type: Number, defaultValue: 1000 },
     ]);
     if (Number.isNaN(options.interval)) throw new Error(`Invalid interval`);
@@ -17,12 +18,13 @@ container.model
       .queueService()
       .createBroker({
         interval: options.interval,
-        handler: options.handler,
+        handler: {
+          include: options.include,
+          exclude: options.exclude,
+        },
       })
       .start();
-    console.log(
-      `Handle "${options.handler.join(', ')}" tasks with interval ${options.interval} ms`,
-    );
+    console.log(`Handle tasks with interval ${options.interval} ms`);
   })
   .catch((e) => {
     container.logger().error(e);

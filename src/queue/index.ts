@@ -18,3 +18,6 @@ export * as registerContractInScanner from './scanner/registerContract';
 export * as processEventWebHook from './notifications/webHook';
 export * as processEventNotification from './notifications/event';
 export * as contractResolveDeployBlockNumber from './contract/resolveDeployBlockNumber';
+export * as billingTransferScan from './billing/transferScan';
+export * as billingClaimScan from './billing/claimScan';
+export * as billingFeeOracle from './billing/feeOracle';

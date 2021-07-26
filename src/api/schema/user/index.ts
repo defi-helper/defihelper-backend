@@ -29,6 +29,7 @@ import {
   UuidType,
 } from '../types';
 import * as locales from '../../../locales';
+import { UserBillingType, WalletBillingType } from '../billing';
 
 const TokenAliasFilterInputType = new GraphQLInputObjectType({
   name: 'UserMetricsTokenAliasFilterInputType',
@@ -293,6 +294,10 @@ export const WalletType = new GraphQLObjectType<Wallet>({
           .limit(pagination.limit)
           .offset(pagination.offset);
       },
+    },
+    billing: {
+      type: GraphQLNonNull(WalletBillingType),
+      resolve: (wallet) => wallet,
     },
     createdAt: {
       type: GraphQLNonNull(DateTimeType),
@@ -751,6 +756,10 @@ export const UserType = new GraphQLObjectType<User>({
           .limit(pagination.limit)
           .offset(pagination.offset);
       },
+    },
+    billing: {
+      type: GraphQLNonNull(UserBillingType),
+      resolve: (user) => user,
     },
     createdAt: {
       type: GraphQLNonNull(DateTimeType),

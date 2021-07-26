@@ -38,8 +38,13 @@ function providerFactory(host: string) {
 export interface Config {
   ethMainNode: string;
   ethMainAvgBlockTime: number;
+  ethMainInspector: string;
   bscMainNode: string;
   bscMainAvgBlockTime: number;
+  bscMainInspector: string;
+  localNode: string;
+  localAvgBlockTime: number;
+  localInspector: string;
 }
 
 export type Networks = keyof BlockchainContainer['networks'];
@@ -52,6 +57,7 @@ export class BlockchainContainer extends Container<Config> {
       txExplorerURL: new URL('https://etherscan.io/tx'),
       walletExplorerURL: new URL('https://etherscan.io/address'),
       getContractAbi: useEtherscanContractAbi('https://api.etherscan.io/api'),
+      inspector: () => new ethers.Wallet(this.parent.ethMainInspector, this.networks[1].provider()),
     },
     '56': {
       provider: singleton(providerFactory(this.parent.bscMainNode)),
@@ -59,6 +65,17 @@ export class BlockchainContainer extends Container<Config> {
       txExplorerURL: new URL('https://bscscan.com/tx'),
       walletExplorerURL: new URL('https://bscscan.com/address'),
       getContractAbi: useEtherscanContractAbi('https://api.bscscan.com/api'),
+      inspector: () =>
+        new ethers.Wallet(this.parent.bscMainInspector, this.networks[56].provider()),
+    },
+    '31337': {
+      provider: singleton(providerFactory(this.parent.localNode)),
+      avgBlockTime: this.parent.localAvgBlockTime,
+      txExplorerURL: new URL('https://etherscan.io/tx'),
+      walletExplorerURL: new URL('https://etherscan.io/address'),
+      getContractAbi: useEtherscanContractAbi('https://api.etherscan.io/api'),
+      inspector: () =>
+        new ethers.Wallet(this.parent.localInspector, this.networks[31337].provider()),
     },
   } as const;
 

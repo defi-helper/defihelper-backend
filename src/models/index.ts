@@ -7,3 +7,4 @@ export * as Token from './Token';
 export * as Proposal from './Proposal';
 export * as Metric from './Metric';
 export * as Notification from './Notification';
+export * as Billing from './Billing';

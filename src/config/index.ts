@@ -29,8 +29,13 @@ export default {
     ethereum: {
       ethMainNode: process.env.ETH_NODE ?? '',
       ethMainAvgBlockTime: 13.2,
+      ethMainInspector: process.env.ETH_INSPECTOR ?? '',
       bscMainNode: process.env.BSC_NODE ?? '',
       bscMainAvgBlockTime: 3,
+      bscMainInspector: process.env.BSC_INSPECTOR ?? '',
+      localNode: process.env.ETH_LOCAL_NODE ?? '',
+      localAvgBlockTime: 0.1,
+      localInspector: process.env.ETH_LOCAL_INSPECTOR ?? '',
     },
   },
   email: {

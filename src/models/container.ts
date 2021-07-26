@@ -129,4 +129,13 @@ export class ModelContainer extends Container<typeof AppContainer> {
     () =>
       new Models.Notification.Service.ContractEventWebHookService(this.contractEventWebHookTable),
   );
+
+  readonly billingBillTable = Models.Billing.Entity.billTableFactory(this.parent.database);
+
+  readonly billingTransferTable = Models.Billing.Entity.transferTableFactory(this.parent.database);
+
+  readonly billingService = singleton(
+    () =>
+      new Models.Billing.Service.BillingService(this.billingBillTable, this.billingTransferTable),
+  );
 }

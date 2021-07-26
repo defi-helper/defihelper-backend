@@ -6,7 +6,8 @@ import * as Handlers from '../../queue';
 type Handler = keyof typeof Handlers;
 
 export interface HandleOptions {
-  handleOnly?: Handler[];
+  include?: Handler[];
+  exclude?: Handler[];
 }
 
 export interface BrokerOptions {
@@ -86,17 +87,19 @@ export class QueueService {
   }
 
   async handle(options: HandleOptions = {}): Promise<boolean> {
-    let select = this.table()
-      .where('status', TaskStatus.Pending)
-      .andWhere('startAt', '<=', new Date())
+    const current = await this.table()
+      .where(function () {
+        this.where('status', TaskStatus.Pending).andWhere('startAt', '<=', new Date());
+        if (options.include && options.include.length > 0) {
+          this.whereIn('handler', options.include);
+        }
+        if (options.exclude && options.exclude.length > 0) {
+          this.whereNotIn('handler', options.exclude);
+        }
+      })
       .orderBy('startAt', 'asc')
-      .limit(1);
-    if (options.handleOnly && options.handleOnly.length > 0) {
-      const { handleOnly } = options;
-      select = select.andWhere((b) => b.whereIn('handler', handleOnly));
-    }
-
-    const current = await select.first();
+      .limit(1)
+      .first();
     if (!current) return false;
 
     const lock = await this.table().update({ status: TaskStatus.Process }).where({

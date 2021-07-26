@@ -16,6 +16,13 @@ export function hasHandler(handler: string): handler is keyof typeof Handlers {
 export class Process {
   constructor(readonly task: Task) {}
 
+  param(params: Object) {
+    return new Process({
+      ...this.task,
+      params,
+    });
+  }
+
   info(msg: string) {
     return new Process({
       ...this.task,

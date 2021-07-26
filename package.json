@@ -7,14 +7,14 @@
   "main": "index.js",
   "scripts": {
     "lint": "eslint --ignore-path .gitignore --fix './src/**/*.ts'",
-    "copyTemplates": "cp ./src/services/Email/templates/*.mustache ./dist/services/Email/templates/ &&  cp ./src/services/Telegram/templates/*.mustache ./dist/services/Telegram/templates/",
+    "copyTemplates": "./scripts/copy-templates.sh",
     "build": "tsc -p ./ && npm run copyTemplates",
-    "wath-start": "npm run copyTemplates && node ./dist/server.js",
-    "watch": "tsc-watch -p ./ --pretty --onSuccess 'npm run wath-start'",
+    "watch": "tsc-watch -p ./ --pretty --onSuccess './scripts/watch-success.sh'",
     "start": "node --inspect=0.0.0.0:9229 ./dist/server.js",
     "queue": "node ./dist/queueBroker.js",
     "schedule": "node ./dist/queueSchedule.js",
     "seed": "node ./dist/cli.js seed",
+    "billing": "node ./dist/cli.js billing",
     "prepare": "husky install"
   },
   "devDependencies": {
