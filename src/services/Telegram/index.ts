@@ -29,7 +29,7 @@ export class TelegramService {
 
         await container.model
           .userContactService()
-          .activate(userContact, undefined, {
+          .activate(userContact, message.from?.username || '', {
             chatId: message.chat.id.toString()
           });
       }
