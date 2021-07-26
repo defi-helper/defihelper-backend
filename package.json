@@ -9,6 +9,7 @@
     "lint": "eslint --ignore-path .gitignore --fix './src/**/*.ts'",
     "copyTemplates": "cp ./src/services/Email/templates/*.mustache ./dist/services/Email/templates/ &&  cp ./src/services/Telegram/templates/*.mustache ./dist/services/Telegram/templates/",
     "build": "tsc -p ./ && npm run copyTemplates",
+    "build-dev": "tsc -p ./ && npm run copyTemplates",
     "wath-start": "npm run copyTemplates && node ./dist/server.js",
     "watch": "tsc-watch -p ./ --pretty --onSuccess 'npm run wath-start'",
     "start": "node --inspect=0.0.0.0:9229 ./dist/server.js",
