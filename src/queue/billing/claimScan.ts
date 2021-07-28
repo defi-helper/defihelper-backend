@@ -5,12 +5,10 @@ import { Process } from '@models/Queue/Entity';
 import { Blockchain } from '@models/types';
 import { isKey } from '@services/types';
 import { ethers } from 'ethers';
-import { abi as balanceAbi } from '../../networks/abi/Balance.json';
-import contracts from '../../networks/contracts.json';
+import { abi as balanceAbi } from '@defihelper/networks/abi/Balance.json';
+import contracts from '@defihelper/networks/contracts.json';
 
 const ethFeeDecimals = new BN(10).pow(18);
-
-const later = dayjs().add(1, 'minute').toDate();
 
 async function registerClaims(
   blockchain: Blockchain,
@@ -106,6 +104,7 @@ export default async (process: Process) => {
     throw new Error('Contracts not deployed to target network');
   }
 
+  const later = dayjs().add(1, 'minute').toDate();
   const provider = container.blockchain[blockchain].byNetwork(network).provider();
   const currentBlockNumber = parseInt((await provider.getBlockNumber()).toString(), 10);
   if (currentBlockNumber < from) {

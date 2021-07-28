@@ -43,6 +43,7 @@
     "typescript": "^4.2.3"
   },
   "dependencies": {
+    "@defihelper/networks": "^0.0.8",
     "apollo-server-express": "^2.22.2",
     "axios": "^0.21.1",
     "bignumber.js": "^9.0.1",

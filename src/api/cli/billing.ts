@@ -1,6 +1,6 @@
 import container from '@container';
 import { isKey } from '@services/types';
-import contracts from '../../networks/contracts.json';
+import contracts from '@defihelper/networks/contracts.json';
 
 interface NetworkContracts {
   [c: string]: {

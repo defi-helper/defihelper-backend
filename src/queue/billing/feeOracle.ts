@@ -5,12 +5,10 @@ import dayjs from 'dayjs';
 import { Process } from '@models/Queue/Entity';
 import { Blockchain } from '@models/types';
 import { isKey } from '@services/types';
-import { abi as balanceAbi } from '../../networks/abi/Balance.json';
-import contracts from '../../networks/contracts.json';
+import { abi as balanceAbi } from '@defihelper/networks/abi/Balance.json';
+import contracts from '@defihelper/networks/contracts.json';
 
 const ethFeeDecimals = new BN(10).pow(18);
-
-const later = dayjs().add(5, 'minute').toDate();
 
 interface ProcessedBill {
   bill: Bill;
@@ -33,12 +31,14 @@ export default async (process: Process) => {
     throw new Error('Contracts not deployed to target network');
   }
 
+  const later = dayjs().add(5, 'minute').toDate();
   const networkContainer = container.blockchain[blockchain].byNetwork(network);
   const provider = networkContainer.provider();
   const inspector = networkContainer.inspector();
   const networkContracts = contracts[network] as { [name: string]: { address: string } };
   const balanceAddress = networkContracts.Balance.address;
   const balance = container.blockchain[blockchain].contract(balanceAddress, balanceAbi, provider);
+  const storeAddress = networkContracts.Store.address;
 
   const bills = await container.model
     .billingBillTable()
@@ -70,13 +70,18 @@ export default async (process: Process) => {
   );
   const fees = normalizeBills.reduce((res: ProcessedBill[], { bill, tx, receipt, info }) => {
     if (info.status.toString() !== '0') return res;
+    const gasFee =
+      bill.claimant === storeAddress.toLowerCase()
+        ? new BN('0')
+        : new BN(receipt.gasUsed.toString()).multipliedBy(tx.gasPrice.toString());
+    const protocolFee = new BN(bill.claimProtocolFee).multipliedBy(ethFeeDecimals);
 
     return [
       ...res,
       {
         bill,
-        gasFee: new BN(receipt.gasUsed.toString()).multipliedBy(tx.gasPrice.toString()),
-        protocolFee: new BN(bill.claimProtocolFee).multipliedBy(ethFeeDecimals),
+        gasFee,
+        protocolFee,
         accept: true,
       },
     ];
