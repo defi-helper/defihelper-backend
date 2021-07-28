@@ -8,3 +8,4 @@ export * as Proposal from './Proposal';
 export * as Metric from './Metric';
 export * as Notification from './Notification';
 export * as Billing from './Billing';
+export * as Store from './Store';

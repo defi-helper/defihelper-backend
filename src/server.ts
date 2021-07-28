@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import 'module-alias/register';
 import { createServer } from 'http';
 import Express from 'express';
@@ -14,7 +13,7 @@ container.model
     route({ express, server });
 
     const { port } = container.parent.api;
-    server.listen(port, () => console.log(`Listen ${port}`));
+    server.listen(port, () => container.logger().info(`Listen ${port}`));
 
     const telegramService = container.telegram();
     telegramService.startHandler();

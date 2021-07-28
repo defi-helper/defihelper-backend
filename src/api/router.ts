@@ -39,6 +39,12 @@ import {
   VoteMutation,
 } from './schema/proposal';
 import { TokenAliasListQuery, TokenAliasQuery, TokenListQuery } from './schema/token';
+import {
+  ProductCreateMutation,
+  ProductDeleteMutation,
+  ProductListQuery,
+  ProductUpdateMutation,
+} from './schema/store';
 
 export function route({ express, server }: { express: Express; server: Server }) {
   const apollo = new ApolloServer({
@@ -65,6 +71,7 @@ export function route({ express, server }: { express: Express; server: Server })
           tokens: TokenListQuery,
           tokenAlias: TokenAliasQuery,
           tokensAlias: TokenAliasListQuery,
+          products: ProductListQuery,
         },
       }),
       mutation: new GraphQLObjectType({
@@ -90,6 +97,9 @@ export function route({ express, server }: { express: Express; server: Server })
           userContactDelete: UserContactDeleteMutation,
           userEventSubscriptionCreate: UserEventSubscriptionCreateMutation,
           userEventSubscriptionDelete: UserEventSubscriptionDeleteMutation,
+          productCreate: ProductCreateMutation,
+          productUpdate: ProductUpdateMutation,
+          productDelete: ProductDeleteMutation,
         },
       }),
     }),

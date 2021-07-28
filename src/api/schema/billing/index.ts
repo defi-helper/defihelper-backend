@@ -365,12 +365,12 @@ export const UserBillingType = new GraphQLObjectType<User>({
         return {
           list: await select
             .clone()
-            .columns(`${transferTableName}.*`)
+            .distinct(`${transferTableName}.*`)
             .orderBy(sort)
             .limit(pagination.limit)
             .offset(pagination.offset),
           pagination: {
-            count: await select.clone().count(`${transferTableName}.id`).first(),
+            count: await select.clone().countDistinct(`${transferTableName}.id`).first(),
           },
         };
       },
@@ -424,12 +424,12 @@ export const UserBillingType = new GraphQLObjectType<User>({
         return {
           list: await select
             .clone()
-            .columns(`${billTableName}.*`)
+            .distinct(`${billTableName}.*`)
             .orderBy(sort)
             .limit(pagination.limit)
             .offset(pagination.offset),
           pagination: {
-            count: await select.clone().count(`${billTableName}.id`).first(),
+            count: await select.clone().countDistinct(`${billTableName}.id`).first(),
           },
         };
       },

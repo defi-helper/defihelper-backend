@@ -12,7 +12,8 @@ export default async ([network = '1']: string[]) => {
   if (!isKey(contracts, network)) throw new Error('Invalid network');
   const networkContracts = contracts[network] as NetworkContracts;
   if (!isKey(networkContracts, 'Balance')) throw new Error('Balance not found in traget network');
-  const { deployBlockNumber: from } = networkContracts.Balance;
+  const { deployBlockNumber: balanceFrom } = networkContracts.Balance;
+  const { deployBlockNumber: storeFrom } = networkContracts.Store;
 
   return Promise.all([
     container.model.queueService().push(
@@ -21,7 +22,7 @@ export default async ([network = '1']: string[]) => {
         blockchain: 'ethereum',
         network,
         step: 1000,
-        from,
+        from: balanceFrom,
       },
       {
         colissionSign: `billingFeeOracle:ethereum:${network}`,
@@ -33,7 +34,7 @@ export default async ([network = '1']: string[]) => {
         blockchain: 'ethereum',
         network,
         step: 1000,
-        from,
+        from: balanceFrom,
       },
       {
         colissionSign: `billingFeeOracle:ethereum:${network}`,
@@ -47,6 +48,18 @@ export default async ([network = '1']: string[]) => {
       },
       {
         colissionSign: `billingFeeOracle:ethereum:${network}`,
+      },
+    ),
+    container.model.queueService().push(
+      'billingStoreScan',
+      {
+        blockchain: 'ethereum',
+        network,
+        step: 1000,
+        from: storeFrom,
+      },
+      {
+        colissionSign: `billingStoreScan:ethereum:${network}`,
       },
     ),
   ]);

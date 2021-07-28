@@ -138,4 +138,17 @@ export class ModelContainer extends Container<typeof AppContainer> {
     () =>
       new Models.Billing.Service.BillingService(this.billingBillTable, this.billingTransferTable),
   );
+
+  readonly storeProductTable = Models.Store.Entity.productTableFactory(this.parent.database);
+
+  readonly storePurchaseTable = Models.Store.Entity.purchaseTableFactory(this.parent.database);
+
+  readonly storeService = singleton(
+    () =>
+      new Models.Store.Service.StoreService(
+        this.storeProductTable,
+        this.storePurchaseTable,
+        this.notificationTable,
+      ),
+  );
 }

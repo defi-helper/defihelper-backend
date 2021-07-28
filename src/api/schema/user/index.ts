@@ -32,6 +32,7 @@ import {
 } from '../types';
 import * as locales from '../../../locales';
 import { UserBillingType, WalletBillingType } from '../billing';
+import { UserStoreType } from '../store';
 
 const TokenAliasFilterInputType = new GraphQLInputObjectType({
   name: 'UserMetricsTokenAliasFilterInputType',
@@ -761,6 +762,10 @@ export const UserType = new GraphQLObjectType<User>({
     },
     billing: {
       type: GraphQLNonNull(UserBillingType),
+      resolve: (user) => user,
+    },
+    store: {
+      type: GraphQLNonNull(UserStoreType),
       resolve: (user) => user,
     },
     createdAt: {

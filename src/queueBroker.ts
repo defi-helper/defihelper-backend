@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import 'module-alias/register';
 import cli from 'command-line-args';
 import container from './container';
@@ -24,7 +23,7 @@ container.model
         },
       })
       .start();
-    console.log(`Handle tasks with interval ${options.interval} ms`);
+    container.logger().info(`Handle tasks with interval ${options.interval} ms`);
   })
   .catch((e) => {
     container.logger().error(e);

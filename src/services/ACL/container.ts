@@ -24,6 +24,7 @@ export class ACLContainer extends Container<typeof AppContainer> {
       proposal: ['update', 'delete'],
       protocol: ['create', 'update', 'delete'],
       contract: ['create', 'update', 'delete', 'walletLink'],
+      product: ['create', 'update', 'delete'],
     }),
   );
 
