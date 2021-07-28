@@ -9,6 +9,7 @@
     "lint": "eslint --ignore-path .gitignore --fix './src/**/*.ts'",
     "copyTemplates": "./scripts/copy-templates.sh",
     "build": "tsc -p ./ && npm run copyTemplates",
+    "build-dev": "tsc -p ./ && npm run copyTemplates",
     "watch": "tsc-watch -p ./ --pretty --onSuccess './scripts/watch-success.sh'",
     "start": "node --inspect=0.0.0.0:9229 ./dist/server.js",
     "queue": "node ./dist/queueBroker.js",
@@ -44,6 +45,8 @@
   },
   "dependencies": {
     "@defihelper/networks": "^0.0.8",
+    "@waves/marshall": "^0.14.0",
+    "@waves/ts-lib-crypto": "^1.4.4-beta.1",
     "apollo-server-express": "^2.22.2",
     "axios": "^0.21.1",
     "bignumber.js": "^9.0.1",

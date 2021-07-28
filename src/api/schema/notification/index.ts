@@ -21,6 +21,7 @@ import {
   userEventSubscriptionTableName,
 } from '@models/Notification/Entity';
 import { Role } from '@models/User/Entity';
+import { ContractType } from '@api/schema/protocol';
 import { DateTimeType, PaginateList, PaginationArgument, SortArgument, UuidType } from '../types';
 
 export const UserContactBrokerEnum = new GraphQLEnumType({
@@ -230,7 +231,7 @@ export const UserContactEmailConfirmMutation: GraphQLFieldConfig<any, Request> =
     },
   },
   resolve: async (root, { input }) => {
-    const { confirmationCode, address } = input;
+    const { confirmationCode } = input;
     const contact = await container.model
       .userContactTable()
       .where({
@@ -295,14 +296,14 @@ export const UserEventSubscriptionType = new GraphQLObjectType<UserEventSubscrip
       },
     },
     contract: {
-      type: GraphQLNonNull(GraphQLString),
-      description: 'Contact',
+      type: GraphQLNonNull(ContractType),
+      description: 'Contract',
       resolve: async (eventSubscription) => {
         const contractWebHook = await container.model
           .contractEventWebHookTable()
           .where('id', eventSubscription.webHook)
           .first();
-        return contractWebHook ? contractWebHook.contract : '';
+        return container.model.contractTable().where('id', contractWebHook?.contract).first();
       },
     },
     event: {
@@ -399,7 +400,6 @@ export const UserEventSubscriptionListQuery: GraphQLFieldConfig<any, Request> = 
 
     const select = container.model
       .userEventSubscriptionTable()
-      .select(`${userEventSubscriptionTableName}.*`)
       .leftJoin(
         `${userContactTableName}`,
         `${userContactTableName}.id`,
@@ -431,7 +431,12 @@ export const UserEventSubscriptionListQuery: GraphQLFieldConfig<any, Request> = 
       });
 
     return {
-      list: await select.clone().orderBy(sort).limit(pagination.limit).offset(pagination.offset),
+      list: await select
+        .clone()
+        .select(`${userEventSubscriptionTableName}.*`)
+        .orderBy(sort)
+        .limit(pagination.limit)
+        .offset(pagination.offset),
       pagination: {
         count: await select.clone().count().first(),
       },
@@ -449,7 +454,7 @@ export const UserEventSubscriptionCreateMutation: GraphQLFieldConfig<any, Reques
           fields: {
             contact: {
               type: GraphQLNonNull(GraphQLString),
-              description: 'Usr contact id',
+              description: 'User contact id',
             },
             contract: {
               type: GraphQLNonNull(GraphQLString),
@@ -457,7 +462,7 @@ export const UserEventSubscriptionCreateMutation: GraphQLFieldConfig<any, Reques
             },
             event: {
               type: GraphQLNonNull(GraphQLString),
-              description: 'Even name',
+              description: 'Event name',
             },
           },
         }),
@@ -501,27 +506,16 @@ export const UserEventSubscriptionCreateMutation: GraphQLFieldConfig<any, Reques
 };
 
 export const UserEventSubscriptionDeleteMutation: GraphQLFieldConfig<any, Request> = {
-  type: GraphQLNonNull(UserEventSubscriptionType),
+  type: GraphQLNonNull(GraphQLBoolean),
   args: {
-    input: {
-      type: GraphQLNonNull(
-        new GraphQLInputObjectType({
-          name: 'UserEventSubscriptionDeleteInputType',
-          fields: {
-            id: {
-              type: GraphQLNonNull(UuidType),
-            },
-          },
-        }),
-      ),
+    id: {
+      type: GraphQLNonNull(UuidType),
     },
   },
-  resolve: async (root, { input }, { currentUser }) => {
+  resolve: async (root, { id }, { currentUser }) => {
     if (!currentUser) {
       throw new AuthenticationError('UNAUTHENTICATED');
     }
-
-    const { id } = input;
 
     const subscription = await container.model
       .userEventSubscriptionTable()
