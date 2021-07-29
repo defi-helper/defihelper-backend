@@ -16,6 +16,7 @@ import { Wallet } from '@models/Wallet/Entity';
 import { Blockchain } from '@models/types';
 import * as WavesCrypto from '@waves/ts-lib-crypto';
 import * as WavesMarshall from '@waves/marshall';
+import { AuthenticationError } from 'apollo-server-express';
 import { ContractType } from '../protocol';
 import {
   BlockchainEnum,
@@ -25,6 +26,7 @@ import {
   MetricColumnType,
   MetricGroupEnum,
   metricsChartSelector,
+  onlyAllowed,
   PaginateList,
   PaginationArgument,
   SortArgument,
@@ -929,4 +931,40 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
 
     return { user, sid };
   },
+};
+
+export const AddWalletMutation: GraphQLFieldConfig<any, Request> = {
+  type: AuthType,
+  args: {
+    input: {
+      type: GraphQLNonNull(
+        new GraphQLInputObjectType({
+          name: 'AddWalletInputType',
+          fields: {
+            blockchain: {
+              type: GraphQLNonNull(BlockchainEnum),
+              description: 'Blockchain',
+            },
+            network: {
+              type: GraphQLNonNull(GraphQLString),
+              description: 'Blockchain network id',
+            },
+            address: {
+              type: GraphQLNonNull(GraphQLString),
+              description: 'Wallet address',
+            },
+          },
+        }),
+      ),
+    },
+  },
+  resolve: onlyAllowed('wallet.add', async (root, { input }, { currentUser }) => {
+    const { blockchain, network, address } = input;
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    await container.model.walletService().create(currentUser, blockchain, network, address, '');
+    const sid = container.model.sessionService().generate(currentUser);
+
+    return { currentUser, sid };
+  }),
 };
