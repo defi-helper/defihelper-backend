@@ -44,7 +44,7 @@
     "typescript": "^4.2.3"
   },
   "dependencies": {
-    "@defihelper/networks": "^0.0.8",
+    "@defihelper/networks": "^0.0.12",
     "@waves/marshall": "^0.14.0",
     "@waves/ts-lib-crypto": "^1.4.4-beta.1",
     "apollo-server-express": "^2.22.2",
