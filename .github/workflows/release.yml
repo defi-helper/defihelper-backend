@@ -17,27 +17,37 @@ jobs:
       - if: github.event.release.prerelease == true
         run: npm run build-dev
         env:
-          REACT_APP_PORTIS_ID:
-          REACT_APP_API_URL: https://backend.defi-helper.com/api
-          REACT_APP_SENTRY:
-          REACT_APP_TREZOR_URL:
-          REACT_APP_TREZOR_EMAIL:
-          REACT_APP_FORTMATIC_KEY:
-          REACT_APP_WAVES_NODE_URL: https://nodes.wavesnodes.com
-          REACT_APP_SID_LIFE_TIME: 31536000
-          REACT_APP_ADAPTERS_HOST: https://backend.defi-helper.com/adapters
+          API_PORT: ${{secrets.API_PORT}}
+          DATABASE_HOST: ${{secrets.DATABASE_HOST}}
+          DATABASE_PORT: ${{secrets.DATABASE_PORT}}
+          DATABASE_USER: ${{secrets.DATABASE_USER}}
+          DATABASE_PASSWORD: ${{secrets.DATABASE_PASSWORD}}
+          DATABASE_NAME: ${{secrets.DATABASE_NAME}}
+          CACHE_HOST: ${{secrets.CACHE_HOST}}
+          CACHE_PORT: ${{secrets.CACHE_PORT}}
+          CACHE_DATABASE: ${{secrets.CACHE_DATABASE}}
+          SESSION_TTL: ${{secrets.REACT_APP_SID_LIFE_TIME}}
+          ETH_NODE: ${{secrets.ETH_NODE}}
+          BSC_NODE: ${{secrets.BSC_NODE}}
+          ADAPTERS_HOST: https://backend-dev.defihelper.io/adapters
+          SCANNER_HOST: https://scanner-dev.defihelper.io
       - if: github.event.release.prerelease == false
         run: npm run build
         env:
-          REACT_APP_PORTIS_ID:
-          REACT_APP_API_URL: https://backend.defihelper.io/api
-          REACT_APP_SENTRY:
-          REACT_APP_TREZOR_URL:
-          REACT_APP_TREZOR_EMAIL:
-          REACT_APP_FORTMATIC_KEY:
-          REACT_APP_WAVES_NODE_URL: https://nodes.wavesnodes.com
-          REACT_APP_SID_LIFE_TIME: 31536000
-          REACT_APP_ADAPTERS_HOST: https://backend.defihelper.io/adapters
+          API_PORT: ${{secrets.API_PORT}}
+          DATABASE_HOST: ${{secrets.DATABASE_HOST}}
+          DATABASE_PORT: ${{secrets.DATABASE_PORT}}
+          DATABASE_USER: ${{secrets.DATABASE_USER}}
+          DATABASE_PASSWORD: ${{secrets.DATABASE_PASSWORD}}
+          DATABASE_NAME: ${{secrets.DATABASE_NAME}}
+          CACHE_HOST: ${{secrets.CACHE_HOST}}
+          CACHE_PORT: ${{secrets.CACHE_PORT}}
+          CACHE_DATABASE: ${{secrets.CACHE_DATABASE}}
+          SESSION_TTL: ${{secrets.REACT_APP_SID_LIFE_TIME}}
+          ETH_NODE: ${{secrets.ETH_NODE}}
+          BSC_NODE: ${{secrets.BSC_NODE}}
+          ADAPTERS_HOST: https://backend.defihelper.io/adapters
+          SCANNER_HOST: https://scanner.defihelper.io
       - name: Archive artifacts
         uses: actions/upload-artifact@v2
         with:
