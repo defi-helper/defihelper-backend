@@ -1,5 +1,5 @@
 import { Process } from '@models/Queue/Entity';
-import container from "@container";
+import container from '@container';
 
 export default async (process: Process) => {
   const queue = container.model.queueService();
