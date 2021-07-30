@@ -1,13 +1,27 @@
 import container from "@container";
+import {Process} from "@models/Queue/Entity";
+import * as uniswapV2PairABI from "@services/Blockchain/abi/ethereum/uniswapPair.json";
 
-export default async (
-    masterChefAddress: string,
-    protocolName: string,
-    protocolDescription: string,
-    adapterName: string,
-    farmingAdapterName: string,
-    network: '1' | '56',
-) => {
+export interface MasterChiefScannerParams {
+    masterChefAddress: string;
+    protocolName: string;
+    protocolDescription: string;
+    adapterName: string;
+    farmingAdapterName: string;
+    network: '1' | '56';
+    reservedPools: number[];
+}
+
+export default async (process: Process) => {
+    const {
+        masterChefAddress,
+        protocolName,
+        protocolDescription,
+        adapterName,
+        farmingAdapterName,
+        network,
+    } = process.task.params as MasterChiefScannerParams;
+
     let protocol = await container.model.protocolTable().where('name', protocolName).first();
 
     if (!protocol) {
@@ -48,24 +62,32 @@ export default async (
         }
         const pair = container.blockchain.ethereum.contract(
             pool.lpToken,
-            container.blockchain.ethereum.abi.uniswapPairABI,
+            container.blockchain.ethereum.abi.uniswapV2PairABI,
             provider,
         );
 
-        const [token0, token1] = await Promise.all([
-            pair.token0(),
-            pair.token1(),
-        ]);
+        let token0: string;
+        let token1: string;
+
+        // In case of pool with ERC20 instead of LP-token
+        try {
+            [token0, token1] = await Promise.all([
+                pair.token0(),
+                pair.token1(),
+            ]);
+        } catch (e) {
+            return;
+        }
 
         const [symbol0, symbol1] = await Promise.all([
             container.blockchain.ethereum.contract(
                 token0,
-                container.blockchain.ethereum.abi.uniswapPairABI,
+                container.blockchain.ethereum.abi.erc20ABI,
                 provider,
             ).symbol(),
             container.blockchain.ethereum.contract(
                 token1,
-                container.blockchain.ethereum.abi.uniswapPairABI,
+                container.blockchain.ethereum.abi.erc20ABI,
                 provider,
             ).symbol(),
         ]);
@@ -98,4 +120,6 @@ export default async (
         }).where('adapter', protocol.id)
             .andWhere('address', pool.lpToken)
     }));
+
+    return process.done();
 }

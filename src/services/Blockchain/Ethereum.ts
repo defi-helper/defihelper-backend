@@ -4,7 +4,7 @@ import axios from 'axios';
 import { ethers } from 'ethers';
 import * as masterChefV1ABI from './abi/ethereum/masterChefV1ABI.json';
 import * as erc20ABI from './abi/ethereum/erc20.json';
-import * as uniswapPairABI from './abi/ethereum/uniswapPair.json';
+import * as uniswapV2PairABI from './abi/ethereum/uniswapPair.json';
 
 export interface EtherscanContractAbiResponse {
   status: string;
@@ -102,7 +102,7 @@ export class BlockchainContainer extends Container<Config> {
 
   readonly abi = {
     erc20ABI,
-    uniswapPairABI,
+    uniswapV2PairABI,
     masterChefV1ABI,
   }
 }

@@ -22,5 +22,4 @@ export * as billingTransferScan from './billing/transferScan';
 export * as billingClaimScan from './billing/claimScan';
 export * as billingFeeOracle from './billing/feeOracle';
 export * as billingStoreScan from './billing/storeScan';
-export * as pancakeFarmPoolScanner from './pools/pancake';
-export * as sushiFarmPoolScanner from './pools/sushi';
+export * as masterChiefFarmPoolScanner from './pools/masterChief';
