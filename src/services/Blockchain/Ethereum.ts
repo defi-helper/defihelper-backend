@@ -2,6 +2,9 @@ import { Container, singleton } from '@services/Container';
 import { isKey } from '@services/types';
 import axios from 'axios';
 import { ethers } from 'ethers';
+import * as masterChefV1ABI from './abi/ethereum/masterChefV1ABI.json';
+import * as erc20ABI from './abi/ethereum/erc20.json';
+import * as uniswapPairABI from './abi/ethereum/uniswapPair.json';
 
 export interface EtherscanContractAbiResponse {
   status: string;
@@ -96,4 +99,10 @@ export class BlockchainContainer extends Container<Config> {
   ) => {
     return new ethers.Contract(address, abi, signerOrProvider);
   };
+
+  readonly abi = {
+    erc20ABI,
+    uniswapPairABI,
+    masterChefV1ABI,
+  }
 }
