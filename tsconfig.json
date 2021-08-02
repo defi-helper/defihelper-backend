@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "module": "CommonJS",
     "strict": true,
     "outDir": "./dist",
     "baseUrl": "./src",
@@ -11,7 +12,7 @@
       "@models/*": ["./models/*"],
       "@services/*": ["./services/*"]
     },
-    "target": "es5",
+    "target": "es2020",
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "allowJs": true

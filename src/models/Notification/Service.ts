@@ -13,12 +13,12 @@ import {
   NotificationStatus,
   NotificationTable,
   NotificationType,
-  UserContact, UserContactParams,
+  UserContact,
+  UserContactParams,
   UserContactTable,
   UserEventSubscription,
   UserEventSubscriptionTable,
 } from './Entity';
-import {add} from "husky";
 
 export class NotificationService {
   constructor(readonly table: Factory<NotificationTable>) {}
@@ -59,9 +59,11 @@ export class NotificationService {
       processedAt: new Date(),
     };
 
-    await this.table().where({
-      id: notification.id,
-    }).update(updated);
+    await this.table()
+      .where({
+        id: notification.id,
+      })
+      .update(updated);
 
     return updated;
   }
@@ -121,7 +123,11 @@ export class UserContactService {
     return created;
   }
 
-  async activate(contact: UserContact, address?: string, params?: UserContactParams): Promise<UserContact> {
+  async activate(
+    contact: UserContact,
+    address?: string,
+    params?: UserContactParams,
+  ): Promise<UserContact> {
     if (contact.status === ContactStatus.Active) {
       return contact;
     }
@@ -129,23 +135,27 @@ export class UserContactService {
     const activated: UserContact = {
       ...contact,
       params: params || contact.params,
-      confirmationCode: "",
+      confirmationCode: '',
       address: address || contact.address,
       status: ContactStatus.Active,
       activatedAt: new Date(),
     };
 
-    await this.table().where({
-      id: activated.id,
-    }).update(activated);
+    await this.table()
+      .where({
+        id: activated.id,
+      })
+      .update(activated);
 
     return activated;
   }
 
   async delete(contact: UserContact): Promise<void> {
-    await this.table().where({
-      id: contact.id,
-    }).delete();
+    await this.table()
+      .where({
+        id: contact.id,
+      })
+      .delete();
   }
 }
 
@@ -180,9 +190,11 @@ export class UserEventSubscriptionService {
   }
 
   async delete(subscription: UserEventSubscription): Promise<void> {
-    await this.table().where({
-      id: subscription.id,
-    }).delete();
+    await this.table()
+      .where({
+        id: subscription.id,
+      })
+      .delete();
   }
 }
 
