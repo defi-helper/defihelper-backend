@@ -91,9 +91,9 @@ export class UserContactService {
   async create(broker: ContactBroker, rawAddress: string, user: User): Promise<UserContact> {
     let address = rawAddress;
     if (broker === ContactBroker.Telegram) {
-      address = rawAddress.indexOf('@') === -1 ? rawAddress.slice(1) : rawAddress;
+      address = address.indexOf('@') === -1 ? address.slice(1) : address;
     } else {
-      address = rawAddress.toLowerCase();
+      address = address.toLowerCase();
     }
 
     const duplicates = await this.table().where({
@@ -118,7 +118,6 @@ export class UserContactService {
     await this.table().insert(created);
 
     this.onCreated.emit({ user, contact: created });
-    created.confirmationCode = '';
 
     return created;
   }
