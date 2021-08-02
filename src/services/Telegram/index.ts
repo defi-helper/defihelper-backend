@@ -14,23 +14,43 @@ export class TelegramService {
   }
 
   startHandler() {
-    this.bot.on('message', async (message) => {
-      if (message.text && message.text.indexOf('/start') > -1) {
-        const confirmationCode = message.text.replace('/start ', '');
-        const userContact = await container.model
-          .userContactTable()
-          .where('confirmationCode', confirmationCode)
-          .first();
-        if (!userContact || userContact.status === ContactStatus.Active) {
-          await this.bot.sendMessage(message.chat.id, 'This code has not found');
-          return;
-        }
+    this.bot.on('error', async (error) => {
+      container.logger().error(`Error in TG. Message: Error: ${error.message}`);
+    });
 
-        await container.model
-          .userContactService()
-          .activate(userContact, message.from?.username || '', {
-            chatId: message.chat.id.toString(),
+    this.bot.on('message', async (message) => {
+      try {
+        if (message.text && message.text.indexOf('/start') > -1) {
+          const confirmationCode = message.text.replace('/start ', '');
+          const userContact = await container.model
+            .userContactTable()
+            .where('confirmationCode', confirmationCode)
+            .first();
+          if (!userContact || userContact.status === ContactStatus.Active) {
+            await this.bot.sendMessage(message.chat.id, 'This code has not found');
+            return;
+          }
+
+          await container.model
+            .userContactService()
+            .activate(userContact, message.from?.username || '', {
+              chatId: message.chat.id.toString(),
+            });
+
+          await container.model.queueService().push('sendTelegram', {
+            chatId: message.chat.id,
+            template: 'welcomeTemplate',
+            params: {},
           });
+        }
+      } catch (error) {
+        container
+          .logger()
+          .error(
+            `Error handling TG message. Message: ${JSON.stringify(message)}, error: ${
+              error.message
+            }`,
+          );
       }
     });
   }
