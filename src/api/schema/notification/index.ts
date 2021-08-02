@@ -77,6 +77,9 @@ export const UserContactType = new GraphQLObjectType<UserContact>({
     confirmationCode: {
       type: GraphQLNonNull(GraphQLString),
       description: 'Confirmation Code',
+      resolve: (userContact) => {
+        return userContact.broker === ContactBroker.Telegram ? userContact.confirmationCode : '';
+      },
     },
     createdAt: {
       type: GraphQLNonNull(DateTimeType),
