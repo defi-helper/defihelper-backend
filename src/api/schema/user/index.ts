@@ -103,30 +103,34 @@ export const WalletType = new GraphQLObjectType<Wallet>({
         pagination: PaginationArgument('WalletContractListPaginationInputType'),
       },
       resolve: async (wallet, { filter, sort, pagination }) => {
-        const linkSelect = container.model
-          .walletContractLinkTable()
-          .columns('contract')
-          .where('wallet', wallet.id);
-        let select = container.model.contractTable().where('id', linkSelect);
-        if (filter.blockchain !== undefined) {
-          const { protocol, network } = filter.blockchain;
-          select = select.andWhere('blockchain', protocol);
-          if (network !== undefined) {
-            select = select.andWhere('network', network);
+        const select = container.model.contractTable().where(function () {
+          this.whereIn(
+            'id',
+            container.model
+              .walletContractLinkTable()
+              .columns('contract')
+              .where('wallet', wallet.id),
+          );
+          if (filter.blockchain !== undefined) {
+            const { protocol, network } = filter.blockchain;
+            this.andWhere('blockchain', protocol);
+            if (network !== undefined) {
+              this.andWhere('network', network);
+            }
           }
-        }
-        if (filter.protocol !== undefined) {
-          select = select.whereIn('protocol', filter.protocol);
-        }
-        if (filter.hidden !== undefined) {
-          select = select.andWhere('hidden', filter.hidden);
-        }
-        if (filter.search !== undefined && filter.search !== '') {
-          select = select.andWhere(function () {
-            this.where('name', 'iLike', `%${filter.search}%`);
-            this.orWhere('address', 'iLike', `%${filter.search}%`);
-          });
-        }
+          if (filter.protocol !== undefined) {
+            this.whereIn('protocol', filter.protocol);
+          }
+          if (filter.hidden !== undefined) {
+            this.andWhere('hidden', filter.hidden);
+          }
+          if (filter.search !== undefined && filter.search !== '') {
+            this.andWhere(function () {
+              this.where('name', 'iLike', `%${filter.search}%`);
+              this.orWhere('address', 'iLike', `%${filter.search}%`);
+            });
+          }
+        });
 
         return {
           list: await select
