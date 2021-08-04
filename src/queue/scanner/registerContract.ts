@@ -31,9 +31,10 @@ export default async (process: Process) => {
     .map(({ name }: any) => name);
 
   await Promise.all(
-    events.map((event) =>
-      container.scanner().registerListener(contractFromScanner.id, event, deployBlockNumber),
-    ),
+    events.map(async (event) => {
+      await container.scanner().registerListener(contractFromScanner.id, event, deployBlockNumber);
+      await container.model.contractEventWebHookService().create(contract, event);
+    }),
   );
 
   return process.done();

@@ -142,12 +142,15 @@ export function route({ express, server }: { express: Express; server: Server })
       return;
     }
 
-    await container.model.queueService().push('processEventWebHook', {
+    const eventQueueParam = {
       eventName: req.body.eventName,
       events: req.body.events,
       contract: req.body.contract,
       webHookId: req.params.webHookId,
-    });
+    };
+
+    await container.model.queueService().push('sendEventsNotifications', eventQueueParam);
+    await container.model.queueService().push('linkContractsFromEvents', eventQueueParam);
 
     res.sendStatus(200);
   });

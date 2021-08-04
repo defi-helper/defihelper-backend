@@ -26,7 +26,7 @@ export class NotificationService {
   public readonly onCreated = new Emitter<Notification>(async (notification) => {
     switch (notification.type) {
       case NotificationType.event:
-        await container.model.queueService().push('subscribeToEventFromScanner', notification);
+        await container.model.queueService().push('processEventNotification', notification);
         return;
       default:
         container.logger().error(`Unsupported notification type ${notification.type}`);
@@ -48,6 +48,8 @@ export class NotificationService {
     };
 
     await this.table().insert(created);
+
+    this.onCreated.emit(created);
 
     return created;
   }

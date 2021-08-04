@@ -1,6 +1,5 @@
 import { Process } from '@models/Queue/Entity';
 import container from '@container';
-import { NotificationType } from '@models/Notification/Entity';
 
 interface Event {
   address: string;
@@ -52,30 +51,22 @@ export default async (process: Process) => {
     throw new Error(`Contract ${webHook.contract} is not found for WebHook ${webHook.contract}`);
   }
 
-  const subscriptions = await container.model
-    .userEventSubscriptionTable()
-    .where('webHook', eventNotificationParams.webHookId);
-
-  const { txExplorerURL } = container.blockchain[contract.blockchain].byNetwork(contract.network);
-  const eventsUrls: EventUrls[] = eventNotificationParams.events.map((event) => ({
-    link: `${txExplorerURL}/${event.transactionHash}`,
-    txHash: event.transactionHash,
-  }));
-
   await Promise.all(
-    subscriptions.map(async (subscription) => {
-      const contact = await container.model
-        .userContactTable()
-        .where('id', subscription.contact)
+    eventNotificationParams.events.map(async (event) => {
+      const wallet = await container.model
+        .walletTable()
+        .where({
+          blockchain: contract.blockchain,
+          network: contract.network,
+          address: event.address,
+        })
         .first();
-      if (!contact) return;
 
-      await container.model.notificationService().create(contact, NotificationType.event, {
-        eventsUrls,
-        eventName: eventNotificationParams.eventName,
-        contractAddress: eventNotificationParams.contract.address,
-        network: eventNotificationParams.contract.network,
-      });
+      if (!wallet) {
+        return;
+      }
+
+      await container.model.contractService().walletLink(contract, wallet);
     }),
   );
 
