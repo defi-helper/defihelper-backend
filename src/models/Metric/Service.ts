@@ -3,6 +3,9 @@ import { Protocol, Contract } from '@models/Protocol/Entity';
 import { Factory } from '@services/Container';
 import { Wallet } from '@models/Wallet/Entity';
 import axios from 'axios';
+import dayjs from 'dayjs';
+import { BigNumber } from 'bignumber.js';
+import { ethers } from 'ethers';
 import vm from 'vm';
 import {
   MetricContractTable,
@@ -54,7 +57,10 @@ export class MetricContractService {
     const context = vm.createContext({
       module: { exports: new Error('Adapter not evaluated') },
       console,
+      bignumber: BigNumber,
+      dayjs,
       axios,
+      ethers,
     });
     vm.runInContext(adapterResponse.data, context);
 
