@@ -2,10 +2,10 @@ import { Container, singleton } from '@services/Container';
 import { isKey } from '@services/types';
 import axios from 'axios';
 import { ethers } from 'ethers';
-import * as masterChefV1ABI from './abi/ethereum/masterChefV1ABI.json';
-import * as erc20ABI from './abi/ethereum/erc20.json';
-import * as uniswapV2PairABI from './abi/ethereum/uniswapPair.json';
-import * as pancakeSmartChefInitializable from './abi/ethereum/pancakeSmartChefInitializableABI.json';
+import masterChefV1ABI from './abi/ethereum/masterChefV1ABI.json';
+import erc20ABI from './abi/ethereum/erc20.json';
+import uniswapV2PairABI from './abi/ethereum/uniswapPair.json';
+import pancakeSmartChefInitializable from './abi/ethereum/pancakeSmartChefInitializableABI.json';
 
 export interface EtherscanContractAbiResponse {
   status: string;
