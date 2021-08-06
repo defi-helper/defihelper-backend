@@ -43,6 +43,9 @@ export interface Config {
   ethMainNode: string;
   ethMainAvgBlockTime: number;
   ethMainInspector: string;
+  ethRopstenNode: string;
+  ethRopstenAvgBlockTime: number;
+  ethRopstenInspector: string;
   bscMainNode: string;
   bscMainAvgBlockTime: number;
   bscMainInspector: string;
@@ -62,6 +65,15 @@ export class BlockchainContainer extends Container<Config> {
       walletExplorerURL: new URL('https://etherscan.io/address'),
       getContractAbi: useEtherscanContractAbi('https://api.etherscan.io/api'),
       inspector: () => new ethers.Wallet(this.parent.ethMainInspector, this.networks[1].provider()),
+    },
+    '3': {
+      provider: singleton(providerFactory(this.parent.ethRopstenNode)),
+      avgBlockTime: this.parent.ethRopstenAvgBlockTime,
+      txExplorerURL: new URL('https://ropsten.etherscan.io/tx'),
+      walletExplorerURL: new URL('https://ropsten.etherscan.io/address'),
+      getContractAbi: useEtherscanContractAbi('https://api-ropsten.etherscan.io/api'),
+      inspector: () =>
+        new ethers.Wallet(this.parent.ethRopstenInspector, this.networks[3].provider()),
     },
     '56': {
       provider: singleton(providerFactory(this.parent.bscMainNode)),
