@@ -19,7 +19,7 @@ export async function migrate(log: Factory<Log>, database: Factory<Knex>) {
   if (await schema.hasTable(tableName)) return;
 
   log().info('Migrations init');
-  schema.createTable(tableName, (table) => {
+  await schema.createTable(tableName, (table) => {
     table.string('name', 512).notNullable().primary('migration_pkey');
     table.dateTime('createdAt').notNullable();
   });
