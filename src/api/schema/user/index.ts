@@ -462,6 +462,7 @@ export const RoleType = new GraphQLEnumType({
 const blockchainNameMap = new Map([
   ['ethereum:1', 'Ethereum'],
   ['ethereum:56', 'Binance Smart Chain'],
+  ['ethereum:137', 'Polygon'],
   ['waves:main', 'Waves'],
 ]);
 
