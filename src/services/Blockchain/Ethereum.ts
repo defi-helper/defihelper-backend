@@ -81,7 +81,7 @@ export class BlockchainContainer extends Container<Config> {
         new ethers.Wallet(this.parent.ethRopstenInspector, this.networks[3].provider()),
     },
     '56': {
-      name: 'BSC',
+      name: 'Binance Smart Chain',
       provider: singleton(providerFactory(this.parent.bscMainNode)),
       avgBlockTime: this.parent.bscMainAvgBlockTime,
       txExplorerURL: new URL('https://bscscan.com/tx'),
