@@ -11,8 +11,10 @@ export class ACLContainer extends Container<typeof AppContainer> {
       }),
   );
 
+  readonly candidate = singleton(() => ACL.expand(this.guest(), {}));
+
   readonly user = singleton(() =>
-    ACL.expand(this.guest(), {
+    ACL.expand(this.candidate(), {
       proposal: ['create', 'update-own'],
       protocol: ['view'],
       contract: ['walletLink-own'],

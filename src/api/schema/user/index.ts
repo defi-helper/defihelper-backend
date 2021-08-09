@@ -450,6 +450,9 @@ export const UserBlockchainType = new GraphQLObjectType<{
 export const RoleType = new GraphQLEnumType({
   name: 'UserRoleEnum',
   values: {
+    [Role.Candidate]: {
+      description: 'Candidate',
+    },
     [Role.User]: {
       description: 'User',
     },
@@ -850,7 +853,7 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
       const sid = container.model.sessionService().generate(user);
       return { user, sid };
     }
-    const user = currentUser ?? (await container.model.userService().create(Role.User));
+    const user = currentUser ?? (await container.model.userService().create(Role.Candidate));
     await container.model
       .walletService()
       .create(user, 'ethereum', network, recoveredAddress, recoveredPubKey);
@@ -927,7 +930,7 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
       const sid = container.model.sessionService().generate(user);
       return { user, sid };
     }
-    const user = currentUser ?? (await container.model.userService().create(Role.User));
+    const user = currentUser ?? (await container.model.userService().create(Role.Candidate));
     await container.model
       .walletService()
       .create(user, 'waves', network, recoveredAddress, publicKey);
