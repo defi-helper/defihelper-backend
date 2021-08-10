@@ -151,4 +151,13 @@ export class ModelContainer extends Container<typeof AppContainer> {
         this.notificationTable,
       ),
   );
+
+  readonly govProposalTable = Models.Governance.Entity.proposalTableFactory(this.parent.database);
+
+  readonly govReceiptTable = Models.Governance.Entity.receiptTableFactory(this.parent.database);
+
+  readonly governanceService = singleton(
+    () =>
+      new Models.Governance.Service.GovernanceService(this.govProposalTable, this.govReceiptTable),
+  );
 }
