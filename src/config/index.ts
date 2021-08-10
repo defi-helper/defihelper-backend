@@ -5,7 +5,7 @@ dotenv.config();
 export default {
   api: {
     port: parseInt(process.env.API_PORT ?? '9000', 10),
-    externalUrl: process.env.API_EXTERNAL_URL ?? 'https://backend-local.defihelper.io/',
+    externalUrl: process.env.API_EXTERNAL_URL ?? 'https://backend-local.defihelper.io',
     internalUrl: process.env.API_INTERNAL_URL ?? 'https://backend-local.defihelper.io',
     secret: process.env.API_SECRET ?? 'defiHelperApiSecret',
   },
