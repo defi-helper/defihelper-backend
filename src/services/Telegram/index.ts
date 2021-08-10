@@ -36,11 +36,13 @@ export class TelegramService {
             .activate(userContact, message.from?.username || '', {
               chatId: message.chat.id.toString(),
             });
+          const user = await container.model.userTable().where('id', userContact.user).first();
 
           await container.model.queueService().push('sendTelegram', {
             chatId: message.chat.id,
             template: 'welcomeTemplate',
             params: {},
+            locale: user?.locale || 'enUS',
           });
         }
       } catch (error) {
