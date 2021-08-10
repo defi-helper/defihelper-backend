@@ -11,12 +11,14 @@ export type Networks = keyof BlockchainContainer['networks'];
 export class BlockchainContainer extends Container<Config> {
   readonly networks = {
     main: {
+      name: 'Waves',
       provider: singleton(() => this.parent.mainNode),
       avgBlockTime: 60,
       txExplorerURL: new URL('https://wavesexplorer.com/tx'),
       walletExplorerURL: new URL('https://wavesexplorer.com/address'),
     },
     test: {
+      name: 'Waves Test',
       provider: singleton(() => this.parent.testNode),
       avgBlockTime: 60,
       txExplorerURL: new URL('https://testnet.wavesexplorer.com/tx'),

@@ -13,15 +13,12 @@ export interface EventNotificationParams {
   processedAt?: Date;
 }
 
-const networkIdToString = (network: number) => {
-  switch (network) {
-    case 1:
-      return 'Ethereum';
-    case 56:
-      return 'BSC';
-    default:
-      return '';
+const networkNameById = (network: string) => {
+  if (container.blockchain.ethereum.isNetwork(network)) {
+    return container.blockchain.ethereum.byNetwork(network).name;
   }
+
+  return '';
 };
 
 export default async (process: Process) => {
@@ -46,7 +43,7 @@ export default async (process: Process) => {
       eventName: notification.payload.eventName,
       eventsUrls: notification.payload.eventsUrls,
       contractAddress: notification.payload.contractAddress,
-      network: networkIdToString(notification.payload.network),
+      network: networkNameById(notification.payload.network.toString()),
     };
 
     switch (contact.broker) {

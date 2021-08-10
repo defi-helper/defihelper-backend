@@ -49,6 +49,9 @@ export interface Config {
   bscMainNode: string;
   bscMainAvgBlockTime: number;
   bscMainInspector: string;
+  polygonMainNode: string;
+  polygonMainAvgBlockTime: number;
+  polygonMainInspector: string;
   localNode: string;
   localAvgBlockTime: number;
   localInspector: string;
@@ -59,6 +62,7 @@ export type Networks = keyof BlockchainContainer['networks'];
 export class BlockchainContainer extends Container<Config> {
   readonly networks = {
     '1': {
+      name: 'Ethereum',
       provider: singleton(providerFactory(this.parent.ethMainNode)),
       avgBlockTime: this.parent.ethMainAvgBlockTime,
       txExplorerURL: new URL('https://etherscan.io/tx'),
@@ -67,6 +71,7 @@ export class BlockchainContainer extends Container<Config> {
       inspector: () => new ethers.Wallet(this.parent.ethMainInspector, this.networks[1].provider()),
     },
     '3': {
+      name: 'Ethereum Ropsten',
       provider: singleton(providerFactory(this.parent.ethRopstenNode)),
       avgBlockTime: this.parent.ethRopstenAvgBlockTime,
       txExplorerURL: new URL('https://ropsten.etherscan.io/tx'),
@@ -76,6 +81,7 @@ export class BlockchainContainer extends Container<Config> {
         new ethers.Wallet(this.parent.ethRopstenInspector, this.networks[3].provider()),
     },
     '56': {
+      name: 'Binance Smart Chain',
       provider: singleton(providerFactory(this.parent.bscMainNode)),
       avgBlockTime: this.parent.bscMainAvgBlockTime,
       txExplorerURL: new URL('https://bscscan.com/tx'),
@@ -84,7 +90,18 @@ export class BlockchainContainer extends Container<Config> {
       inspector: () =>
         new ethers.Wallet(this.parent.bscMainInspector, this.networks[56].provider()),
     },
+    '137': {
+      name: 'Polygon',
+      provider: singleton(providerFactory(this.parent.polygonMainNode)),
+      avgBlockTime: this.parent.polygonMainAvgBlockTime,
+      txExplorerURL: new URL('https://polygonscan.com/tx'),
+      walletExplorerURL: new URL('https://polygonscan.com/address'),
+      getContractAbi: useEtherscanContractAbi('https://api.polygonscan.com/api'),
+      inspector: () =>
+        new ethers.Wallet(this.parent.polygonMainInspector, this.networks[137].provider()),
+    },
     '31337': {
+      name: '',
       provider: singleton(providerFactory(this.parent.localNode)),
       avgBlockTime: this.parent.localAvgBlockTime,
       txExplorerURL: new URL('https://etherscan.io/tx'),

@@ -462,12 +462,6 @@ export const RoleType = new GraphQLEnumType({
   },
 });
 
-const blockchainNameMap = new Map([
-  ['ethereum:1', 'Ethereum'],
-  ['ethereum:56', 'Binance Smart Chain'],
-  ['waves:main', 'Waves'],
-]);
-
 export const LocaleEnum = new GraphQLEnumType({
   name: 'LocaleEnum',
   values: Object.keys(locales).reduce(
@@ -555,7 +549,7 @@ export const UserType = new GraphQLObjectType<User>({
           return {
             blockchain,
             network,
-            name: blockchainNameMap.get(key) ?? key,
+            name: container.blockchain[blockchain]?.byNetwork(network)?.name ?? key,
             user,
           };
         });
