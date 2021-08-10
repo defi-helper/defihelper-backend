@@ -12,26 +12,10 @@ interface Event {
   createdAt: Date;
 }
 
-interface Contract {
-  id: string;
-  address: string;
-  network: number;
-  name: string;
-  startHeight: number;
-  updatedAt: Date;
-  createdAt: Date;
-}
-
 export interface EventNotificationParams {
   events: Event[];
-  contract: Contract;
   eventName: string;
   webHookId: string;
-}
-
-export interface EventUrls {
-  link: string;
-  txHash: string;
 }
 
 export default async (process: Process) => {
