@@ -139,7 +139,8 @@ export function route({ express, server }: { express: Express; server: Server })
 
     const webHook = await container.model
       .contractEventWebHookTable()
-      .where('id', req.params.webHookId);
+      .where('id', req.params.webHookId)
+      .first();
 
     if (!webHook) {
       res.sendStatus(404);
@@ -149,7 +150,6 @@ export function route({ express, server }: { express: Express; server: Server })
     const eventQueueParam = {
       eventName: req.body.eventName,
       events: req.body.events,
-      contract: req.body.contract,
       webHookId: req.params.webHookId,
     };
 
