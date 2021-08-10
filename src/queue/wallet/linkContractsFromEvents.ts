@@ -42,7 +42,7 @@ export default async (process: Process) => {
         .where({
           blockchain: contract.blockchain,
           network: contract.network,
-          address: event.address,
+          address: event.address.toLowerCase(),
         })
         .first();
 
