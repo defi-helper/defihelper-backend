@@ -14,7 +14,6 @@ import {
 } from 'graphql';
 import { GovernanceService } from '@models/Governance/Service';
 import { PaginateList, PaginationArgument, SortArgument } from '../types';
-import { ProposalType } from '../proposal';
 
 export const GovProposalStateEnum = new GraphQLEnumType({
   name: 'GovProposalStateEnum',
@@ -170,7 +169,7 @@ export const GovProposalQuery: GraphQLFieldConfig<any, Request> = {
 };
 
 export const GovProposalListQuery: GraphQLFieldConfig<any, Request> = {
-  type: GraphQLNonNull(PaginateList('GovProposalListQuery', GraphQLNonNull(ProposalType))),
+  type: GraphQLNonNull(PaginateList('GovProposalListQuery', GraphQLNonNull(GovProposalType))),
   args: {
     filter: {
       type: GraphQLNonNull(
