@@ -6,6 +6,7 @@ import axios from 'axios';
 import dayjs from 'dayjs';
 import { BigNumber } from 'bignumber.js';
 import { ethers } from 'ethers';
+import ethersMulticall from '@defihelper/ethers-multicall';
 import vm from 'vm';
 import {
   MetricContractTable,
@@ -61,6 +62,7 @@ export class MetricContractService {
       dayjs,
       axios,
       ethers,
+      ethersMulticall,
     });
     vm.runInContext(adapterResponse.data, context);
 
