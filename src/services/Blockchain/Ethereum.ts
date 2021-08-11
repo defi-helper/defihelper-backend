@@ -7,6 +7,7 @@ import erc20ABI from './abi/ethereum/erc20.json';
 import uniswapV2PairABI from './abi/ethereum/uniswapPair.json';
 import pancakeSmartChefInitializable from './abi/ethereum/pancakeSmartChefInitializableABI.json';
 import governorBravoABI from './abi/ethereum/governorBravo.json';
+import governanceTokenABI from './abi/ethereum/governanceToken.json';
 
 export interface EtherscanContractAbiResponse {
   status: string;
@@ -137,5 +138,6 @@ export class BlockchainContainer extends Container<Config> {
     masterChefV1ABI,
     pancakeSmartChefInitializable,
     governorBravoABI,
+    governanceTokenABI,
   };
 }

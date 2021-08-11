@@ -50,7 +50,12 @@ import {
   ProductListQuery,
   ProductUpdateMutation,
 } from './schema/store';
-import { GovProposalListQuery, GovProposalQuery, GovReceiptQuery } from './schema/governance';
+import {
+  GovProposalListQuery,
+  GovProposalQuery,
+  GovReceiptQuery,
+  GovVotesQuery,
+} from './schema/governance';
 
 export function route({ express, server }: { express: Express; server: Server }) {
   const apollo = new ApolloServer({
@@ -81,6 +86,7 @@ export function route({ express, server }: { express: Express; server: Server })
           govProposal: GovProposalQuery,
           govProposals: GovProposalListQuery,
           govReceipt: GovReceiptQuery,
+          govVotes: GovVotesQuery,
         },
       }),
       mutation: new GraphQLObjectType({

@@ -255,3 +255,31 @@ export const GovReceiptQuery: GraphQLFieldConfig<any, Request> = {
       .getReceipt(network, contract, proposalId, wallet, { cache });
   },
 };
+
+export const GovVotesQuery: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLString),
+  args: {
+    filter: {
+      type: GraphQLNonNull(
+        new GraphQLInputObjectType({
+          name: 'GovVotesFilterInputType',
+          fields: {
+            network: {
+              type: GraphQLNonNull(GraphQLInt),
+            },
+            contract: {
+              type: GraphQLNonNull(GraphQLString),
+            },
+            wallet: {
+              type: GraphQLNonNull(GraphQLString),
+            },
+          },
+        }),
+      ),
+    },
+  },
+  resolve: async (root, { filter }) => {
+    const { network, contract, wallet } = filter;
+    return GovernanceService.currentVotes(network, contract, wallet);
+  },
+};

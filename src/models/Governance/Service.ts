@@ -30,6 +30,23 @@ export class GovernanceService {
     return (await governorBravo.proposalCount()).toNumber();
   }
 
+  static async currentVotes(
+    network: string | number,
+    governanceTokenAddress: string,
+    wallet: string,
+  ) {
+    const blockchainContainer = container.blockchain.ethereum;
+    const provider = blockchainContainer.byNetwork(network).provider();
+    const governanceToken = blockchainContainer.contract(
+      governanceTokenAddress,
+      blockchainContainer.abi.governanceTokenABI,
+      provider,
+    );
+    const votes = await governanceToken.getCurrentVotes(wallet);
+
+    return new BN(votes.toString()).div(1e18).toString();
+  }
+
   async getProposal(
     network: string | number,
     governorBravoAddress: string,
