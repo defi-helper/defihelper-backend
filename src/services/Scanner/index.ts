@@ -68,7 +68,9 @@ export class ScannerService {
 
   async findContract(network: string, address: string): Promise<Contract | undefined> {
     const contracts = (
-      await this.client.get<Contract[]>(`/api/contract?network=${network}&address=${address}`)
+      await this.client.get<Contract[]>(
+        `/api/contract?network=${network}&address=${address.toLowerCase()}`,
+      )
     ).data;
     if (contracts.length === 0) {
       return undefined;
@@ -88,9 +90,9 @@ export class ScannerService {
     startHeight?: number,
   ): Promise<Contract> {
     const contract = await this.client.post<Contract>(`/api/contract`, {
-      name: name ?? address,
+      name: name ?? address.toLowerCase(),
       network,
-      address,
+      address: address.toLowerCase(),
       startHeight: startHeight || (await this.currentBlock(network)) - 10,
       abi: '',
     });
@@ -138,9 +140,9 @@ export class ScannerService {
     event: string,
     callBackUrl: string,
   ): Promise<CallBack> {
-    let contract = await this.findContract(network, address);
+    let contract = await this.findContract(network, address.toLowerCase());
     if (!contract) {
-      contract = await this.registerContract(network, address);
+      contract = await this.registerContract(network, address.toLowerCase());
     }
 
     let listener = await this.findListener(contract.id, event);
@@ -159,7 +161,11 @@ export class ScannerService {
   }
 
   async getContractsAddressByUserAddress(networkId: string, address: string): Promise<string[]> {
-    return (await this.client.get<string[]>(`/api/address/${address}?networkId=${networkId}`)).data;
+    return (
+      await this.client.get<string[]>(
+        `/api/address/${address.toLowerCase()}?networkId=${networkId}`,
+      )
+    ).data;
   }
 }
 

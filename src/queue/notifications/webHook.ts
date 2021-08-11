@@ -13,19 +13,8 @@ interface Event {
   createdAt: Date;
 }
 
-interface Contract {
-  id: string;
-  address: string;
-  network: number;
-  name: string;
-  startHeight: number;
-  updatedAt: Date;
-  createdAt: Date;
-}
-
 export interface EventNotificationParams {
   events: Event[];
-  contract: Contract;
   eventName: string;
   webHookId: string;
 }
@@ -73,8 +62,8 @@ export default async (process: Process) => {
       await container.model.notificationService().create(contact, NotificationType.event, {
         eventsUrls,
         eventName: eventNotificationParams.eventName,
-        contractAddress: eventNotificationParams.contract.address,
-        network: eventNotificationParams.contract.network,
+        contractAddress: contract.address,
+        network: contract.network,
       });
     }),
   );
