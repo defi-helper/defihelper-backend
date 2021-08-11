@@ -51,7 +51,7 @@ export default async (process: Process) => {
     await metricService.createWallet(contract, wallet, walletAdapterData.metrics, date);
   }
 
-  const tokenService = container.model.tokenService();
+  const queue = container.model.queueService();
   if (
     typeof walletAdapterData.tokens === 'object' &&
     Object.keys(walletAdapterData.tokens).length > 0
@@ -59,26 +59,17 @@ export default async (process: Process) => {
     await Promise.all(
       Object.entries(walletAdapterData.tokens).map(async ([tokenAddress, metric]) => {
         await metricService.createToken(contract, wallet, tokenAddress, metric, date);
-
-        const tokenDuplicate = await tokenService
-          .table()
-          .where({
+        await queue.push(
+          'tokenCreate',
+          {
             blockchain: wallet.blockchain,
             network: wallet.network,
             address: tokenAddress,
-          })
-          .first();
-        if (!tokenDuplicate) {
-          await tokenService.create(
-            null,
-            wallet.blockchain,
-            wallet.network,
-            tokenAddress,
-            '',
-            '',
-            0,
-          );
-        }
+          },
+          {
+            colissionSign: `tokenCreate-${wallet.blockchain}:${wallet.network}:${tokenAddress}`,
+          },
+        );
       }),
     );
   }

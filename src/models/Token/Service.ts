@@ -49,6 +49,19 @@ export class TokenService {
     return null;
   });
 
+  public readonly onUpdated = new Emitter<{ prev: Token; cur: Token }>(({ cur }) => {
+    if (cur.alias !== null) return null;
+    if (cur.name === '') return null;
+
+    return container.model.queueService().push(
+      'tokenAlias',
+      { tokenId: cur.id },
+      {
+        colissionSign: `tokenAlias-${cur.id}`,
+      },
+    );
+  });
+
   constructor(readonly table: Factory<TokenTable>) {}
 
   async create(
@@ -84,6 +97,7 @@ export class TokenService {
       updatedAt: new Date(),
     };
     await this.table().where({ id: token.id }).update(updated);
+    this.onUpdated.emit({ prev: token, cur: updated });
 
     return updated;
   }
