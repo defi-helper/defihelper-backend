@@ -1,5 +1,6 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
+import { ethers } from 'ethers';
 
 export interface MasterChiefScannerParams {
   masterChefAddress: string;
@@ -10,6 +11,20 @@ export interface MasterChiefScannerParams {
   network: '1' | '56' | '137';
   reservedPools: number[];
 }
+
+const addressSymbolMap: Record<string, string> = {
+  '0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2': 'MKR',
+};
+
+const resolveSymbol = async (address: string, provider: ethers.providers.JsonRpcProvider) => {
+  if (addressSymbolMap[address.toLowerCase()]) {
+    return addressSymbolMap[address.toLowerCase()];
+  }
+
+  return container.blockchain.ethereum
+    .contract(address, container.blockchain.ethereum.abi.erc20ABI, provider)
+    .symbol();
+};
 
 export default async (process: Process) => {
   const {
@@ -81,12 +96,8 @@ export default async (process: Process) => {
       }
 
       const [symbol0, symbol1] = await Promise.all([
-        container.blockchain.ethereum
-          .contract(token0, container.blockchain.ethereum.abi.erc20ABI, provider)
-          .symbol(),
-        container.blockchain.ethereum
-          .contract(token1, container.blockchain.ethereum.abi.erc20ABI, provider)
-          .symbol(),
+        resolveSymbol(token0, provider),
+        resolveSymbol(token1, provider),
       ]);
 
       await container.model
@@ -99,7 +110,7 @@ export default async (process: Process) => {
           null,
           farmingAdapterName,
           '',
-          `${symbol0}/${symbol1} LP`,
+          `${protocolName} ${symbol0}/${symbol1} LP`,
           '',
           `${container.blockchain.ethereum.networks[
             network
