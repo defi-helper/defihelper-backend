@@ -33,7 +33,7 @@ export default async (process: Process) => {
   const queue = container.model.queueService();
   let blockNumber = new BN(startBlockNumber);
   while (blockNumber.lt(currentBlockNumber)) {
-    queue.push('metricsWallet', {
+    queue.push('metricsWalletBlock', {
       contract: contract.id,
       wallet,
       blockNumber: blockNumber.toFixed(0),
