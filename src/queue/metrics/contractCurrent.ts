@@ -8,7 +8,7 @@ export interface Params {
 export default async (process: Process) => {
   return contractMetrics(
     process.param({
-      ...process.param,
+      ...process.task.params,
       blockNumber: 'latest',
     }),
   );

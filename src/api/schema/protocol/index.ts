@@ -216,7 +216,7 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
               defaultValue: false,
             },
             eventsToSubscribe: {
-              type: GraphQLList(GraphQLString),
+              type: GraphQLList(GraphQLNonNull(GraphQLString)),
               description: 'Events to subscribe in scanner',
               defaultValue: undefined,
             },
