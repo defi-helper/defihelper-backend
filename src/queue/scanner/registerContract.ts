@@ -4,14 +4,20 @@ import dayjs from 'dayjs';
 
 export interface ContractRegisterParams {
   contract: string;
+  events?: string[];
 }
 
 export default async (process: Process) => {
-  const { contract: contractId } = process.task.params as ContractRegisterParams;
+  const { contract: contractId, events: eventsToSubscribe } = process.task
+    .params as ContractRegisterParams;
 
   const contract = await container.model.contractTable().where('id', contractId).first();
   if (!contract) {
     throw new Error('Contract is not found');
+  }
+
+  if (eventsToSubscribe && eventsToSubscribe.length === 0) {
+    return process.done();
   }
 
   const deployBlockNumber =
@@ -27,7 +33,10 @@ export default async (process: Process) => {
   }
 
   const events: string[] = contractFromScanner.abi
-    .filter(({ type }: any) => type === 'event')
+    .filter(
+      ({ type, name }: any) =>
+        type === 'event' && (!eventsToSubscribe || eventsToSubscribe.includes(name)),
+    )
     .map(({ name }: any) => name);
 
   await Promise.all(

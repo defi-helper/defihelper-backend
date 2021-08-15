@@ -4,10 +4,11 @@ import dayjs from 'dayjs';
 
 export interface Params {
   contract: string;
+  events?: string[];
 }
 
 export default async (process: Process) => {
-  const { contract: contractId } = process.task.params as Params;
+  const { contract: contractId, events } = process.task.params as Params;
   const contract = await container.model.contractTable().where('id', contractId).first();
   if (!contract) throw new Error('Contract not found');
 
@@ -23,7 +24,9 @@ export default async (process: Process) => {
     return process.later(dayjs().add(30, 'seconds').toDate());
   }
 
-  await container.model.queueService().push('registerContractInScanner', { contract: contract.id });
+  await container.model
+    .queueService()
+    .push('registerContractInScanner', { contract: contract.id, events });
   if (contract.network === '1') {
     await container.model.queueService().push('metricsContractHistory', { contract: contract.id });
   }

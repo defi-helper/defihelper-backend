@@ -215,6 +215,11 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
               description: 'Is hidden',
               defaultValue: false,
             },
+            eventsToSubscribe: {
+              type: GraphQLList(GraphQLString),
+              description: 'Events to subscribe in scanner',
+              defaultValue: undefined,
+            },
           },
         }),
       ),
@@ -239,6 +244,7 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
         description,
         link,
         hidden,
+        eventsToSubscribe,
       } = input;
       const created = await container.model
         .contractService()
@@ -254,6 +260,7 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
           description,
           link,
           hidden,
+          eventsToSubscribe,
         );
 
       return created;
