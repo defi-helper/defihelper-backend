@@ -55,9 +55,17 @@ export class ProtocolService {
   }
 }
 
+interface ContractRegisterData {
+  contract: Contract;
+  eventsToSubscribe?: string[];
+}
+
 export class ContractService {
-  public readonly onCreated = new Emitter<Contract>((contract) =>
-    container.model.queueService().push('eventsContractCreated', { contract: contract.id }),
+  public readonly onCreated = new Emitter<ContractRegisterData>((contract) =>
+    container.model.queueService().push('eventsContractCreated', {
+      contract: contract.contract.id,
+      events: contract.eventsToSubscribe,
+    }),
   );
 
   public readonly onWalletLink = new Emitter<{
@@ -95,6 +103,7 @@ export class ContractService {
     description: string = '',
     link: string | null = null,
     hidden: boolean = false,
+    eventsToSubscribe?: string[],
   ) {
     const created = {
       id: uuid(),
@@ -113,7 +122,10 @@ export class ContractService {
       updatedAt: new Date(),
     };
     await this.contractTable().insert(created);
-    this.onCreated.emit(created);
+    this.onCreated.emit({
+      contract: created,
+      eventsToSubscribe,
+    });
 
     return created;
   }
