@@ -71,7 +71,12 @@ export class QueueService {
     };
 
     if (typeof options.colissionSign === 'string') {
-      const duplicate = await this.table().where('collisionSign', options.colissionSign).first();
+      const duplicate = await this.table()
+        .where({
+          collisionSign: options.colissionSign,
+        })
+        .whereIn('status', [TaskStatus.Pending, TaskStatus.Process])
+        .first();
       if (duplicate) {
         task = {
           ...task,
