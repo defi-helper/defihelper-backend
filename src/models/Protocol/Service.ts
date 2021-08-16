@@ -74,7 +74,7 @@ export class ContractService {
     link: WalletContractLink;
   }>(({ contract, link }) => {
     if (
-      !(contract.blockchain === 'ethereum' && contract.network === '1') ||
+      !(contract.blockchain === 'ethereum' && ['1', '56'].includes(contract.network)) ||
       contract.deployBlockNumber === null ||
       contract.deployBlockNumber === '0'
     ) {

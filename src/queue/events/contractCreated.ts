@@ -27,7 +27,7 @@ export default async (process: Process) => {
   await container.model
     .queueService()
     .push('registerContractInScanner', { contract: contract.id, events });
-  if (contract.network === '1') {
+  if (['1', '56'].includes(contract.network)) {
     await container.model.queueService().push('metricsContractHistory', { contract: contract.id });
   }
 
