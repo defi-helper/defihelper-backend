@@ -28,6 +28,7 @@ export default async (process: Process) => {
       farmingAdapterName: 'masterChef',
       network: '56',
     }),
+    queue.push('pancakeStakingPoolScanner', {}),
   ]);
 
   return process.done();
