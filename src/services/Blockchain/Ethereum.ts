@@ -6,6 +6,7 @@ import masterChefV1ABI from './abi/ethereum/masterChefV1ABI.json';
 import erc20ABI from './abi/ethereum/erc20.json';
 import uniswapV2PairABI from './abi/ethereum/uniswapPair.json';
 import pancakeSmartChefInitializable from './abi/ethereum/pancakeSmartChefInitializableABI.json';
+import synthetixStaking from './abi/ethereum/synthetixStakingABI.json';
 import governorBravoABI from './abi/ethereum/governorBravo.json';
 import governanceTokenABI from './abi/ethereum/governanceToken.json';
 
@@ -137,6 +138,7 @@ export class BlockchainContainer extends Container<Config> {
     uniswapV2PairABI,
     masterChefV1ABI,
     pancakeSmartChefInitializable,
+    synthetixStaking,
     governorBravoABI,
     governanceTokenABI,
   };

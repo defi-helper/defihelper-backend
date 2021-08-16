@@ -29,6 +29,7 @@ export default async (process: Process) => {
       network: '56',
     }),
     queue.push('pancakeStakingPoolScanner', {}),
+    queue.push('quickSwapPolygonStakingPoolScanner', {}),
   ]);
 
   return process.done();
