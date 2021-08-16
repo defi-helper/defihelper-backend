@@ -3,39 +3,70 @@ import { Contract } from '@models/Protocol/Entity';
 import { Process } from '@models/Queue/Entity';
 import axios from 'axios';
 import { parse } from 'node-html-parser';
+import faker from 'faker';
+
+const axiosFakeHeaders = {
+  'Host': 'etherscan.io',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+  'Accept-Language': 'en-CA,en-US;q=0.7,en;q=0.3',
+  'Connection': 'keep-alive',
+  'Upgrade-Insecure-Requests': '1',
+  'Sec-Fetch-Dest': 'document',
+  'Sec-Fetch-Mode': 'navigate',
+  'Sec-Fetch-Site': 'none',
+  'Sec-Fetch-User': '?1',
+  'Cache-Control': 'max-age=0',
+  'TE': 'trailers',
+};
+
+const oneYearInSeconds = 60 * 60 * 24 * 365;
 
 const getEthereumContractCreationBlock = async ({
   network,
   address,
 }: Contract): Promise<number> => {
   const { walletExplorerURL } = container.blockchain.ethereum.byNetwork(network);
-  const res = await axios.get(`${walletExplorerURL}/${address}`);
-  const root = parse(res.data);
-  const contractCreatorNode = root
-    .querySelectorAll('div')
-    .find((div) => div.text === '\nContractCreator:');
-  if (!contractCreatorNode) {
-    throw new Error('Not contract creator node');
+  try {
+    const res = await axios.get(`${walletExplorerURL}/${address}`, {
+      headers: {
+        ...axiosFakeHeaders,
+        'User-Agent': faker.internet.userAgent(),
+      },
+    });
+    const root = parse(res.data);
+    const contractCreatorNode = root
+      .querySelectorAll('div')
+      .find((div) => div.text === '\nContractCreator:');
+    if (!contractCreatorNode) {
+      throw new Error('Not contract creator node');
+    }
+
+    const txHrefNode = contractCreatorNode.parentNode.querySelectorAll('a').find((a) => {
+      const href = a.getAttribute('href');
+      return href && href.indexOf('/tx') > -1;
+    });
+    if (!txHrefNode) {
+      throw new Error('Not creator tx');
+    }
+
+    const txHref = txHrefNode.getAttribute('href');
+    if (!txHref) {
+      throw new Error('Not creator href');
+    }
+
+    const txHash = txHref.replace('/tx/', '');
+    const provider = await container.blockchain.ethereum.byNetwork(network).provider();
+    const txReceipt = await provider.getTransactionReceipt(txHash);
+
+    return txReceipt.blockNumber;
+  } catch {
+    const provider = await container.blockchain.ethereum.byNetwork(network).provider();
+    const latestBlock = await provider.getBlockNumber();
+    const { avgBlockTime } = container.blockchain.ethereum.byNetwork(network);
+    const fallbackBlock = Math.max(0, Math.round(latestBlock - oneYearInSeconds / avgBlockTime));
+
+    return fallbackBlock;
   }
-
-  const txHrefNode = contractCreatorNode.parentNode.querySelectorAll('a').find((a) => {
-    const href = a.getAttribute('href');
-    return href && href.indexOf('/tx') > -1;
-  });
-  if (!txHrefNode) {
-    throw new Error('Not creator tx');
-  }
-
-  const txHref = txHrefNode.getAttribute('href');
-  if (!txHref) {
-    throw new Error('Not creator href');
-  }
-
-  const txHash = txHref.replace('/tx/', '');
-  const provider = await container.blockchain.ethereum.byNetwork(network).provider();
-  const txReceipt = await provider.getTransactionReceipt(txHash);
-
-  return txReceipt.blockNumber;
 };
 
 export interface Params {
