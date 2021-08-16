@@ -116,6 +116,7 @@ export default async (process: Process) => {
             network
           ].walletExplorerURL.toString()}/${masterChefAddress}`,
           false,
+          [],
         );
     }),
   );

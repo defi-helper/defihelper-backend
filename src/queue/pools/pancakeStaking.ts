@@ -108,6 +108,7 @@ export default async (process: Process) => {
           '',
           `${container.blockchain.ethereum.networks['56'].walletExplorerURL.toString()}/${address}`,
           false,
+          ['Deposit'],
         );
     }),
   );

@@ -9,7 +9,7 @@ export interface Params {
 export default async (process: Process) => {
   return walletMetrics(
     process.param({
-      ...process.param,
+      ...process.task.params,
       blockNumber: 'latest',
     }),
   );
