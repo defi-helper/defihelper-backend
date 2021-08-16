@@ -21,7 +21,7 @@ export default async (process: Process) => {
         colissionSign: `contractResolveDeployBlockNumber:${contract.id}`,
       },
     );
-    return process.later(dayjs().add(30, 'seconds').toDate());
+    return process.later(dayjs().add(300, 'seconds').toDate());
   }
 
   await container.model
