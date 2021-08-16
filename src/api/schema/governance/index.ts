@@ -1,4 +1,6 @@
 import container from '@container';
+import BN from 'bignumber.js';
+import dayjs from 'dayjs';
 import { Request } from 'express';
 import { Proposal, ProposalState, Receipt, ReceiptSupport } from '@models/Governance/Entity';
 import {
@@ -13,7 +15,7 @@ import {
   GraphQLString,
 } from 'graphql';
 import { GovernanceService } from '@models/Governance/Service';
-import { PaginateList, PaginationArgument, SortArgument } from '../types';
+import { DateTimeType, PaginateList, PaginationArgument, SortArgument } from '../types';
 
 export const GovProposalStateEnum = new GraphQLEnumType({
   name: 'GovProposalStateEnum',
@@ -72,6 +74,22 @@ export const GovProposalType = new GraphQLObjectType<Proposal>({
     endBlock: {
       type: GraphQLNonNull(GraphQLInt),
       description: 'End block of vote',
+    },
+    endVoteDate: {
+      type: GraphQLNonNull(DateTimeType),
+      description: 'End vote datetime',
+      resolve: async (proposal) => {
+        const network = container.blockchain.ethereum.byNetwork(proposal.network);
+        const currentBlockNumber = await network.provider().getBlockNumber();
+
+        return dayjs().add(
+          new BN(proposal.endBlock)
+            .minus(currentBlockNumber)
+            .multipliedBy(network.avgBlockTime)
+            .toNumber(),
+          'second',
+        );
+      },
     },
     forVotes: {
       type: GraphQLNonNull(GraphQLString),
