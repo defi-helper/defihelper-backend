@@ -51,6 +51,7 @@
     "@waves/ts-lib-crypto": "^1.4.4-beta.1",
     "apollo-server-express": "^2.22.2",
     "axios": "^0.21.1",
+    "axios-retry": "^3.1.9",
     "bignumber.js": "^9.0.1",
     "body-parser": "^1.19.0",
     "command-line-args": "^5.1.1",

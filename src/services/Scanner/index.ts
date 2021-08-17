@@ -1,4 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
+import axiosRetry from 'axios-retry';
 
 export interface ScannerParams {
   host: string;
@@ -31,27 +32,18 @@ export interface CallBack {
   createdAt: Date;
 }
 
-export interface TransactionReceipt {
-  to: string;
-  from: string;
-  contractAddress: string;
-  transactionIndex: number;
-  root?: string;
-  logsBloom: string;
-  blockHash: string;
-  transactionHash: string;
-  blockNumber: number;
-  confirmations: number;
-  byzantium: boolean;
-  status?: number;
-}
-
 export class ScannerService {
   protected client: AxiosInstance;
 
   constructor(scannerParams: ScannerParams) {
     this.client = axios.create({
       baseURL: scannerParams.host,
+    });
+
+    axiosRetry(this.client, {
+      retries: 10,
+      retryCondition: () => true,
+      retryDelay: axiosRetry.exponentialDelay,
     });
   }
 
