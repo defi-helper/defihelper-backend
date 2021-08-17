@@ -9,7 +9,21 @@ export interface Params {
 }
 
 export default async (process: Process) => {
-  const { blockchain, network, address } = process.task.params as Params;
+  const { blockchain, network } = process.task.params as Params;
+  let { address } = process.task.params as Params;
+  if (blockchain === 'ethereum') {
+    address = address.toLowerCase();
+  }
+
+  const duplicate = await container.model
+    .tokenTable()
+    .where({
+      blockchain,
+      network,
+      address,
+    })
+    .first();
+  if (duplicate) return process.info('duplicate').done();
 
   await container.model.tokenService().create(null, blockchain, network, address, '', '', 0);
 
