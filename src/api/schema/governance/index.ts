@@ -153,6 +153,18 @@ export const GovReceiptType = new GraphQLObjectType<Receipt>({
   },
 });
 
+export const GovVoteType = new GraphQLObjectType({
+  name: 'GovVoteType',
+  fields: {
+    votes: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    delegates: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+  },
+});
+
 export const GovProposalQuery: GraphQLFieldConfig<any, Request> = {
   type: GovProposalType,
   args: {
@@ -274,7 +286,7 @@ export const GovReceiptQuery: GraphQLFieldConfig<any, Request> = {
 };
 
 export const GovVotesQuery: GraphQLFieldConfig<any, Request> = {
-  type: GraphQLNonNull(GraphQLString),
+  type: GraphQLNonNull(GovVoteType),
   args: {
     filter: {
       type: GraphQLNonNull(
@@ -297,6 +309,7 @@ export const GovVotesQuery: GraphQLFieldConfig<any, Request> = {
   },
   resolve: async (root, { filter }) => {
     const { network, contract, wallet } = filter;
-    return GovernanceService.currentVotes(network, contract, wallet);
+
+    return GovernanceService.votes(network, contract, wallet);
   },
 };
