@@ -7,7 +7,13 @@ export interface EventNotificationParams {
   id: string;
   contact: string;
   type: NotificationType;
-  payload: { eventsUrls: EventUrls[]; eventName: string; contractAddress: string; network: number };
+  payload: {
+    eventsUrls: EventUrls[];
+    eventName: string;
+    contractName: string;
+    contractUrl: string;
+    network: number;
+  };
   status: NotificationStatus;
   createdAt: Date;
   processedAt?: Date;
@@ -42,7 +48,8 @@ export default async (process: Process) => {
     const params = {
       eventName: notification.payload.eventName,
       eventsUrls: notification.payload.eventsUrls,
-      contractAddress: notification.payload.contractAddress,
+      contractName: notification.payload.contractName,
+      contractUrl: notification.payload.contractUrl,
       network: networkNameById(notification.payload.network.toString()),
     };
 
