@@ -16,10 +16,6 @@ export default async (process: Process) => {
     throw new Error('Contract is not found');
   }
 
-  if (eventsToSubscribe && eventsToSubscribe.length === 0) {
-    return process.done();
-  }
-
   const deployBlockNumber =
     contract.deployBlockNumber === null ? undefined : parseInt(contract.deployBlockNumber, 10);
   const contractFromScanner = await container
@@ -30,6 +26,10 @@ export default async (process: Process) => {
       .scanner()
       .registerContract(contract.network, contract.address, contract.name, deployBlockNumber);
     return process.later(dayjs().add(1, 'minutes').toDate());
+  }
+
+  if (eventsToSubscribe && eventsToSubscribe.length === 0) {
+    return process.done();
   }
 
   const events: string[] = contractFromScanner.abi
