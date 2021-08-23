@@ -160,4 +160,21 @@ export class ModelContainer extends Container<typeof AppContainer> {
     () =>
       new Models.Governance.Service.GovernanceService(this.govProposalTable, this.govReceiptTable),
   );
+
+  readonly automateTriggerTable = Models.Automate.Entity.triggerTableFactory(this.parent.database);
+
+  readonly automateConditionTable = Models.Automate.Entity.conditionTableFactory(
+    this.parent.database,
+  );
+
+  readonly automateActionTable = Models.Automate.Entity.actionTableFactory(this.parent.database);
+
+  readonly automateService = singleton(
+    () =>
+      new Models.Automate.Service.AutomateService(
+        this.automateTriggerTable,
+        this.automateConditionTable,
+        this.automateActionTable,
+      ),
+  );
 }

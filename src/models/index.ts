@@ -10,3 +10,4 @@ export * as Notification from './Notification';
 export * as Billing from './Billing';
 export * as Store from './Store';
 export * as Governance from './Governance';
+export * as Automate from './Automate';
