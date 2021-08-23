@@ -397,7 +397,7 @@ export const GovTokenQuery: GraphQLFieldConfig<any, Request> = {
     return {
       price: '0.915',
       totalSupply: '1000000000',
-      markeCap: '915000000',
+      marketCap: '915000000',
       circulation: {
         total: '5000000',
         market: {
