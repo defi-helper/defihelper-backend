@@ -54,6 +54,7 @@ import {
   GovProposalListQuery,
   GovProposalQuery,
   GovReceiptQuery,
+  GovTokenQuery,
   GovVotesQuery,
 } from './schema/governance';
 
@@ -87,6 +88,7 @@ export function route({ express, server }: { express: Express; server: Server })
           govProposals: GovProposalListQuery,
           govReceipt: GovReceiptQuery,
           govVotes: GovVotesQuery,
+          govToken: GovTokenQuery,
         },
       }),
       mutation: new GraphQLObjectType({
