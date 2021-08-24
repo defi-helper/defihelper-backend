@@ -64,8 +64,8 @@ export default async (process: Process) => {
       await container.model.notificationService().create(contact, NotificationType.event, {
         eventsUrls,
         eventName: eventNotificationParams.eventName,
-        contractName: contract.name || contact.address,
-        contractUrl: `${walletExplorerURL}/${contact.address}`,
+        contractName: contract.name || contract.address,
+        contractUrl: `${walletExplorerURL}/${contract.address}`,
         network: contract.network,
       });
     }),

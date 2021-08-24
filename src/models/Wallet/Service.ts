@@ -31,7 +31,7 @@ export class WalletService {
       user: user.id,
       blockchain,
       network,
-      address: address.toLowerCase(),
+      address: blockchain === 'ethereum' ? address.toLowerCase() : address,
       publicKey,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -46,7 +46,7 @@ export class WalletService {
   async update(wallet: Wallet): Promise<Wallet> {
     const updated = {
       ...wallet,
-      address: wallet.address.toLowerCase(),
+      address: wallet.blockchain === 'ethereum' ? wallet.address.toLowerCase() : wallet.address,
       updatedAt: new Date(),
     };
     await this.table().where({ id: wallet.id }).update(updated);

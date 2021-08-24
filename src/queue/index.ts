@@ -31,3 +31,4 @@ export * as billingStoreScan from './billing/storeScan';
 export * as masterChiefFarmPoolScanner from './pools/masterChief';
 export * as pancakeStakingPoolScanner from './pools/pancakeStaking';
 export * as quickSwapPolygonStakingPoolScanner from './pools/quickSwapPolygonStaking';
+export * as swopfiLPFarmingPoolScanner from './pools/swopfiLPFarming';
