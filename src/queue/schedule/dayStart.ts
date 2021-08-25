@@ -30,6 +30,7 @@ export default async (process: Process) => {
     }),
     queue.push('pancakeStakingPoolScanner', {}),
     queue.push('quickSwapPolygonStakingPoolScanner', {}),
+    queue.push('swopfiLPFarmingPoolScanner', {}),
   ]);
 
   return process.done();

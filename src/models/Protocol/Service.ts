@@ -110,7 +110,7 @@ export class ContractService {
       protocol: protocol.id,
       blockchain,
       network,
-      address: address.toLowerCase(),
+      address: blockchain === 'ethereum' ? address.toLowerCase() : address,
       deployBlockNumber,
       adapter,
       layout,
@@ -133,7 +133,8 @@ export class ContractService {
   async update(contract: Contract) {
     const updated = {
       ...contract,
-      address: contract.address.toLowerCase(),
+      address:
+        contract.blockchain === 'ethereum' ? contract.address.toLowerCase() : contract.address,
       updatedAt: new Date(),
     };
     await this.contractTable().where({ id: contract.id }).update(updated);
