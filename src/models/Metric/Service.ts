@@ -1,13 +1,7 @@
 import { v4 as uuid } from 'uuid';
-import { Protocol, Contract } from '@models/Protocol/Entity';
+import { Contract } from '@models/Protocol/Entity';
 import { Factory } from '@services/Container';
 import { Wallet } from '@models/Wallet/Entity';
-import axios from 'axios';
-import dayjs from 'dayjs';
-import { BigNumber } from 'bignumber.js';
-import { ethers } from 'ethers';
-import ethersMulticall from '@defihelper/ethers-multicall';
-import vm from 'vm';
 import {
   MetricContractTable,
   MetricMap,
@@ -15,59 +9,12 @@ import {
   MetricWalletTokenTable,
 } from './Entity';
 
-export interface MetricData extends Object {
-  metrics?: MetricMap;
-}
-
-export interface TokensData {
-  [t: string]: MetricMap;
-}
-
-export interface WalletData extends MetricData {
-  tokens?: TokensData;
-}
-
-export interface ContractData extends MetricData {
-  wallet?: (wallet: string) => Promise<WalletData>;
-}
-
-export interface ContractAdapterOptions {
-  blockNumber?: number | string;
-}
-
-export interface ContractAdapter {
-  (provider: any, contract: string, options: ContractAdapterOptions): Promise<ContractData>;
-}
-
-export interface ProtocolAdapter {
-  [k: string]: ContractAdapter;
-}
-
 export class MetricContractService {
   constructor(
     readonly metricContractTable: Factory<MetricContractTable>,
     readonly metricWalletTable: Factory<MetricWalletTable>,
     readonly metricWalletTokenTable: Factory<MetricWalletTokenTable>,
-    readonly adapterURL: string,
   ) {}
-
-  async getAdapter(protocol: Protocol): Promise<ProtocolAdapter> {
-    const path = `/${protocol.adapter}.js`;
-
-    const adapterResponse = await axios.get(`${this.adapterURL}${path}`);
-    const context = vm.createContext({
-      module: { exports: new Error('Adapter not evaluated') },
-      console,
-      bignumber: BigNumber,
-      dayjs,
-      axios,
-      ethers,
-      ethersMulticall,
-    });
-    vm.runInContext(adapterResponse.data, context);
-
-    return context.module.exports;
-  }
 
   async createContract(contract: Contract, data: MetricMap, date: Date) {
     const created = {

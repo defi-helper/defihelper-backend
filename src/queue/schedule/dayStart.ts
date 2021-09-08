@@ -1,5 +1,6 @@
 import { Process } from '@models/Queue/Entity';
 import container from '@container';
+import { TriggerType } from '@models/Automate/Entity';
 
 export default async (process: Process) => {
   const queue = container.model.queueService();
@@ -30,6 +31,7 @@ export default async (process: Process) => {
     }),
     queue.push('pancakeStakingPoolScanner', {}),
     queue.push('quickSwapPolygonStakingPoolScanner', {}),
+    queue.push('automateTriggerByTime', { type: TriggerType.EveryDay }),
   ]);
 
   return process.done();

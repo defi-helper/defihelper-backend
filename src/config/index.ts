@@ -27,21 +27,51 @@ export default {
   },
   blockchain: {
     ethereum: {
+      // Main
       ethMainNode: process.env.ETH_NODE ?? '',
       ethMainAvgBlockTime: 13.2,
       ethMainInspector: process.env.ETH_INSPECTOR ?? '',
+      ethMainConsumers: [
+        process.env.ETH_CONSUMER1 ?? '',
+        process.env.ETH_CONSUMER2 ?? '',
+        process.env.ETH_CONSUMER3 ?? '',
+      ].filter((pk) => pk !== ''),
+      // Ropsten
       ethRopstenNode: process.env.ETH_ROPSTEN_NODE ?? '',
       ethRopstenAvgBlockTime: 13.2,
       ethRopstenInspector: process.env.ETH_ROPSTEN_INSPECTOR ?? '',
+      ethRopstenConsumers: [
+        process.env.ETH_ROPSTEN_CONSUMER1 ?? '',
+        process.env.ETH_ROPSTEN_CONSUMER2 ?? '',
+        process.env.ETH_ROPSTEN_CONSUMER3 ?? '',
+      ].filter((pk) => pk !== ''),
+      // BSC
       bscMainNode: process.env.BSC_NODE ?? '',
       bscMainAvgBlockTime: 3,
       bscMainInspector: process.env.BSC_INSPECTOR ?? '',
+      bscMainConsumers: [
+        process.env.BSC_CONSUMER1 ?? '',
+        process.env.BSC_CONSUMER2 ?? '',
+        process.env.BSC_CONSUMER3 ?? '',
+      ].filter((pk) => pk !== ''),
+      // Polygon
       polygonMainNode: process.env.POLYGON_NODE ?? '',
       polygonMainAvgBlockTime: 2.5,
       polygonMainInspector: process.env.POLYGON_INSPECTOR ?? '',
+      polygonMainConsumers: [
+        process.env.ETH_POLYGON_CONSUMER1 ?? '',
+        process.env.ETH_POLYGON_CONSUMER2 ?? '',
+        process.env.ETH_POLYGON_CONSUMER3 ?? '',
+      ].filter((pk) => pk !== ''),
+      // Local
       localNode: process.env.ETH_LOCAL_NODE ?? '',
       localAvgBlockTime: 0.1,
       localInspector: process.env.ETH_LOCAL_INSPECTOR ?? '',
+      localConsumers: [
+        process.env.ETH_LOCAL_CONSUMER1 ?? '',
+        process.env.ETH_LOCAL_CONSUMER2 ?? '',
+        process.env.ETH_LOCAL_CONSUMER3 ?? '',
+      ].filter((pk) => pk !== ''),
     },
   },
   email: {

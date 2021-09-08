@@ -1,14 +1,17 @@
 import { Container, singleton } from '@services/Container';
+import dfhContracts from '@defihelper/networks/contracts.json';
 import { isKey } from '@services/types';
 import axios from 'axios';
 import { ethers } from 'ethers';
+import { abi as erc20ABI } from '@defihelper/networks/abi/ERC20.json';
+import { abi as erc1167ABI } from '@defihelper/networks/abi/ERC1167.json';
+import { abi as governorBravoABI } from '@defihelper/networks/abi/GovernorBravo.json';
+import { abi as governanceTokenABI } from '@defihelper/networks/abi/GovernanceToken.json';
+import automateABI from './abi/ethereum/automate.json';
 import masterChefV1ABI from './abi/ethereum/masterChefV1ABI.json';
-import erc20ABI from './abi/ethereum/erc20.json';
 import uniswapV2PairABI from './abi/ethereum/uniswapPair.json';
 import pancakeSmartChefInitializable from './abi/ethereum/pancakeSmartChefInitializableABI.json';
 import synthetixStaking from './abi/ethereum/synthetixStakingABI.json';
-import governorBravoABI from './abi/ethereum/governorBravo.json';
-import governanceTokenABI from './abi/ethereum/governanceToken.json';
 
 export interface EtherscanContractAbiResponse {
   status: string;
@@ -42,22 +45,34 @@ function providerFactory(host: string) {
   return () => new ethers.providers.JsonRpcProvider(host);
 }
 
+function consumersFactory(
+  consumersPrivateKeys: string[],
+  provider: ethers.providers.JsonRpcProvider,
+) {
+  return consumersPrivateKeys.map((privateKey) => new ethers.Wallet(privateKey, provider));
+}
+
 export interface Config {
   ethMainNode: string;
   ethMainAvgBlockTime: number;
   ethMainInspector: string;
+  ethMainConsumers: string[];
   ethRopstenNode: string;
   ethRopstenAvgBlockTime: number;
   ethRopstenInspector: string;
+  ethRopstenConsumers: string[];
   bscMainNode: string;
   bscMainAvgBlockTime: number;
   bscMainInspector: string;
+  bscMainConsumers: string[];
   polygonMainNode: string;
   polygonMainAvgBlockTime: number;
   polygonMainInspector: string;
+  polygonMainConsumers: string[];
   localNode: string;
   localAvgBlockTime: number;
   localInspector: string;
+  localConsumers: string[];
 }
 
 export type Networks = keyof BlockchainContainer['networks'];
@@ -72,6 +87,8 @@ export class BlockchainContainer extends Container<Config> {
       walletExplorerURL: new URL('https://etherscan.io/address'),
       getContractAbi: useEtherscanContractAbi('https://api.etherscan.io/api'),
       inspector: () => new ethers.Wallet(this.parent.ethMainInspector, this.networks[1].provider()),
+      consumers: () => consumersFactory(this.parent.ethMainConsumers, this.networks[1].provider()),
+      dfhContracts: () => null,
     },
     '3': {
       name: 'Ethereum Ropsten',
@@ -82,6 +99,9 @@ export class BlockchainContainer extends Container<Config> {
       getContractAbi: useEtherscanContractAbi('https://api-ropsten.etherscan.io/api'),
       inspector: () =>
         new ethers.Wallet(this.parent.ethRopstenInspector, this.networks[3].provider()),
+      consumers: () =>
+        consumersFactory(this.parent.ethRopstenConsumers, this.networks[3].provider()),
+      dfhContracts: () => dfhContracts['3'],
     },
     '56': {
       name: 'Binance Smart Chain',
@@ -92,6 +112,8 @@ export class BlockchainContainer extends Container<Config> {
       getContractAbi: useEtherscanContractAbi('https://api.bscscan.com/api'),
       inspector: () =>
         new ethers.Wallet(this.parent.bscMainInspector, this.networks[56].provider()),
+      consumers: () => consumersFactory(this.parent.bscMainConsumers, this.networks[56].provider()),
+      dfhContracts: () => null,
     },
     '137': {
       name: 'Polygon',
@@ -102,6 +124,9 @@ export class BlockchainContainer extends Container<Config> {
       getContractAbi: useEtherscanContractAbi('https://api.polygonscan.com/api'),
       inspector: () =>
         new ethers.Wallet(this.parent.polygonMainInspector, this.networks[137].provider()),
+      consumers: () =>
+        consumersFactory(this.parent.polygonMainConsumers, this.networks[137].provider()),
+      dfhContracts: () => null,
     },
     '31337': {
       name: '',
@@ -112,6 +137,9 @@ export class BlockchainContainer extends Container<Config> {
       getContractAbi: useEtherscanContractAbi('https://api.etherscan.io/api'),
       inspector: () =>
         new ethers.Wallet(this.parent.localInspector, this.networks[31337].provider()),
+      consumers: () =>
+        consumersFactory(this.parent.localConsumers, this.networks[31337].provider()),
+      dfhContracts: () => null,
     },
   } as const;
 
@@ -135,11 +163,13 @@ export class BlockchainContainer extends Container<Config> {
 
   readonly abi = {
     erc20ABI,
+    erc1167ABI,
     uniswapV2PairABI,
     masterChefV1ABI,
     pancakeSmartChefInitializable,
     synthetixStaking,
     governorBravoABI,
     governanceTokenABI,
+    automateABI,
   };
 }

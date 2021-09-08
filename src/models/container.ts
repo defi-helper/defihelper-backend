@@ -89,7 +89,6 @@ export class ModelContainer extends Container<typeof AppContainer> {
         this.metricContractTable,
         this.metricWalletTable,
         this.metricWalletTokenTable,
-        this.parent.parent.adapters.host,
       ),
   );
 
@@ -169,12 +168,22 @@ export class ModelContainer extends Container<typeof AppContainer> {
 
   readonly automateActionTable = Models.Automate.Entity.actionTableFactory(this.parent.database);
 
+  readonly automateContractTable = Models.Automate.Entity.contractTableFactory(
+    this.parent.database,
+  );
+
+  readonly automateTransactionTable = Models.Automate.Entity.transactionTableFactory(
+    this.parent.database,
+  );
+
   readonly automateService = singleton(
     () =>
       new Models.Automate.Service.AutomateService(
         this.automateTriggerTable,
         this.automateConditionTable,
         this.automateActionTable,
+        this.automateContractTable,
+        this.automateTransactionTable,
       ),
   );
 }

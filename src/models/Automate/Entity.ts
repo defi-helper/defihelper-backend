@@ -1,4 +1,5 @@
 import { tableFactory as createTableFactory } from '@services/Database';
+import { Blockchain } from '@models/types';
 import * as Conditions from '../../automate/condition';
 import * as Actions from '../../automate/action';
 
@@ -45,7 +46,7 @@ export interface Condition {
 export function getConditionHandler(condition: Condition) {
   return Conditions[condition.type].default as (
     params: ConditionParams<Condition['type']>,
-  ) => boolean;
+  ) => boolean | Promise<boolean>;
 }
 
 export const conditionTableName = 'automate_condition';
@@ -77,3 +78,69 @@ export const actionTableName = 'automate_action';
 export const actionTableFactory = createTableFactory<Action>(actionTableName);
 
 export type ActionTable = ReturnType<ReturnType<typeof actionTableFactory>>;
+
+export enum ContractVerificationStatus {
+  Pending = 'pending',
+  Confirmed = 'confirmed',
+  Rejected = 'rejected',
+}
+
+export interface Contract {
+  id: string;
+  protocol: string;
+  blockchain: Blockchain;
+  network: string;
+  address: string;
+  adapter: string;
+  wallet: string;
+  verification: ContractVerificationStatus;
+  rejectReason: string;
+  updatedAt: Date;
+  createdAt: Date;
+}
+
+export const contractTableName = 'automate_contract';
+
+export const contractTableFactory = createTableFactory<Contract>(contractTableName);
+
+export type ContractTable = ReturnType<ReturnType<typeof contractTableFactory>>;
+
+export interface EthereumAutomateTransaction {
+  hash: string | undefined;
+  from: string | undefined;
+  to: string | undefined;
+  nonce: number;
+  receipt?: {
+    contractAddress: string | null;
+    gasUsed: string;
+    blockHash: string;
+    blockNumber: number;
+    confirmations: number;
+    status: boolean;
+  };
+}
+
+export interface WavesAutomateTransaction {
+  id: string;
+  type: number;
+  recipient: string;
+}
+
+export type AutomateTransactionData = EthereumAutomateTransaction | WavesAutomateTransaction;
+
+export interface AutomateTransaction {
+  id: string;
+  contract: string;
+  consumer: string;
+  data: AutomateTransactionData;
+  confirmed: boolean;
+  updatedAt: Date;
+  createdAt: Date;
+}
+
+export const transactionTableName = 'automate_transaction';
+
+export const transactionTableFactory =
+  createTableFactory<AutomateTransaction>(transactionTableName);
+
+export type TransactionTable = ReturnType<ReturnType<typeof transactionTableFactory>>;

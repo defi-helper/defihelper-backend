@@ -17,9 +17,9 @@ export async function contractMetrics(process: Process) {
   if (!protocol) throw new Error('Protocol not found');
 
   const metricService = container.model.metricService();
-  const protocolAdapters = await metricService.getAdapter(protocol);
+  const protocolAdapters = await container.blockchainAdapter.loadAdapter(protocol.adapter);
   const contractAdapterFactory = protocolAdapters[contract.adapter];
-  if (contractAdapterFactory === undefined) throw new Error('Contract adapter not found');
+  if (typeof contractAdapterFactory !== 'function') throw new Error('Contract adapter not found');
 
   const blockchain = container.blockchain[contract.blockchain];
   const provider = blockchain.byNetwork(contract.network).provider();
@@ -68,9 +68,9 @@ export async function walletMetrics(process: Process) {
   }
 
   const metricService = container.model.metricService();
-  const protocolAdapter = await metricService.getAdapter(protocol);
+  const protocolAdapter = await container.blockchainAdapter.loadAdapter(protocol.adapter);
   const contractAdapterFactory = protocolAdapter[contract.adapter];
-  if (contractAdapterFactory === undefined) throw new Error('Contract adapter not found');
+  if (typeof contractAdapterFactory !== 'function') throw new Error('Contract adapter not found');
 
   const blockchain = container.blockchain[contract.blockchain];
   const provider = blockchain.byNetwork(contract.network).provider();

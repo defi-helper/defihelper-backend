@@ -4,7 +4,7 @@ import { consoleFactory } from '@services/Log';
 import * as Blockchain from '@services/Blockchain';
 import { I18nContainer } from '@services/I18n/container';
 import { ModelContainer } from '@models/container';
-import { redisConnectFactory } from '@services/Cache';
+import { redisConnectFactory, redisLockFactory } from '@services/Cache';
 import { ACLContainer } from '@services/ACL/container';
 import { TemplateContainer } from '@services/Template/container';
 import { emailServiceFactory } from '@services/Email';
@@ -19,6 +19,8 @@ class AppContainer extends Container<typeof config> {
 
   readonly cache = singleton(redisConnectFactory(this.parent.cache));
 
+  readonly semafor = singleton(redisLockFactory(this.cache));
+
   readonly email = singleton(emailServiceFactory(this.parent.email));
 
   readonly telegram = singleton(telegramServiceFactory(this.parent.telegram.token));
@@ -32,6 +34,8 @@ class AppContainer extends Container<typeof config> {
       testNode: '',
     }),
   };
+
+  readonly blockchainAdapter = new Blockchain.Adapter.AdapterService(this.parent.adapters.host);
 
   readonly i18n = new I18nContainer(this);
 
