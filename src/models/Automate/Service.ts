@@ -53,13 +53,13 @@ export class AutomateService {
     readonly transactionTable: Factory<TransactionTable>,
   ) {}
 
-  async createTrigger(wallet: Wallet, type: TriggerType, name: string) {
+  async createTrigger(wallet: Wallet, type: TriggerType, name: string, active: boolean = true) {
     const created: Trigger = {
       id: uuid(),
       wallet: wallet.id,
       type,
       name,
-      active: true,
+      active,
       lastCallAt: null,
       updatedAt: new Date(),
       createdAt: new Date(),
