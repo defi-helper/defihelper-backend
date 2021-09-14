@@ -29,7 +29,7 @@ export default async (process: Process) => {
   if (!wallet) throw new Error('Wallet not found');
 
   const { ethereum } = container.blockchain;
-  const network = ethereum.byNetwork(contract.network);
+  const network = ethereum.byNetwork(wallet.network);
   const provider = network.provider();
   const contracts = network.dfhContracts();
   if (contracts === null) {
@@ -52,7 +52,7 @@ export default async (process: Process) => {
   const erc1167 = ethereum.contract(contracts.ERC1167.address, ethereum.abi.erc1167ABI, provider);
   try {
     const expectedPrototype = await container.blockchainAdapter.loadEthereumAutomateArtifact(
-      contract.network,
+      wallet.network,
       protocol.adapter,
       contract.adapter,
     );

@@ -184,6 +184,7 @@ export class ModelContainer extends Container<typeof AppContainer> {
         this.automateActionTable,
         this.automateContractTable,
         this.automateTransactionTable,
+        this.walletTable,
       ),
   );
 }

@@ -1,10 +1,10 @@
-import { Blockchain } from '@models/types';
 import container from '@container';
+import dayjs from 'dayjs';
 import { Emitter } from '@services/Event';
 import { Factory } from '@services/Container';
 import { v4 as uuid } from 'uuid';
 import { Protocol } from '@models/Protocol/Entity';
-import { Wallet } from '@models/Wallet/Entity';
+import { Wallet, Table as WalletTable } from '@models/Wallet/Entity';
 import {
   Action,
   ActionParams,
@@ -26,22 +26,31 @@ import {
 } from './Entity';
 
 export class AutomateService {
-  public readonly onContractCreated = new Emitter<Contract>((contract) => {
-    if (contract.blockchain === 'ethereum') {
-      container.model.queueService().push('automateContractEthereumVerify', {
-        id: contract.id,
-      });
-    }
-  });
+  public readonly onContractCreated = new Emitter<{ wallet: Wallet; contract: Contract }>(
+    ({ wallet, contract }) => {
+      if (wallet.blockchain === 'ethereum') {
+        container.model.queueService().push('automateContractEthereumVerify', {
+          id: contract.id,
+        });
+      }
+    },
+  );
 
-  public readonly onTransactionCreated = new Emitter<AutomateTransaction>(async (transaction) => {
-    const contract = await this.contractTable().where('id', transaction.contract).first();
-    if (!contract) return;
-
-    if (contract.blockchain === 'ethereum') {
-      container.model.queueService().push('automateTransactionEthereumConfirm', {
-        id: transaction.id,
-      });
+  public readonly onTransactionCreated = new Emitter<{
+    wallet: Wallet;
+    contract: Contract;
+    transaction: AutomateTransaction;
+  }>(async ({ wallet, transaction }) => {
+    if (wallet.blockchain === 'ethereum') {
+      container.model.queueService().push(
+        'automateTransactionEthereumConfirm',
+        {
+          id: transaction.id,
+        },
+        {
+          startAt: dayjs().add(1, 'minutes').toDate(),
+        },
+      );
     }
   });
 
@@ -51,6 +60,7 @@ export class AutomateService {
     readonly actionTable: Factory<ActionTable>,
     readonly contractTable: Factory<ContractTable>,
     readonly transactionTable: Factory<TransactionTable>,
+    readonly walletTable: Factory<WalletTable>,
   ) {}
 
   async createTrigger(wallet: Wallet, type: TriggerType, name: string, active: boolean = true) {
@@ -151,29 +161,20 @@ export class AutomateService {
     await this.actionTable().where({ id: action.id }).delete();
   }
 
-  async createContract(
-    protocol: Protocol,
-    blockchain: Blockchain,
-    network: string,
-    address: string,
-    adapter: string,
-    wallet: Wallet,
-  ) {
+  async createContract(wallet: Wallet, protocol: Protocol, address: string, adapter: string) {
     const created: Contract = {
       id: uuid(),
+      wallet: wallet.id,
       protocol: protocol.id,
-      blockchain,
-      network,
       address,
       adapter,
-      wallet: wallet.id,
       verification: ContractVerificationStatus.Pending,
       rejectReason: '',
       updatedAt: new Date(),
       createdAt: new Date(),
     };
     await this.contractTable().insert(created);
-    this.onContractCreated.emit(created);
+    this.onContractCreated.emit({ wallet, contract: created });
 
     return created;
   }
@@ -197,6 +198,9 @@ export class AutomateService {
     consumer: string,
     data: T,
   ) {
+    const wallet = await this.walletTable().where('id', contract.wallet).first();
+    if (!wallet) throw new Error('Wallet not found');
+
     const created: AutomateTransaction = {
       id: uuid(),
       contract: contract.id,
@@ -207,7 +211,7 @@ export class AutomateService {
       createdAt: new Date(),
     };
     await this.transactionTable().insert(created);
-    this.onTransactionCreated.emit(created);
+    this.onTransactionCreated.emit({ wallet, contract, transaction: created });
 
     return created;
   }

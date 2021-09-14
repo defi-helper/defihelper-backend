@@ -17,7 +17,10 @@ export default async (process: Process) => {
   const contract = await automateService.contractTable().where('id', transaction.contract).first();
   if (!contract) throw new Error('Contract not found');
 
-  const network = container.blockchain.ethereum.byNetwork(contract.network);
+  const wallet = await container.model.walletTable().where('id', contract.wallet).first();
+  if (!wallet) throw new Error('Wallet not found');
+
+  const network = container.blockchain.ethereum.byNetwork(wallet.network);
   const provider = network.provider();
   const { hash } = transaction.data as EthereumAutomateTransaction;
   if (!hash) throw new Error('Transaction hash not found');
@@ -31,7 +34,7 @@ export default async (process: Process) => {
     container
       .semafor()
       .unlock(
-        `defihelper:automate:consumer:${contract.blockchain}:${contract.network}:${transaction.consumer}`,
+        `defihelper:automate:consumer:${wallet.blockchain}:${wallet.network}:${transaction.consumer}`,
       ),
     automateService.updateTransaction({
       ...transaction,

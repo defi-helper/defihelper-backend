@@ -10,7 +10,7 @@ export default (schema: SchemaBuilder) => {
     table.boolean('confirmed').notNullable().defaultTo(false).index();
     table.dateTime('updatedAt').notNullable();
     table.dateTime('createdAt').notNullable();
-    table.primary(['id'], `${contractTableName}_pkey`);
+    table.primary(['id'], `${transactionTableName}_pkey`);
     table
       .foreign('contract')
       .references(`${contractTableName}.id`)

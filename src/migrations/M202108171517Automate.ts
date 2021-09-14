@@ -59,12 +59,10 @@ export default (schema: SchemaBuilder) => {
     })
     .createTable(contractTableName, (table) => {
       table.string('id', 36).notNullable();
+      table.string('wallet', 36).notNullable();
       table.string('protocol', 36).notNullable();
-      table.string('blockchain', 64).notNullable();
-      table.string('network', 64).notNullable();
       table.string('address', 512).notNullable();
       table.string('adapter', 512).notNullable();
-      table.string('wallet', 36).notNullable();
       table
         .enum(
           'verification',

@@ -13,6 +13,7 @@ import {
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
+  GraphQLList,
 } from 'graphql';
 import {
   DateTimeType,
@@ -25,6 +26,7 @@ import {
 import * as Actions from '../../../automate/action';
 import * as Conditions from '../../../automate/condition';
 import { WalletType } from '../user';
+import { ProtocolType } from '../protocol';
 
 export const ConditionTypeEnum = new GraphQLEnumType({
   name: 'AutomateConditionTypeEnum',
@@ -52,7 +54,7 @@ export const ConditionType = new GraphQLObjectType<Automate.Condition>({
     },
     priority: {
       type: GraphQLNonNull(GraphQLInt),
-      description: 'Execution priority (descending)',
+      description: 'Execution priority (ascending)',
     },
     createdAt: {
       type: GraphQLNonNull(DateTimeType),
@@ -87,7 +89,7 @@ export const ActionType = new GraphQLObjectType<Automate.Action>({
     },
     priority: {
       type: GraphQLNonNull(GraphQLInt),
-      description: 'Execution priority (descending)',
+      description: 'Execution priority (ascending)',
     },
     createdAt: {
       type: GraphQLNonNull(DateTimeType),
@@ -98,8 +100,8 @@ export const ActionType = new GraphQLObjectType<Automate.Action>({
 
 export const TriggerTypeEnum = new GraphQLEnumType({
   name: 'AutomateTriggerTypeEnum',
-  values: Object.keys(Automate.TriggerType).reduce(
-    (res, handler) => ({ ...res, [handler]: { value: handler } }),
+  values: Object.values(Automate.TriggerType).reduce(
+    (res, value) => ({ ...res, [value]: { value } }),
     {} as GraphQLEnumValueConfigMap,
   ),
 });
@@ -123,7 +125,7 @@ export const TriggerType = new GraphQLObjectType<Automate.Trigger>({
       },
     },
     name: {
-      type: GraphQLNonNull(TriggerTypeEnum),
+      type: GraphQLNonNull(GraphQLString),
       description: 'Name',
     },
     active: {
@@ -407,7 +409,7 @@ export const TriggerUpdateMutation: GraphQLFieldConfig<any, Request> = {
       ),
     },
   },
-  resolve: onlyAllowed('automateTrigger.update', async (root, { input }, { currentUser }) => {
+  resolve: onlyAllowed('automateTrigger.update-own', async (root, { input }, { currentUser }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
     const { id, name, active } = input;
@@ -435,10 +437,9 @@ export const TriggerDeleteMutation: GraphQLFieldConfig<any, Request> = {
       type: GraphQLNonNull(UuidType),
     },
   },
-  resolve: onlyAllowed('automateTrigger.delete', async (root, { input }, { currentUser }) => {
+  resolve: onlyAllowed('automateTrigger.delete-own', async (root, { id }, { currentUser }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
-    const { id } = input;
     const trigger = await container.model.automateTriggerTable().where('id', id).first();
     if (!trigger) throw new UserInputError('Trigger not found');
 
@@ -474,7 +475,7 @@ export const ConditionCreateMutation: GraphQLFieldConfig<any, Request> = {
             },
             priority: {
               type: GraphQLInt,
-              description: 'Execution priority (descending)',
+              description: 'Execution priority (ascending)',
             },
           },
         }),
@@ -484,11 +485,11 @@ export const ConditionCreateMutation: GraphQLFieldConfig<any, Request> = {
   resolve: onlyAllowed('automateCondition.create', async (root, { input }, { currentUser }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
-    const { trigge: triggerId, type, params } = input;
+    const { trigger: triggerId, type, params } = input;
     const trigger = await container.model.automateTriggerTable().where('id', triggerId).first();
     if (!trigger) throw new UserInputError('Trigger not found');
 
-    const wallet = await container.model.walletTable().where('id', trigger.id).first();
+    const wallet = await container.model.walletTable().where('id', trigger.wallet).first();
     if (!wallet) throw new UserInputError('Wallet not found');
     if (wallet.user !== currentUser.id) throw new UserInputError('Foreign wallet');
 
@@ -528,14 +529,14 @@ export const ConditionUpdateMutation: GraphQLFieldConfig<any, Request> = {
             },
             priority: {
               type: GraphQLInt,
-              description: 'Execution priority (descending)',
+              description: 'Execution priority (ascending)',
             },
           },
         }),
       ),
     },
   },
-  resolve: onlyAllowed('automateCondition.update', async (root, { input }, { currentUser }) => {
+  resolve: onlyAllowed('automateCondition.update-own', async (root, { input }, { currentUser }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
     const { id, params, priority } = input;
@@ -548,7 +549,7 @@ export const ConditionUpdateMutation: GraphQLFieldConfig<any, Request> = {
       .first();
     if (!trigger) throw new UserInputError('Trigger not found');
 
-    const wallet = await container.model.walletTable().where('id', trigger.id).first();
+    const wallet = await container.model.walletTable().where('id', trigger.wallet).first();
     if (!wallet) throw new UserInputError('Wallet not found');
     if (wallet.user !== currentUser.id) throw new UserInputError('Foreign wallet');
 
@@ -569,10 +570,9 @@ export const ConditionDeleteMutation: GraphQLFieldConfig<any, Request> = {
       type: GraphQLNonNull(UuidType),
     },
   },
-  resolve: onlyAllowed('automateCondition.delete', async (root, { input }, { currentUser }) => {
+  resolve: onlyAllowed('automateCondition.delete-own', async (root, { id }, { currentUser }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
-    const { id } = input;
     const condition = await container.model.automateConditionTable().where('id', id).first();
     if (!condition) throw new UserInputError('Condition not found');
 
@@ -582,7 +582,7 @@ export const ConditionDeleteMutation: GraphQLFieldConfig<any, Request> = {
       .first();
     if (!trigger) throw new UserInputError('Trigger not found');
 
-    const wallet = await container.model.walletTable().where('id', trigger.id).first();
+    const wallet = await container.model.walletTable().where('id', trigger.wallet).first();
     if (!wallet) throw new UserInputError('Wallet not found');
     if (wallet.user !== currentUser.id) throw new UserInputError('Foreign wallet');
 
@@ -614,7 +614,7 @@ export const ActionCreateMutation: GraphQLFieldConfig<any, Request> = {
             },
             priority: {
               type: GraphQLInt,
-              description: 'Execution priority (descending)',
+              description: 'Execution priority (ascending)',
             },
           },
         }),
@@ -624,11 +624,11 @@ export const ActionCreateMutation: GraphQLFieldConfig<any, Request> = {
   resolve: onlyAllowed('automateAction.create', async (root, { input }, { currentUser }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
-    const { trigge: triggerId, type, params } = input;
+    const { trigger: triggerId, type, params } = input;
     const trigger = await container.model.automateTriggerTable().where('id', triggerId).first();
     if (!trigger) throw new UserInputError('Trigger not found');
 
-    const wallet = await container.model.walletTable().where('id', trigger.id).first();
+    const wallet = await container.model.walletTable().where('id', trigger.wallet).first();
     if (!wallet) throw new UserInputError('Wallet not found');
     if (wallet.user !== currentUser.id) throw new UserInputError('Foreign wallet');
 
@@ -668,14 +668,14 @@ export const ActionUpdateMutation: GraphQLFieldConfig<any, Request> = {
             },
             priority: {
               type: GraphQLInt,
-              description: 'Execution priority (descending)',
+              description: 'Execution priority (ascending)',
             },
           },
         }),
       ),
     },
   },
-  resolve: onlyAllowed('automateAction.update', async (root, { input }, { currentUser }) => {
+  resolve: onlyAllowed('automateAction.update-own', async (root, { input }, { currentUser }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
     const { id, params, priority } = input;
@@ -688,7 +688,7 @@ export const ActionUpdateMutation: GraphQLFieldConfig<any, Request> = {
       .first();
     if (!trigger) throw new UserInputError('Trigger not found');
 
-    const wallet = await container.model.walletTable().where('id', trigger.id).first();
+    const wallet = await container.model.walletTable().where('id', trigger.wallet).first();
     if (!wallet) throw new UserInputError('Wallet not found');
     if (wallet.user !== currentUser.id) throw new UserInputError('Foreign wallet');
 
@@ -709,10 +709,9 @@ export const ActionDeleteMutation: GraphQLFieldConfig<any, Request> = {
       type: GraphQLNonNull(UuidType),
     },
   },
-  resolve: onlyAllowed('automateAction.delete', async (root, { input }, { currentUser }) => {
+  resolve: onlyAllowed('automateAction.delete-own', async (root, { id }, { currentUser }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
-    const { id } = input;
     const action = await container.model.automateActionTable().where('id', id).first();
     if (!action) throw new UserInputError('Condition not found');
 
@@ -722,11 +721,198 @@ export const ActionDeleteMutation: GraphQLFieldConfig<any, Request> = {
       .first();
     if (!trigger) throw new UserInputError('Trigger not found');
 
-    const wallet = await container.model.walletTable().where('id', trigger.id).first();
+    const wallet = await container.model.walletTable().where('id', trigger.wallet).first();
     if (!wallet) throw new UserInputError('Wallet not found');
     if (wallet.user !== currentUser.id) throw new UserInputError('Foreign wallet');
 
     await container.model.automateService().deleteAction(action);
+
+    return true;
+  }),
+};
+
+export const ContractVerificationStatusEnum = new GraphQLEnumType({
+  name: 'AutomateContractVerificationStatusEnum',
+  values: Object.values(Automate.ContractVerificationStatus).reduce(
+    (res, value) => ({ ...res, [value]: { value } }),
+    {} as GraphQLEnumValueConfigMap,
+  ),
+});
+
+export const ContractType = new GraphQLObjectType<Automate.Contract>({
+  name: 'AutomateContractType',
+  fields: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+      description: 'Identificator',
+    },
+    wallet: {
+      type: GraphQLNonNull(WalletType),
+      description: 'Owner wallet',
+      resolve: (contract) => {
+        return container.model.walletTable().where('id', contract.wallet).first();
+      },
+    },
+    protocol: {
+      type: GraphQLNonNull(ProtocolType),
+      description: 'Protocol',
+      resolve: (contract) => {
+        return container.model.protocolTable().where('id', contract.protocol).first();
+      },
+    },
+    address: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Address in blockchain',
+    },
+    adapter: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Adapter name',
+    },
+    verification: {
+      type: GraphQLNonNull(ContractVerificationStatusEnum),
+      description: 'Verification status',
+    },
+    rejectReason: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+  },
+});
+
+export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(PaginateList('AutomateContractListQuery', GraphQLNonNull(ContractType))),
+  args: {
+    filter: {
+      type: new GraphQLInputObjectType({
+        name: 'AutomateContractListFilterInputType',
+        fields: {
+          user: {
+            type: UuidType,
+          },
+          wallet: {
+            type: UuidType,
+          },
+          protocol: {
+            type: UuidType,
+          },
+          address: {
+            type: GraphQLList(GraphQLNonNull(GraphQLString)),
+          },
+        },
+      }),
+      defaultValue: {},
+    },
+    sort: SortArgument(
+      'AutomateContractListSortInputType',
+      ['createdAt'],
+      [{ column: 'createdAt', order: 'asc' }],
+    ),
+    pagination: PaginationArgument('AutomateContractListPaginationInputType'),
+  },
+  resolve: async (root, { filter, sort, pagination }) => {
+    const select = container.model
+      .automateContractTable()
+      .innerJoin(
+        walletTableName,
+        `${walletTableName}.id`,
+        '=',
+        `${Automate.contractTableName}.wallet`,
+      )
+      .where(function () {
+        const { wallet, user, protocol, address } = filter;
+        if (typeof user === 'string') {
+          this.andWhere(`${walletTableName}.user`, user);
+        }
+        if (typeof wallet === 'string') {
+          this.andWhere(`${Automate.contractTableName}.wallet`, wallet);
+        }
+        if (typeof protocol === 'string') {
+          this.andWhere(`${Automate.contractTableName}.protocol`, protocol);
+        }
+        if (Array.isArray(address) && address.length > 0) {
+          this.whereIn(`${Automate.contractTableName}.address`, address);
+        }
+      });
+
+    return {
+      list: await select
+        .clone()
+        .distinct(`${Automate.contractTableName}.*`)
+        .orderBy(sort)
+        .limit(pagination.limit)
+        .offset(pagination.offset),
+      pagination: {
+        count: await select.clone().countDistinct(`${Automate.contractTableName}.id`).first(),
+      },
+    };
+  },
+};
+
+export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(ContractType),
+  args: {
+    input: {
+      type: GraphQLNonNull(
+        new GraphQLInputObjectType({
+          name: 'AutomateContractCreateInputType',
+          fields: {
+            wallet: {
+              type: GraphQLNonNull(UuidType),
+              description: 'Wallet owner',
+            },
+            protocol: {
+              type: GraphQLNonNull(UuidType),
+              description: 'Protocol',
+            },
+            address: {
+              type: GraphQLNonNull(GraphQLString),
+              description: 'Address',
+            },
+            adapter: {
+              type: GraphQLNonNull(GraphQLString),
+              description: 'Adapter name',
+            },
+          },
+        }),
+      ),
+    },
+  },
+  resolve: onlyAllowed('automateContract.create', async (root, { input }, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const { wallet: walletId, protocol: protocolId, address, adapter } = input;
+    const wallet = await container.model.walletTable().where('id', walletId).first();
+    if (!wallet) throw new UserInputError('Wallet not found');
+    if (wallet.user !== currentUser.id) throw new UserInputError('Foreign wallet');
+
+    const protocol = await container.model.protocolTable().where('id', protocolId).first();
+    if (!protocol) throw new UserInputError('Protocol not found');
+
+    const created = await container.model
+      .automateService()
+      .createContract(wallet, protocol, address, adapter);
+
+    return created;
+  }),
+};
+
+export const ContractDeleteMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLBoolean),
+  args: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+    },
+  },
+  resolve: onlyAllowed('automateContract.delete-own', async (root, { id }, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const contract = await container.model.automateContractTable().where('id', id).first();
+    if (!contract) throw new UserInputError('Contract not found');
+
+    const wallet = await container.model.walletTable().where('id', contract.wallet).first();
+    if (!wallet) throw new UserInputError('Wallet not found');
+    if (wallet.user !== currentUser.id) throw new UserInputError('Foreign wallet');
+
+    await container.model.automateService().deleteContract(contract);
 
     return true;
   }),

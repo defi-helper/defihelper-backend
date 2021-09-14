@@ -19,11 +19,15 @@ export default async (process: Process) => {
     .where('trigger', trigger.id)
     .orderBy('priority', 'asc');
   if (conditions.length > 0) {
-    const conditionsCheck = await conditions.reduce(
-      async (prev, condition) =>
-        (await prev) && getConditionHandler(condition).call(null, condition.params),
-      Promise.resolve(true),
-    );
+    const conditionsCheck = await conditions.reduce(async (prev, condition) => {
+      if (!(await prev)) return false;
+
+      try {
+        return await getConditionHandler(condition).call(null, condition.params);
+      } catch (e) {
+        throw new Error(`Condition "${condition.id}": ${e.stack}`);
+      }
+    }, Promise.resolve(true));
     if (conditionsCheck === false) return process.done();
   }
 
@@ -32,10 +36,15 @@ export default async (process: Process) => {
     .where('trigger', trigger.id)
     .orderBy('priority', 'asc');
   if (actions.length > 0) {
-    await actions.reduce(
-      async (prev, action) => prev.then(() => getActionHandler(action).call(null, action.params)),
-      Promise.resolve(null),
-    );
+    await actions.reduce(async (prev, action) => {
+      await prev;
+
+      try {
+        return await Promise.resolve(getActionHandler(action).call(null, action.params));
+      } catch (e) {
+        throw new Error(`Action "${action.id}": ${e.stack}`);
+      }
+    }, Promise.resolve(null));
   }
 
   await automateService.updateTrigger({

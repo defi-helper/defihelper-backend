@@ -18,6 +18,10 @@ export class ACLContainer extends Container<typeof AppContainer> {
       proposal: ['create', 'update-own'],
       protocol: ['view'],
       contract: ['walletLink-own'],
+      automateTrigger: ['create', 'update-own', 'delete-own'],
+      automateCondition: ['create', 'update-own', 'delete-own'],
+      automateAction: ['create', 'update-own', 'delete-own'],
+      automateContract: ['create', 'delete-own'],
     }),
   );
 

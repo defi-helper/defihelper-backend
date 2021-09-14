@@ -5,6 +5,7 @@ import {
   EthereumAutomateTransaction,
   transactionTableName,
 } from '@models/Automate/Entity';
+import { tableName as walletTableName } from '@models/Wallet/Entity';
 import { EthereumAutomateAdapter } from '@services/Blockchain/Adapter';
 
 interface Params {
@@ -18,6 +19,9 @@ export default async (params: Params) => {
     throw new Error('Contract not verified');
   }
 
+  const wallet = await container.model.walletTable().where('id', contract.wallet).first();
+  if (!wallet) throw new Error('Wallet not found');
+
   const protocol = await container.model.protocolTable().where('id', contract.protocol).first();
   if (!protocol) throw new Error('Protocol not found');
 
@@ -26,40 +30,43 @@ export default async (params: Params) => {
   const adapter = automates[contract.adapter] as EthereumAutomateAdapter;
   if (typeof adapter !== 'function') throw new Error('Automate adapter not found');
 
-  const network = container.blockchain.ethereum.byNetwork(contract.network);
+  const network = container.blockchain.ethereum.byNetwork(wallet.network);
   const consumers = network.consumers();
-  const busyConsumersRows = await container.model
+  const busyConsumers = await container.model
     .automateTransactionTable()
-    .distinct(`${transactionTableName}.address`)
+    .distinct(`${transactionTableName}.consumer`)
     .join(contractTableName, `${transactionTableName}.contract`, '=', `${contractTableName}.id`)
+    .join(walletTableName, `${contractTableName}.wallet`, '=', `${walletTableName}.id`)
     .where(function () {
-      this.andWhere(`${contractTableName}.blockchain`, contract.blockchain)
-        .andWhere(`${contractTableName}.network`, contract.network)
+      this.andWhere(`${walletTableName}.blockchain`, wallet.blockchain)
+        .andWhere(`${walletTableName}.network`, wallet.network)
         .andWhere(`${transactionTableName}.confirmed`, false)
         .whereIn(
           `${transactionTableName}.consumer`,
           consumers.map(({ address }) => address),
         );
-    });
-  const busyConsumers = busyConsumersRows.map(({ address }) => address);
+    })
+    .then((rows) => rows.map(({ consumer }) => consumer));
   const freeConsumers = consumers.filter(({ address }) => !busyConsumers.includes(address));
   if (freeConsumers.length === 0) throw new Error('Not free consumer');
   const [consumer] = freeConsumers;
-  await container
-    .semafor()
-    .lock(
-      `defihelper:automate:consumer:${contract.blockchain}:${contract.network}:${consumer.address}`,
-    );
+  const lockKey = `defihelper:automate:consumer:${wallet.blockchain}:${wallet.network}:${consumer.address}`;
+  await container.semafor().lock(lockKey);
 
   const { run } = await adapter(consumer, contract.address);
-  const tx = await run();
-  if (tx instanceof Error) throw tx;
+  try {
+    const tx = await run();
+    if (tx instanceof Error) throw tx;
 
-  const data: EthereumAutomateTransaction = {
-    hash: tx.hash,
-    from: tx.from,
-    to: tx.to,
-    nonce: tx.nonce,
-  };
-  await container.model.automateService().createTransaction(contract, consumer.address, data);
+    const data: EthereumAutomateTransaction = {
+      hash: tx.hash,
+      from: tx.from,
+      to: tx.to,
+      nonce: tx.nonce,
+    };
+    await container.model.automateService().createTransaction(contract, consumer.address, data);
+  } catch (e) {
+    await container.semafor().unlock(lockKey);
+    throw e;
+  }
 };

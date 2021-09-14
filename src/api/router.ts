@@ -56,6 +56,7 @@ import {
   GovReceiptQuery,
   GovVotesQuery,
 } from './schema/governance';
+import * as Automate from './schema/automate';
 
 export function route({ express, server }: { express: Express; server: Server }) {
   const apollo = new ApolloServer({
@@ -87,6 +88,9 @@ export function route({ express, server }: { express: Express; server: Server })
           govProposals: GovProposalListQuery,
           govReceipt: GovReceiptQuery,
           govVotes: GovVotesQuery,
+          automateTrigger: Automate.TriggerQuery,
+          automateTriggers: Automate.TriggerListQuery,
+          automateContracts: Automate.ContractListQuery,
         },
       }),
       mutation: new GraphQLObjectType({
@@ -116,6 +120,17 @@ export function route({ express, server }: { express: Express; server: Server })
           productCreate: ProductCreateMutation,
           productUpdate: ProductUpdateMutation,
           productDelete: ProductDeleteMutation,
+          automateTriggerCreate: Automate.TriggerCreateMutation,
+          automateTriggerUpdate: Automate.TriggerUpdateMutation,
+          automateTriggerDelete: Automate.TriggerDeleteMutation,
+          automateConditionCreate: Automate.ConditionCreateMutation,
+          automateConditionUpdate: Automate.ConditionUpdateMutation,
+          automateConditionDelete: Automate.ConditionDeleteMutation,
+          automateActionCreate: Automate.ActionCreateMutation,
+          automateActionUpdate: Automate.ActionUpdateMutation,
+          automateActionDelete: Automate.ActionDeleteMutation,
+          automateContractCreate: Automate.ContractCreateMutation,
+          automateContractDelete: Automate.ContractDeleteMutation,
         },
       }),
     }),

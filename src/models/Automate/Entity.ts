@@ -1,5 +1,4 @@
 import { tableFactory as createTableFactory } from '@services/Database';
-import { Blockchain } from '@models/types';
 import * as Conditions from '../../automate/condition';
 import * as Actions from '../../automate/action';
 
@@ -87,12 +86,10 @@ export enum ContractVerificationStatus {
 
 export interface Contract {
   id: string;
+  wallet: string;
   protocol: string;
-  blockchain: Blockchain;
-  network: string;
   address: string;
   adapter: string;
-  wallet: string;
   verification: ContractVerificationStatus;
   rejectReason: string;
   updatedAt: Date;
