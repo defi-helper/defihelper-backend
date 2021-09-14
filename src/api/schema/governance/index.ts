@@ -165,6 +165,66 @@ export const GovVoteType = new GraphQLObjectType({
   },
 });
 
+export const GovTokenCirculationValueType = new GraphQLObjectType({
+  name: 'GovTokenCirculationValueType',
+  fields: {
+    timeLeft: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    timeTotal: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    tokenLeft: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    tokenTotal: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+  },
+});
+
+export const GovTokenType = new GraphQLObjectType({
+  name: 'GovTokenType',
+  fields: {
+    price: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    totalSupply: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    marketCap: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    circulation: {
+      type: GraphQLNonNull(
+        new GraphQLObjectType({
+          name: 'GovTokenCirculationType',
+          fields: {
+            total: {
+              type: GraphQLNonNull(GraphQLString),
+            },
+            market: {
+              type: GraphQLNonNull(GovTokenCirculationValueType),
+            },
+            rewards: {
+              type: GraphQLNonNull(GovTokenCirculationValueType),
+            },
+            developers: {
+              type: GraphQLNonNull(GovTokenCirculationValueType),
+            },
+            community: {
+              type: GraphQLNonNull(GovTokenCirculationValueType),
+            },
+            earlyEcosistem: {
+              type: GraphQLNonNull(GovTokenCirculationValueType),
+            },
+          },
+        }),
+      ),
+    },
+  },
+});
+
 export const GovProposalQuery: GraphQLFieldConfig<any, Request> = {
   type: GovProposalType,
   args: {
@@ -311,5 +371,66 @@ export const GovVotesQuery: GraphQLFieldConfig<any, Request> = {
     const { network, contract, wallet } = filter;
 
     return GovernanceService.votes(network, contract, wallet);
+  },
+};
+
+export const GovTokenQuery: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GovTokenType),
+  args: {
+    filter: {
+      type: GraphQLNonNull(
+        new GraphQLInputObjectType({
+          name: 'GovTokenFilterInputType',
+          fields: {
+            network: {
+              type: GraphQLNonNull(GraphQLInt),
+            },
+            contract: {
+              type: GraphQLNonNull(GraphQLString),
+            },
+          },
+        }),
+      ),
+    },
+  },
+  resolve: async () => {
+    return {
+      price: '0.915',
+      totalSupply: '1000000000',
+      marketCap: '915000000',
+      circulation: {
+        total: '5000000',
+        market: {
+          timeLeft: '5',
+          timeTotal: '8',
+          tokenLeft: '4510',
+          tokenTotal: '10000',
+        },
+        rewards: {
+          timeLeft: '2',
+          timeTotal: '5',
+          tokenLeft: '7510',
+          tokenTotal: '10000',
+        },
+        developers: {
+          timeLeft: '12',
+          timeTotal: '100',
+          tokenLeft: '100',
+          tokenTotal: '1000',
+        },
+        community: {
+          timeLeft: '8',
+          timeTotal: '10',
+          tokenLeft: '410',
+          tokenTotal: '10000',
+        },
+        earlyEcosistem: {
+          timeLeft: '7',
+          timeTotal: '10',
+          tokenLeft: '1400',
+          tokenTotal: '10000',
+        },
+      },
+    };
   },
 };

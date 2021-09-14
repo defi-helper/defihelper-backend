@@ -1,4 +1,4 @@
-{{#t}}New {{eventName}} events in {{contractAddress}} on {{network}}:{{/t}}<br>
-{{#events}}
-    <a href="{{link}}">{{txHash}}</a></br>
-{{/events}}
+{{#t}}New {{eventName}} events in <a href="{{contractUrl}}">{{contractName}}</a> on {{network}}:{{/t}}
+{{#eventsUrls}}
+    <a href="{{link}}">{{txHash}}</a>
+{{/eventsUrls}}

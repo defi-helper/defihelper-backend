@@ -58,7 +58,11 @@ export default async (process: Process) => {
     new Array(totalPools.toNumber()).fill(1).map((_, i) => masterChiefContract.poolInfo(i)),
   );
 
-  const contracts = await container.model.contractTable().where('protocol', protocol.id).select();
+  const contracts = await container.model
+    .contractTable()
+    .where('protocol', protocol.id)
+    .andWhere('hidden', false)
+    .select();
 
   const newPools = allPools.filter(
     (pool) =>

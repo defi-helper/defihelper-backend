@@ -35,3 +35,4 @@ export * as automateContractEthereumVerify from './automate/contractEthereumVeri
 export * as automateTransactionEthereumConfirm from './automate/transactionEthereumConfirm';
 export * as automateTriggerRun from './automate/run';
 export * as automateTriggerByTime from './automate/trigger/byTime';
+export * as swopfiLPFarmingPoolScanner from './pools/swopfiLPFarming';

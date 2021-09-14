@@ -54,6 +54,7 @@ import {
   GovProposalListQuery,
   GovProposalQuery,
   GovReceiptQuery,
+  GovTokenQuery,
   GovVotesQuery,
 } from './schema/governance';
 import * as Automate from './schema/automate';
@@ -91,6 +92,7 @@ export function route({ express, server }: { express: Express; server: Server })
           automateTrigger: Automate.TriggerQuery,
           automateTriggers: Automate.TriggerListQuery,
           automateContracts: Automate.ContractListQuery,
+          govToken: GovTokenQuery,
         },
       }),
       mutation: new GraphQLObjectType({

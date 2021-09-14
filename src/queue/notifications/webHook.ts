@@ -45,7 +45,9 @@ export default async (process: Process) => {
     .userEventSubscriptionTable()
     .where('webHook', eventNotificationParams.webHookId);
 
-  const { txExplorerURL } = container.blockchain[contract.blockchain].byNetwork(contract.network);
+  const { txExplorerURL, walletExplorerURL } = container.blockchain[contract.blockchain].byNetwork(
+    contract.network,
+  );
   const eventsUrls: EventUrls[] = eventNotificationParams.events.map((event) => ({
     link: `${txExplorerURL}/${event.transactionHash}`,
     txHash: event.transactionHash,
@@ -62,7 +64,8 @@ export default async (process: Process) => {
       await container.model.notificationService().create(contact, NotificationType.event, {
         eventsUrls,
         eventName: eventNotificationParams.eventName,
-        contractAddress: contract.address,
+        contractName: contract.name || contract.address,
+        contractUrl: `${walletExplorerURL}/${contract.address}`,
         network: contract.network,
       });
     }),

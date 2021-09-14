@@ -31,6 +31,7 @@ export default async (process: Process) => {
     }),
     queue.push('pancakeStakingPoolScanner', {}),
     queue.push('quickSwapPolygonStakingPoolScanner', {}),
+    queue.push('swopfiLPFarmingPoolScanner', {}),
     queue.push('automateTriggerByTime', { type: TriggerType.EveryDay }),
   ]);
 
