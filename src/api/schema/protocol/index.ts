@@ -644,7 +644,10 @@ export const ProtocolQuery: GraphQLFieldConfig<any, Request> = {
           name: 'ProtocolFilterInputType',
           fields: {
             id: {
-              type: GraphQLNonNull(GraphQLString),
+              type: UuidType,
+            },
+            adapter: {
+              type: GraphQLString,
             },
           },
         }),
@@ -652,7 +655,13 @@ export const ProtocolQuery: GraphQLFieldConfig<any, Request> = {
     },
   },
   resolve: async (root, { filter }) => {
-    return container.model.protocolTable().where('id', filter.id).first();
+    if (typeof filter.id === 'string') {
+      return container.model.protocolTable().where('id', filter.id).first();
+    }
+    if (typeof filter.adapter === 'string') {
+      return container.model.protocolTable().where('adapter', filter.adapter).first();
+    }
+    return null;
   },
 };
 
