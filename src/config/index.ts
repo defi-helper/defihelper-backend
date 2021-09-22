@@ -92,4 +92,7 @@ export default {
   adapters: {
     host: process.env.ADAPTERS_HOST ?? 'localhost',
   },
+  restakeOptimal: {
+    host: process.env.RESTAKE_OPTIMAL_HOST ?? 'localhost',
+  },
 };

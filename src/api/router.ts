@@ -58,6 +58,7 @@ import {
   GovVotesQuery,
 } from './schema/governance';
 import * as Automate from './schema/automate';
+import { RestakeStrategyQuery } from './schema/restakeStrategy';
 
 export function route({ express, server }: { express: Express; server: Server }) {
   const apollo = new ApolloServer({
@@ -93,6 +94,7 @@ export function route({ express, server }: { express: Express; server: Server })
           automateTriggers: Automate.TriggerListQuery,
           automateContracts: Automate.ContractListQuery,
           govToken: GovTokenQuery,
+          restakeStrategy: RestakeStrategyQuery,
         },
       }),
       mutation: new GraphQLObjectType({

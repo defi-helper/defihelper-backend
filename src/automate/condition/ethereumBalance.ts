@@ -12,20 +12,21 @@ export default async (params: Params) => {
   const network = container.blockchain.ethereum.byNetwork(params.network);
   const provider = network.provider();
   const balance = new BigNumber((await provider.getBalance(params.wallet)).toString());
+  const value = new BigNumber(params.value).multipliedBy(new BigNumber(10).pow(18));
 
   switch (params.op) {
     case '>':
-      return balance.gt(params.value);
+      return balance.gt(value);
     case '>=':
-      return balance.gte(params.value);
+      return balance.gte(value);
     case '<':
-      return balance.lt(params.value);
+      return balance.lt(value);
     case '<=':
-      return balance.lte(params.value);
+      return balance.lte(value);
     case '==':
-      return balance.eq(params.value);
+      return balance.eq(value);
     case '!=':
-      return !balance.eq(params.value);
+      return !balance.eq(value);
     default:
       return false;
   }
