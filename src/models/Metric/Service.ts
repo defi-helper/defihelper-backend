@@ -1,8 +1,10 @@
 import { v4 as uuid } from 'uuid';
+import { Blockchain } from '@models/types';
 import { Contract } from '@models/Protocol/Entity';
 import { Factory } from '@services/Container';
 import { Wallet } from '@models/Wallet/Entity';
 import {
+  MetricBlockchainTable,
   MetricContractTable,
   MetricMap,
   MetricWalletTable,
@@ -11,10 +13,25 @@ import {
 
 export class MetricContractService {
   constructor(
+    readonly metricBlockchainTable: Factory<MetricBlockchainTable>,
     readonly metricContractTable: Factory<MetricContractTable>,
     readonly metricWalletTable: Factory<MetricWalletTable>,
     readonly metricWalletTokenTable: Factory<MetricWalletTokenTable>,
   ) {}
+
+  async createBlockchain(blockchain: Blockchain, network: string, data: MetricMap, date: Date) {
+    const created = {
+      id: uuid(),
+      blockchain,
+      network,
+      data,
+      date,
+      createdAt: new Date(),
+    };
+    await this.metricBlockchainTable().insert(created);
+
+    return created;
+  }
 
   async createContract(contract: Contract, data: MetricMap, date: Date) {
     const created = {

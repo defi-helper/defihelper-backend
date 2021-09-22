@@ -1,8 +1,25 @@
+import { Blockchain } from '@models/types';
 import { tableFactory as createTableFactory } from '@services/Database';
 
 export interface MetricMap {
   [k: string]: string;
 }
+
+export interface MetricBlockchain {
+  id: string;
+  blockchain: Blockchain;
+  network: string;
+  data: MetricMap;
+  date: Date;
+  createdAt: Date;
+}
+
+export const metricBlockchainTableName = 'metric_blockchain';
+
+export const metricBlockchainTableFactory =
+  createTableFactory<MetricBlockchain>(metricBlockchainTableName);
+
+export type MetricBlockchainTable = ReturnType<ReturnType<typeof metricBlockchainTableFactory>>;
 
 export interface MetricContract {
   id: string;

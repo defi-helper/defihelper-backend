@@ -104,7 +104,7 @@ export const RestakeStrategyQuery: GraphQLFieldConfig<any, Request> = {
   },
   resolve: async (root, { balance, apy }) => {
     const apd = apy / 365;
-    const fee = 20;
+    const fee = 50;
     const seq = 365;
 
     const holdPoints = range(1, seq + 1).reduce(

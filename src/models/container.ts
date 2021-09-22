@@ -73,6 +73,10 @@ export class ModelContainer extends Container<typeof AppContainer> {
     () => new Models.Proposal.Service.ProposalService(this.proposalTable, this.voteTable),
   );
 
+  readonly metricBlockchainTable = Models.Metric.Entity.metricBlockchainTableFactory(
+    this.parent.database,
+  );
+
   readonly metricContractTable = Models.Metric.Entity.metricContractTableFactory(
     this.parent.database,
   );
@@ -86,6 +90,7 @@ export class ModelContainer extends Container<typeof AppContainer> {
   readonly metricService = singleton(
     () =>
       new Models.Metric.Service.MetricContractService(
+        this.metricBlockchainTable,
         this.metricContractTable,
         this.metricWalletTable,
         this.metricWalletTokenTable,

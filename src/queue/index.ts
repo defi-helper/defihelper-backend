@@ -1,3 +1,4 @@
+export * as scheduleMinute10 from './schedule/minute10';
 export * as scheduleHourStart from './schedule/hourStart';
 export * as scheduleDayStart from './schedule/dayStart';
 export * as scheduleWeekStart from './schedule/weekStart';
@@ -7,6 +8,7 @@ export * as tokenCreate from './token/create';
 export * as tokenAlias from './token/alias';
 export * as tokenInfoEth from './token/ethereumInfo';
 export * as tokenInfoWaves from './token/wavesInfo';
+export * as metricsEthereumCurrent from './metrics/ethereumCurrent';
 export * as metricsContractBroker from './metrics/contractBroker';
 export * as metricsContractHistory from './metrics/contractHistory';
 export * as metricsWalletBroker from './metrics/walletBroker';

@@ -10,6 +10,9 @@ container.model
 
     const queue = container.model.queueService();
     switch (options.period) {
+      case 'minute10':
+        await queue.push('scheduleMinute10', {});
+        break;
       case 'hourStart':
         await queue.push('scheduleHourStart', {});
         break;
