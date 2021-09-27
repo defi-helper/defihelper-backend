@@ -24,7 +24,7 @@ export * as subscribeToEventFromScanner from './scanner/subscribeToEvent';
 export * as registerContractInScanner from './scanner/registerContract';
 export * as sendEventsNotifications from './notifications/webHook';
 export * as linkContractsFromEvents from './wallet/linkContractsFromEvents';
-export * as processEventNotification from './notifications/event';
+export * as notificationSend from './notifications/send';
 export * as contractResolveDeployBlockNumber from './contract/resolveDeployBlockNumber';
 export * as billingTransferScan from './billing/transferScan';
 export * as billingClaimScan from './billing/claimScan';

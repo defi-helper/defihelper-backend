@@ -18,7 +18,7 @@ export default async (process: Process) => {
     template,
     {
       ...container.template.i18n(container.i18n.byLocale(locale)),
-      params,
+      ...params,
     },
     subject,
     email,

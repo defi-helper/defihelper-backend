@@ -9,10 +9,10 @@ interface Params {
 export default async (process: Process) => {
   const { type } = process.task.params as Params;
 
-  const triggers = await container.model.automateTriggerTable().where({
-    type,
-    active: true,
-  });
+  const triggers = await container.model
+    .automateTriggerTable()
+    .where('active', true)
+    .andWhere('type', type);
   const queue = container.model.queueService();
   await Promise.all(triggers.map(({ id }) => queue.push('automateTriggerRun', { id })));
 

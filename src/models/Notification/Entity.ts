@@ -33,17 +33,41 @@ export enum NotificationStatus {
 
 export enum NotificationType {
   event = 'event',
+  trigger = 'trigger',
 }
 
-export interface Notification {
+export interface EventUrls {
+  link: string;
+  txHash: string;
+}
+
+export interface NotificationEventType {
+  type: NotificationType.event;
+  payload: {
+    eventsUrls: EventUrls[];
+    eventName: string;
+    contractName: string;
+    contractUrl: string;
+    network: string;
+  };
+}
+
+export interface NotificationTriggerType {
+  type: NotificationType.trigger;
+  payload: {
+    message: string;
+  };
+}
+
+export type NotificationPayloadType = NotificationEventType | NotificationTriggerType;
+
+export type Notification = {
   id: string;
   contact: string;
-  type: NotificationType;
-  payload: Object;
   status: NotificationStatus;
   createdAt: Date;
   processedAt?: Date;
-}
+} & NotificationPayloadType;
 
 export interface ContractEventWebHook {
   id: string;

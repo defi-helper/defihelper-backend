@@ -10,9 +10,9 @@ import {
   ContractEventWebHook,
   ContractEventWebHookTable,
   Notification,
+  NotificationPayloadType,
   NotificationStatus,
   NotificationTable,
-  NotificationType,
   UserContact,
   UserContactParams,
   UserContactTable,
@@ -24,31 +24,19 @@ export class NotificationService {
   constructor(readonly table: Factory<NotificationTable>) {}
 
   public readonly onCreated = new Emitter<Notification>(async (notification) => {
-    switch (notification.type) {
-      case NotificationType.event:
-        await container.model.queueService().push('processEventNotification', notification);
-        return;
-      default:
-        container.logger().error(`Unsupported notification type ${notification.type}`);
-    }
+    return container.model.queueService().push('notificationSend', { id: notification.id });
   });
 
-  async create(
-    contact: UserContact,
-    type: NotificationType,
-    payload: Object,
-  ): Promise<Notification> {
+  async create(contact: UserContact, payload: NotificationPayloadType): Promise<Notification> {
     const created: Notification = {
       id: uuid(),
       contact: contact.id,
-      type,
-      payload,
+      ...payload,
       status: NotificationStatus.new,
       createdAt: new Date(),
     };
 
     await this.table().insert(created);
-
     this.onCreated.emit(created);
 
     return created;
@@ -61,11 +49,7 @@ export class NotificationService {
       processedAt: new Date(),
     };
 
-    await this.table()
-      .where({
-        id: notification.id,
-      })
-      .update(updated);
+    await this.table().where('id', notification.id).update(updated);
 
     return updated;
   }

@@ -183,4 +183,12 @@ export function route({ express, server }: { express: Express; server: Server })
 
     res.sendStatus(200);
   });
+  express.route('/callback/trigger/:triggerId').post(json(), async (req, res) => {
+    const { secret } = req.query;
+    if (secret !== container.parent.api.secret) return res.sendStatus(403);
+
+    await container.model.queueService().push('automateTriggerRun', { id: req.params.triggerId });
+
+    return res.sendStatus(200);
+  });
 }

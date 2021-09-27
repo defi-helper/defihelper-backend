@@ -1,22 +1,9 @@
 import { Process } from '@models/Queue/Entity';
 import container from '@container';
-import { ContactBroker, NotificationStatus, NotificationType } from '@models/Notification/Entity';
-import { EventUrls } from './webHook';
+import { ContactBroker, NotificationType } from '@models/Notification/Entity';
 
-export interface EventNotificationParams {
+export interface Params {
   id: string;
-  contact: string;
-  type: NotificationType;
-  payload: {
-    eventsUrls: EventUrls[];
-    eventName: string;
-    contractName: string;
-    contractUrl: string;
-    network: number;
-  };
-  status: NotificationStatus;
-  createdAt: Date;
-  processedAt?: Date;
 }
 
 const networkNameById = (network: string) => {
@@ -28,7 +15,9 @@ const networkNameById = (network: string) => {
 };
 
 export default async (process: Process) => {
-  const notification = process.task.params as EventNotificationParams;
+  const { id } = process.task.params as Params;
+  const notification = await container.model.notificationTable().where('id', id).first();
+  if (!notification) throw new Error('Notification not found');
 
   try {
     const contact = await container.model
@@ -45,38 +34,53 @@ export default async (process: Process) => {
       throw new Error('User own contact not found');
     }
 
-    const params = {
-      eventName: notification.payload.eventName,
-      eventsUrls: notification.payload.eventsUrls,
-      contractName: notification.payload.contractName,
-      contractUrl: notification.payload.contractUrl,
-      network: networkNameById(notification.payload.network.toString()),
-    };
+    let sendParams = {};
+    switch (notification.type) {
+      case NotificationType.event:
+        sendParams = {
+          subject: 'Event',
+          params: {
+            eventName: notification.payload.eventName,
+            eventsUrls: notification.payload.eventsUrls,
+            contractName: notification.payload.contractName,
+            contractUrl: notification.payload.contractUrl,
+            network: networkNameById(notification.payload.network.toString()),
+          },
+          template: 'eventTemplate',
+        };
+        break;
+      case NotificationType.trigger:
+        sendParams = {
+          subject: 'Trigger run',
+          params: notification.payload,
+          template: 'triggerTemplate',
+        };
+        break;
+      default:
+        throw new Error('Invalid notification type');
+    }
 
     switch (contact.broker) {
       case ContactBroker.Email:
         await container.model.queueService().push('sendEmail', {
           email: contact.address,
-          template: 'eventTemplate',
-          subject: 'Event',
-          params,
           locale: user.locale,
+          ...sendParams,
         });
         break;
       case ContactBroker.Telegram:
         await container.model.queueService().push('sendTelegram', {
           chatId: contact.params?.chatId || 0,
-          template: 'eventTemplate',
-          params,
           locale: user.locale,
+          ...sendParams,
         });
         break;
       default:
         throw new Error(`Contact broker is not found ${contact.broker}`);
     }
-
-    return process.done();
   } finally {
     await container.model.notificationService().markAsProcessed(notification);
   }
+
+  return process.done();
 };

@@ -152,6 +152,10 @@ export class ScannerService {
     ).data;
   }
 
+  async deleteCallback(callbackId: string) {
+    await this.client.delete<string>(`/api/contract/0/event-listener/0/call-back/${callbackId}`);
+  }
+
   async getContractsAddressByUserAddress(networkId: string, address: string): Promise<string[]> {
     return (
       await this.client.get<string[]>(

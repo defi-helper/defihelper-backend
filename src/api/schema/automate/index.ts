@@ -353,6 +353,10 @@ export const TriggerCreateMutation: GraphQLFieldConfig<any, Request> = {
               type: GraphQLNonNull(TriggerTypeEnum),
               description: 'Type',
             },
+            params: {
+              type: GraphQLNonNull(GraphQLString),
+              description: 'Parameters',
+            },
             name: {
               type: GraphQLNonNull(GraphQLString),
               description: 'Name',
@@ -370,14 +374,14 @@ export const TriggerCreateMutation: GraphQLFieldConfig<any, Request> = {
   resolve: onlyAllowed('automateTrigger.create', async (root, { input }, { currentUser }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
-    const { wallet: walletId, type, name, active } = input;
+    const { wallet: walletId, type, params, name, active } = input;
     const wallet = await container.model.walletTable().where('id', walletId).first();
     if (!wallet) throw new UserInputError('Wallet not found');
     if (wallet.user !== currentUser.id) throw new UserInputError('Foreign wallet');
 
     const created = await container.model
       .automateService()
-      .createTrigger(wallet, type, name, active);
+      .createTrigger(wallet, { type, params: JSON.parse(params) }, name, active);
 
     return created;
   }),

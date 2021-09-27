@@ -7,18 +7,39 @@ export enum TriggerType {
   EveryWeek = 'everyWeek',
   EveryDay = 'everyDay',
   EveryHour = 'everyHour',
+  ContractEvent = 'contractEvent',
 }
 
-export interface Trigger {
+export type TriggerContractEventType = {
+  type: TriggerType.ContractEvent;
+  params: {
+    network: string;
+    address: string;
+    event: string;
+    callback?: string;
+  };
+};
+
+export type TriggerTimeType = {
+  type:
+    | TriggerType.EveryHour
+    | TriggerType.EveryDay
+    | TriggerType.EveryWeek
+    | TriggerType.EveryMonth;
+  params: {};
+};
+
+export type TriggerTypes = TriggerContractEventType | TriggerTimeType;
+
+export type Trigger = {
   id: string;
-  type: TriggerType;
   wallet: string;
   name: string;
   active: boolean;
   lastCallAt: Date | null;
   updatedAt: Date;
   createdAt: Date;
-}
+} & TriggerTypes;
 
 export const triggerTableName = 'automate_trigger';
 

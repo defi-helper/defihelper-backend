@@ -5,6 +5,7 @@ import { Factory } from '@services/Container';
 import { v4 as uuid } from 'uuid';
 import { Protocol } from '@models/Protocol/Entity';
 import { Wallet, Table as WalletTable } from '@models/Wallet/Entity';
+import { ScannerService } from '@services/Scanner';
 import {
   Action,
   ActionParams,
@@ -23,9 +24,36 @@ import {
   Trigger,
   TriggerTable,
   TriggerType,
+  TriggerTypes,
 } from './Entity';
 
 export class AutomateService {
+  public readonly onTriggerCreated = new Emitter<Trigger>(async (trigger) => {
+    if (trigger.type === TriggerType.ContractEvent) {
+      const callback = await this.scanner().registerCallback(
+        trigger.params.network,
+        trigger.params.address,
+        trigger.params.event,
+        `${container.parent.api.internalUrl}/callback/trigger/${trigger.id}?secret=${container.parent.api.secret}`,
+      );
+      await this.updateTrigger({
+        ...trigger,
+        params: {
+          ...trigger.params,
+          callback: callback.id,
+        },
+      });
+    }
+  });
+
+  public readonly onTriggerDeleted = new Emitter<Trigger>(async (trigger) => {
+    if (trigger.type === TriggerType.ContractEvent) {
+      if (trigger.params.callback) {
+        await this.scanner().deleteCallback(trigger.params.callback);
+      }
+    }
+  });
+
   public readonly onContractCreated = new Emitter<{ wallet: Wallet; contract: Contract }>(
     ({ wallet, contract }) => {
       if (wallet.blockchain === 'ethereum') {
@@ -61,13 +89,14 @@ export class AutomateService {
     readonly contractTable: Factory<ContractTable>,
     readonly transactionTable: Factory<TransactionTable>,
     readonly walletTable: Factory<WalletTable>,
+    readonly scanner: Factory<ScannerService>,
   ) {}
 
-  async createTrigger(wallet: Wallet, type: TriggerType, name: string, active: boolean = true) {
+  async createTrigger(wallet: Wallet, type: TriggerTypes, name: string, active: boolean = true) {
     const created: Trigger = {
       id: uuid(),
       wallet: wallet.id,
-      type,
+      ...type,
       name,
       active,
       lastCallAt: null,
@@ -75,6 +104,7 @@ export class AutomateService {
       createdAt: new Date(),
     };
     await this.triggerTable().insert(created);
+    this.onTriggerCreated.emit(created);
 
     return created;
   }
@@ -91,6 +121,7 @@ export class AutomateService {
 
   async deleteTrigger(trigger: Trigger) {
     await this.triggerTable().where({ id: trigger.id }).delete();
+    this.onTriggerDeleted.emit(trigger);
   }
 
   async createCondition(

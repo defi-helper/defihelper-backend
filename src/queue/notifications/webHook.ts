@@ -1,6 +1,6 @@
 import { Process } from '@models/Queue/Entity';
 import container from '@container';
-import { NotificationType } from '@models/Notification/Entity';
+import { EventUrls, NotificationType } from '@models/Notification/Entity';
 
 interface Event {
   address: string;
@@ -17,11 +17,6 @@ export interface EventNotificationParams {
   events: Event[];
   eventName: string;
   webHookId: string;
-}
-
-export interface EventUrls {
-  link: string;
-  txHash: string;
 }
 
 export default async (process: Process) => {
@@ -61,12 +56,15 @@ export default async (process: Process) => {
         .first();
       if (!contact) return;
 
-      await container.model.notificationService().create(contact, NotificationType.event, {
-        eventsUrls,
-        eventName: eventNotificationParams.eventName,
-        contractName: contract.name || contract.address,
-        contractUrl: `${walletExplorerURL}/${contract.address}`,
-        network: contract.network,
+      await container.model.notificationService().create(contact, {
+        type: NotificationType.event,
+        payload: {
+          eventsUrls,
+          eventName: eventNotificationParams.eventName,
+          contractName: contract.name || contract.address,
+          contractUrl: `${walletExplorerURL}/${contract.address}`,
+          network: contract.network,
+        },
       });
     }),
   );

@@ -35,9 +35,11 @@ export interface ContractAdapter {
 
 export interface EthereumAutomateAdapter {
   (signer: any, contract: string): Promise<{
+    contract: string;
     migrate: () => Promise<ethers.Transaction | Error>;
     deposit: () => Promise<ethers.Transaction | Error>;
     refund: () => Promise<ethers.Transaction | Error>;
+    runParams: () => Promise<[string, ...any] | Error>;
     run: () => Promise<ethers.Transaction | Error>;
   }>;
 }

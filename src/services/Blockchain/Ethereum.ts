@@ -52,6 +52,24 @@ function consumersFactory(
   return consumersPrivateKeys.map((privateKey) => new ethers.Wallet(privateKey, provider));
 }
 
+function coingeckoPriceFeedUSD(coinId: string) {
+  return async () => {
+    const {
+      data: {
+        ethereum: { usd },
+      },
+    } = await axios.get(
+      `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd`,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+    return usd;
+  };
+}
+
 export interface Config {
   ethMainNode: string;
   ethMainAvgBlockTime: number;
@@ -86,6 +104,7 @@ export class BlockchainContainer extends Container<Config> {
       txExplorerURL: new URL('https://etherscan.io/tx'),
       walletExplorerURL: new URL('https://etherscan.io/address'),
       getContractAbi: useEtherscanContractAbi('https://api.etherscan.io/api'),
+      priceFeedUSD: coingeckoPriceFeedUSD('ethereum'),
       inspector: () => new ethers.Wallet(this.parent.ethMainInspector, this.networks[1].provider()),
       consumers: () => consumersFactory(this.parent.ethMainConsumers, this.networks[1].provider()),
       dfhContracts: () => null,
@@ -97,6 +116,7 @@ export class BlockchainContainer extends Container<Config> {
       txExplorerURL: new URL('https://ropsten.etherscan.io/tx'),
       walletExplorerURL: new URL('https://ropsten.etherscan.io/address'),
       getContractAbi: useEtherscanContractAbi('https://api-ropsten.etherscan.io/api'),
+      priceFeedUSD: coingeckoPriceFeedUSD('ethereum'),
       inspector: () =>
         new ethers.Wallet(this.parent.ethRopstenInspector, this.networks[3].provider()),
       consumers: () =>
@@ -110,6 +130,7 @@ export class BlockchainContainer extends Container<Config> {
       txExplorerURL: new URL('https://bscscan.com/tx'),
       walletExplorerURL: new URL('https://bscscan.com/address'),
       getContractAbi: useEtherscanContractAbi('https://api.bscscan.com/api'),
+      priceFeedUSD: coingeckoPriceFeedUSD('binancecoin'),
       inspector: () =>
         new ethers.Wallet(this.parent.bscMainInspector, this.networks[56].provider()),
       consumers: () => consumersFactory(this.parent.bscMainConsumers, this.networks[56].provider()),
@@ -122,6 +143,7 @@ export class BlockchainContainer extends Container<Config> {
       txExplorerURL: new URL('https://polygonscan.com/tx'),
       walletExplorerURL: new URL('https://polygonscan.com/address'),
       getContractAbi: useEtherscanContractAbi('https://api.polygonscan.com/api'),
+      priceFeedUSD: coingeckoPriceFeedUSD('matic-network'),
       inspector: () =>
         new ethers.Wallet(this.parent.polygonMainInspector, this.networks[137].provider()),
       consumers: () =>
@@ -135,6 +157,7 @@ export class BlockchainContainer extends Container<Config> {
       txExplorerURL: new URL('https://etherscan.io/tx'),
       walletExplorerURL: new URL('https://etherscan.io/address'),
       getContractAbi: useEtherscanContractAbi('https://api.etherscan.io/api'),
+      priceFeedUSD: coingeckoPriceFeedUSD('ethereum'),
       inspector: () =>
         new ethers.Wallet(this.parent.localInspector, this.networks[31337].provider()),
       consumers: () =>
