@@ -99,6 +99,21 @@ export const actionTableFactory = createTableFactory<Action>(actionTableName);
 
 export type ActionTable = ReturnType<ReturnType<typeof actionTableFactory>>;
 
+export interface TriggerCallHistory {
+  id: string;
+  trigger: string;
+  error: string | null;
+  createdAt: Date;
+}
+
+export const triggerCallHistoryTableName = 'automate_trigger_call_history';
+
+export const triggerCallHistoryTableFactory = createTableFactory<TriggerCallHistory>(
+  triggerCallHistoryTableName,
+);
+
+export type TriggerCallHistoryTable = ReturnType<ReturnType<typeof triggerCallHistoryTableFactory>>;
+
 export enum ContractVerificationStatus {
   Pending = 'pending',
   Confirmed = 'confirmed',

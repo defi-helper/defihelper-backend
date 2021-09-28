@@ -22,6 +22,8 @@ import {
   ContractVerificationStatus,
   TransactionTable,
   Trigger,
+  TriggerCallHistory,
+  TriggerCallHistoryTable,
   TriggerTable,
   TriggerType,
   TriggerTypes,
@@ -86,6 +88,7 @@ export class AutomateService {
     readonly triggerTable: Factory<TriggerTable>,
     readonly conditionTable: Factory<ConditionTable>,
     readonly actionTable: Factory<ActionTable>,
+    readonly triggerCallHistoryTable: Factory<TriggerCallHistoryTable>,
     readonly contractTable: Factory<ContractTable>,
     readonly transactionTable: Factory<TransactionTable>,
     readonly walletTable: Factory<WalletTable>,
@@ -190,6 +193,19 @@ export class AutomateService {
 
   async deleteAction(action: Action) {
     await this.actionTable().where({ id: action.id }).delete();
+  }
+
+  async createTriggerCallHistory(trigger: Trigger, error?: Error) {
+    const created: TriggerCallHistory = {
+      id: uuid(),
+      trigger: trigger.id,
+      error: error ? error.message : null,
+      createdAt: new Date(),
+    };
+
+    await this.triggerCallHistoryTable().insert(created);
+
+    return created;
   }
 
   async createContract(

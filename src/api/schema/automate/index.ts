@@ -98,6 +98,69 @@ export const ActionType = new GraphQLObjectType<Automate.Action>({
   },
 });
 
+export const TriggerCallHistoryType = new GraphQLObjectType<Automate.TriggerCallHistory>({
+  name: 'AutomateTriggerCallHistoryType',
+  fields: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+      description: 'Identificator',
+    },
+    error: {
+      type: GraphQLString,
+      description: 'Call error',
+    },
+    createdAt: {
+      type: GraphQLNonNull(DateTimeType),
+      description: 'Created at date',
+    },
+  },
+});
+
+export const TriggerCallHistoryListQuery: GraphQLFieldConfig<Automate.Trigger, Request> = {
+  type: GraphQLNonNull(
+    PaginateList('AutomateTriggerCallHistoryListQuery', GraphQLNonNull(TriggerCallHistoryType)),
+  ),
+  args: {
+    filter: {
+      type: new GraphQLInputObjectType({
+        name: 'AutomateTriggerCallHistoryListFilterInputType',
+        fields: {
+          hasError: {
+            type: GraphQLBoolean,
+          },
+        },
+      }),
+      defaultValue: {},
+    },
+    sort: SortArgument(
+      'AutomateTriggerCallHistoryListSortInputType',
+      ['createdAt'],
+      [{ column: 'createdAt', order: 'desc' }],
+    ),
+    pagination: PaginationArgument('AutomateTriggerCallHistoryListPaginationInputType'),
+  },
+  resolve: async (trigger, { filter, sort, pagination }) => {
+    const select = container.model.automateTriggerCallHistoryTable().where(function () {
+      this.where('trigger', trigger.id);
+      const { hasError } = filter;
+      if (typeof hasError === 'boolean') {
+        if (hasError) {
+          this.whereNotNull('error');
+        } else {
+          this.whereNull('error');
+        }
+      }
+    });
+
+    return {
+      list: await select.clone().orderBy(sort).limit(pagination.limit).offset(pagination.offset),
+      pagination: {
+        count: await select.clone().first(),
+      },
+    };
+  },
+};
+
 export const TriggerTypeEnum = new GraphQLEnumType({
   name: 'AutomateTriggerTypeEnum',
   values: Object.values(Automate.TriggerType).reduce(
@@ -249,6 +312,7 @@ export const TriggerType = new GraphQLObjectType<Automate.Trigger>({
         };
       },
     },
+    callHistory: TriggerCallHistoryListQuery,
   },
 });
 

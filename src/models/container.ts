@@ -173,6 +173,10 @@ export class ModelContainer extends Container<typeof AppContainer> {
 
   readonly automateActionTable = Models.Automate.Entity.actionTableFactory(this.parent.database);
 
+  readonly automateTriggerCallHistoryTable = Models.Automate.Entity.triggerCallHistoryTableFactory(
+    this.parent.database,
+  );
+
   readonly automateContractTable = Models.Automate.Entity.contractTableFactory(
     this.parent.database,
   );
@@ -187,6 +191,7 @@ export class ModelContainer extends Container<typeof AppContainer> {
         this.automateTriggerTable,
         this.automateConditionTable,
         this.automateActionTable,
+        this.automateTriggerCallHistoryTable,
         this.automateContractTable,
         this.automateTransactionTable,
         this.walletTable,
