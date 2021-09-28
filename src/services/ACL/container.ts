@@ -21,7 +21,7 @@ export class ACLContainer extends Container<typeof AppContainer> {
       automateTrigger: ['create', 'update-own', 'delete-own'],
       automateCondition: ['create', 'update-own', 'delete-own'],
       automateAction: ['create', 'update-own', 'delete-own'],
-      automateContract: ['create', 'delete-own'],
+      automateContract: ['create', 'update-own', 'delete-own'],
     }),
   );
 

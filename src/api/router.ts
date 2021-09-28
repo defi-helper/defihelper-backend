@@ -134,6 +134,7 @@ export function route({ express, server }: { express: Express; server: Server })
           automateActionUpdate: Automate.ActionUpdateMutation,
           automateActionDelete: Automate.ActionDeleteMutation,
           automateContractCreate: Automate.ContractCreateMutation,
+          automateContractUpdate: Automate.ContractUpdateMutation,
           automateContractDelete: Automate.ContractDeleteMutation,
         },
       }),

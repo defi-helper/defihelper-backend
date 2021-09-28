@@ -117,6 +117,11 @@ export const TriggerType = new GraphQLObjectType<Automate.Trigger>({
       type: GraphQLNonNull(TriggerTypeEnum),
       description: 'Type',
     },
+    params: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Trigger parameters',
+      resolve: ({ params }) => JSON.stringify(params),
+    },
     wallet: {
       type: GraphQLNonNull(WalletType),
       description: 'Wallet of owner',
@@ -772,6 +777,11 @@ export const ContractType = new GraphQLObjectType<Automate.Contract>({
       type: GraphQLNonNull(GraphQLString),
       description: 'Adapter name',
     },
+    initParams: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Init method parameters',
+      resolve: ({ initParams }) => JSON.stringify(initParams),
+    },
     verification: {
       type: GraphQLNonNull(ContractVerificationStatusEnum),
       description: 'Verification status',
@@ -875,6 +885,10 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
               type: GraphQLNonNull(GraphQLString),
               description: 'Adapter name',
             },
+            initParams: {
+              type: GraphQLNonNull(GraphQLString),
+              description: 'Init method parameters',
+            },
           },
         }),
       ),
@@ -883,7 +897,7 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
   resolve: onlyAllowed('automateContract.create', async (root, { input }, { currentUser }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
-    const { wallet: walletId, protocol: protocolId, address, adapter } = input;
+    const { wallet: walletId, protocol: protocolId, address, adapter, initParams } = input;
     const wallet = await container.model.walletTable().where('id', walletId).first();
     if (!wallet) throw new UserInputError('Wallet not found');
     if (wallet.user !== currentUser.id) throw new UserInputError('Foreign wallet');
@@ -893,9 +907,50 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
 
     const created = await container.model
       .automateService()
-      .createContract(wallet, protocol, address, adapter);
+      .createContract(wallet, protocol, address, adapter, JSON.parse(initParams));
 
     return created;
+  }),
+};
+
+export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(ContractType),
+  args: {
+    input: {
+      type: GraphQLNonNull(
+        new GraphQLInputObjectType({
+          name: 'AutomateContractUpdateInputType',
+          fields: {
+            id: {
+              type: GraphQLNonNull(UuidType),
+              description: 'Contract identifier',
+            },
+            initParams: {
+              type: GraphQLString,
+              description: 'Init method parameters',
+            },
+          },
+        }),
+      ),
+    },
+  },
+  resolve: onlyAllowed('automateContract.update-own', async (root, { input }, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const { id, initParams } = input;
+    const contract = await container.model.automateContractTable().where('id', id).first();
+    if (!contract) throw new UserInputError('Contract not found');
+
+    const wallet = await container.model.walletTable().where('id', contract.wallet).first();
+    if (!wallet) throw new UserInputError('Wallet not found');
+    if (wallet.user !== currentUser.id) throw new UserInputError('Foreign wallet');
+
+    const updated = await container.model.automateService().updateContract({
+      ...contract,
+      initParams: typeof initParams === 'string' ? JSON.parse(initParams) : contract.initParams,
+    });
+
+    return updated;
   }),
 };
 

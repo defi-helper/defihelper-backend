@@ -192,13 +192,20 @@ export class AutomateService {
     await this.actionTable().where({ id: action.id }).delete();
   }
 
-  async createContract(wallet: Wallet, protocol: Protocol, address: string, adapter: string) {
+  async createContract(
+    wallet: Wallet,
+    protocol: Protocol,
+    address: string,
+    adapter: string,
+    initParams: Object,
+  ) {
     const created: Contract = {
       id: uuid(),
       wallet: wallet.id,
       protocol: protocol.id,
       address,
       adapter,
+      initParams,
       verification: ContractVerificationStatus.Pending,
       rejectReason: '',
       updatedAt: new Date(),

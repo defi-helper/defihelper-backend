@@ -111,6 +111,7 @@ export interface Contract {
   protocol: string;
   address: string;
   adapter: string;
+  initParams: Object;
   verification: ContractVerificationStatus;
   rejectReason: string;
   updatedAt: Date;
