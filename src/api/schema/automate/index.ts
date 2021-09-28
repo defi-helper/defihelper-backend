@@ -408,10 +408,6 @@ export const TriggerUpdateMutation: GraphQLFieldConfig<any, Request> = {
               type: GraphQLString,
               description: 'Name',
             },
-            params: {
-              type: GraphQLNonNull(GraphQLString),
-              description: 'Parameters',
-            },
             active: {
               type: GraphQLBoolean,
               description: 'Is active',
@@ -425,7 +421,7 @@ export const TriggerUpdateMutation: GraphQLFieldConfig<any, Request> = {
   resolve: onlyAllowed('automateTrigger.update-own', async (root, { input }, { currentUser }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
-    const { id, name, params, active } = input;
+    const { id, name, active } = input;
     const trigger = await container.model.automateTriggerTable().where('id', id).first();
     if (!trigger) throw new UserInputError('Trigger not found');
 
@@ -435,7 +431,6 @@ export const TriggerUpdateMutation: GraphQLFieldConfig<any, Request> = {
 
     const updated = await container.model.automateService().updateTrigger({
       ...trigger,
-      params: typeof params === 'string' ? JSON.parse(params) : trigger.params,
       name: typeof name === 'string' ? name : trigger.name,
       active: typeof active === 'boolean' ? active : trigger.active,
     });
