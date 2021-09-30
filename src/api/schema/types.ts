@@ -186,6 +186,7 @@ export const MetricGroupEnum = new GraphQLEnumType({
     hour: {},
     day: {},
     week: {},
+    month: {},
     year: {},
   },
 });

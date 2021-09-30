@@ -28,7 +28,14 @@ export default async (process: Process) => {
     .queueService()
     .push('registerContractInScanner', { contract: contract.id, events });
   if (['1', '56'].includes(contract.network)) {
-    await container.model.queueService().push('metricsContractHistory', { contract: contract.id });
+    container.model.queueService().push('metricsContractHistory', { contract: contract.id });
+    container.model.queueService().push(
+      'metricsContractScannerHistory',
+      { contract: contract.id },
+      {
+        startAt: dayjs().add(10, 'minutes').toDate(),
+      },
+    );
   }
 
   return process.done();
