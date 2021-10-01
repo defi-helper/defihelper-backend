@@ -234,6 +234,7 @@ export const metricsChartSelector = (
       avgGroupSelector
         .column(database.raw(`DATE_TRUNC('${group}', "date") AS "date"`))
         .column(database.raw(`AVG((data->>'${metric}')::numeric) AS "value"`))
+        .andWhere(database.raw(`data->>'${metric}' IS NOT NULL`))
         .groupBy(database.raw(`DATE_TRUNC('${group}', "date")`))
         .as('avgGroupSelector'),
     )
