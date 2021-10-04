@@ -13,6 +13,7 @@ import {
   UserEventSubscriptionListQuery,
   UserEventSubscriptionCreateMutation,
   UserEventSubscriptionDeleteMutation,
+  UserContactUpdateMutation,
 } from '@api/schema/notification';
 import container from '@container';
 import {
@@ -117,6 +118,7 @@ export function route({ express, server }: { express: Express; server: Server })
           vote: VoteMutation,
           unvote: UnvoteMutation,
           userContactCreate: UserContactCreateMutation,
+          userContactUpdate: UserContactUpdateMutation,
           userContactEmailConfirm: UserContactEmailConfirmMutation,
           userContactDelete: UserContactDeleteMutation,
           userEventSubscriptionCreate: UserEventSubscriptionCreateMutation,

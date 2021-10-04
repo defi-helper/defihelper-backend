@@ -18,10 +18,12 @@ export interface UserContact {
   id: string;
   user: string;
   broker: ContactBroker;
+  name: string;
   address: string;
   status: ContactStatus;
   confirmationCode: string;
   createdAt: Date;
+  updatedAt: Date;
   activatedAt?: Date;
   params?: UserContactParams;
 }

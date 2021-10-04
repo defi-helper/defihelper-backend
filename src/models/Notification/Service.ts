@@ -74,7 +74,12 @@ export class UserContactService {
     },
   );
 
-  async create(broker: ContactBroker, rawAddress: string, user: User): Promise<UserContact> {
+  async create(
+    broker: ContactBroker,
+    rawAddress: string,
+    user: User,
+    name: string,
+  ): Promise<UserContact> {
     let address = rawAddress;
     if (broker === ContactBroker.Telegram) {
       address = address.indexOf('@') === -1 ? address.slice(1) : address;
@@ -96,9 +101,11 @@ export class UserContactService {
       user: user.id,
       broker,
       address,
+      name,
       status: ContactStatus.Inactive,
       confirmationCode: uuid(),
       createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     await this.table().insert(created);
@@ -106,6 +113,16 @@ export class UserContactService {
     this.onCreated.emit({ user, contact: created });
 
     return created;
+  }
+
+  async update(contact: UserContact) {
+    const updated = {
+      ...contact,
+      updatedAt: new Date(),
+    };
+    await this.table().where({ id: contact.id }).update(updated);
+
+    return updated;
   }
 
   async activate(

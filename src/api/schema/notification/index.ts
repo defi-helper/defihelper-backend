@@ -70,6 +70,10 @@ export const UserContactType = new GraphQLObjectType<UserContact>({
       type: GraphQLNonNull(GraphQLString),
       description: 'Address',
     },
+    name: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Name',
+    },
     status: {
       type: GraphQLNonNull(UserContactStatusEnum),
       description: 'Status',
@@ -144,6 +148,9 @@ export const UserContactListQuery: GraphQLFieldConfig<any, Request> = {
             type: UserContactStatusEnum,
             description: 'Status',
           },
+          search: {
+            type: GraphQLString,
+          },
         },
       }),
       defaultValue: {},
@@ -166,13 +173,16 @@ export const UserContactListQuery: GraphQLFieldConfig<any, Request> = {
       } else if (currentUser.role !== Role.Admin) {
         this.where('user', currentUser.id);
       }
-
       if (filter.broker) {
         this.where('broker', filter.broker);
       }
-
       if (filter.status) {
         this.where('status', filter.status);
+      }
+      if (filter.search !== undefined && filter.search !== '') {
+        this.andWhere(function () {
+          this.where('name', 'iLike', `%${filter.search}%`);
+        });
       }
     });
 
@@ -201,6 +211,10 @@ export const UserContactCreateMutation: GraphQLFieldConfig<any, Request> = {
               type: GraphQLNonNull(GraphQLString),
               description: 'Address',
             },
+            name: {
+              type: GraphQLNonNull(GraphQLString),
+              description: 'Name',
+            },
           },
         }),
       ),
@@ -211,8 +225,46 @@ export const UserContactCreateMutation: GraphQLFieldConfig<any, Request> = {
       throw new AuthenticationError('UNAUTHENTICATED');
     }
 
-    const { broker, address } = input;
-    return container.model.userContactService().create(broker, address, currentUser);
+    const { broker, address, name } = input;
+    return container.model.userContactService().create(broker, address, currentUser, name);
+  },
+};
+
+export const UserContactUpdateMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(UserContactType),
+  args: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+    },
+    input: {
+      type: GraphQLNonNull(
+        new GraphQLInputObjectType({
+          name: 'UserContactUpdateInputType',
+          fields: {
+            name: {
+              type: GraphQLString,
+              description: 'Name',
+            },
+          },
+        }),
+      ),
+    },
+  },
+  resolve: async (root, { id, input }, { currentUser }) => {
+    if (!currentUser) {
+      throw new AuthenticationError('UNAUTHENTICATED');
+    }
+
+    const contact = await container.model.userContactTable().where('id', id).first();
+    if (!contact) throw new UserInputError('Contact not found');
+
+    const { name } = input;
+    const updated = await container.model.userContactService().update({
+      ...contact,
+      name: typeof name === 'string' ? name : contact.name,
+    });
+
+    return updated;
   },
 };
 
