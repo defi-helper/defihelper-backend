@@ -25,6 +25,7 @@ export class WalletService {
     network: string,
     address: string,
     publicKey: string,
+    name: string,
   ): Promise<Wallet> {
     const created = {
       id: uuid(),
@@ -33,6 +34,7 @@ export class WalletService {
       network,
       address: blockchain === 'ethereum' ? address.toLowerCase() : address,
       publicKey,
+      name,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

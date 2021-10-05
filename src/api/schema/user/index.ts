@@ -16,7 +16,7 @@ import { Wallet } from '@models/Wallet/Entity';
 import { Blockchain } from '@models/types';
 import * as WavesCrypto from '@waves/ts-lib-crypto';
 import * as WavesMarshall from '@waves/marshall';
-import { AuthenticationError } from 'apollo-server-express';
+import { AuthenticationError, UserInputError } from 'apollo-server-express';
 import { ContractType } from '../protocol';
 import {
   BlockchainEnum,
@@ -71,6 +71,10 @@ export const WalletType = new GraphQLObjectType<Wallet>({
     publicKey: {
       type: GraphQLNonNull(GraphQLString),
       description: 'Public key',
+    },
+    name: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Name',
     },
     contracts: {
       type: GraphQLNonNull(PaginateList('WalletContractListType', GraphQLNonNull(ContractType))),
@@ -850,7 +854,7 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
     const user = currentUser ?? (await container.model.userService().create(Role.Candidate));
     await container.model
       .walletService()
-      .create(user, 'ethereum', network, recoveredAddress, recoveredPubKey);
+      .create(user, 'ethereum', network, recoveredAddress, recoveredPubKey, '');
     const sid = container.model.sessionService().generate(user);
 
     return { user, sid };
@@ -927,7 +931,7 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
     const user = currentUser ?? (await container.model.userService().create(Role.Candidate));
     await container.model
       .walletService()
-      .create(user, 'waves', network, recoveredAddress, publicKey);
+      .create(user, 'waves', network, recoveredAddress, publicKey, '');
     const sid = container.model.sessionService().generate(user);
 
     return { user, sid };
@@ -963,9 +967,47 @@ export const AddWalletMutation: GraphQLFieldConfig<any, Request> = {
     const { blockchain, network, address } = input;
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
-    await container.model.walletService().create(currentUser, blockchain, network, address, '');
+    await container.model.walletService().create(currentUser, blockchain, network, address, '', '');
     const sid = container.model.sessionService().generate(currentUser);
 
     return { currentUser, sid };
   }),
+};
+
+export const WalletUpdateMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(WalletType),
+  args: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+    },
+    input: {
+      type: GraphQLNonNull(
+        new GraphQLInputObjectType({
+          name: 'WalletUpdateInputType',
+          fields: {
+            name: {
+              type: GraphQLString,
+              description: 'Name',
+            },
+          },
+        }),
+      ),
+    },
+  },
+  resolve: async (root, { id, input }, { currentUser }) => {
+    if (!currentUser) {
+      throw new AuthenticationError('UNAUTHENTICATED');
+    }
+
+    const wallet = await container.model.walletTable().where('id', id).first();
+    if (!wallet) throw new UserInputError('Wallet not found');
+
+    const { name } = input;
+    const updated = await container.model.walletService().update({
+      ...wallet,
+      name: typeof name === 'string' ? name : wallet.name,
+    });
+
+    return updated;
+  },
 };
