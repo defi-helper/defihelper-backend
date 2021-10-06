@@ -12,6 +12,7 @@ export default async () => {
     '1',
     '0x6e83b6ec760d69bfec1dee91f5f5e086df99fcbd',
     '0x047658345141c79f3b1a7dad3c0cce10f9a117604a61ab0dd880d68ee9d758f51adbea6f357ab83d5606238fd77225208ebc981f94ec6b7aacb1d859cc696e946e',
+    '',
   );
   const user = await userService.create(Role.User, 'enUS');
   const userEthWallet = await walletService.create(
@@ -20,12 +21,14 @@ export default async () => {
     '1',
     '0x9403932015576d13fb26b135ed7a35d5d95c18d4',
     '0x044a47a579a4965c3c5d22f0e92a293e10dc71f9fdd553a7a503e32903ca884d992d37e3a1e7195830367118bad8a71ec5649efd96733c2e2357e2db06675674d4',
+    '',
   );
   const userEth2Wallet = await walletService.create(
     user,
     'ethereum',
     '1',
     '0xfd6ed8b66c5831e9e2e932404caf04cd288fc988',
+    '',
     '',
   );
   const userBscWallet = await walletService.create(
@@ -34,12 +37,14 @@ export default async () => {
     '56',
     '0x9403932015576d13fb26b135ed7a35d5d95c18d4',
     '0x044a47a579a4965c3c5d22f0e92a293e10dc71f9fdd553a7a503e32903ca884d992d37e3a1e7195830367118bad8a71ec5649efd96733c2e2357e2db06675674d4',
+    '',
   );
   const userWavesWallet = await walletService.create(
     user,
     'waves',
     'main',
     '3PLSiHirrEedbi7imyfMCPRokwtGi3d4Xhg',
+    '',
     '',
   );
 

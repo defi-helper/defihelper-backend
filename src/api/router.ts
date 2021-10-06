@@ -21,6 +21,8 @@ import {
   AuthEthereumMutation,
   AuthWavesMutation,
   UserType,
+  WalletDeleteMutation,
+  WalletUpdateMutation,
 } from './schema/user';
 import * as middlewares from './middlewares';
 import {
@@ -104,6 +106,8 @@ export function route({ express, server }: { express: Express; server: Server })
           authEth: AuthEthereumMutation,
           authWaves: AuthWavesMutation,
           addWallet: AddWalletMutation,
+          walletUpdate: WalletUpdateMutation,
+          walletDelete: WalletDeleteMutation,
           protocolCreate: ProtocolCreateMutation,
           protocolUpdate: ProtocolUpdateMutation,
           protocolDelete: ProtocolDeleteMutation,

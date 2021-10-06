@@ -8,6 +8,7 @@ export interface Wallet {
   network: string;
   address: string;
   publicKey: string;
+  name: string;
   updatedAt: Date;
   createdAt: Date;
 }
