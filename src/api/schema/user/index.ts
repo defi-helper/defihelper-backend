@@ -994,13 +994,14 @@ export const WalletUpdateMutation: GraphQLFieldConfig<any, Request> = {
       ),
     },
   },
-  resolve: async (root, { id, input }, { currentUser }) => {
+  resolve: onlyAllowed('wallet.update-own', async (root, { id, input }, { currentUser }) => {
     if (!currentUser) {
       throw new AuthenticationError('UNAUTHENTICATED');
     }
 
     const wallet = await container.model.walletTable().where('id', id).first();
     if (!wallet) throw new UserInputError('Wallet not found');
+    if (wallet.user !== currentUser.id) throw new UserInputError('Foreign wallet');
 
     const { name } = input;
     const updated = await container.model.walletService().update({
@@ -1009,5 +1010,25 @@ export const WalletUpdateMutation: GraphQLFieldConfig<any, Request> = {
     });
 
     return updated;
+  }),
+};
+
+export const WalletDeleteMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLBoolean),
+  args: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+    },
   },
+  resolve: onlyAllowed('wallet.delete-own', async (root, { id }, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const wallet = await container.model.walletTable().where('id', id).first();
+    if (!wallet) throw new UserInputError('Wallet not found');
+    if (wallet.user !== currentUser.id) throw new UserInputError('Foreign wallet');
+
+    await container.model.walletService().delete(wallet);
+
+    return true;
+  }),
 };
