@@ -93,8 +93,8 @@ export default async (process: Process) => {
     acceptedFees.length > 0
       ? balance.connect(inspector).acceptClaims(
           acceptedFees.map(({ bill }) => bill.number),
-          acceptedFees.map(({ gasFee }) => gasFee.toString()),
-          acceptedFees.map(({ protocolFee }) => protocolFee.toString()),
+          acceptedFees.map(({ gasFee }) => gasFee.toFixed(0)),
+          acceptedFees.map(({ protocolFee }) => protocolFee.toFixed(0)),
         )
       : null,
     rejectedFees.length > 0

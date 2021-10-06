@@ -25,7 +25,7 @@ export default async ([network = '1']: string[]) => {
         from: balanceFrom,
       },
       {
-        colissionSign: `billingFeeOracle:ethereum:${network}`,
+        colissionSign: `billingTransferScan:ethereum:${network}`,
       },
     ),
     container.model.queueService().push(
@@ -37,7 +37,7 @@ export default async ([network = '1']: string[]) => {
         from: balanceFrom,
       },
       {
-        colissionSign: `billingFeeOracle:ethereum:${network}`,
+        colissionSign: `billingClaimScan:ethereum:${network}`,
       },
     ),
     container.model.queueService().push(
