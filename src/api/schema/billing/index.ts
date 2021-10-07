@@ -13,6 +13,7 @@ import {
   GraphQLEnumType,
   GraphQLFloat,
   GraphQLInputObjectType,
+  GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
@@ -322,6 +323,9 @@ export const UserBillingType = new GraphQLObjectType<User>({
               claim: {
                 type: GraphQLBoolean,
               },
+              wallet: {
+                type: GraphQLList(GraphQLNonNull(UuidType)),
+              },
             },
           }),
           defaultValue: {},
@@ -359,6 +363,9 @@ export const UserBillingType = new GraphQLObjectType<User>({
               } else {
                 this.whereNull(`${transferTableName}.bill`);
               }
+            }
+            if (Array.isArray(filter.wallet) && filter.wallet.length > 0) {
+              this.whereIn(`${walletTableName}.id`, filter.wallet);
             }
           });
 
