@@ -22,7 +22,8 @@ export async function contractMetrics(process: Process) {
   if (typeof contractAdapterFactory !== 'function') throw new Error('Contract adapter not found');
 
   const blockchain = container.blockchain[contract.blockchain];
-  const provider = blockchain.byNetwork(contract.network).provider();
+  const network = blockchain.byNetwork(contract.network);
+  const provider = blockNumber === 'latest' ? network.provider() : network.providerHistorical();
 
   let date = new Date();
   if (provider instanceof ethers.providers.JsonRpcProvider && blockNumber !== 'latest') {
@@ -73,7 +74,8 @@ export async function walletMetrics(process: Process) {
   if (typeof contractAdapterFactory !== 'function') throw new Error('Contract adapter not found');
 
   const blockchain = container.blockchain[contract.blockchain];
-  const provider = blockchain.byNetwork(contract.network).provider();
+  const network = blockchain.byNetwork(contract.network);
+  const provider = blockNumber === 'latest' ? network.provider() : network.providerHistorical();
 
   let date = new Date();
   if (provider instanceof ethers.providers.JsonRpcProvider && blockNumber !== 'latest') {

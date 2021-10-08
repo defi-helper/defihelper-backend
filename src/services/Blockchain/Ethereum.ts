@@ -1,4 +1,4 @@
-import { Container, singleton } from '@services/Container';
+import { Container, Factory, singleton } from '@services/Container';
 import dfhContracts from '@defihelper/networks/contracts.json';
 import { isKey } from '@services/types';
 import axios from 'axios';
@@ -7,11 +7,31 @@ import { abi as erc20ABI } from '@defihelper/networks/abi/ERC20.json';
 import { abi as erc1167ABI } from '@defihelper/networks/abi/ERC1167.json';
 import { abi as governorBravoABI } from '@defihelper/networks/abi/GovernorBravo.json';
 import { abi as governanceTokenABI } from '@defihelper/networks/abi/GovernanceToken.json';
+import { abi as treasuryABI } from '@defihelper/networks/abi/Treasury.json';
 import automateABI from './abi/ethereum/automate.json';
 import masterChefV1ABI from './abi/ethereum/masterChefV1ABI.json';
 import uniswapV2PairABI from './abi/ethereum/uniswapPair.json';
 import pancakeSmartChefInitializable from './abi/ethereum/pancakeSmartChefInitializableABI.json';
 import synthetixStaking from './abi/ethereum/synthetixStakingABI.json';
+
+function providerFactory(host: string) {
+  return () => new ethers.providers.JsonRpcProvider(host);
+}
+
+function providerRandomizerFactory(factories: Array<Factory<ethers.providers.JsonRpcProvider>>) {
+  return () => {
+    if (factories.length === 0) throw new Error('Providers not found');
+
+    return factories[Math.floor(Math.random() * factories.length)]();
+  };
+}
+
+function signersFactory(
+  consumersPrivateKeys: string[],
+  provider: ethers.providers.JsonRpcProvider,
+) {
+  return consumersPrivateKeys.map((privateKey) => new ethers.Wallet(privateKey, provider));
+}
 
 export interface EtherscanContractAbiResponse {
   status: string;
@@ -41,17 +61,6 @@ function useEtherscanContractAbi(host: string) {
   };
 }
 
-function providerFactory(host: string) {
-  return () => new ethers.providers.JsonRpcProvider(host);
-}
-
-function consumersFactory(
-  consumersPrivateKeys: string[],
-  provider: ethers.providers.JsonRpcProvider,
-) {
-  return consumersPrivateKeys.map((privateKey) => new ethers.Wallet(privateKey, provider));
-}
-
 function coingeckoPriceFeedUSD(coinId: string) {
   return async () => {
     const {
@@ -70,100 +79,99 @@ function coingeckoPriceFeedUSD(coinId: string) {
   };
 }
 
+export interface NetworkConfig {
+  node: string[];
+  historicalNode: string[];
+  avgBlockTime: number;
+  inspectors: string[];
+  consumers: string[];
+}
+
+function networkFactory(
+  id: string,
+  name: string,
+  txExplorerURL: URL,
+  walletExplorerURL: URL,
+  getContractAbi: (address: string) => Promise<ethers.ContractInterface>,
+  priceFeedUSD: () => Promise<string>,
+  { node, historicalNode, avgBlockTime, inspectors, consumers }: NetworkConfig,
+) {
+  const provider = providerRandomizerFactory(node.map((host) => singleton(providerFactory(host))));
+
+  return {
+    name,
+    provider,
+    providerHistorical: providerRandomizerFactory(
+      historicalNode.map((host) => singleton(providerFactory(host))),
+    ),
+    avgBlockTime,
+    txExplorerURL,
+    walletExplorerURL,
+    getContractAbi,
+    priceFeedUSD,
+    inspector: () => new ethers.Wallet(inspectors[0], provider()),
+    consumers: () => signersFactory(consumers, provider()),
+    dfhContracts: () => (isKey(dfhContracts, id) ? dfhContracts[id] : null),
+  };
+}
+
 export interface Config {
-  ethMainNode: string;
-  ethMainAvgBlockTime: number;
-  ethMainInspector: string;
-  ethMainConsumers: string[];
-  ethRopstenNode: string;
-  ethRopstenAvgBlockTime: number;
-  ethRopstenInspector: string;
-  ethRopstenConsumers: string[];
-  bscMainNode: string;
-  bscMainAvgBlockTime: number;
-  bscMainInspector: string;
-  bscMainConsumers: string[];
-  polygonMainNode: string;
-  polygonMainAvgBlockTime: number;
-  polygonMainInspector: string;
-  polygonMainConsumers: string[];
-  localNode: string;
-  localAvgBlockTime: number;
-  localInspector: string;
-  localConsumers: string[];
+  eth: NetworkConfig;
+  ethRopsten: NetworkConfig;
+  bsc: NetworkConfig;
+  polygon: NetworkConfig;
+  local: NetworkConfig;
 }
 
 export type Networks = keyof BlockchainContainer['networks'];
 
 export class BlockchainContainer extends Container<Config> {
   readonly networks = {
-    '1': {
-      name: 'Ethereum',
-      provider: singleton(providerFactory(this.parent.ethMainNode)),
-      avgBlockTime: this.parent.ethMainAvgBlockTime,
-      txExplorerURL: new URL('https://etherscan.io/tx'),
-      walletExplorerURL: new URL('https://etherscan.io/address'),
-      getContractAbi: useEtherscanContractAbi('https://api.etherscan.io/api'),
-      priceFeedUSD: coingeckoPriceFeedUSD('ethereum'),
-      inspector: () => new ethers.Wallet(this.parent.ethMainInspector, this.networks[1].provider()),
-      consumers: () => consumersFactory(this.parent.ethMainConsumers, this.networks[1].provider()),
-      dfhContracts: () => null,
-    },
-    '3': {
-      name: 'Ethereum Ropsten',
-      provider: singleton(providerFactory(this.parent.ethRopstenNode)),
-      avgBlockTime: this.parent.ethRopstenAvgBlockTime,
-      txExplorerURL: new URL('https://ropsten.etherscan.io/tx'),
-      walletExplorerURL: new URL('https://ropsten.etherscan.io/address'),
-      getContractAbi: useEtherscanContractAbi('https://api-ropsten.etherscan.io/api'),
-      priceFeedUSD: coingeckoPriceFeedUSD('ethereum'),
-      inspector: () =>
-        new ethers.Wallet(this.parent.ethRopstenInspector, this.networks[3].provider()),
-      consumers: () =>
-        consumersFactory(this.parent.ethRopstenConsumers, this.networks[3].provider()),
-      dfhContracts: () => dfhContracts['3'],
-    },
-    '56': {
-      name: 'Binance Smart Chain',
-      provider: singleton(providerFactory(this.parent.bscMainNode)),
-      avgBlockTime: this.parent.bscMainAvgBlockTime,
-      txExplorerURL: new URL('https://bscscan.com/tx'),
-      walletExplorerURL: new URL('https://bscscan.com/address'),
-      getContractAbi: useEtherscanContractAbi('https://api.bscscan.com/api'),
-      priceFeedUSD: coingeckoPriceFeedUSD('binancecoin'),
-      inspector: () =>
-        new ethers.Wallet(this.parent.bscMainInspector, this.networks[56].provider()),
-      consumers: () => consumersFactory(this.parent.bscMainConsumers, this.networks[56].provider()),
-      dfhContracts: () => null,
-    },
-    '137': {
-      name: 'Polygon',
-      provider: singleton(providerFactory(this.parent.polygonMainNode)),
-      avgBlockTime: this.parent.polygonMainAvgBlockTime,
-      txExplorerURL: new URL('https://polygonscan.com/tx'),
-      walletExplorerURL: new URL('https://polygonscan.com/address'),
-      getContractAbi: useEtherscanContractAbi('https://api.polygonscan.com/api'),
-      priceFeedUSD: coingeckoPriceFeedUSD('matic-network'),
-      inspector: () =>
-        new ethers.Wallet(this.parent.polygonMainInspector, this.networks[137].provider()),
-      consumers: () =>
-        consumersFactory(this.parent.polygonMainConsumers, this.networks[137].provider()),
-      dfhContracts: () => null,
-    },
-    '31337': {
-      name: '',
-      provider: singleton(providerFactory(this.parent.localNode)),
-      avgBlockTime: this.parent.localAvgBlockTime,
-      txExplorerURL: new URL('https://etherscan.io/tx'),
-      walletExplorerURL: new URL('https://etherscan.io/address'),
-      getContractAbi: useEtherscanContractAbi('https://api.etherscan.io/api'),
-      priceFeedUSD: coingeckoPriceFeedUSD('ethereum'),
-      inspector: () =>
-        new ethers.Wallet(this.parent.localInspector, this.networks[31337].provider()),
-      consumers: () =>
-        consumersFactory(this.parent.localConsumers, this.networks[31337].provider()),
-      dfhContracts: () => null,
-    },
+    '1': networkFactory(
+      '1',
+      'Ethereum',
+      new URL('https://etherscan.io/tx'),
+      new URL('https://etherscan.io/address'),
+      useEtherscanContractAbi('https://api.etherscan.io/api'),
+      coingeckoPriceFeedUSD('ethereum'),
+      this.parent.eth,
+    ),
+    '3': networkFactory(
+      '3',
+      'Ethereum Ropsten',
+      new URL('https://ropsten.etherscan.io/tx'),
+      new URL('https://ropsten.etherscan.io/address'),
+      useEtherscanContractAbi('https://api-ropsten.etherscan.io/api'),
+      coingeckoPriceFeedUSD('ethereum'),
+      this.parent.ethRopsten,
+    ),
+    '56': networkFactory(
+      '56',
+      'Binance Smart Chain',
+      new URL('https://bscscan.com/tx'),
+      new URL('https://bscscan.com/address'),
+      useEtherscanContractAbi('https://api.bscscan.com/api'),
+      coingeckoPriceFeedUSD('binancecoin'),
+      this.parent.bsc,
+    ),
+    '137': networkFactory(
+      '137',
+      'Polygon',
+      new URL('https://polygonscan.com/tx'),
+      new URL('https://polygonscan.com/address'),
+      useEtherscanContractAbi('https://api.polygonscan.com/api'),
+      coingeckoPriceFeedUSD('matic-network'),
+      this.parent.polygon,
+    ),
+    '31337': networkFactory(
+      '31337',
+      'Localhost',
+      new URL('https://etherscan.io/tx'),
+      new URL('https://etherscan.io/address'),
+      useEtherscanContractAbi('https://api.etherscan.io/api'),
+      coingeckoPriceFeedUSD('ethereum'),
+      this.parent.local,
+    ),
   } as const;
 
   readonly isNetwork = (network: string | number): network is Networks => {
@@ -193,6 +201,7 @@ export class BlockchainContainer extends Container<Config> {
     synthetixStaking,
     governorBravoABI,
     governanceTokenABI,
+    treasuryABI,
     automateABI,
   };
 }

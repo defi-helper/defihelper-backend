@@ -1,10 +1,19 @@
+import { Config as EthereumConfig } from '@services/Blockchain/Ethereum';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
+function int(value: string): number {
+  return parseInt(value, 10);
+}
+
+function array(value: string): string[] {
+  return JSON.parse(value);
+}
+
 export default {
   api: {
-    port: parseInt(process.env.API_PORT ?? '9000', 10),
+    port: int(process.env.API_PORT ?? '9000'),
     externalUrl: process.env.API_EXTERNAL_URL ?? 'https://backend-local.defihelper.io',
     internalUrl: process.env.API_INTERNAL_URL ?? 'https://backend-local.defihelper.io',
     secret: process.env.API_SECRET ?? 'defiHelperApiSecret',
@@ -14,70 +23,65 @@ export default {
   },
   database: {
     host: process.env.DATABASE_HOST ?? 'localhost',
-    port: parseInt(process.env.DATABASE_PORT ?? '5432', 10),
+    port: int(process.env.DATABASE_PORT ?? '5432'),
     user: process.env.DATABASE_USER ?? '',
     password: process.env.DATABASE_PASSWORD ?? '',
     database: process.env.DATABASE_NAME ?? '',
   },
   cache: {
     host: process.env.CACHE_HOST ?? '127.0.0.1',
-    port: parseInt(process.env.CACHE_PORT ?? '6379', 10),
+    port: int(process.env.CACHE_PORT ?? '6379'),
     password: process.env.CACHE_PASSWORD ?? undefined,
     database: process.env.CACHE_DATABASE ?? undefined,
   },
   blockchain: {
     ethereum: {
       // Main
-      ethMainNode: process.env.ETH_NODE ?? '',
-      ethMainAvgBlockTime: 13.2,
-      ethMainInspector: process.env.ETH_INSPECTOR ?? '',
-      ethMainConsumers: [
-        process.env.ETH_CONSUMER1 ?? '',
-        process.env.ETH_CONSUMER2 ?? '',
-        process.env.ETH_CONSUMER3 ?? '',
-      ].filter((pk) => pk !== ''),
+      eth: {
+        node: array(process.env.ETH_NODE ?? '[]'),
+        historicalNode: array(process.env.ETH_NODE_HISTORICAL ?? '[]'),
+        inspectors: array(process.env.ETH_INSPECTORS ?? '[]'),
+        consumers: array(process.env.ETH_CONSUMERS ?? '[]'),
+        avgBlockTime: 13.2,
+      },
       // Ropsten
-      ethRopstenNode: process.env.ETH_ROPSTEN_NODE ?? '',
-      ethRopstenAvgBlockTime: 13.2,
-      ethRopstenInspector: process.env.ETH_ROPSTEN_INSPECTOR ?? '',
-      ethRopstenConsumers: [
-        process.env.ETH_ROPSTEN_CONSUMER1 ?? '',
-        process.env.ETH_ROPSTEN_CONSUMER2 ?? '',
-        process.env.ETH_ROPSTEN_CONSUMER3 ?? '',
-      ].filter((pk) => pk !== ''),
+      ethRopsten: {
+        node: array(process.env.ETH_ROPSTEN_NODE ?? '[]'),
+        historicalNode: array(process.env.ETH_ROPSTEN_NODE_HISTORICAL ?? '[]'),
+        inspectors: array(process.env.ETH_ROPSTEN_INSPECTORS ?? '[]'),
+        consumers: array(process.env.ETH_ROPSTEN_CONSUMERS ?? '[]'),
+        avgBlockTime: 13.2,
+      },
       // BSC
-      bscMainNode: process.env.BSC_NODE ?? '',
-      bscMainAvgBlockTime: 3,
-      bscMainInspector: process.env.BSC_INSPECTOR ?? '',
-      bscMainConsumers: [
-        process.env.BSC_CONSUMER1 ?? '',
-        process.env.BSC_CONSUMER2 ?? '',
-        process.env.BSC_CONSUMER3 ?? '',
-      ].filter((pk) => pk !== ''),
+      bsc: {
+        node: array(process.env.BSC_NODE ?? '[]'),
+        historicalNode: array(process.env.BSC_NODE_HISTORICAL ?? '[]'),
+        inspectors: array(process.env.BSC_INSPECTORS ?? '[]'),
+        consumers: array(process.env.BSC_CONSUMERS ?? '[]'),
+        avgBlockTime: 3,
+      },
       // Polygon
-      polygonMainNode: process.env.POLYGON_NODE ?? '',
-      polygonMainAvgBlockTime: 2.5,
-      polygonMainInspector: process.env.POLYGON_INSPECTOR ?? '',
-      polygonMainConsumers: [
-        process.env.ETH_POLYGON_CONSUMER1 ?? '',
-        process.env.ETH_POLYGON_CONSUMER2 ?? '',
-        process.env.ETH_POLYGON_CONSUMER3 ?? '',
-      ].filter((pk) => pk !== ''),
+      polygon: {
+        node: array(process.env.POLYGON_NODE ?? '[]'),
+        historicalNode: array(process.env.POLYGON_NODE_HISTORICAL ?? '[]'),
+        inspectors: array(process.env.POLYGON_INSPECTORS ?? '[]'),
+        consumers: array(process.env.ETH_POLYGON_CONSUMERS ?? '[]'),
+        avgBlockTime: 2.5,
+      },
       // Local
-      localNode: process.env.ETH_LOCAL_NODE ?? '',
-      localAvgBlockTime: 0.1,
-      localInspector: process.env.ETH_LOCAL_INSPECTOR ?? '',
-      localConsumers: [
-        process.env.ETH_LOCAL_CONSUMER1 ?? '',
-        process.env.ETH_LOCAL_CONSUMER2 ?? '',
-        process.env.ETH_LOCAL_CONSUMER3 ?? '',
-      ].filter((pk) => pk !== ''),
-    },
+      local: {
+        node: array(process.env.ETH_LOCAL_NODE ?? '[]'),
+        historicalNode: array(process.env.ETH_LOCAL_NODE_HISTORICAL ?? '[]'),
+        inspectors: array(process.env.ETH_LOCAL_INSPECTORS ?? '[]'),
+        consumers: array(process.env.ETH_LOCAL_CONSUMERS ?? '[]'),
+        avgBlockTime: 0.1,
+      },
+    } as EthereumConfig,
   },
   email: {
     from: process.env.EMAIL_FROM ?? '',
     host: process.env.EMAIL_SMTP_HOST ?? '',
-    port: parseInt(process.env.EMAIL_SMTP_PORT ?? '25', 10),
+    port: int(process.env.EMAIL_SMTP_PORT ?? '25'),
     auth: {
       user: process.env.EMAIL_SMTP_USER ?? '',
       pass: process.env.EMAIL_SMTP_PASS ?? '',
@@ -87,7 +91,7 @@ export default {
     token: process.env.TELEGRAM_TOKEN ?? '',
   },
   session: {
-    ttl: parseInt(process.env.SESSION_TTL ?? '600', 10),
+    ttl: int(process.env.SESSION_TTL ?? '600'),
   },
   adapters: {
     host: process.env.ADAPTERS_HOST ?? 'localhost',
