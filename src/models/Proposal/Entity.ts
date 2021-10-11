@@ -2,6 +2,7 @@ import { tableFactory as createTableFactory } from '@services/Database';
 
 export enum Status {
   Open = 'open',
+  InProcess = 'in_process',
   Executed = 'executed',
   Defeated = 'defeated',
 }

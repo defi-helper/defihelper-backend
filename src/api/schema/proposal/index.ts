@@ -87,6 +87,9 @@ export const StatusEnum = new GraphQLEnumType({
     [Status.Open]: {
       description: 'Proposal is open for vote',
     },
+    [Status.InProcess]: {
+      description: 'Proposal in process',
+    },
     [Status.Executed]: {
       description: 'Proposal is executed',
     },
