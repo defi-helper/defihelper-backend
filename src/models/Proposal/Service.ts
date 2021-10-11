@@ -16,6 +16,8 @@ export class ProposalService {
       description,
       author: author.id,
       status: Status.Open,
+      plannedAt: null,
+      releasedAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

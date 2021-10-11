@@ -164,6 +164,14 @@ export const ProposalType = new GraphQLObjectType<Proposal>({
         };
       },
     },
+    plannedAt: {
+      type: DateTimeType,
+      description: 'Planned date',
+    },
+    releasedAt: {
+      type: DateTimeType,
+      description: 'Released date',
+    },
     updatedAt: {
       type: GraphQLNonNull(DateTimeType),
       description: 'Date of updated',
@@ -298,6 +306,14 @@ export const ProposalUpdateMutation: GraphQLFieldConfig<any, Request> = {
               type: StatusEnum,
               description: 'Current status',
             },
+            plannedAt: {
+              type: DateTimeType,
+              description: 'Planned date',
+            },
+            releasedAt: {
+              type: DateTimeType,
+              description: 'Released date',
+            },
           },
         }),
       ),
@@ -316,7 +332,7 @@ export const ProposalUpdateMutation: GraphQLFieldConfig<any, Request> = {
       throw new ForbiddenError('FORBIDDEN');
     }
 
-    const { title, description, status } = input;
+    const { title, description, status, plannedAt, releasedAt } = input;
     if (status !== undefined && !acl.isAllowed('proposal', 'update')) {
       throw new ForbiddenError('FORBIDDEN');
     }
@@ -325,6 +341,8 @@ export const ProposalUpdateMutation: GraphQLFieldConfig<any, Request> = {
       title: typeof title === 'string' ? title : proposal.title,
       description: typeof description === 'string' ? description : proposal.description,
       status: (typeof status === 'string' ? status : proposal.status) as Status,
+      plannedAt: plannedAt instanceof Date ? plannedAt : proposal.plannedAt,
+      releasedAt: releasedAt instanceof Date ? releasedAt : proposal.releasedAt,
     });
 
     return updated;

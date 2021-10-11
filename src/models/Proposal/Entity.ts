@@ -13,6 +13,8 @@ export interface Proposal {
   description: string;
   author: string | null;
   status: Status;
+  plannedAt: Date | null;
+  releasedAt: Date | null;
   updatedAt: Date;
   createdAt: Date;
 }
