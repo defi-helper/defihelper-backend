@@ -27,7 +27,10 @@ export class TelegramService {
             .where('confirmationCode', confirmationCode)
             .first();
           if (!userContact || userContact.status === ContactStatus.Active) {
-            await this.bot.sendMessage(message.chat.id, 'This code has not found');
+            await this.bot.sendMessage(
+              message.chat.id,
+              'Please use https://defihelper.io to register',
+            );
             return;
           }
 
