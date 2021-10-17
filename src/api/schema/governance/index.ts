@@ -395,11 +395,11 @@ export const GovTokenQuery: GraphQLFieldConfig<any, Request> = {
   },
   resolve: async () => {
     return {
-      price: '0.915',
-      totalSupply: '1000000000',
-      marketCap: '915000000',
+      price: '0.02',
+      totalSupply: '0',
+      marketCap: '0',
       circulation: {
-        total: '5000000',
+        total: '0',
         market: {
           timeLeft: '5',
           timeTotal: '8',
