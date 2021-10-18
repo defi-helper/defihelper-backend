@@ -104,7 +104,7 @@ export const RestakeStrategyQuery: GraphQLFieldConfig<any, Request> = {
   },
   resolve: async (root, { balance, apy }) => {
     const apd = apy / 365;
-    const fee = 0.5;
+    const fee = 7;
     const seq = 365;
 
     const holdPoints = range(1, seq + 1).reduce(
@@ -134,12 +134,13 @@ export const RestakeStrategyQuery: GraphQLFieldConfig<any, Request> = {
         },
       },
     );
-    const optimalPoints = calcRestakeOptimal(balance, 0, apd, fee, 365, optimalRes);
+    const optimalPoints = calcRestakeOptimal(balance, 0, apd, fee, seq, optimalRes);
+    const targetDays = [31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365];
 
     return {
-      hold: range(0, 13).map((k) => holdPoints[k * 30]),
-      everyDay: range(0, 13).map((k) => everyDayPoints[k * 30]),
-      optimal: range(0, 13).map((k) => optimalPoints[k * 30]),
+      hold: targetDays.map((t) => holdPoints[t]),
+      everyDay: targetDays.map((t) => everyDayPoints[t]),
+      optimal: targetDays.map((t) => optimalPoints.find((d) => d.t === t)),
     };
   },
 };
