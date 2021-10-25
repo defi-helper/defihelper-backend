@@ -120,6 +120,7 @@ export interface Config {
   ethRopsten: NetworkConfig;
   bsc: NetworkConfig;
   polygon: NetworkConfig;
+  avalanch: NetworkConfig;
   local: NetworkConfig;
 }
 
@@ -162,6 +163,20 @@ export class BlockchainContainer extends Container<Config> {
       useEtherscanContractAbi('https://api.polygonscan.com/api'),
       coingeckoPriceFeedUSD('matic-network'),
       this.parent.polygon,
+    ),
+    '43114': networkFactory(
+      '43114',
+      'Avalanch',
+      new URL('https://cchain.explorer.avax.network/tx'),
+      new URL('https://cchain.explorer.avax.network/address'),
+      async (address: string) => {
+        const res = await axios.get(
+          `https://repo.sourcify.dev/contracts/full_match/43114/${address}/metadata.json`,
+        );
+        return res.data.output.abi;
+      },
+      coingeckoPriceFeedUSD('avalanche-2'),
+      this.parent.avalanch,
     ),
     '31337': networkFactory(
       '31337',
