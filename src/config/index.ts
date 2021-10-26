@@ -68,6 +68,14 @@ export default {
         consumers: array(process.env.ETH_POLYGON_CONSUMERS ?? '[]'),
         avgBlockTime: 2.5,
       },
+      // Avalanch
+      avalanch: {
+        node: array(process.env.AVALANCH_NODE ?? '[]'),
+        historicalNode: array(process.env.AVALANCH_NODE_HISTORICAL ?? '[]'),
+        inspectors: array(process.env.AVALANCH_INSPECTORS ?? '[]'),
+        consumers: array(process.env.ETH_AVALANCH_CONSUMERS ?? '[]'),
+        avgBlockTime: 1,
+      },
       // Local
       local: {
         node: array(process.env.ETH_LOCAL_NODE ?? '[]'),

@@ -8,7 +8,7 @@ export interface MasterChiefScannerParams {
   protocolDescription: string;
   adapterName: string;
   farmingAdapterName: string;
-  network: '1' | '56' | '137';
+  network: '1' | '56' | '137' | '43114';
   reservedPools: number[];
 }
 
