@@ -94,6 +94,7 @@ export function route({ express, server }: { express: Express; server: Server })
           govProposals: GovProposalListQuery,
           govReceipt: GovReceiptQuery,
           govVotes: GovVotesQuery,
+          automateDescription: Automate.DescriptionQuery,
           automateTrigger: Automate.TriggerQuery,
           automateTriggers: Automate.TriggerListQuery,
           automateContracts: Automate.ContractListQuery,

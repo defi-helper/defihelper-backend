@@ -14,6 +14,7 @@ import {
   GraphQLObjectType,
   GraphQLString,
   GraphQLList,
+  GraphQLFieldConfigMap,
 } from 'graphql';
 import {
   DateTimeType,
@@ -404,6 +405,101 @@ export const TriggerListQuery: GraphQLFieldConfig<any, Request> = {
       },
     };
   },
+};
+
+export const DescriptionType = new GraphQLObjectType({
+  name: 'AutomateDescriptionType',
+  fields: {
+    name: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    description: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+  },
+});
+
+export const DescriptionQuery: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(
+    new GraphQLObjectType({
+      name: 'AutomatesDescriptionType',
+      fields: {
+        triggers: {
+          type: GraphQLNonNull(
+            new GraphQLObjectType({
+              name: 'AutomateTriggersDescriptionType',
+              fields: Object.values(Automate.TriggerType).reduce(
+                (res: GraphQLFieldConfigMap<any, Request>, value: string) => ({
+                  ...res,
+                  [value]: {
+                    type: GraphQLNonNull(DescriptionType),
+                    resolve: (root, args, { currentUser }) => {
+                      const i18n = container.i18n.byUser(currentUser);
+                      return {
+                        name: i18n.t(`automate:trigger:${value}:name`),
+                        description: i18n.t(`automate:trigger:${value}:description`),
+                      };
+                    },
+                  },
+                }),
+                {},
+              ),
+            }),
+          ),
+          resolve: () => ({}),
+        },
+        conditions: {
+          type: GraphQLNonNull(
+            new GraphQLObjectType({
+              name: 'AutomateConditionsDescriptionType',
+              fields: Object.keys(Conditions).reduce(
+                (res: GraphQLFieldConfigMap<any, Request>, value: string) => ({
+                  ...res,
+                  [value]: {
+                    type: GraphQLNonNull(DescriptionType),
+                    resolve: (root, args, { currentUser }) => {
+                      const i18n = container.i18n.byUser(currentUser);
+                      return {
+                        name: i18n.t(`automate:condition:${value}:name`),
+                        description: i18n.t(`automate:condition:${value}:description`),
+                      };
+                    },
+                  },
+                }),
+                {},
+              ),
+            }),
+          ),
+          resolve: () => ({}),
+        },
+        actions: {
+          type: GraphQLNonNull(
+            new GraphQLObjectType({
+              name: 'AutomateActionsDescriptionType',
+              fields: Object.keys(Actions).reduce(
+                (res: GraphQLFieldConfigMap<any, Request>, value: string) => ({
+                  ...res,
+                  [value]: {
+                    type: GraphQLNonNull(DescriptionType),
+                    resolve: (root, args, { currentUser }) => {
+                      const i18n = container.i18n.byUser(currentUser);
+                      return {
+                        name: i18n.t(`automate:action:${value}:name`),
+                        description: i18n.t(`automate:action:${value}:description`),
+                      };
+                    },
+                  },
+                }),
+                {},
+              ),
+            }),
+          ),
+          resolve: () => ({}),
+        },
+      },
+    }),
+  ),
+  resolve: () => ({}),
 };
 
 export const TriggerCreateMutation: GraphQLFieldConfig<any, Request> = {

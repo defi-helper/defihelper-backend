@@ -15,5 +15,15 @@ export default {
     'Confirm': 'Подтвердить',
     'New {{eventName}} events in {{contractAddress}} on {{network}}:':
       'Новое событие {{eventName}} в контракте {{contractAddress}} сети {{network}}:',
+    'automate:trigger:contractEvent:name': 'Событие контракта',
+    'automate:trigger:contractEvent:description': 'Вызов триггера в ответ на событие в контракте',
+    'automate:trigger:everyMonth:name': 'Периодически',
+    'automate:trigger:everyMonth:description': 'Вызов триггера каждый месяц',
+    'automate:trigger:everyWeek:name': 'Периодически',
+    'automate:trigger:everyWeek:description': 'Вызов триггера каждую неделю',
+    'automate:trigger:everyDay:name': 'Периодически',
+    'automate:trigger:everyDay:description': 'Вызов триггера каждый день',
+    'automate:trigger:everyHour:name': 'Периодически',
+    'automate:trigger:everyHour:description': 'Вызов триггера каждый час',
   },
 };
