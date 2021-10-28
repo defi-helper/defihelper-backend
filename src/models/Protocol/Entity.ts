@@ -1,6 +1,19 @@
 import { tableFactory as createTableFactory } from '@services/Database';
 import { Blockchain } from '@models/types';
 
+export interface ProtocolLink {
+  id: string;
+  name: string;
+  value: string;
+}
+
+export interface ProtocolLinkMap {
+  social?: ProtocolLink[];
+  listing?: ProtocolLink[];
+  audit?: ProtocolLink[];
+  other?: ProtocolLink[];
+}
+
 export interface Protocol {
   id: string;
   adapter: string;
@@ -8,6 +21,7 @@ export interface Protocol {
   description: string;
   icon: string | null;
   link: string | null;
+  links: ProtocolLinkMap;
   hidden: boolean;
   updatedAt: Date;
   createdAt: Date;
@@ -19,6 +33,10 @@ export const protocolTableFactory = createTableFactory<Protocol>(protocolTableNa
 
 export type ProtocolTable = ReturnType<ReturnType<typeof protocolTableFactory>>;
 
+export interface ContractAutomate {
+  adapters: string[];
+}
+
 export interface Contract {
   id: string;
   protocol: string;
@@ -28,6 +46,7 @@ export interface Contract {
   deployBlockNumber: string | null;
   adapter: string;
   layout: string;
+  automate: ContractAutomate;
   name: string;
   description: string;
   link: string | null;

@@ -11,6 +11,8 @@ import {
 } from 'graphql';
 import {
   Contract,
+  ProtocolLink,
+  ProtocolLinkMap,
   contractTableName,
   Protocol,
   walletContractLinkTableName,
@@ -67,6 +69,11 @@ export const ContractType = new GraphQLObjectType<Contract>({
     deployBlockNumber: {
       type: GraphQLString,
       description: 'Contract deployment block number',
+    },
+    automates: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString))),
+      description: 'Usable automates',
+      resolve: ({ automate }) => automate.adapters,
     },
     name: {
       type: GraphQLNonNull(GraphQLString),
@@ -196,6 +203,11 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
               type: GraphQLNonNull(GraphQLString),
               description: 'Layout name',
             },
+            automates: {
+              type: GraphQLList(GraphQLNonNull(GraphQLString)),
+              description: 'Usable automates',
+              defaultValue: [],
+            },
             name: {
               type: GraphQLNonNull(GraphQLString),
               description: 'Name',
@@ -239,6 +251,7 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
         address,
         deployBlockNumber,
         adapter,
+        automates,
         layout,
         name,
         description,
@@ -256,6 +269,7 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
           deployBlockNumber,
           adapter,
           layout,
+          automates,
           name,
           description,
           link,
@@ -303,6 +317,10 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
               type: GraphQLString,
               description: 'Layout name',
             },
+            automates: {
+              type: GraphQLList(GraphQLNonNull(GraphQLString)),
+              description: 'Usable automates',
+            },
             name: {
               type: GraphQLString,
               description: 'Name',
@@ -341,6 +359,7 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
       deployBlockNumber,
       adapter,
       layout,
+      automates,
       name,
       description,
       link,
@@ -355,6 +374,7 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
         typeof deployBlockNumber === 'string' ? deployBlockNumber : contract.deployBlockNumber,
       adapter: typeof adapter === 'string' ? adapter : contract.adapter,
       layout: typeof layout === 'string' ? layout : contract.layout,
+      automate: Array.isArray(automates) ? { adapters: automates } : contract.automate,
       name: typeof name === 'string' ? name : contract.name,
       description: typeof description === 'string' ? description : contract.description,
       link: typeof link === 'string' ? link : contract.link,
@@ -457,6 +477,46 @@ export const ContractWalletUnlinkMutation: GraphQLFieldConfig<any, Request> = {
   },
 };
 
+export const ProtocolLinkType = new GraphQLObjectType<ProtocolLink>({
+  name: 'ProtocolLinkType',
+  fields: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+      description: 'Identificator',
+    },
+    name: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Name',
+    },
+    value: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Value',
+    },
+  },
+});
+
+export const ProtocolLinkMapType = new GraphQLObjectType<ProtocolLinkMap>({
+  name: 'ProtocolLinkMapType',
+  fields: {
+    social: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(ProtocolLinkType))),
+      resolve: ({ social }) => social ?? [],
+    },
+    listing: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(ProtocolLinkType))),
+      resolve: ({ listing }) => listing ?? [],
+    },
+    audit: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(ProtocolLinkType))),
+      resolve: ({ audit }) => audit ?? [],
+    },
+    other: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(ProtocolLinkType))),
+      resolve: ({ other }) => other ?? [],
+    },
+  },
+});
+
 export const ProtocolType = new GraphQLObjectType<Protocol>({
   name: 'ProtocolType',
   fields: {
@@ -483,6 +543,10 @@ export const ProtocolType = new GraphQLObjectType<Protocol>({
     link: {
       type: GraphQLString,
       description: 'Website URL',
+    },
+    links: {
+      type: GraphQLNonNull(ProtocolLinkMapType),
+      description: 'Links',
     },
     hidden: {
       type: GraphQLNonNull(GraphQLBoolean),
@@ -742,6 +806,42 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
   },
 };
 
+export const ProtocolLinkInputType = new GraphQLInputObjectType({
+  name: 'ProtocolLinkInputType',
+  fields: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+      description: 'Identificator',
+    },
+    name: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Name',
+    },
+    value: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Value',
+    },
+  },
+});
+
+export const ProtocolLinkMapInputType = new GraphQLInputObjectType({
+  name: 'ProtocolLinkMapInputType',
+  fields: {
+    social: {
+      type: GraphQLList(GraphQLNonNull(ProtocolLinkInputType)),
+    },
+    listing: {
+      type: GraphQLList(GraphQLNonNull(ProtocolLinkInputType)),
+    },
+    audit: {
+      type: GraphQLList(GraphQLNonNull(ProtocolLinkInputType)),
+    },
+    other: {
+      type: GraphQLList(GraphQLNonNull(ProtocolLinkInputType)),
+    },
+  },
+});
+
 export const ProtocolCreateMutation: GraphQLFieldConfig<any, Request> = {
   type: GraphQLNonNull(ProtocolType),
   args: {
@@ -773,6 +873,11 @@ export const ProtocolCreateMutation: GraphQLFieldConfig<any, Request> = {
               description: 'Website URL',
               defaultValue: null,
             },
+            links: {
+              type: ProtocolLinkMapInputType,
+              description: 'Links',
+              defaultValue: {},
+            },
             hidden: {
               type: GraphQLBoolean,
               description: 'Is hidden',
@@ -786,10 +891,10 @@ export const ProtocolCreateMutation: GraphQLFieldConfig<any, Request> = {
   resolve: onlyAllowed('protocol.create', async (root, { input }, { currentUser }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
-    const { adapter, name, description, icon, link, hidden } = input;
+    const { adapter, name, description, icon, link, links, hidden } = input;
     const created = await container.model
       .protocolService()
-      .create(adapter, name, description, icon, link, hidden);
+      .create(adapter, name, description, icon, link, links, hidden);
 
     return created;
   }),
@@ -826,6 +931,10 @@ export const ProtocolUpdateMutation: GraphQLFieldConfig<any, Request> = {
               type: GraphQLString,
               description: 'Website URL',
             },
+            links: {
+              type: ProtocolLinkMapInputType,
+              description: 'Links',
+            },
             hidden: {
               type: GraphQLBoolean,
               description: 'Is hidden',
@@ -842,7 +951,7 @@ export const ProtocolUpdateMutation: GraphQLFieldConfig<any, Request> = {
     const protocol = await protocolService.table().where('id', id).first();
     if (!protocol) throw new UserInputError('Protocol not found');
 
-    const { adapter, name, description, icon, link, hidden } = input;
+    const { adapter, name, description, icon, link, links, hidden } = input;
     const updated = await protocolService.update({
       ...protocol,
       adapter: typeof adapter === 'string' ? adapter : protocol.adapter,
@@ -850,6 +959,7 @@ export const ProtocolUpdateMutation: GraphQLFieldConfig<any, Request> = {
       description: typeof description === 'string' ? description : protocol.description,
       icon: typeof icon === 'string' ? icon : protocol.icon,
       link: typeof link === 'string' ? link : protocol.link,
+      links: typeof links === 'object' ? links : protocol.links,
       hidden: typeof hidden === 'boolean' ? hidden : protocol.hidden,
     });
 

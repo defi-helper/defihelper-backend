@@ -90,6 +90,7 @@ export default async () => {
     'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
     'https://bondappetit.io/static/media/bondappetit-hat.5299b28f.png',
     'https://bondappetit.io/',
+    {},
     false,
   );
   const protocolAContractEth = await contractService.create(
@@ -100,6 +101,7 @@ export default async () => {
     null,
     'staking',
     'staking',
+    [],
     'StableGovLPStaking',
     'Stable/Gov token staking',
     'https://bondappetit.io/staking/0x969c70f75aecb0decbde0554fb570276c9a85751',
@@ -115,6 +117,7 @@ export default async () => {
     null,
     'staking',
     'staking',
+    [],
     'BnbGovLPStaking',
     'BNB/Gov token staking',
     'https://bondappetit.io/staking/0x4f55b9fa30e3b11d0d6dee828fa905eaeaae62ee',
@@ -129,6 +132,7 @@ export default async () => {
     null,
     'swopfiStaking',
     'staking',
+    [],
     'UsdnGovLPStaking',
     'USDN/Gov token staking',
     'https://swop.fi/info/3PAgYAV4jYJ7BF8LCVNU9tyWCBtQaqeLQH4',

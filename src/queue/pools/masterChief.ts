@@ -41,7 +41,7 @@ export default async (process: Process) => {
   if (!protocol) {
     protocol = await container.model
       .protocolService()
-      .create(adapterName, protocolName, protocolDescription, null, null, false);
+      .create(adapterName, protocolName, protocolDescription, null, null, {}, false);
   }
 
   const blockchain = container.blockchain.ethereum;
@@ -114,6 +114,7 @@ export default async (process: Process) => {
           null,
           farmingAdapterName,
           '',
+          [],
           `${protocolName} ${symbol0}/${symbol1} LP`,
           '',
           `${container.blockchain.ethereum.networks[

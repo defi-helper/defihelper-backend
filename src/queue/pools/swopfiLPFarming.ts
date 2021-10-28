@@ -24,7 +24,7 @@ export default async (process: Process) => {
   if (!protocol) {
     protocol = await container.model
       .protocolService()
-      .create(adapterName, protocolName, protocolDescription, null, null, false);
+      .create(adapterName, protocolName, protocolDescription, null, null, {}, false);
   }
   const contracts = await container.model.contractTable().where('protocol', protocol.id).select();
   const pools = (await axios.get<{ data: SwopFiPool[] }>(`https://backend.swop.fi/farming/info`))
@@ -59,6 +59,7 @@ export default async (process: Process) => {
           null,
           stakingAdapterName,
           '',
+          [],
           `Staking ${token.name}`,
           '',
           `https://swop.fi/info/${pool.pool}`,

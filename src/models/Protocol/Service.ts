@@ -11,6 +11,7 @@ import {
   ContractTable,
   WalletContractLinkTable,
   WalletContractLink,
+  ProtocolLinkMap,
 } from './Entity';
 
 export class ProtocolService {
@@ -22,6 +23,7 @@ export class ProtocolService {
     description: string = '',
     icon: string | null = null,
     link: string | null = null,
+    links: ProtocolLinkMap = {},
     hidden: boolean = false,
   ) {
     const created = {
@@ -31,6 +33,7 @@ export class ProtocolService {
       description,
       icon,
       link,
+      links,
       hidden,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -99,6 +102,7 @@ export class ContractService {
     deployBlockNumber: string | null,
     adapter: string,
     layout: string,
+    automateAdapters: string[],
     name: string,
     description: string = '',
     link: string | null = null,
@@ -114,6 +118,9 @@ export class ContractService {
       deployBlockNumber,
       adapter,
       layout,
+      automate: {
+        adapters: automateAdapters,
+      },
       name,
       description,
       link,
