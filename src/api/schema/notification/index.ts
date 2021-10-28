@@ -136,10 +136,6 @@ export const UserContactListQuery: GraphQLFieldConfig<any, Request> = {
       type: new GraphQLInputObjectType({
         name: 'UserContactListQueryFilterInputType',
         fields: {
-          user: {
-            type: UuidType,
-            description: 'User ID',
-          },
           broker: {
             type: UserContactBrokerEnum,
             description: 'Type',
@@ -168,11 +164,7 @@ export const UserContactListQuery: GraphQLFieldConfig<any, Request> = {
     }
 
     const select = container.model.userContactTable().where(function () {
-      if (filter.user && currentUser.role === Role.Admin) {
-        this.where('user', filter.user);
-      } else if (currentUser.role !== Role.Admin) {
-        this.where('user', currentUser.id);
-      }
+      this.where('user', currentUser.id);
       if (filter.broker) {
         this.where('broker', filter.broker);
       }
