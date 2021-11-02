@@ -8,6 +8,8 @@ export * as tokenCreate from './token/create';
 export * as tokenAlias from './token/alias';
 export * as tokenInfoEth from './token/ethereumInfo';
 export * as tokenInfoWaves from './token/wavesInfo';
+export * as metricsProtocolTelegramBroker from './metrics/telegramBroker';
+export * as metricsProtocolTelegram from './metrics/telegram';
 export * as metricsEthereumCurrent from './metrics/ethereumCurrent';
 export * as metricsContractBroker from './metrics/contractBroker';
 export * as metricsContractScannerBroker from './metrics/contractScannerBroker';

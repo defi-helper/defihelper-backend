@@ -33,6 +33,7 @@ export default async (process: Process) => {
     queue.push('quickSwapPolygonStakingPoolScanner', {}),
     queue.push('swopfiLPFarmingPoolScanner', {}),
     queue.push('automateTriggerByTime', { type: TriggerType.EveryDay }),
+    queue.push('metricsProtocolTelegramBroker', {}),
   ]);
 
   return process.done();

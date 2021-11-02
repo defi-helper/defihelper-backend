@@ -21,6 +21,21 @@ export const metricBlockchainTableFactory =
 
 export type MetricBlockchainTable = ReturnType<ReturnType<typeof metricBlockchainTableFactory>>;
 
+export interface MetricProtocol {
+  id: string;
+  protocol: string;
+  data: MetricMap;
+  date: Date;
+  createdAt: Date;
+}
+
+export const metricProtocolTableName = 'metric_protocol';
+
+export const metricProtocolTableFactory =
+  createTableFactory<MetricProtocol>(metricProtocolTableName);
+
+export type MetricProtocolTable = ReturnType<ReturnType<typeof metricProtocolTableFactory>>;
+
 export interface MetricContract {
   id: string;
   contract: string;

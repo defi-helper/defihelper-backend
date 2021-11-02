@@ -1,4 +1,5 @@
 import { Container, singleton } from '@services/Container';
+import { SocialStatsGateway } from '@services/SocialStats';
 import { TreasuryService } from '@services/Treasury';
 import { pgConnectFactory } from '@services/Database';
 import { consoleFactory } from '@services/Log';
@@ -27,6 +28,8 @@ class AppContainer extends Container<typeof config> {
   readonly telegram = singleton(telegramServiceFactory(this.parent.telegram.token));
 
   readonly scanner = singleton(scannerServiceFactory(this.parent.scanner));
+
+  readonly socialStats = singleton(() => new SocialStatsGateway(this.parent.socilaStats));
 
   readonly blockchain = {
     ethereum: new Blockchain.Ethereum.BlockchainContainer(this.parent.blockchain.ethereum),

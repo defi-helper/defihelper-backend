@@ -634,9 +634,6 @@ export const ProtocolType = new GraphQLObjectType<Protocol>({
           type: new GraphQLInputObjectType({
             name: 'ProtocolMetricChartFilterInputType',
             fields: {
-              blockchain: {
-                type: BlockchainFilterInputType,
-              },
               dateAfter: {
                 type: DateTimeType,
                 description: 'Created at equals or greater',
@@ -655,6 +652,62 @@ export const ProtocolType = new GraphQLObjectType<Protocol>({
           [{ column: 'date', order: 'asc' }],
         ),
         pagination: PaginationArgument('ProtocolMetricChartPaginationInputType'),
+      },
+      resolve: async (protocol, { metric, group, filter, sort, pagination }) => {
+        return metricsChartSelector(
+          container.model.metricProtocolTable().where(function () {
+            this.where('protocol', protocol.id);
+            if (filter.dateAfter) {
+              this.andWhere('date', '>=', filter.dateAfter.toDate());
+            }
+            if (filter.dateBefore) {
+              this.andWhere('date', '<', filter.dateBefore.toDate());
+            }
+          }),
+          group,
+          metric,
+        )
+          .orderBy(sort)
+          .limit(pagination.limit)
+          .offset(pagination.offset);
+      },
+    },
+    metricChartContracts: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(MetricChartType))),
+      args: {
+        metric: {
+          type: GraphQLNonNull(MetricColumnType),
+          description: 'Metric column',
+        },
+        group: {
+          type: GraphQLNonNull(MetricGroupEnum),
+          description: 'Truncate date mode',
+        },
+        filter: {
+          type: new GraphQLInputObjectType({
+            name: 'ProtocolMetricChartContractsFilterInputType',
+            fields: {
+              blockchain: {
+                type: BlockchainFilterInputType,
+              },
+              dateAfter: {
+                type: DateTimeType,
+                description: 'Created at equals or greater',
+              },
+              dateBefore: {
+                type: DateTimeType,
+                description: 'Created at less',
+              },
+            },
+          }),
+          defaultValue: {},
+        },
+        sort: SortArgument(
+          'ProtocolMetricChartContractsSortInputType',
+          ['date', 'value'],
+          [{ column: 'date', order: 'asc' }],
+        ),
+        pagination: PaginationArgument('ProtocolMetricChartContractsPaginationInputType'),
       },
       resolve: async (protocol, { metric, group, filter, sort, pagination }) => {
         const contractSelect = container.model
