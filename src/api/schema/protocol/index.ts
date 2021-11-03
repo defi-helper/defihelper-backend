@@ -147,6 +147,8 @@ export const ContractType = new GraphQLObjectType<Contract>({
     events: {
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString))),
       resolve: async (contract) => {
+        if (contract.blockchain !== 'ethereum') return [];
+
         const contractFromScanner = await container
           .scanner()
           .findContract(contract.network, contract.address);
