@@ -33,7 +33,9 @@ export default async (process: Process) => {
     queue.push('quickSwapPolygonStakingPoolScanner', {}),
     queue.push('swopfiLPFarmingPoolScanner', {}),
     queue.push('automateTriggerByTime', { type: TriggerType.EveryDay }),
-    queue.push('metricsProtocolTelegramBroker', {}),
+    queue.push('metricsProtocolLinksSocialBroker', {}),
+    queue.push('metricsProtocolLinksListingBroker', {}),
+    queue.push('metricsProtocolLinksPostBroker', {}),
   ]);
 
   return process.done();

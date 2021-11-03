@@ -2,6 +2,7 @@ import container from '@container';
 import { Request } from 'express';
 import {
   GraphQLBoolean,
+  GraphQLEnumType,
   GraphQLFieldConfig,
   GraphQLInputObjectType,
   GraphQLList,
@@ -20,6 +21,8 @@ import {
 import { tableName as walletTableName } from '@models/Wallet/Entity';
 import { AuthenticationError, ForbiddenError, UserInputError } from 'apollo-server-express';
 import { Blockchain } from '@models/types';
+import { Post } from '@models/Protocol/Social/Entity';
+import { PostProvider } from '@services/SocialStats';
 import {
   BlockchainEnum,
   BlockchainFilterInputType,
@@ -519,6 +522,44 @@ export const ProtocolLinkMapType = new GraphQLObjectType<ProtocolLinkMap>({
   },
 });
 
+export const ProtocolSocialPostProviderEnum = new GraphQLEnumType({
+  name: 'ProtocolSocialPostProviderEnum',
+  values: Object.values(PostProvider).reduce(
+    (prev, name) => ({ ...prev, [name]: { value: name } }),
+    {},
+  ),
+});
+
+export const ProtocolSocialPostType = new GraphQLObjectType<Post>({
+  name: 'ProtocolSocialPostType',
+  fields: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+      description: 'Identificator',
+    },
+    provider: {
+      type: GraphQLNonNull(ProtocolSocialPostProviderEnum),
+      description: 'Provider',
+    },
+    title: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Title',
+    },
+    content: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Content (maybe HTML)',
+    },
+    link: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'URL',
+    },
+    createdAt: {
+      type: GraphQLNonNull(DateTimeType),
+      description: 'Date of created',
+    },
+  },
+});
+
 export const ProtocolType = new GraphQLObjectType<Protocol>({
   name: 'ProtocolType',
   fields: {
@@ -747,9 +788,54 @@ export const ProtocolType = new GraphQLObjectType<Protocol>({
           .offset(pagination.offset);
       },
     },
+    socialPosts: {
+      type: GraphQLNonNull(
+        PaginateList('ProtocolSocialPostListType', GraphQLNonNull(ProtocolSocialPostType)),
+      ),
+      args: {
+        filter: {
+          type: new GraphQLInputObjectType({
+            name: 'ProtocolSocialPostListFilterInputType',
+            fields: {
+              provider: {
+                type: ProtocolSocialPostProviderEnum,
+              },
+            },
+          }),
+          defaultValue: {},
+        },
+        sort: SortArgument(
+          'ProtocolSocialPostListSortInputType',
+          ['id', 'title', 'createdAt'],
+          [{ column: 'createdAt', order: 'desc' }],
+        ),
+        pagination: PaginationArgument('ProtocolSocialPostListPaginationInputType'),
+      },
+      resolve: async (protocol, { filter, sort, pagination }) => {
+        const select = container.model.protocolSocialPostTable().where(function () {
+          this.where('protocol', protocol.id);
+
+          const { provider } = filter;
+          if (typeof provider === 'string') {
+            this.andWhere('provider', provider);
+          }
+        });
+
+        return {
+          list: await select
+            .clone()
+            .orderBy(sort)
+            .limit(pagination.limit)
+            .offset(pagination.offset),
+          pagination: {
+            count: await select.clone().count().first(),
+          },
+        };
+      },
+    },
     createdAt: {
       type: GraphQLNonNull(DateTimeType),
-      description: 'Date of created account',
+      description: 'Date of created',
     },
   },
 });

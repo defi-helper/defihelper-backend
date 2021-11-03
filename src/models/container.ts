@@ -44,6 +44,14 @@ export class ModelContainer extends Container<typeof AppContainer> {
     () => new Models.Protocol.Service.ProtocolService(this.protocolTable),
   );
 
+  readonly protocolSocialPostTable = Models.Protocol.Social.Entity.postTableFactory(
+    this.parent.database,
+  );
+
+  readonly protocolSocialService = singleton(
+    () => new Models.Protocol.Social.Service.ProtocolSocialService(this.protocolSocialPostTable),
+  );
+
   readonly contractTable = Models.Protocol.Entity.contractTableFactory(this.parent.database);
 
   readonly walletContractLinkTable = Models.Protocol.Entity.walletContractLinkTableFactory(
