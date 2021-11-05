@@ -288,7 +288,7 @@ export const GovProposalListQuery: GraphQLFieldConfig<any, Request> = {
       filter.contract,
     );
     const allIds = Array.from(new Array(latestProposalId).keys());
-    if (sort.order === 'asc') {
+    if (sort[0].order === 'asc') {
       allIds.reverse();
     }
     const ids = allIds.slice(pagination.offset, pagination.offset + pagination.limit);
