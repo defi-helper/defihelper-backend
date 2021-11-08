@@ -474,7 +474,7 @@ export const LocaleEnum = new GraphQLEnumType({
   ),
 });
 
-export const UserType = new GraphQLObjectType<User>({
+export const UserType = new GraphQLObjectType<User, Request>({
   name: 'UserType',
   fields: {
     id: {
@@ -514,17 +514,20 @@ export const UserType = new GraphQLObjectType<User>({
         pagination: PaginationArgument('WalletListPaginationInputType'),
       },
       resolve: async (user, { filter, sort, pagination }) => {
-        let select = container.model.walletTable().where('user', user.id);
-        if (filter.blockchain) {
-          const { protocol, network } = filter.blockchain;
-          select = select.andWhere('blockchain', protocol);
-          if (network !== undefined) {
-            select = select.andWhere('network', network);
+        const select = container.model.walletTable().where(function () {
+          this.where('user', user.id);
+          const { blockchain, search } = filter;
+          if (blockchain) {
+            const { protocol, network } = blockchain;
+            this.andWhere('blockchain', protocol);
+            if (network !== undefined) {
+              this.andWhere('network', network);
+            }
           }
-        }
-        if (filter.search !== undefined && filter.search !== '') {
-          select = select.andWhere('address', 'iLike', `%${filter.search}%`);
-        }
+          if (search !== undefined && search !== '') {
+            this.andWhere('address', 'iLike', `%${search}%`);
+          }
+        });
 
         return {
           list: await select
@@ -540,23 +543,17 @@ export const UserType = new GraphQLObjectType<User>({
     },
     blockchains: {
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(UserBlockchainType))),
-      resolve: async (user) => {
-        const blockchains = await container.model
-          .walletTable()
-          .column('blockchain')
-          .column('network')
-          .where('user', user.id)
-          .groupBy('blockchain', 'network');
+      resolve: async (user, args, { dataLoader }) => {
+        const blockchains = await dataLoader.userBlockchains().load(user.id);
 
-        return blockchains.map(({ blockchain, network }) => {
-          const key = `${blockchain}:${network}`;
-          return {
-            blockchain,
-            network,
-            name: container.blockchain[blockchain]?.byNetwork(network)?.name ?? key,
-            user,
-          };
-        });
+        return blockchains.map(({ blockchain, network }) => ({
+          blockchain,
+          network,
+          name:
+            container.blockchain[blockchain]?.byNetwork(network)?.name ??
+            `${blockchain}:${network}`,
+          user,
+        }));
       },
     },
     metricChart: {

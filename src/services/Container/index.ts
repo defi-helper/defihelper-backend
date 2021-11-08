@@ -11,6 +11,16 @@ export function singleton<T>(f: Factory<T>): Factory<T> {
   };
 }
 
+export function singletonParametric<T, P>(f: ParametricFactory<T, P>) {
+  const instances = new Map<P, T>();
+
+  return (k: P) => {
+    if (!instances.has(k)) instances.set(k, f(k));
+
+    return instances.get(k) as T;
+  };
+}
+
 export class Container<T extends Object> {
   constructor(public readonly parent: T) {}
 }

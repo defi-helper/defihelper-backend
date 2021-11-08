@@ -25,5 +25,16 @@ export default {
     'automate:trigger:everyDay:description': 'Вызов триггера каждый день',
     'automate:trigger:everyHour:name': 'Периодически',
     'automate:trigger:everyHour:description': 'Вызов триггера каждый час',
+    'automate:condition:ethereumAvgGasPrice:paramsDescription':
+      'Отклонение от средней стоимости газа в сети {{network}} в пределах {{tolerance}}',
+    'automate:condition:ethereumBalance:paramsDescription':
+      'Баланс кошелька {{wallet}} в сети {{network}} {{op}} {{value}}',
+    'automate:condition:ethereumOptimalAutomateRun:paramsDescription':
+      'Оптимальный вызов рестейк контракта для {{id}}',
+    'automate:condition:schedule:paramsDescription':
+      'Дни недели {{weeks}}; Месяца {{months}}; Дни месяца {{days}}; Часы {{hours}}',
+    'automate:action:notification:paramsDescription':
+      'Отправить уведомление в контакт {{contactId}}',
+    'automate:action:ethereumAutomateRun:paramsDescription': 'Запуск автоматизации {{id}}',
   },
 };

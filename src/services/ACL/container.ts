@@ -17,7 +17,7 @@ export class ACLContainer extends Container<typeof AppContainer> {
     ACL.expand(this.candidate(), {
       wallet: ['update-own', 'delete-own'],
       proposal: ['create', 'update-own'],
-      protocol: ['view'],
+      protocol: ['view', 'favorite'],
       contract: ['walletLink-own'],
       automateTrigger: ['create', 'update-own', 'delete-own'],
       automateCondition: ['create', 'update-own', 'delete-own'],
@@ -33,6 +33,8 @@ export class ACLContainer extends Container<typeof AppContainer> {
       protocol: ['create', 'update', 'delete'],
       contract: ['create', 'update', 'delete', 'walletLink'],
       product: ['create', 'update', 'delete'],
+      token: ['update'],
+      tokenAlias: ['create', 'update', 'delete'],
     }),
   );
 

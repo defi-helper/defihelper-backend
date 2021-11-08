@@ -36,6 +36,7 @@ import {
   ContractDeleteMutation,
   ContractWalletLinkMutation,
   ContractWalletUnlinkMutation,
+  ProtocolFavoriteMutation,
 } from './schema/protocol';
 import {
   ProposalCreateMutation,
@@ -46,7 +47,15 @@ import {
   UnvoteMutation,
   VoteMutation,
 } from './schema/proposal';
-import { TokenAliasListQuery, TokenAliasQuery, TokenListQuery } from './schema/token';
+import {
+  TokenAliasCreateMutation,
+  TokenAliasDeleteMutation,
+  TokenAliasListQuery,
+  TokenAliasQuery,
+  TokenAliasUpdateMutation,
+  TokenListQuery,
+  TokenUpdateMutation,
+} from './schema/token';
 import {
   ProductCreateMutation,
   ProductDeleteMutation,
@@ -114,11 +123,16 @@ export function route({ express, server }: { express: Express; server: Server })
           protocolCreate: ProtocolCreateMutation,
           protocolUpdate: ProtocolUpdateMutation,
           protocolDelete: ProtocolDeleteMutation,
+          protocolFavorite: ProtocolFavoriteMutation,
           contractCreate: ContractCreateMutation,
           contractUpdate: ContractUpdateMutation,
           contractDelete: ContractDeleteMutation,
           contractWalletLink: ContractWalletLinkMutation,
           contractWalletUnlink: ContractWalletUnlinkMutation,
+          tokenUpdate: TokenUpdateMutation,
+          tokenAliasCreate: TokenAliasCreateMutation,
+          tokenAliasUpdate: TokenAliasUpdateMutation,
+          tokenAliasDelete: TokenAliasDeleteMutation,
           proposalCreate: ProposalCreateMutation,
           proposalUpdate: ProposalUpdateMutation,
           proposalDelete: ProposalDeleteMutation,
@@ -160,6 +174,7 @@ export function route({ express, server }: { express: Express; server: Server })
   express.use('/api', [
     json(),
     middlewares.currentUser,
+    middlewares.dataLoader,
     middlewares.i18n,
     middlewares.acl,
     apollo.getMiddleware({ path: '/' }),

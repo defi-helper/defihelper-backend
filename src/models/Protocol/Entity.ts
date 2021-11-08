@@ -33,6 +33,23 @@ export const protocolTableFactory = createTableFactory<Protocol>(protocolTableNa
 
 export type ProtocolTable = ReturnType<ReturnType<typeof protocolTableFactory>>;
 
+export interface ProtocolUserFavorite {
+  id: string;
+  protocol: string;
+  user: string;
+  createdAt: Date;
+}
+
+export const protocolUserFavoriteTableName = 'protocol_user_favorite';
+
+export const protocolUserFavoriteTableFactory = createTableFactory<ProtocolUserFavorite>(
+  protocolUserFavoriteTableName,
+);
+
+export type ProtocolUserFavoriteTable = ReturnType<
+  ReturnType<typeof protocolUserFavoriteTableFactory>
+>;
+
 export interface ContractAutomate {
   adapters: string[];
 }

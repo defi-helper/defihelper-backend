@@ -1,3 +1,4 @@
+import { AuthenticationError, UserInputError } from 'apollo-server-express';
 import container from '@container';
 import { Request } from 'express';
 import { Token, TokenAlias } from '@models/Token/Entity';
@@ -14,6 +15,7 @@ import {
 import {
   BlockchainEnum,
   BlockchainFilterInputType,
+  onlyAllowed,
   PaginateList,
   PaginationArgument,
   SortArgument,
@@ -109,6 +111,66 @@ export const TokenListQuery: GraphQLFieldConfig<any, Request> = {
       },
     };
   },
+};
+
+export const TokenUpdateMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(TokenType),
+  args: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+    },
+    input: {
+      type: GraphQLNonNull(
+        new GraphQLInputObjectType({
+          name: 'TokenUpdateInputType',
+          fields: {
+            alias: {
+              type: UuidType,
+              description: 'Token alias ID',
+            },
+            name: {
+              type: GraphQLString,
+              description: 'Name',
+            },
+            symbol: {
+              type: GraphQLString,
+              description: 'Symbol',
+            },
+            decimals: {
+              type: GraphQLInt,
+              description: 'Decimals',
+            },
+          },
+        }),
+      ),
+    },
+  },
+  resolve: onlyAllowed('token.update', async (root, { id, input }, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const token = await container.model.tokenTable().where('id', id).first();
+    if (!token) throw new UserInputError('Token not found');
+
+    const { alias: tokenAliasId, name, symbol, decimals } = input;
+    let alias;
+    if (typeof tokenAliasId === 'string') {
+      const tokenAlias = await container.model.tokenAliasTable().where('id', tokenAliasId).first();
+      if (!tokenAlias) throw new UserInputError('Token alias not found');
+      alias = tokenAlias.id;
+    } else {
+      alias = token.alias;
+    }
+
+    const updated = await container.model.tokenService().update({
+      ...token,
+      alias,
+      name: typeof name === 'string' ? name : token.name,
+      symbol: typeof symbol === 'string' ? symbol : token.symbol,
+      decimals: typeof decimals === 'number' ? decimals : token.decimals,
+    });
+
+    return updated;
+  }),
 };
 
 export const TokenAliasType = new GraphQLObjectType<TokenAlias>({
@@ -276,4 +338,104 @@ export const TokenAliasListQuery: GraphQLFieldConfig<any, Request> = {
       },
     };
   },
+};
+
+export const TokenAliasCreateMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(TokenAliasType),
+  args: {
+    input: {
+      type: GraphQLNonNull(
+        new GraphQLInputObjectType({
+          name: 'TokenAliasCreateInputType',
+          fields: {
+            name: {
+              type: GraphQLString,
+              description: 'Name',
+            },
+            symbol: {
+              type: GraphQLString,
+              description: 'Symbol',
+            },
+            stable: {
+              type: GraphQLBoolean,
+              description: 'Is stable coin',
+            },
+          },
+        }),
+      ),
+    },
+  },
+  resolve: onlyAllowed('tokenAlias.create', async (root, { input }, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const { name, symbol, stable } = input;
+    const created = await container.model.tokenAliasService().create(name, symbol, stable);
+
+    return created;
+  }),
+};
+
+export const TokenAliasUpdateMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(TokenAliasType),
+  args: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+    },
+    input: {
+      type: GraphQLNonNull(
+        new GraphQLInputObjectType({
+          name: 'TokenAliasUpdateInputType',
+          fields: {
+            name: {
+              type: GraphQLString,
+              description: 'Name',
+            },
+            symbol: {
+              type: GraphQLString,
+              description: 'Symbol',
+            },
+            stable: {
+              type: GraphQLBoolean,
+              description: 'Is stable coin',
+            },
+          },
+        }),
+      ),
+    },
+  },
+  resolve: onlyAllowed('tokenAlias.update', async (root, { id, input }, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const tokenAlias = await container.model.tokenAliasTable().where('id', id).first();
+    if (!tokenAlias) throw new UserInputError('Token alias not found');
+
+    const { name, symbol, stable } = input;
+    const updated = await container.model.tokenAliasService().update({
+      ...tokenAlias,
+      name: typeof name === 'string' ? name : tokenAlias.name,
+      symbol: typeof symbol === 'string' ? symbol : tokenAlias.symbol,
+      stable: typeof stable === 'boolean' ? stable : tokenAlias.stable,
+    });
+
+    return updated;
+  }),
+};
+
+export const TokenAliasDeleteMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLBoolean),
+  args: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+    },
+  },
+  resolve: onlyAllowed('tokenAlias.delete', async (root, { id }, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const tokenAlias = await container.model.tokenAliasTable().where('id', id).first();
+    if (!tokenAlias) throw new UserInputError('Token alias not found');
+
+    await container.model.tokenAliasService().delete(tokenAlias);
+
+    return true;
+  }),
 };

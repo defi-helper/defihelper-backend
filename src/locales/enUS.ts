@@ -19,5 +19,15 @@ export default {
     'automate:trigger:everyDay:description': 'Call trigger every day',
     'automate:trigger:everyHour:name': 'Periodic',
     'automate:trigger:everyHour:description': 'Call trigger every hour',
+    'automate:condition:ethereumAvgGasPrice:paramsDescription':
+      'AVG gas price for network {{network}} in {{tolerance}}',
+    'automate:condition:ethereumBalance:paramsDescription':
+      'Wallet balance {{wallet}} in network {{network}} {{op}} {{value}}',
+    'automate:condition:ethereumOptimalAutomateRun:paramsDescription':
+      'Restake optimal run for {{id}}',
+    'automate:condition:schedule:paramsDescription':
+      'Days of week {{weeks}}; Months {{months}}; Days of month {{days}}; Hours {{hours}}',
+    'automate:action:notification:paramsDescription': 'Send notification to {{contactId}}',
+    'automate:action:ethereumAutomateRun:paramsDescription': 'Run automate {{id}}',
   },
 };

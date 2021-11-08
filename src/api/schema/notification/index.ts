@@ -136,6 +136,9 @@ export const UserContactListQuery: GraphQLFieldConfig<any, Request> = {
       type: new GraphQLInputObjectType({
         name: 'UserContactListQueryFilterInputType',
         fields: {
+          user: {
+            type: UuidType,
+          },
           broker: {
             type: UserContactBrokerEnum,
             description: 'Type',
@@ -159,12 +162,14 @@ export const UserContactListQuery: GraphQLFieldConfig<any, Request> = {
     pagination: PaginationArgument('UserContactListPaginationInputType'),
   },
   resolve: async (root, { filter, sort, pagination }, { currentUser }) => {
-    if (!currentUser) {
-      throw new AuthenticationError('UNAUTHENTICATED');
-    }
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
     const select = container.model.userContactTable().where(function () {
-      this.where('user', currentUser.id);
+      if (typeof filter.user === 'string' && currentUser.role === Role.Admin) {
+        this.andWhere('user', filter.user);
+      } else {
+        this.andWhere('user', currentUser.id);
+      }
       if (filter.broker) {
         this.where('broker', filter.broker);
       }

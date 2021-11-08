@@ -5,13 +5,16 @@ export interface MetricMap {
   [k: string]: string;
 }
 
-export interface MetricBlockchain {
+interface Metric {
   id: string;
-  blockchain: Blockchain;
-  network: string;
   data: MetricMap;
   date: Date;
   createdAt: Date;
+}
+
+export interface MetricBlockchain extends Metric {
+  blockchain: Blockchain;
+  network: string;
 }
 
 export const metricBlockchainTableName = 'metric_blockchain';
@@ -21,12 +24,8 @@ export const metricBlockchainTableFactory =
 
 export type MetricBlockchainTable = ReturnType<ReturnType<typeof metricBlockchainTableFactory>>;
 
-export interface MetricProtocol {
-  id: string;
+export interface MetricProtocol extends Metric {
   protocol: string;
-  data: MetricMap;
-  date: Date;
-  createdAt: Date;
 }
 
 export const metricProtocolTableName = 'metric_protocol';
@@ -36,12 +35,8 @@ export const metricProtocolTableFactory =
 
 export type MetricProtocolTable = ReturnType<ReturnType<typeof metricProtocolTableFactory>>;
 
-export interface MetricContract {
-  id: string;
+export interface MetricContract extends Metric {
   contract: string;
-  data: MetricMap;
-  date: Date;
-  createdAt: Date;
 }
 
 export const metricContractTableName = 'metric_contract';
@@ -51,13 +46,9 @@ export const metricContractTableFactory =
 
 export type MetricContractTable = ReturnType<ReturnType<typeof metricContractTableFactory>>;
 
-export interface MetricWallet {
-  id: string;
+export interface MetricWallet extends Metric {
   contract: string;
   wallet: string;
-  data: MetricMap;
-  date: Date;
-  createdAt: Date;
 }
 
 export const metricWalletTableName = 'metric_wallet';
@@ -66,14 +57,10 @@ export const metricWalletTableFactory = createTableFactory<MetricWallet>(metricW
 
 export type MetricWalletTable = ReturnType<ReturnType<typeof metricWalletTableFactory>>;
 
-export interface MetricWalletToken {
-  id: string;
+export interface MetricWalletToken extends Metric {
   contract: string;
   wallet: string;
   token: string;
-  data: MetricMap;
-  date: Date;
-  createdAt: Date;
 }
 
 export const metricWalletTokenTableName = 'metric_wallet_token';

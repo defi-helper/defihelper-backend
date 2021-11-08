@@ -1,6 +1,7 @@
 import * as Automate from '@models/Automate/Entity';
 import { AuthenticationError, UserInputError } from 'apollo-server-express';
 import { Request } from 'express';
+import { Role } from '@models/User/Entity';
 import container from '@container';
 import { tableName as walletTableName } from '@models/Wallet/Entity';
 import {
@@ -37,7 +38,7 @@ export const ConditionTypeEnum = new GraphQLEnumType({
   ),
 });
 
-export const ConditionType = new GraphQLObjectType<Automate.Condition>({
+export const ConditionType = new GraphQLObjectType<Automate.Condition, Request>({
   name: 'AutomateConditionType',
   fields: {
     id: {
@@ -52,6 +53,12 @@ export const ConditionType = new GraphQLObjectType<Automate.Condition>({
       type: GraphQLNonNull(GraphQLString),
       description: 'Condition parameters',
       resolve: ({ params }) => JSON.stringify(params),
+    },
+    paramsDescription: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Stringify parameters',
+      resolve: ({ type, params }, args, { i18n }) =>
+        container.template.render(i18n.t(`automate:action:${type}:paramsDescription`), params),
     },
     priority: {
       type: GraphQLNonNull(GraphQLInt),
@@ -72,7 +79,7 @@ export const ActionTypeEnum = new GraphQLEnumType({
   ),
 });
 
-export const ActionType = new GraphQLObjectType<Automate.Action>({
+export const ActionType = new GraphQLObjectType<Automate.Action, Request>({
   name: 'AutomateActionType',
   fields: {
     id: {
@@ -85,8 +92,14 @@ export const ActionType = new GraphQLObjectType<Automate.Action>({
     },
     params: {
       type: GraphQLNonNull(GraphQLString),
-      description: 'Condition parameters',
+      description: 'Action parameters',
       resolve: ({ params }) => JSON.stringify(params),
+    },
+    paramsDescription: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Stringify parameters',
+      resolve: ({ type, params }, args, { i18n }) =>
+        container.template.render(i18n.t(`automate:action:${type}:paramsDescription`), params),
     },
     priority: {
       type: GraphQLNonNull(GraphQLInt),
@@ -368,7 +381,9 @@ export const TriggerListQuery: GraphQLFieldConfig<any, Request> = {
     ),
     pagination: PaginationArgument('AutomateTriggerListPaginationInputType'),
   },
-  resolve: async (root, { filter, sort, pagination }) => {
+  resolve: async (root, { filter, sort, pagination }, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
     const select = container.model
       .automateTriggerTable()
       .innerJoin(
@@ -379,8 +394,10 @@ export const TriggerListQuery: GraphQLFieldConfig<any, Request> = {
       )
       .where(function () {
         const { active, search, wallet, user } = filter;
-        if (typeof user === 'string') {
+        if (typeof user === 'string' && currentUser.role === Role.Admin) {
           this.andWhere(`${walletTableName}.user`, user);
+        } else {
+          this.andWhere(`${walletTableName}.user`, currentUser.id);
         }
         if (typeof wallet === 'string') {
           this.andWhere(`${Automate.triggerTableName}.wallet`, wallet);

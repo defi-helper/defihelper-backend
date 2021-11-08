@@ -40,8 +40,16 @@ export class ModelContainer extends Container<typeof AppContainer> {
 
   readonly protocolTable = Models.Protocol.Entity.protocolTableFactory(this.parent.database);
 
+  readonly protocolUserFavoriteTable = Models.Protocol.Entity.protocolUserFavoriteTableFactory(
+    this.parent.database,
+  );
+
   readonly protocolService = singleton(
-    () => new Models.Protocol.Service.ProtocolService(this.protocolTable),
+    () =>
+      new Models.Protocol.Service.ProtocolService(
+        this.protocolTable,
+        this.protocolUserFavoriteTable,
+      ),
   );
 
   readonly protocolSocialPostTable = Models.Protocol.Social.Entity.postTableFactory(

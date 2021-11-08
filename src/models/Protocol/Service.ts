@@ -1,5 +1,6 @@
 import container from '@container';
 import { Blockchain } from '@models/types';
+import { User } from '@models/User/Entity';
 import { Wallet } from '@models/Wallet/Entity';
 import { Factory } from '@services/Container';
 import { Emitter } from '@services/Event';
@@ -12,10 +13,14 @@ import {
   WalletContractLinkTable,
   WalletContractLink,
   ProtocolLinkMap,
+  ProtocolUserFavoriteTable,
 } from './Entity';
 
 export class ProtocolService {
-  constructor(readonly table: Factory<ProtocolTable>) {}
+  constructor(
+    readonly protocolTable: Factory<ProtocolTable>,
+    readonly protocolFavoriteTable: Factory<ProtocolUserFavoriteTable>,
+  ) {}
 
   async create(
     adapter: string,
@@ -38,7 +43,7 @@ export class ProtocolService {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    await this.table().insert(created);
+    await this.protocolTable().insert(created);
 
     return created;
   }
@@ -48,13 +53,37 @@ export class ProtocolService {
       ...protocol,
       updatedAt: new Date(),
     };
-    await this.table().where({ id: protocol.id }).update(updated);
+    await this.protocolTable().where({ id: protocol.id }).update(updated);
 
     return updated;
   }
 
   async delete(protocol: Protocol) {
-    await this.table().where({ id: protocol.id }).delete();
+    await this.protocolTable().where({ id: protocol.id }).delete();
+  }
+
+  async addFavorite(protocol: Protocol, user: User) {
+    const duplicate = await this.protocolFavoriteTable()
+      .where({ protocol: protocol.id, user: user.id })
+      .first();
+    if (duplicate) return duplicate;
+
+    const created = {
+      id: uuid(),
+      protocol: protocol.id,
+      user: user.id,
+      createdAt: new Date(),
+    };
+    await this.protocolFavoriteTable().insert(created);
+
+    return created;
+  }
+
+  async removeFavorite(protocol: Protocol, user: User) {
+    await this.protocolFavoriteTable()
+      .where({ protocol: protocol.id, user: user.id })
+      .delete()
+      .limit(1);
   }
 }
 
