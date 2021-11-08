@@ -25,16 +25,26 @@ export default {
     'automate:trigger:everyDay:description': 'Вызов триггера каждый день',
     'automate:trigger:everyHour:name': 'Периодически',
     'automate:trigger:everyHour:description': 'Вызов триггера каждый час',
-    'automate:condition:ethereumAvgGasPrice:paramsDescription':
-      'Отклонение от средней стоимости газа в сети {{network}} в пределах {{tolerance}}',
-    'automate:condition:ethereumBalance:paramsDescription':
-      'Баланс кошелька {{wallet}} в сети {{network}} {{op}} {{value}}',
-    'automate:condition:ethereumOptimalAutomateRun:paramsDescription':
-      'Оптимальный вызов рестейк контракта для {{id}}',
-    'automate:condition:schedule:paramsDescription':
-      'Дни недели {{weeks}}; Месяца {{months}}; Дни месяца {{days}}; Часы {{hours}}',
     'automate:action:notification:paramsDescription':
       'Отправить уведомление в контакт {{contactId}}',
     'automate:action:ethereumAutomateRun:paramsDescription': 'Запуск автоматизации {{id}}',
+    'automate:condition:ethereumBalance:name': 'Token balance',
+    'automate:condition:ethereumBalance:description': 'Check the token balance with condition',
+    'automate:condition:ethereumBalance:paramsDescription':
+      'Баланс кошелька {{wallet}} в сети {{network}} {{op}} {{value}}',
+    'automate:condition:ethereumOptimalAutomateRun:name': 'Autostake',
+    'automate:condition:ethereumOptimalAutomateRun:description':
+      'Use autostake feature with our own math',
+    'automate:condition:ethereumOptimalAutomateRun:paramsDescription':
+      'Оптимальный вызов рестейк контракта для {{id}}',
+    'automate:condition:ethereumAvgGasPrice:name': 'Average GAS price',
+    'automate:condition:ethereumAvgGasPrice:description':
+      'Check the average GAS price with historical values',
+    'automate:condition:ethereumAvgGasPrice:paramsDescription':
+      'Отклонение от средней стоимости газа в сети {{network}} в пределах {{tolerance}}',
+    'automate:condition:schedule:name': 'Schedule',
+    'automate:condition:schedule:description': 'Check the schedule',
+    'automate:condition:schedule:paramsDescription':
+      'Дни недели {{weeks}}; Месяца {{months}}; Дни месяца {{days}}; Часы {{hours}}',
   },
 };
