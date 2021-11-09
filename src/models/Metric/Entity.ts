@@ -35,6 +35,8 @@ export const metricProtocolTableFactory =
 
 export type MetricProtocolTable = ReturnType<ReturnType<typeof metricProtocolTableFactory>>;
 
+export type MetricContractField = 'tvl' | 'aprDay' | 'aprWeek' | 'aprMonth' | 'aprYear';
+
 export interface MetricContract extends Metric {
   contract: string;
 }
@@ -45,6 +47,8 @@ export const metricContractTableFactory =
   createTableFactory<MetricContract>(metricContractTableName);
 
 export type MetricContractTable = ReturnType<ReturnType<typeof metricContractTableFactory>>;
+
+export type MetricWalletField = 'stakingUSD' | 'earnedUSD';
 
 export interface MetricWallet extends Metric {
   contract: string;

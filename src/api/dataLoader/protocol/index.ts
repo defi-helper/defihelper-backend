@@ -1,13 +1,15 @@
 import container from '@container';
 import { contractTableName } from '@models/Protocol/Entity';
-import { metricContractTableName, metricWalletTableName } from '@models/Metric/Entity';
+import {
+  metricContractTableName,
+  metricWalletTableName,
+  MetricContractField,
+  MetricWalletField,
+} from '@models/Metric/Entity';
 import { tableName as walletTableName } from '@models/Wallet/Entity';
 import { User } from '@models/User/Entity';
 import BN from 'bignumber.js';
 import DataLoader from 'dataloader';
-
-export type ContractMetric = 'tvl' | 'aprDay' | 'aprWeek' | 'aprMonth' | 'aprYear';
-export type WalletMetric = 'stakingUSD' | 'earnedUSD';
 
 export const protocolFavoritesLoader = ({ id: userId }: User) =>
   new DataLoader<string, boolean>(async (protocolsId) => {
@@ -22,7 +24,7 @@ export const protocolFavoritesLoader = ({ id: userId }: User) =>
     return protocolsId.map((protocolId) => favoritesSet.has(protocolId));
   });
 
-export const protocolLastMetricLoader = ({ metric }: { metric: ContractMetric }) =>
+export const protocolLastMetricLoader = ({ metric }: { metric: MetricContractField }) =>
   new DataLoader<string, string>(async (protocolsId) => {
     const database = container.database();
     const map = new Map(
@@ -59,7 +61,7 @@ export const protocolUserLastMetricLoader = ({
   metric,
 }: {
   user: User;
-  metric: WalletMetric;
+  metric: MetricWalletField;
 }) =>
   new DataLoader<string, string>(async (protocolsId) => {
     const database = container.database();
@@ -99,7 +101,7 @@ export const protocolUserLastAPRLoader = ({
   metric,
 }: {
   user: User;
-  metric: Exclude<ContractMetric, 'tvl'>;
+  metric: Exclude<MetricContractField, 'tvl'>;
 }) =>
   new DataLoader<string, string>(async (protocolsId) => {
     const database = container.database();
@@ -177,7 +179,7 @@ export const protocolUserLastAPRLoader = ({
     });
   });
 
-export const contractLastMetricLoader = ({ metric }: { metric: ContractMetric }) =>
+export const contractLastMetricLoader = ({ metric }: { metric: MetricContractField }) =>
   new DataLoader<string, string>(async (contractsId) => {
     const database = container.database();
     const map = new Map(
@@ -201,7 +203,7 @@ export const contractUserLastMetricLoader = ({
   metric,
 }: {
   user: User;
-  metric: WalletMetric;
+  metric: MetricWalletField;
 }) =>
   new DataLoader<string, string>(async (contractsId) => {
     const database = container.database();

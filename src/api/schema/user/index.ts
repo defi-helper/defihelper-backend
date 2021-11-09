@@ -14,6 +14,7 @@ import { Request } from 'express';
 import { User, Role } from '@models/User/Entity';
 import { Wallet } from '@models/Wallet/Entity';
 import { Blockchain } from '@models/types';
+import BN from 'bignumber.js';
 import * as WavesCrypto from '@waves/ts-lib-crypto';
 import * as WavesMarshall from '@waves/marshall';
 import { AuthenticationError, UserInputError } from 'apollo-server-express';
@@ -474,6 +475,24 @@ export const LocaleEnum = new GraphQLEnumType({
   ),
 });
 
+export const UserMetricType = new GraphQLObjectType({
+  name: 'UserMetricType',
+  fields: {
+    stakedUSD: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    earnedUSD: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    worth: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    apy: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+  },
+});
+
 export const UserType = new GraphQLObjectType<User, Request>({
   name: 'UserType',
   fields: {
@@ -762,6 +781,20 @@ export const UserType = new GraphQLObjectType<User, Request>({
           .orderBy(sort)
           .limit(pagination.limit)
           .offset(pagination.offset);
+      },
+    },
+    metric: {
+      type: GraphQLNonNull(UserMetricType),
+      resolve: async (user, args, { dataLoader }) => {
+        const stakedUSD = await dataLoader.userMetric({ metric: 'stakingUSD' }).load(user.id);
+        const earnedUSD = await dataLoader.userMetric({ metric: 'earnedUSD' }).load(user.id);
+
+        return {
+          stakedUSD,
+          earnedUSD,
+          worth: new BN(stakedUSD).plus(earnedUSD).toString(10),
+          apy: await dataLoader.userAPRMetric({ metric: 'aprYear' }).load(user.id),
+        };
       },
     },
     billing: {
