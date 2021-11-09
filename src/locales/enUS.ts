@@ -39,5 +39,9 @@ export default {
     'automate:condition:schedule:description': 'Check the schedule',
     'automate:condition:schedule:paramsDescription':
       'Days of week {{weeks}}; Months {{months}}; Days of month {{days}}; Hours {{hours}}',
+    'automate:action:ethereumAutomateRun:name': 'Run automate',
+    'automate:action:ethereumAutomateRun:description': 'Automatically run blockchain transaction',
+    'automate:action:notification:name': 'Send notification',
+    'automate:action:notification:description': 'Send notification via email or telegram',
   },
 };
