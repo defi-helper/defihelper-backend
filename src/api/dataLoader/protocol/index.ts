@@ -5,6 +5,7 @@ import {
   metricWalletTableName,
   MetricContractField,
   MetricWalletField,
+  MetricContractAPRField,
 } from '@models/Metric/Entity';
 import { tableName as walletTableName } from '@models/Wallet/Entity';
 import { User } from '@models/User/Entity';
@@ -101,7 +102,7 @@ export const protocolUserLastAPRLoader = ({
   metric,
 }: {
   user: User;
-  metric: Exclude<MetricContractField, 'tvl'>;
+  metric: MetricContractAPRField;
 }) =>
   new DataLoader<string, string>(async (protocolsId) => {
     const database = container.database();

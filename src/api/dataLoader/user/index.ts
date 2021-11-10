@@ -3,8 +3,8 @@ import BN from 'bignumber.js';
 import {
   metricWalletTableName,
   MetricWalletField,
-  MetricContractField,
   metricContractTableName,
+  MetricContractAPRField,
 } from '@models/Metric/Entity';
 import { walletContractLinkTableName } from '@models/Protocol/Entity';
 import { tableName as walletTableName } from '@models/Wallet/Entity';
@@ -49,7 +49,7 @@ export const userLastMetricLoader = ({ metric }: { metric: MetricWalletField }) 
     return usersId.map((id) => map.get(id) ?? '0');
   });
 
-export const userLastAPRLoader = ({ metric }: { metric: Exclude<MetricContractField, 'tvl'> }) =>
+export const userLastAPRLoader = ({ metric }: { metric: MetricContractAPRField }) =>
   new DataLoader<string, string>(async (usersId) => {
     const database = container.database();
     const contractsId = await container.model

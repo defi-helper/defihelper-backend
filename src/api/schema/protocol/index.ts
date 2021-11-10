@@ -606,6 +606,9 @@ export const ProtocolMetricType = new GraphQLObjectType({
     tvl: {
       type: GraphQLNonNull(GraphQLString),
     },
+    uniqueWalletsCount: {
+      type: GraphQLNonNull(GraphQLString),
+    },
     myAPY: {
       type: GraphQLNonNull(GraphQLString),
     },
@@ -943,6 +946,9 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
       resolve: async (protocol, args, { currentUser, dataLoader }) => {
         const metric = {
           tvl: await dataLoader.protocolMetric({ metric: 'tvl' }).load(protocol.id),
+          uniqueWalletsCount: await dataLoader
+            .protocolMetric({ metric: 'uniqueWalletsCount' })
+            .load(protocol.id),
           myAPY: '0',
           myStaked: '0',
           myEarned: '0',
