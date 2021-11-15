@@ -68,15 +68,15 @@ export default {
         node: array(process.env.POLYGON_NODE ?? '[]'),
         historicalNode: array(process.env.POLYGON_NODE_HISTORICAL ?? '[]'),
         inspectors: array(process.env.POLYGON_INSPECTORS ?? '[]'),
-        consumers: array(process.env.ETH_POLYGON_CONSUMERS ?? '[]'),
+        consumers: array(process.env.POLYGON_CONSUMERS ?? '[]'),
         avgBlockTime: 2.5,
       },
       // Avalanch
       avalanch: {
-        node: array(process.env.AVALANCH_NODE ?? '[]'),
-        historicalNode: array(process.env.AVALANCH_NODE_HISTORICAL ?? '[]'),
-        inspectors: array(process.env.AVALANCH_INSPECTORS ?? '[]'),
-        consumers: array(process.env.ETH_AVALANCH_CONSUMERS ?? '[]'),
+        node: array(process.env.AVALANCHE_NODE ?? '[]'),
+        historicalNode: array(process.env.AVALANCHE_NODE_HISTORICAL ?? '[]'),
+        inspectors: array(process.env.AVALANCHE_INSPECTORS ?? '[]'),
+        consumers: array(process.env.AVALANCHE_CONSUMERS ?? '[]'),
         avgBlockTime: 1,
       },
       // Local
