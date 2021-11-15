@@ -166,9 +166,9 @@ export class BlockchainContainer extends Container<Config> {
     ),
     '43114': networkFactory(
       '43114',
-      'Avalanch',
-      new URL('https://cchain.explorer.avax.network/tx'),
-      new URL('https://cchain.explorer.avax.network/address'),
+      'Avalanche',
+      new URL('https://snowtrace.io/tx'),
+      new URL('https://snowtrace.io/address'),
       async (address: string) => {
         const res = await axios.get(
           `https://repo.sourcify.dev/contracts/full_match/43114/${address}/metadata.json`,
