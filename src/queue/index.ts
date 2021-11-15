@@ -35,6 +35,7 @@ export * as sendEventsNotifications from './notifications/webHook';
 export * as linkContractsFromEvents from './wallet/linkContractsFromEvents';
 export * as notificationSend from './notifications/send';
 export * as contractResolveDeployBlockNumber from './contract/resolveDeployBlockNumber';
+export * as billingBroker from './billing/broker';
 export * as billingTransferScan from './billing/transferScan';
 export * as billingClaimScan from './billing/claimScan';
 export * as billingFeeOracle from './billing/feeOracle';

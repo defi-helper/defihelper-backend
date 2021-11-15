@@ -8,6 +8,7 @@ export default async (process: Process) => {
     queue.push('metricsContractBroker', {}),
     queue.push('metricsWalletBroker', {}),
     queue.push('automateTriggerByTime', { type: TriggerType.EveryHour }),
+    queue.push('billingBroker', {}),
   ]);
 
   return process.done();
