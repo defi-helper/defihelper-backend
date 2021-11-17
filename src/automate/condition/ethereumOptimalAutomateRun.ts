@@ -48,7 +48,7 @@ export default async (params: Params) => {
     .contractTable()
     .where({
       protocol: protocol.id,
-      address: targetContractAddress,
+      address: targetContractAddress.toLowerCase(),
     })
     .first();
   if (!targetContract) throw new Error('Target contract not found');
