@@ -76,6 +76,11 @@ export const WalletType = new GraphQLObjectType<Wallet>({
     name: {
       type: GraphQLNonNull(GraphQLString),
       description: 'Name',
+      resolve: (wallet) => {
+        if (wallet.name !== '') return wallet.name;
+
+        return `${wallet.address.slice(0, 5)}...${wallet.address.slice(-5)}`;
+      },
     },
     contracts: {
       type: GraphQLNonNull(PaginateList('WalletContractListType', GraphQLNonNull(ContractType))),
