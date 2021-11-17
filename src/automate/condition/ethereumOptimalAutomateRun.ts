@@ -84,7 +84,9 @@ export default async (params: Params) => {
 
   const automateRunParams = await automateAdapter.runParams();
   if (automateRunParams instanceof Error) throw automateRunParams;
-  const [gasFee] = automateRunParams;
+  const {
+    calldata: [gasFee],
+  } = automateRunParams;
   const fee = new BN(gasFee).div(new BN(10).pow(18)).multipliedBy(gasPriceUSD).toFixed(4);
 
   const { data: optimalRes } = await axios.get(`${container.parent.restakeOptimal.host}/optimal`, {

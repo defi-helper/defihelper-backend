@@ -7,20 +7,14 @@ import dayjs from 'dayjs';
 export interface Params {
   provider: PostProvider;
   protocol: string;
+  ids: string[];
 }
 
 export default async (process: Process) => {
-  const { provider, protocol: protocolId } = process.task.params as Params;
+  const { provider, protocol: protocolId, ids } = process.task.params as Params;
 
   const protocol = await container.model.protocolTable().where('id', protocolId).first();
   if (!protocol) throw new Error('Protocol not found');
-
-  const links = (protocol.links.social ?? [])
-    .filter(({ name }) => name.toLowerCase() === provider)
-    .map(({ value }) => value);
-  const ids = links
-    .map((link) => (link.match(/\/([^/]+)$/i) ?? [])[1])
-    .filter((v) => typeof v === 'string');
 
   const socialStatsGateway = container.socialStats();
   const postsData = await Promise.all(ids.map((id) => socialStatsGateway.post(provider, id)));
@@ -30,7 +24,13 @@ export default async (process: Process) => {
     .slice(0, 5)
     .map<PostInput>(({ title, text, link, createdAt }) => ({
       title,
-      content: text,
+      content: text
+        .replace(/(<([^>]+)>)/gi, '')
+        .slice(0, 300)
+        .split(' ')
+        .slice(0, -1)
+        .concat('...')
+        .join(' '),
       link,
       createdAt: dayjs.unix(createdAt).toDate(),
     }));

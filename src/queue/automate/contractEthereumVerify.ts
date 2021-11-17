@@ -45,7 +45,7 @@ export default async (process: Process) => {
       return process.done();
     }
   } catch (e) {
-    await reject(contract, e.message);
+    await reject(contract, `${e}`);
     return process.done();
   }
 
@@ -72,7 +72,7 @@ export default async (process: Process) => {
       verification: ContractVerificationStatus.Confirmed,
     });
   } catch (e) {
-    await reject(contract, e.message);
+    await reject(contract, `${e}`);
     return process.done();
   }
 

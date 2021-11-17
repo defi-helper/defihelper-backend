@@ -5,20 +5,14 @@ import { SocialProvider } from '@services/SocialStats';
 export interface Params {
   provider: SocialProvider;
   protocol: string;
+  ids: string[];
 }
 
 export default async (process: Process) => {
-  const { provider, protocol: protocolId } = process.task.params as Params;
+  const { provider, protocol: protocolId, ids } = process.task.params as Params;
 
   const protocol = await container.model.protocolTable().where('id', protocolId).first();
   if (!protocol) throw new Error('Protocol not found');
-
-  const links = (protocol.links.social ?? [])
-    .filter(({ name }) => name.toLowerCase() === provider)
-    .map(({ value }) => value);
-  const ids = links
-    .map((link) => (link.match(/\/([^/]+)$/i) ?? [])[1])
-    .filter((v) => typeof v === 'string');
 
   const socialStatsGateway = container.socialStats();
   const socialStats = await Promise.all(

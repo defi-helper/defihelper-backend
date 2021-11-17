@@ -33,13 +33,19 @@ export interface ContractAdapter {
   (provider: any, contract: string, options: ContractAdapterOptions): Promise<ContractData>;
 }
 
+export interface EthereumAutomateRunParams {
+  gasPrice: string;
+  gasLimit: string;
+  calldata: [string, ...any];
+}
+
 export interface EthereumAutomateAdapter {
   (signer: any, contract: string): Promise<{
     contract: string;
     migrate: () => Promise<ethers.Transaction | Error>;
     deposit: () => Promise<ethers.Transaction | Error>;
     refund: () => Promise<ethers.Transaction | Error>;
-    runParams: () => Promise<[string, ...any] | Error>;
+    runParams: () => Promise<EthereumAutomateRunParams | Error>;
     run: () => Promise<ethers.Transaction | Error>;
   }>;
 }
