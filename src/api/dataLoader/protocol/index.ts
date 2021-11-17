@@ -8,11 +8,10 @@ import {
   MetricContractAPRField,
 } from '@models/Metric/Entity';
 import { tableName as walletTableName } from '@models/Wallet/Entity';
-import { User } from '@models/User/Entity';
 import BN from 'bignumber.js';
 import DataLoader from 'dataloader';
 
-export const protocolFavoritesLoader = ({ id: userId }: User) =>
+export const protocolFavoritesLoader = ({ userId }: { userId: string }) =>
   new DataLoader<string, boolean>(async (protocolsId) => {
     const favoritesSet = new Set(
       await container.model
@@ -58,10 +57,10 @@ export const protocolLastMetricLoader = ({ metric }: { metric: MetricContractFie
   });
 
 export const protocolUserLastMetricLoader = ({
-  user: { id: userId },
+  userId,
   metric,
 }: {
-  user: User;
+  userId: string;
   metric: MetricWalletField;
 }) =>
   new DataLoader<string, string>(async (protocolsId) => {
@@ -98,10 +97,10 @@ export const protocolUserLastMetricLoader = ({
   });
 
 export const protocolUserLastAPRLoader = ({
-  user: { id: userId },
+  userId,
   metric,
 }: {
-  user: User;
+  userId: string;
   metric: MetricContractAPRField;
 }) =>
   new DataLoader<string, string>(async (protocolsId) => {
@@ -200,10 +199,10 @@ export const contractLastMetricLoader = ({ metric }: { metric: MetricContractFie
   });
 
 export const contractUserLastMetricLoader = ({
-  user: { id: userId },
+  userId,
   metric,
 }: {
-  user: User;
+  userId: string;
   metric: MetricWalletField;
 }) =>
   new DataLoader<string, string>(async (contractsId) => {

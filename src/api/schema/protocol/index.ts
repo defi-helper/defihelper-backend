@@ -179,10 +179,10 @@ export const ContractType = new GraphQLObjectType<Contract, Request>({
         return {
           ...metric,
           myStaked: await dataLoader
-            .contractUserMetric({ metric: 'stakingUSD', user: currentUser })
+            .contractUserMetric({ metric: 'stakingUSD', userId: currentUser.id })
             .load(contract.id),
           myEarned: await dataLoader
-            .contractUserMetric({ metric: 'earnedUSD', user: currentUser })
+            .contractUserMetric({ metric: 'earnedUSD', userId: currentUser.id })
             .load(contract.id),
         };
       },
@@ -661,7 +661,7 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
       resolve: async (protocol, args, { currentUser, dataLoader }) => {
         if (!currentUser) return false;
 
-        return dataLoader.protocolFavorites(currentUser).load(protocol.id);
+        return dataLoader.protocolFavorites({ userId: currentUser.id }).load(protocol.id);
       },
     },
     contracts: {
@@ -958,13 +958,13 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
         return {
           ...metric,
           myAPY: await dataLoader
-            .protocolUserAPRMetric({ metric: 'aprYear', user: currentUser })
+            .protocolUserAPRMetric({ metric: 'aprYear', userId: currentUser.id })
             .load(protocol.id),
           myStaked: await dataLoader
-            .protocolUserMetric({ metric: 'stakingUSD', user: currentUser })
+            .protocolUserMetric({ metric: 'stakingUSD', userId: currentUser.id })
             .load(protocol.id),
           myEarned: await dataLoader
-            .protocolUserMetric({ metric: 'earnedUSD', user: currentUser })
+            .protocolUserMetric({ metric: 'earnedUSD', userId: currentUser.id })
             .load(protocol.id),
         };
       },

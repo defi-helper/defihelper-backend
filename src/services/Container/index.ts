@@ -12,12 +12,13 @@ export function singleton<T>(f: Factory<T>): Factory<T> {
 }
 
 export function singletonParametric<T, P>(f: ParametricFactory<T, P>) {
-  const instances = new Map<P, T>();
+  const instances = new Map<string, T>();
 
   return (k: P) => {
-    if (!instances.has(k)) instances.set(k, f(k));
+    const key = JSON.stringify(k);
+    if (!instances.has(key)) instances.set(key, f(k));
 
-    return instances.get(k) as T;
+    return instances.get(key) as T;
   };
 }
 
