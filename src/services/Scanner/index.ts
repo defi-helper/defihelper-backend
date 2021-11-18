@@ -1,6 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
 import axiosRetry from 'axios-retry';
-import dayjs from 'dayjs';
 
 export interface ScannerParams {
   host: string;
@@ -93,22 +92,8 @@ export class ScannerService {
     return (await this.client.get<Contract>(`/api/contract/${id}`)).data;
   }
 
-  async getContractStatistics(
-    id: string,
-    { filter }: ContractStatisticsQuery,
-  ): Promise<ContractStatistics> {
-    const params = [];
-    if (filter.block) {
-      params.push(`filter[block][from]=${filter.block.from}`);
-      params.push(`filter[block][to]=${filter.block.to}`);
-    }
-    if (filter.date) {
-      params.push(`filter[date][from]=${dayjs(filter.date.from).unix()}`);
-      params.push(`filter[date][to]=${dayjs(filter.date.to).unix()}`);
-    }
-    const res = await this.client.get<ContractStatistics>(
-      `/api/contract/${id}/statistics?${params.join('&')}`,
-    );
+  async getContractStatistics(id: string): Promise<ContractStatistics> {
+    const res = await this.client.get<ContractStatistics>(`/api/contract/${id}/statistics`);
 
     return res.data;
   }
