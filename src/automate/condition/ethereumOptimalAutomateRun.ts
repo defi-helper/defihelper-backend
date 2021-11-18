@@ -32,6 +32,7 @@ export default async (params: Params) => {
   if (!protocol) throw new Error('Protocol not found');
 
   const network = container.blockchain.ethereum.byNetwork(wallet.network);
+  const signer = network.consumers()[0];
   const provider = network.provider();
   const gasPriceUSD = await network.priceFeedUSD();
 
@@ -41,7 +42,7 @@ export default async (params: Params) => {
   const automateAdapterFactory = adapters.automates[contract.adapter] as EthereumAutomateAdapter;
   if (typeof automateAdapterFactory !== 'function') throw new Error('Automate adapter not found');
 
-  const automateAdapter = await automateAdapterFactory(provider, contract.address);
+  const automateAdapter = await automateAdapterFactory(signer, contract.address);
   const { contract: targetContractAddress } = automateAdapter;
 
   const targetContract = await container.model
