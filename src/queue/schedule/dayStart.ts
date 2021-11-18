@@ -36,6 +36,7 @@ export default async (process: Process) => {
     queue.push('metricsProtocolLinksSocialBroker', {}),
     queue.push('metricsProtocolLinksListingBroker', {}),
     queue.push('metricsProtocolLinksPostBroker', {}),
+    queue.push('metricsContractScannerBroker', {}),
   ]);
 
   return process.done();
