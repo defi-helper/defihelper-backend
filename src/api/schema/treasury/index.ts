@@ -17,8 +17,9 @@ export const TreasuryQuery: GraphQLFieldConfig<any, Request> = {
   type: GraphQLNonNull(TreasuryType),
   resolve: async () => {
     const treasury = container.treasury();
+    const allowedNetworks = ['1', '56', '43114'];
     const networks = Object.entries(dfhContracts)
-      .filter(([, contracts]) => contracts.Treasury)
+      .filter(([networkId, contracts]) => contracts.Treasury && allowedNetworks.includes(networkId))
       .map(([networkId]) => networkId);
     const balancesUSD = await Promise.all(
       networks.map((networkId) => treasury.getEthBalanceUSD(networkId)),
