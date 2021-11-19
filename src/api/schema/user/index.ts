@@ -58,6 +58,18 @@ const TokenAliasFilterInputType = new GraphQLInputObjectType({
   },
 });
 
+export const WalletMetricType = new GraphQLObjectType({
+  name: 'WalletMetricType',
+  fields: {
+    stakedUSD: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    earnedUSD: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+  },
+});
+
 export const WalletType = new GraphQLObjectType<Wallet.Wallet>({
   name: 'WalletType',
   fields: {
@@ -324,6 +336,18 @@ export const WalletType = new GraphQLObjectType<Wallet.Wallet>({
           .orderBy(sort)
           .limit(pagination.limit)
           .offset(pagination.offset);
+      },
+    },
+    metric: {
+      type: GraphQLNonNull(WalletMetricType),
+      resolve: async (wallet, args, { dataLoader }) => {
+        const stakedUSD = await dataLoader.walletMetric({ metric: 'stakingUSD' }).load(wallet.id);
+        const earnedUSD = await dataLoader.walletMetric({ metric: 'earnedUSD' }).load(wallet.id);
+
+        return {
+          stakedUSD,
+          earnedUSD,
+        };
       },
     },
     billing: {

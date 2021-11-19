@@ -7,7 +7,12 @@ import {
   protocolUserLastAPRLoader,
   protocolUserLastMetricLoader,
 } from './protocol';
-import { userBlockchainLoader, userLastAPRLoader, userLastMetricLoader } from './user';
+import {
+  userBlockchainLoader,
+  userLastAPRLoader,
+  userLastMetricLoader,
+  walletLastMetricLoader,
+} from './user';
 
 export class DataLoaderContainer extends Container<{}> {
   readonly protocolFavorites = singletonParametric(protocolFavoritesLoader);
@@ -27,4 +32,6 @@ export class DataLoaderContainer extends Container<{}> {
   readonly userMetric = singletonParametric(userLastMetricLoader);
 
   readonly userAPRMetric = singletonParametric(userLastAPRLoader);
+
+  readonly walletMetric = singletonParametric(walletLastMetricLoader);
 }

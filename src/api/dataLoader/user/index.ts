@@ -130,3 +130,22 @@ export const userLastAPRLoader = ({ metric }: { metric: MetricContractAPRField }
       return sum.earned.div(sum.staked).toString(10);
     });
   });
+
+export const walletLastMetricLoader = ({ metric }: { metric: MetricWalletField }) =>
+  new DataLoader(async (walletsId: ReadonlyArray<string>) => {
+    const database = container.database();
+    const map = new Map(
+      await container.model
+        .metricWalletTable()
+        .distinctOn('wallet')
+        .columns('wallet')
+        .column({ v: database.raw(`(data->>'${metric}')::numeric`) })
+        .whereIn('wallet', walletsId)
+        .andWhere(database.raw(`data->>'${metric}' IS NOT NULL`))
+        .orderBy('wallet')
+        .orderBy('date', 'DESC')
+        .then((rows) => rows.map(({ wallet, v }) => [wallet, v])),
+    );
+
+    return walletsId.map((id) => map.get(id) ?? '0');
+  });
