@@ -3,6 +3,7 @@ import {
   GraphQLEnumType,
   GraphQLFieldConfig,
   GraphQLInputObjectType,
+  GraphQLInt,
   GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
@@ -176,6 +177,19 @@ export const WalletType = new GraphQLObjectType<Wallet.Wallet>({
             count: await select.clone().count().first(),
           },
         };
+      },
+    },
+    triggersCount: {
+      type: GraphQLNonNull(GraphQLInt),
+      resolve: async (wallet) => {
+        const row = await container.model
+          .automateTriggerTable()
+          .count()
+          .where('id', wallet.id)
+          .first();
+        if (!row) return 0;
+
+        return row.count;
       },
     },
     metricChart: {
