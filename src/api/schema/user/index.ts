@@ -12,6 +12,7 @@ import {
 import container from '@container';
 import { utils } from 'ethers';
 import { Request } from 'express';
+import { Locale } from '@services/I18n/container';
 import { User, Role } from '@models/User/Entity';
 import * as Wallet from '@models/Wallet/Entity';
 import { Blockchain } from '@models/types';
@@ -873,6 +874,44 @@ export const UserType = new GraphQLObjectType<User, Request>({
   },
 });
 
+export const UserListQuery: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(PaginateList('UserListQuery', GraphQLNonNull(UserType))),
+  args: {
+    filter: {
+      type: new GraphQLInputObjectType({
+        name: 'UserListFilterInputType',
+        fields: {
+          role: {
+            type: RoleType,
+          },
+        },
+      }),
+      defaultValue: {},
+    },
+    sort: SortArgument(
+      'UserListSortInputType',
+      ['id', 'createdAt'],
+      [{ column: 'createdAt', order: 'asc' }],
+    ),
+    pagination: PaginationArgument('UserListPaginationInputType'),
+  },
+  resolve: onlyAllowed('user.list', async (root, { filter, sort, pagination }) => {
+    const select = container.model.userTable().where(function () {
+      const { role } = filter;
+      if (role !== undefined) {
+        this.andWhere('role', role);
+      }
+    });
+
+    return {
+      list: await select.clone().orderBy(sort).limit(pagination.limit).offset(pagination.offset),
+      pagination: {
+        count: await select.clone().count().first(),
+      },
+    };
+  }),
+};
+
 export const AuthType = new GraphQLObjectType({
   name: 'AuthType',
   fields: {
@@ -1131,5 +1170,42 @@ export const WalletDeleteMutation: GraphQLFieldConfig<any, Request> = {
     await container.model.walletService().delete(wallet);
 
     return true;
+  }),
+};
+
+export const UserUpdateMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(UserType),
+  args: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+    },
+    input: {
+      type: GraphQLNonNull(
+        new GraphQLInputObjectType({
+          name: 'UserUpdateInputType',
+          fields: {
+            role: {
+              type: RoleType,
+            },
+            locale: {
+              type: LocaleEnum,
+            },
+          },
+        }),
+      ),
+    },
+  },
+  resolve: onlyAllowed('user.update', async (root, { id, input }) => {
+    const user = await container.model.userTable().where('id', id).first();
+    if (!user) throw new UserInputError('User not found');
+
+    const { role, locale } = input as { role?: Role; locale?: Locale };
+    const updated = await container.model.userService().update({
+      ...user,
+      role: role !== undefined ? role : user.role,
+      locale: locale !== undefined ? locale : user.locale,
+    });
+
+    return updated;
   }),
 };
