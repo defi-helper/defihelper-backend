@@ -4,6 +4,7 @@ export * as scheduleDayStart from './schedule/dayStart';
 export * as scheduleWeekStart from './schedule/weekStart';
 export * as scheduleMonthStart from './schedule/monthStart';
 export * as eventsContractCreated from './events/contractCreated';
+export * as eventsAutomateContractVerificationConfirmed from './events/automate/contractVerificationConfirmed';
 export * as tokenCreate from './token/create';
 export * as tokenAlias from './token/alias';
 export * as tokenInfoEth from './token/ethereumInfo';

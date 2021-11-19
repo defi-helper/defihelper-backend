@@ -4,7 +4,7 @@ import { User } from '@models/User/Entity';
 import { Blockchain } from '@models/types';
 import { Emitter } from '@services/Event';
 import container from '@container';
-import { Wallet, Table } from './Entity';
+import { Wallet, Table, WalletType } from './Entity';
 
 export class WalletService {
   constructor(readonly table: Factory<Table>) {}
@@ -14,15 +14,18 @@ export class WalletService {
       return;
     }
 
-    await container.model.queueService().push('findWalletContracts', {
-      walletId: wallet.id,
-    });
+    if (wallet.type === WalletType.Wallet) {
+      await container.model.queueService().push('findWalletContracts', {
+        walletId: wallet.id,
+      });
+    }
   });
 
   async create(
     user: User,
     blockchain: Blockchain,
     network: string,
+    type: WalletType,
     address: string,
     publicKey: string,
     name: string,
@@ -32,6 +35,7 @@ export class WalletService {
       user: user.id,
       blockchain,
       network,
+      type,
       address: blockchain === 'ethereum' ? address.toLowerCase() : address,
       publicKey,
       name,

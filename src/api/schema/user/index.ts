@@ -12,7 +12,7 @@ import container from '@container';
 import { utils } from 'ethers';
 import { Request } from 'express';
 import { User, Role } from '@models/User/Entity';
-import { Wallet } from '@models/Wallet/Entity';
+import * as Wallet from '@models/Wallet/Entity';
 import { Blockchain } from '@models/types';
 import BN from 'bignumber.js';
 import * as WavesCrypto from '@waves/ts-lib-crypto';
@@ -37,6 +37,14 @@ import * as locales from '../../../locales';
 import { UserBillingType, WalletBillingType } from '../billing';
 import { UserStoreType } from '../store';
 
+const WalletTypeEnum = new GraphQLEnumType({
+  name: 'WalletTypeEnum',
+  values: Object.keys(Wallet.WalletType).reduce(
+    (res, type) => ({ ...res, [type]: { value: type } }),
+    {},
+  ),
+});
+
 const TokenAliasFilterInputType = new GraphQLInputObjectType({
   name: 'UserMetricsTokenAliasFilterInputType',
   fields: {
@@ -50,7 +58,7 @@ const TokenAliasFilterInputType = new GraphQLInputObjectType({
   },
 });
 
-export const WalletType = new GraphQLObjectType<Wallet>({
+export const WalletType = new GraphQLObjectType<Wallet.Wallet>({
   name: 'WalletType',
   fields: {
     id: {
@@ -64,6 +72,10 @@ export const WalletType = new GraphQLObjectType<Wallet>({
     network: {
       type: GraphQLNonNull(GraphQLString),
       description: 'Blockchain network id',
+    },
+    type: {
+      type: GraphQLNonNull(WalletTypeEnum),
+      description: 'Type',
     },
     address: {
       type: GraphQLNonNull(GraphQLString),
@@ -523,6 +535,9 @@ export const UserType = new GraphQLObjectType<User, Request>({
               blockchain: {
                 type: BlockchainFilterInputType,
               },
+              type: {
+                type: WalletTypeEnum,
+              },
               search: {
                 type: GraphQLString,
               },
@@ -540,13 +555,16 @@ export const UserType = new GraphQLObjectType<User, Request>({
       resolve: async (user, { filter, sort, pagination }) => {
         const select = container.model.walletTable().where(function () {
           this.where('user', user.id);
-          const { blockchain, search } = filter;
+          const { blockchain, type, search } = filter;
           if (blockchain) {
             const { protocol, network } = blockchain;
             this.andWhere('blockchain', protocol);
             if (network !== undefined) {
               this.andWhere('network', network);
             }
+          }
+          if (type) {
+            this.andWhere('type', type);
           }
           if (search !== undefined && search !== '') {
             this.andWhere('address', 'iLike', `%${search}%`);
@@ -638,6 +656,9 @@ export const UserType = new GraphQLObjectType<User, Request>({
                 this.andWhere('network', network);
               }
             }
+            if (filter.wallet) {
+              this.whereIn('id', filter.wallet);
+            }
           });
 
         return metricsChartSelector(
@@ -647,9 +668,6 @@ export const UserType = new GraphQLObjectType<User, Request>({
               this.whereIn('wallet', walletSelect);
               if (filter.contract) {
                 this.whereIn('contract', filter.contract);
-              }
-              if (filter.wallet) {
-                this.whereIn('wallet', filter.wallet);
               }
               if (filter.dateAfter) {
                 this.andWhere('date', '>=', filter.dateAfter.toDate());
@@ -889,7 +907,15 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
     const user = currentUser ?? (await container.model.userService().create(Role.Candidate));
     await container.model
       .walletService()
-      .create(user, 'ethereum', network, recoveredAddress, recoveredPubKey, '');
+      .create(
+        user,
+        'ethereum',
+        network,
+        Wallet.WalletType.Wallet,
+        recoveredAddress,
+        recoveredPubKey,
+        '',
+      );
     const sid = container.model.sessionService().generate(user);
 
     return { user, sid };
@@ -966,7 +992,7 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
     const user = currentUser ?? (await container.model.userService().create(Role.Candidate));
     await container.model
       .walletService()
-      .create(user, 'waves', network, recoveredAddress, publicKey, '');
+      .create(user, 'waves', network, Wallet.WalletType.Wallet, recoveredAddress, publicKey, '');
     const sid = container.model.sessionService().generate(user);
 
     return { user, sid };
@@ -1002,7 +1028,9 @@ export const AddWalletMutation: GraphQLFieldConfig<any, Request> = {
     const { blockchain, network, address } = input;
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
-    await container.model.walletService().create(currentUser, blockchain, network, address, '', '');
+    await container.model
+      .walletService()
+      .create(currentUser, blockchain, network, Wallet.WalletType.Wallet, address, '', '');
     const sid = container.model.sessionService().generate(currentUser);
 
     return { currentUser, sid };
