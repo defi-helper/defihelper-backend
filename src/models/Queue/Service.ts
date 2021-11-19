@@ -118,7 +118,9 @@ export class QueueService {
       const { task: result } = await Handlers[current.handler].default(process);
       await this.table().update(result).where('id', current.id);
     } catch (e) {
-      await this.table().update(process.error(e).task).where('id', current.id);
+      await this.table()
+        .update(process.error(e instanceof Error ? e : new Error(`${e}`)).task)
+        .where('id', current.id);
     }
 
     return true;

@@ -110,4 +110,7 @@ export default {
   restakeOptimal: {
     host: process.env.RESTAKE_OPTIMAL_HOST ?? 'localhost',
   },
+  log: {
+    chatId: Number(process.env.LOG_TELEGRAM_CHAT ?? '0'),
+  },
 };

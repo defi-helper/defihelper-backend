@@ -51,11 +51,7 @@ export class TelegramService {
       } catch (error) {
         container
           .logger()
-          .error(
-            `Error handling TG message. Message: ${JSON.stringify(message)}, error: ${
-              error.message
-            }`,
-          );
+          .error(`Error handling TG message. Message: ${JSON.stringify(message)}, error: ${error}`);
       }
     });
   }

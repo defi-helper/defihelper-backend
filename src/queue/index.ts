@@ -49,3 +49,4 @@ export * as automateTransactionEthereumConfirm from './automate/transactionEther
 export * as automateTriggerRun from './automate/run';
 export * as automateTriggerByTime from './automate/trigger/byTime';
 export * as swopfiLPFarmingPoolScanner from './pools/swopfiLPFarming';
+export * as logBilling from './log/billingLogger';
