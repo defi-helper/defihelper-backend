@@ -39,7 +39,7 @@ import { UserStoreType } from '../store';
 
 const WalletTypeEnum = new GraphQLEnumType({
   name: 'WalletTypeEnum',
-  values: Object.keys(Wallet.WalletType).reduce(
+  values: Object.values(Wallet.WalletType).reduce(
     (res, type) => ({ ...res, [type]: { value: type } }),
     {},
   ),
