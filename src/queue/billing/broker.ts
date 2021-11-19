@@ -41,6 +41,7 @@ export default async (process: Process) => {
                 network,
                 step: 1000,
                 from: balanceFrom,
+                lag: ['43114'].includes(network) ? 4 : 1,
               },
               {
                 colissionSign: `billingTransferScan:ethereum:${network}`,
@@ -57,6 +58,7 @@ export default async (process: Process) => {
                 network,
                 step: 1000,
                 from: balanceFrom,
+                lag: ['43114'].includes(network) ? 4 : 1,
               },
               {
                 colissionSign: `billingClaimScan:ethereum:${network}`,
@@ -78,6 +80,7 @@ export default async (process: Process) => {
                 network,
                 step: 1000,
                 from: storeFrom,
+                lag: ['43114'].includes(network) ? 4 : 1,
               },
               {
                 colissionSign: `billingStoreScan:ethereum:${network}`,

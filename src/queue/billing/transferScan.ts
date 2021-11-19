@@ -49,10 +49,11 @@ export interface Params {
   network: string;
   from: number;
   step: number;
+  lag?: number;
 }
 
 export default async (process: Process) => {
-  const { blockchain, network, from, step } = process.task.params as Params;
+  const { blockchain, network, from, step, lag = 0 } = process.task.params as Params;
   if (blockchain !== 'ethereum') {
     throw new Error('Invalid blockchain');
   }
@@ -62,7 +63,7 @@ export default async (process: Process) => {
 
   const later = dayjs().add(1, 'minute').toDate();
   const provider = container.blockchain[blockchain].byNetwork(network).provider();
-  const currentBlockNumber = parseInt((await provider.getBlockNumber()).toString(), 10);
+  const currentBlockNumber = parseInt((await provider.getBlockNumber()).toString(), 10) - lag;
   if (currentBlockNumber < from) {
     return process.later(later);
   }
