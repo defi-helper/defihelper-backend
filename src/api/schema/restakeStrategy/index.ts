@@ -128,6 +128,7 @@ export const RestakeStrategyQuery: GraphQLFieldConfig<any, Request> = {
           apd,
           fee,
           seq,
+          minInterval: 3600,
         },
         headers: {
           'Content-Type': 'application/json',
