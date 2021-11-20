@@ -96,6 +96,7 @@ export default async (params: Params) => {
       earned: earnedUSD,
       apd: aprDay,
       fee,
+      minInterval: 3600,
     },
     headers: {
       'Content-Type': 'application/json',
