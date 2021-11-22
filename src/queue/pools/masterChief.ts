@@ -1,6 +1,8 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import { ethers } from 'ethers';
+import {Protocol} from "@models/Protocol/Entity";
+import {Blockchain} from "@models/types";
 
 export interface MasterChiefScannerParams {
   masterChefAddress: string;
@@ -104,25 +106,34 @@ export default async (process: Process) => {
         resolveSymbol(token1, provider),
       ]);
 
-      await container.model
-        .contractService()
-        .create(
-          protocol,
-          'ethereum',
-          network,
-          pool.lpToken.toLowerCase(),
-          null,
-          farmingAdapterName,
-          '',
-          [],
-          `${protocolName} ${symbol0}/${symbol1} LP`,
-          '',
-          `${container.blockchain.ethereum.networks[
-            network
-          ].walletExplorerURL.toString()}/${masterChefAddress}`,
-          false,
-          [],
-        );
+      const contract = await container.model.contractTable().where({
+        protocol: protocol.id,
+        blockchain: 'ethereum',
+        network: network,
+        address: pool.lpToken.toLowerCase(),
+      }).first();
+
+      if (!contract) {
+        await container.model
+          .contractService()
+          .create(
+            protocol,
+            'ethereum',
+            network,
+            pool.lpToken.toLowerCase(),
+            null,
+            farmingAdapterName,
+            '',
+            [],
+            `${protocolName} ${symbol0}/${symbol1} LP`,
+            '',
+            `${container.blockchain.ethereum.networks[
+              network
+              ].walletExplorerURL.toString()}/${masterChefAddress}`,
+            false,
+            [],
+          );
+      }
     }),
   );
 
