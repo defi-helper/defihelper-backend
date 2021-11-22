@@ -57,7 +57,7 @@ export class TokenService {
       'tokenAlias',
       { tokenId: cur.id },
       {
-        colissionSign: `tokenAlias-${cur.id}`,
+        collisionSign: `tokenAlias-${cur.id}`,
       },
     );
   });

@@ -18,7 +18,7 @@ export default async (process: Process) => {
       'contractResolveDeployBlockNumber',
       { contract: contract.id },
       {
-        colissionSign: `contractResolveDeployBlockNumber:${contract.id}`,
+        collisionSign: `contractResolveDeployBlockNumber:${contract.id}`,
       },
     );
     return process.later(dayjs().add(300, 'seconds').toDate());

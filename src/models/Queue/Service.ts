@@ -1,5 +1,7 @@
 import { v4 as uuid } from 'uuid';
 import { Factory } from '@services/Container';
+import { LogService } from '@models/Log/Service';
+import dayjs from 'dayjs';
 import { Task, TaskStatus, Table, Process, hasHandler } from './Entity';
 import * as Handlers from '../../queue';
 
@@ -50,11 +52,12 @@ export class Broker {
 
 export interface PushOptions {
   startAt?: Date;
-  colissionSign?: string;
+  collisionSign?: string;
+  scanner?: boolean;
 }
 
 export class QueueService {
-  constructor(readonly table: Factory<Table>) {}
+  constructor(readonly queueTable: Factory<Table>, readonly logService: Factory<LogService>) {}
 
   async push<H extends Handler>(handler: H, params: Object, options: PushOptions = {}) {
     let task: Task = {
@@ -65,15 +68,16 @@ export class QueueService {
       status: TaskStatus.Pending,
       info: '',
       error: '',
-      collisionSign: options.colissionSign ?? null,
+      collisionSign: options.collisionSign ?? null,
+      scanner: options.scanner ?? false,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
-    if (typeof options.colissionSign === 'string') {
-      const duplicate = await this.table()
+    if (typeof options.collisionSign === 'string') {
+      const duplicate = await this.queueTable()
         .where({
-          collisionSign: options.colissionSign,
+          collisionSign: options.collisionSign,
         })
         .whereIn('status', [TaskStatus.Pending, TaskStatus.Process])
         .first();
@@ -86,13 +90,13 @@ export class QueueService {
       }
     }
 
-    await this.table().insert(task);
+    await this.queueTable().insert(task);
 
     return task;
   }
 
   async handle(options: HandleOptions = {}): Promise<boolean> {
-    const current = await this.table()
+    const current = await this.queueTable()
       .where(function () {
         this.where('status', TaskStatus.Pending).andWhere('startAt', '<=', new Date());
         if (options.include && options.include.length > 0) {
@@ -107,7 +111,7 @@ export class QueueService {
       .first();
     if (!current) return false;
 
-    const lock = await this.table().update({ status: TaskStatus.Process }).where({
+    const lock = await this.queueTable().update({ status: TaskStatus.Process }).where({
       id: current.id,
       status: TaskStatus.Pending,
     });
@@ -116,11 +120,21 @@ export class QueueService {
     const process = new Process(current);
     try {
       const { task: result } = await Handlers[current.handler].default(process);
-      await this.table().update(result).where('id', current.id);
+      await this.queueTable().update(result).where('id', current.id);
     } catch (e) {
-      await this.table()
-        .update(process.error(e instanceof Error ? e : new Error(`${e}`)).task)
-        .where('id', current.id);
+      const error = e instanceof Error ? e : new Error(`${e}`);
+
+      await Promise.all([
+        current.scanner
+          ? this.queueTable()
+              .update(process.later(dayjs().add(10, 'seconds').toDate()).task)
+              .where('id', current.id)
+          : this.queueTable().update(process.error(error).task).where('id', current.id),
+        this.logService().create(
+          `queue:${current.handler}`,
+          `${current.id} ${error.stack ?? error}`,
+        ),
+      ]);
     }
 
     return true;

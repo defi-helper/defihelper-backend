@@ -113,7 +113,7 @@ export async function walletMetrics(process: Process) {
             address: tokenAddress,
           },
           {
-            colissionSign: `tokenCreate-${wallet.blockchain}:${wallet.network}:${tokenAddress}`,
+            collisionSign: `tokenCreate-${wallet.blockchain}:${wallet.network}:${tokenAddress}`,
           },
         );
       }),

@@ -15,9 +15,15 @@ export class ModelContainer extends Container<typeof AppContainer> {
     ),
   );
 
+  readonly logTable = Models.Log.Entity.logTableFactory(this.parent.database);
+
+  readonly logService = singleton(() => new Models.Log.Service.LogService(this.logTable));
+
   readonly queueTable = Models.Queue.Entity.tableFactory(this.parent.database);
 
-  readonly queueService = singleton(() => new Models.Queue.Service.QueueService(this.queueTable));
+  readonly queueService = singleton(
+    () => new Models.Queue.Service.QueueService(this.queueTable, this.logService),
+  );
 
   readonly userTable = Models.User.Entity.tableFactory(this.parent.database);
 

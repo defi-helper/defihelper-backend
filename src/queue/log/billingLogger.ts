@@ -1,32 +1,24 @@
 import container from '@container';
-import { Process, TaskStatus, Task } from '@models/Queue/Entity';
+import { Process } from '@models/Queue/Entity';
+import dayjs from 'dayjs';
 
 export default async (process: Process) => {
   if (container.parent.log.chatId === 0) return process.done();
 
-  const targetHandlers: Array<Task['handler']> = [
-    'billingTransferScan',
-    'billingClaimScan',
-    'billingStoreScan',
-    'billingFeeOracle',
-  ];
-  const errorTasks = await container.model
-    .queueTable()
-    .whereIn('handler', targetHandlers)
-    .andWhere('status', TaskStatus.Error);
+  const errors = await container.model
+    .logTable()
+    .whereIn('source', [
+      'queue:billingTransferScan',
+      'queue:billingClaimScan',
+      'queue:billingStoreScan',
+      'queue:billingFeeOracle',
+    ])
+    .andWhereBetween('createdAt', [dayjs().add(-10, 'minutes').toDate(), new Date()]);
   const telegramService = container.telegram();
   await Promise.all(
-    errorTasks.map(({ id, handler, error }) => {
-      return telegramService.send(
-        'queueBillingError',
-        {
-          id,
-          handler,
-          error,
-        },
-        container.parent.log.chatId,
-      );
-    }),
+    errors.map(({ source, message }) =>
+      telegramService.send('log', { source, message }, container.parent.log.chatId),
+    ),
   );
 
   return process.done();

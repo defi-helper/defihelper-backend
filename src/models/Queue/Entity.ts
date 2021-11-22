@@ -66,6 +66,7 @@ export interface Task {
   info: string;
   error: string;
   collisionSign: string | null;
+  scanner: boolean;
   updatedAt: Date;
   createdAt: Date;
 }
