@@ -109,7 +109,7 @@ function networkFactory(
     walletExplorerURL,
     getContractAbi,
     priceFeedUSD,
-    inspector: () => new ethers.Wallet(inspectors[0], provider()),
+    inspector: () => (inspectors.length > 0 ? new ethers.Wallet(inspectors[0], provider()) : null),
     consumers: () => signersFactory(consumers, provider()),
     dfhContracts: () => (isKey(dfhContracts, id) ? dfhContracts[id] : null),
   };

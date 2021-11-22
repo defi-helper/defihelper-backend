@@ -35,6 +35,9 @@ export default async (process: Process) => {
   const networkContainer = container.blockchain[blockchain].byNetwork(network);
   const provider = networkContainer.provider();
   const inspector = networkContainer.inspector();
+  if (inspector === null) {
+    return process.later(later);
+  }
   const networkContracts = contracts[network] as { [name: string]: { address: string } };
   const balanceAddress = networkContracts.Balance.address;
   const balance = container.blockchain[blockchain].contract(balanceAddress, balanceAbi, provider);
