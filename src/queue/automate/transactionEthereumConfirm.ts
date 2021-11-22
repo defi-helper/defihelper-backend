@@ -27,7 +27,7 @@ export default async (process: Process) => {
 
   const receipt = await provider.getTransactionReceipt(hash);
   if (receipt === null) {
-    return process.later(dayjs().add(1, 'minutes').toDate());
+    return process.later(dayjs().add(network.avgBlockTime, 'seconds').toDate());
   }
 
   await Promise.all([

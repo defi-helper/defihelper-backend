@@ -72,13 +72,14 @@ export class AutomateService {
     transaction: AutomateTransaction;
   }>(async ({ wallet, transaction }) => {
     if (wallet.blockchain === 'ethereum') {
+      const network = container.blockchain.ethereum.byNetwork(wallet.network);
       container.model.queueService().push(
         'automateTransactionEthereumConfirm',
         {
           id: transaction.id,
         },
         {
-          startAt: dayjs().add(1, 'minutes').toDate(),
+          startAt: dayjs().add(network.avgBlockTime, 'seconds').toDate(),
         },
       );
     }

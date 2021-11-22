@@ -26,7 +26,7 @@ export default async (process: Process) => {
         try {
           return await getConditionHandler(condition).call(null, condition.params);
         } catch (e) {
-          throw new Error(`Condition "${condition.id}": ${e.stack}`);
+          throw new Error(`Condition "${condition.id}": ${e instanceof Error ? e.stack : e}`);
         }
       }, Promise.resolve(true));
       if (conditionsCheck === false) return process.done();
@@ -43,7 +43,7 @@ export default async (process: Process) => {
         try {
           return await Promise.resolve(getActionHandler(action).call(null, action.params));
         } catch (e) {
-          throw new Error(`Action "${action.id}": ${e.stack}`);
+          throw new Error(`Action "${action.id}": ${e instanceof Error ? e.stack : e}`);
         }
       }, Promise.resolve(null));
 
@@ -54,7 +54,10 @@ export default async (process: Process) => {
       });
     }
   } catch (e) {
-    await automateService.createTriggerCallHistory(trigger, e);
+    await automateService.createTriggerCallHistory(
+      trigger,
+      e instanceof Error ? e : new Error(`${e}`),
+    );
   }
 
   return process.done();

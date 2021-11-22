@@ -7,6 +7,7 @@ import {
 } from '@models/Automate/Entity';
 import { tableName as walletTableName } from '@models/Wallet/Entity';
 import { EthereumAutomateAdapter } from '@services/Blockchain/Adapter';
+import { Wallet } from 'ethers';
 
 interface Params {
   id: string;
@@ -32,6 +33,7 @@ export default async (params: Params) => {
 
   const network = container.blockchain.ethereum.byNetwork(wallet.network);
   const consumers = network.consumers();
+
   const busyConsumers = await container.model
     .automateTransactionTable()
     .distinct(`${transactionTableName}.consumer`)
@@ -49,9 +51,20 @@ export default async (params: Params) => {
     .then((rows) => rows.map(({ consumer }) => consumer));
   const freeConsumers = consumers.filter(({ address }) => !busyConsumers.includes(address));
   if (freeConsumers.length === 0) throw new Error('Not free consumer');
-  const [consumer] = freeConsumers;
-  const lockKey = `defihelper:automate:consumer:${wallet.blockchain}:${wallet.network}:${consumer.address}`;
-  await container.semafor().lock(lockKey);
+
+  const consumer = await freeConsumers.reduce<Promise<Wallet | null>>(async (prev, current) => {
+    const result = await prev;
+    if (result !== null) return result;
+
+    return container
+      .semafor()
+      .lock(
+        `defihelper:automate:consumer:${wallet.blockchain}:${wallet.network}:${current.address}`,
+      )
+      .then(() => current)
+      .catch(() => null);
+  }, Promise.resolve(null));
+  if (consumer === null) throw new Error('Not free consumer');
 
   const { run } = await adapter(consumer, contract.address);
   try {
@@ -66,7 +79,11 @@ export default async (params: Params) => {
     };
     await container.model.automateService().createTransaction(contract, consumer.address, data);
   } catch (e) {
-    await container.semafor().unlock(lockKey);
+    await container
+      .semafor()
+      .unlock(
+        `defihelper:automate:consumer:${wallet.blockchain}:${wallet.network}:${consumer.address}`,
+      );
     throw e;
   }
 };
