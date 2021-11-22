@@ -49,23 +49,32 @@ export default async (process: Process) => {
         return;
       }
 
-      await container.model
-        .contractService()
-        .create(
-          protocol,
-          'waves',
-          'main',
-          pool.pool,
-          null,
-          stakingAdapterName,
-          '',
-          [],
-          `Staking ${token.name}`,
-          '',
-          `https://swop.fi/info/${pool.pool}`,
-          false,
-          [],
-        );
+      const contract = await container.model.contractTable().where({
+        protocol: protocol.id,
+        blockchain: 'waves',
+        network: 'main',
+        address: pool.pool,
+      }).first();
+
+      if (!contract) {
+        await container.model
+          .contractService()
+          .create(
+            protocol,
+            'waves',
+            'main',
+            pool.pool,
+            null,
+            stakingAdapterName,
+            '',
+            [],
+            `Staking ${token.name}`,
+            '',
+            `https://swop.fi/info/${pool.pool}`,
+            false,
+            [],
+          );
+      }
     }),
   );
 
