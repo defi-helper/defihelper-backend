@@ -5,7 +5,7 @@ import { CoinProvider } from '@services/SocialStats';
 const matchers = {
   [CoinProvider.CoinGecko]: (links: string[]): string[] => {
     return links.reduce<string[]>((result, link) => {
-      const match = link.match(/^https:\/\/(?:www\.)?coingecko.com\/.*\/([^/]+)$/i);
+      const match = link.match(/^https:\/\/(?:www\.)?coingecko.com\/.*\/([^/]+)\/?$/i);
       if (match === null) return result;
 
       return [...result, match[1]];
@@ -13,7 +13,7 @@ const matchers = {
   },
   [CoinProvider.CoinMarketCap]: (links: string[]): string[] => {
     return links.reduce<string[]>((result, link) => {
-      const match = link.match(/^https:\/\/(?:www\.)?coinmarketcap.com\/.*\/([^/]+)$/i);
+      const match = link.match(/^https:\/\/(?:www\.)?coinmarketcap.com\/.*\/([^/]+)\/?$/i);
       if (match === null) return result;
 
       return [...result, match[1]];

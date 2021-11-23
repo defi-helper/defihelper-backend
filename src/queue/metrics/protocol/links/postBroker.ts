@@ -5,7 +5,7 @@ import { PostProvider } from '@services/SocialStats';
 const matchers = {
   [PostProvider.Medium]: (links: string[]): string[] => {
     return links.reduce<string[]>((result, link) => {
-      const match = link.match(/^https?:\/\/(?:www\.)?medium\.com\/([^/]+)/i);
+      const match = link.match(/^https?:\/\/(?:www\.)?medium\.com\/([^/]+)\/?$/i);
       if (match === null) return result;
 
       return [...result, match[1]];
@@ -13,7 +13,7 @@ const matchers = {
   },
   [PostProvider.Twitter]: (links: string[]): string[] => {
     return links.reduce<string[]>((result, link) => {
-      const match = link.match(/^https?:\/\/(?:www\.)?twitter\.com\/([^/]+)/i);
+      const match = link.match(/^https?:\/\/(?:www\.)?twitter\.com\/([^/]+)\/?$/i);
       if (match === null) return result;
 
       return [...result, match[1]];
