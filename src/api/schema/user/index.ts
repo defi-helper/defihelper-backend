@@ -186,7 +186,7 @@ export const WalletType = new GraphQLObjectType<Wallet.Wallet>({
         const row = await container.model
           .automateTriggerTable()
           .count()
-          .where('id', wallet.id)
+          .where('wallet', wallet.id)
           .first();
         if (!row) return 0;
 
