@@ -9,6 +9,10 @@ export default {
     'Confirm': 'Confirm',
     'New {{eventName}} events in {{contractAddress}} on {{network}}:':
       'New {{eventName}} events in {{contractAddress}} on {{network}}:',
+
+    /* eslint-disable no-template-curly-in-string */
+    'Your portfolio: total stacked ${{totalStackedUSD}}, total earned ${{totalEarnedUSD}}':
+      'Your portfolio: total stacked ${{totalStackedUSD}}, total earned ${{totalEarnedUSD}}',
     'automate:trigger:contractEvent:name': 'Contract event',
     'automate:trigger:contractEvent:description': 'Call trigger for contract event',
     'automate:trigger:everyMonth:name': 'Periodic',

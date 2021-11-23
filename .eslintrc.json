@@ -10,6 +10,9 @@
     "@typescript-eslint/no-use-before-define": ["error"],
     "import/prefer-default-export": "off",
     "max-classes-per-file": "off",
-    "func-names": "off"
+    "func-names": "off",
+    "no-continue": "off",
+    "no-await-in-loop": "off",
+    "no-restricted-syntax": "off"
   }
 }
