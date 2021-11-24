@@ -32,13 +32,14 @@ export const userLastMetricLoader = ({ metric }: { metric: MetricWalletField }) 
         .from(
           container.model
             .metricWalletTable()
-            .distinctOn(`${metricWalletTableName}.wallet`)
+            .distinctOn(`${metricWalletTableName}.wallet`, `${metricWalletTableName}.contract`)
             .column(`${walletTableName}.user`)
             .column(database.raw(`(${metricWalletTableName}.data->>'${metric}')::numeric AS v`))
             .innerJoin(walletTableName, `${walletTableName}.id`, `${metricWalletTableName}.wallet`)
             .whereIn(`${walletTableName}.user`, usersId)
             .andWhere(database.raw(`${metricWalletTableName}.data->>'${metric}' IS NOT NULL`))
             .orderBy(`${metricWalletTableName}.wallet`)
+            .orderBy(`${metricWalletTableName}.contract`)
             .orderBy(`${metricWalletTableName}.date`, 'DESC')
             .as('metric'),
         )
