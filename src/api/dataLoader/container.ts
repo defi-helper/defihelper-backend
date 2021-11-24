@@ -1,6 +1,7 @@
 import { Container, singleton, singletonParametric } from '@services/Container';
 import {
   contractLastMetricLoader,
+  contractLoader,
   contractUserLastMetricLoader,
   protocolFavoritesLoader,
   protocolLastMetricLoader,
@@ -12,6 +13,7 @@ import {
   userLastAPRLoader,
   userLastMetricLoader,
   walletLastMetricLoader,
+  walletLoader,
 } from './user';
 
 export class DataLoaderContainer extends Container<{}> {
@@ -23,6 +25,8 @@ export class DataLoaderContainer extends Container<{}> {
 
   readonly protocolUserAPRMetric = singletonParametric(protocolUserLastAPRLoader);
 
+  readonly contract = singleton(contractLoader);
+
   readonly contractMetric = singletonParametric(contractLastMetricLoader);
 
   readonly contractUserMetric = singletonParametric(contractUserLastMetricLoader);
@@ -32,6 +36,8 @@ export class DataLoaderContainer extends Container<{}> {
   readonly userMetric = singletonParametric(userLastMetricLoader);
 
   readonly userAPRMetric = singletonParametric(userLastAPRLoader);
+
+  readonly wallet = singleton(walletLoader);
 
   readonly walletMetric = singletonParametric(walletLastMetricLoader);
 }

@@ -7,7 +7,7 @@ import {
   MetricContractAPRField,
 } from '@models/Metric/Entity';
 import { walletContractLinkTableName } from '@models/Protocol/Entity';
-import { tableName as walletTableName } from '@models/Wallet/Entity';
+import { Wallet, tableName as walletTableName } from '@models/Wallet/Entity';
 import DataLoader from 'dataloader';
 
 export const userBlockchainLoader = () =>
@@ -130,6 +130,18 @@ export const userLastAPRLoader = ({ metric }: { metric: MetricContractAPRField }
 
       return sum.earned.div(sum.staked).toString(10);
     });
+  });
+
+export const walletLoader = () =>
+  new DataLoader<string, Wallet | null>(async (walletsId) => {
+    const map = new Map(
+      await container.model
+        .walletTable()
+        .whereIn('id', walletsId)
+        .then((rows) => rows.map((wallet) => [wallet.id, wallet])),
+    );
+
+    return walletsId.map((id) => map.get(id) ?? null);
   });
 
 export const walletLastMetricLoader = ({ metric }: { metric: MetricWalletField }) =>

@@ -124,6 +124,7 @@ export interface Contract {
   id: string;
   wallet: string;
   protocol: string;
+  contract: string | null;
   address: string;
   adapter: string;
   initParams: Object;

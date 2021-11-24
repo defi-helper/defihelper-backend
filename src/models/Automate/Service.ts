@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 import { Emitter } from '@services/Event';
 import { Factory } from '@services/Container';
 import { v4 as uuid } from 'uuid';
-import { Protocol } from '@models/Protocol/Entity';
+import { Protocol, Contract as ProtocolContract } from '@models/Protocol/Entity';
 import { Wallet, Table as WalletTable } from '@models/Wallet/Entity';
 import { ScannerService } from '@services/Scanner';
 import {
@@ -212,6 +212,7 @@ export class AutomateService {
   async createContract(
     wallet: Wallet,
     protocol: Protocol,
+    contract: ProtocolContract | null,
     address: string,
     adapter: string,
     initParams: Object,
@@ -220,6 +221,7 @@ export class AutomateService {
       id: uuid(),
       wallet: wallet.id,
       protocol: protocol.id,
+      contract: contract?.id ?? null,
       address,
       adapter,
       initParams,

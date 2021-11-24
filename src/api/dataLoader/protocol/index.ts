@@ -1,5 +1,5 @@
 import container from '@container';
-import { contractTableName } from '@models/Protocol/Entity';
+import { Contract, contractTableName } from '@models/Protocol/Entity';
 import {
   metricContractTableName,
   metricWalletTableName,
@@ -264,6 +264,18 @@ export const protocolUserLastAPRLoader = ({
     await cache.setMap(notCachedIds, map);
 
     return protocolsId.map((id) => map[id] ?? '0');
+  });
+
+export const contractLoader = () =>
+  new DataLoader<string, Contract | null>(async (contractsId) => {
+    const map = new Map(
+      await container.model
+        .contractTable()
+        .whereIn('id', contractsId)
+        .then((rows) => rows.map((contract) => [contract.id, contract])),
+    );
+
+    return contractsId.map((id) => map.get(id) ?? null);
   });
 
 export const contractLastMetricLoader = ({ metric }: { metric: MetricContractField }) =>

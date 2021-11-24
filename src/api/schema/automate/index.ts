@@ -3,7 +3,7 @@ import { AuthenticationError, UserInputError } from 'apollo-server-express';
 import { Request } from 'express';
 import { Role } from '@models/User/Entity';
 import container from '@container';
-import { tableName as walletTableName } from '@models/Wallet/Entity';
+import { WalletType as WalletTypeEnum, tableName as walletTableName } from '@models/Wallet/Entity';
 import {
   GraphQLBoolean,
   GraphQLFieldConfig,
@@ -28,7 +28,7 @@ import {
 import * as Actions from '../../../automate/action';
 import * as Conditions from '../../../automate/condition';
 import { WalletType } from '../user';
-import { ProtocolType } from '../protocol';
+import { ProtocolType, ContractType as ProtocolContractType } from '../protocol';
 
 export const ConditionTypeEnum = new GraphQLEnumType({
   name: 'AutomateConditionTypeEnum',
@@ -925,7 +925,7 @@ export const ContractVerificationStatusEnum = new GraphQLEnumType({
   ),
 });
 
-export const ContractType = new GraphQLObjectType<Automate.Contract>({
+export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
   name: 'AutomateContractType',
   fields: {
     id: {
@@ -935,8 +935,8 @@ export const ContractType = new GraphQLObjectType<Automate.Contract>({
     wallet: {
       type: GraphQLNonNull(WalletType),
       description: 'Owner wallet',
-      resolve: (contract) => {
-        return container.model.walletTable().where('id', contract.wallet).first();
+      resolve: (contract, args, { dataLoader }) => {
+        return dataLoader.wallet().load(contract.wallet);
       },
     },
     protocol: {
@@ -946,9 +946,37 @@ export const ContractType = new GraphQLObjectType<Automate.Contract>({
         return container.model.protocolTable().where('id', contract.protocol).first();
       },
     },
+    contract: {
+      type: ProtocolContractType,
+      description: 'Protocol contract',
+      resolve: (contract, args, { dataLoader }) => {
+        if (!contract.contract) return null;
+
+        return dataLoader.contract().load(contract.contract);
+      },
+    },
     address: {
       type: GraphQLNonNull(GraphQLString),
       description: 'Address in blockchain',
+    },
+    contractWallet: {
+      type: WalletType,
+      description: 'Automate contract wallet',
+      resolve: async (contract, args, { dataLoader }) => {
+        if (contract.verification !== Automate.ContractVerificationStatus.Confirmed) return null;
+
+        const ownerWallet = await dataLoader.wallet().load(contract.wallet);
+        if (!ownerWallet) return null;
+
+        return container.model
+          .walletTable()
+          .where({
+            user: ownerWallet.user,
+            type: WalletTypeEnum.Contract,
+            address: contract.address.toLowerCase(),
+          })
+          .first();
+      },
     },
     adapter: {
       type: GraphQLNonNull(GraphQLString),
@@ -981,9 +1009,13 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
           },
           wallet: {
             type: UuidType,
+            description: 'Owner wallet',
           },
           protocol: {
             type: UuidType,
+          },
+          contract: {
+            type: GraphQLList(GraphQLNonNull(UuidType)),
           },
           address: {
             type: GraphQLList(GraphQLNonNull(GraphQLString)),
@@ -1009,7 +1041,7 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
         `${Automate.contractTableName}.wallet`,
       )
       .where(function () {
-        const { wallet, user, protocol, address } = filter;
+        const { wallet, user, protocol, contract, address } = filter;
         if (typeof user === 'string') {
           this.andWhere(`${walletTableName}.user`, user);
         }
@@ -1018,6 +1050,9 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
         }
         if (typeof protocol === 'string') {
           this.andWhere(`${Automate.contractTableName}.protocol`, protocol);
+        }
+        if (Array.isArray(contract) && contract.length > 0) {
+          this.whereIn(`${Automate.contractTableName}.contract`, contract);
         }
         if (Array.isArray(address) && address.length > 0) {
           this.whereIn(`${Automate.contractTableName}.address`, address);
@@ -1054,6 +1089,10 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
               type: GraphQLNonNull(UuidType),
               description: 'Protocol',
             },
+            contract: {
+              type: UuidType,
+              description: 'Protocol contract',
+            },
             address: {
               type: GraphQLNonNull(GraphQLString),
               description: 'Address',
@@ -1074,7 +1113,14 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
   resolve: onlyAllowed('automateContract.create', async (root, { input }, { currentUser }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
-    const { wallet: walletId, protocol: protocolId, address, adapter, initParams } = input;
+    const {
+      wallet: walletId,
+      protocol: protocolId,
+      contract: contractId,
+      address,
+      adapter,
+      initParams,
+    } = input;
     const wallet = await container.model.walletTable().where('id', walletId).first();
     if (!wallet) throw new UserInputError('Wallet not found');
     if (wallet.user !== currentUser.id) throw new UserInputError('Foreign wallet');
@@ -1082,9 +1128,17 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
     const protocol = await container.model.protocolTable().where('id', protocolId).first();
     if (!protocol) throw new UserInputError('Protocol not found');
 
+    const contract = contractId
+      ? await container.model.contractTable().where('id', contractId).first()
+      : null;
+    if (contract === undefined) throw new UserInputError('Protocol contract not found');
+    if (contract !== null && contract.protocol !== protocol.id) {
+      throw new UserInputError('Invalid protocol contract');
+    }
+
     const created = await container.model
       .automateService()
-      .createContract(wallet, protocol, address, adapter, JSON.parse(initParams));
+      .createContract(wallet, protocol, contract, address, adapter, JSON.parse(initParams));
 
     return created;
   }),
