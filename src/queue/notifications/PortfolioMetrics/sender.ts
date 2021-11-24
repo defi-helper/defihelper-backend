@@ -3,38 +3,29 @@ import container from '@container';
 import { ContactBroker } from '@models/Notification/Entity';
 import { DataLoaderContainer } from '@api/dataLoader/container';
 
-export interface Params {
-  id: string;
-}
-
 export default async (process: Process) => {
+  const { userId } = process.task.params as { userId: string };
+
+  const user = await container.model.userTable().where({ id: userId }).first();
+  if (!user) {
+    throw new Error('User not found');
+  }
+
   const contacts = await container.model.userContactTable().where({
+    user: user.id,
     broker: ContactBroker.Telegram,
   });
 
   const dataLoader = new DataLoaderContainer({});
   for (const contact of contacts) {
-    const user = await container.model.userTable().where('id', contact.user).first();
     const chatId = contact.params?.chatId;
 
-    if (!chatId || !user) {
+    if (!chatId) {
       continue;
     }
 
-    const walletsIds = (await container.model.walletTable().where('user', user.id)).map(
-      (v) => v.id,
-    );
-
-    const stackedPerWallet: number[] = await Promise.all(
-      walletsIds.map((id) => dataLoader.walletMetric({ metric: 'stakingUSD' }).load(id)),
-    );
-
-    const earnedPerWallet: number[] = await Promise.all(
-      walletsIds.map((id) => dataLoader.walletMetric({ metric: 'stakingUSD' }).load(id)),
-    );
-
-    const totalStackedUSD = stackedPerWallet.reduce((a, value) => a + value, 0);
-    const totalEarnedUSD = earnedPerWallet.reduce((a, value) => a + value, 0);
+    const totalStackedUSD = await dataLoader.userMetric({ metric: 'stakingUSD' }).load(user.id);
+    const totalEarnedUSD = await dataLoader.userMetric({ metric: 'stakingUSD' }).load(user.id);
 
     await container.model.queueService().push('sendTelegram', {
       chatId,
