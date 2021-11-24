@@ -19,26 +19,25 @@ export default async (process: Process) => {
   });
 
   await Promise.all(
-    contacts
-      .filter((v) => v.params?.chatId)
-      .map(async (contact) => {
-        const chatId = contact.params?.chatId;
+    contacts.map(async (contact) => {
+      const chatId = contact.params?.chatId;
+      if (!chatId) return null;
 
-        const [totalStackedUSD, totalEarnedUSD] = await Promise.all([
-          dataLoader.userMetric({ metric: 'stakingUSD' }).load(user.id),
-          dataLoader.userMetric({ metric: 'earnedUSD' }).load(user.id),
-        ]);
+      const [totalStackedUSD, totalEarnedUSD] = await Promise.all([
+        dataLoader.userMetric({ metric: 'stakingUSD' }).load(user.id),
+        dataLoader.userMetric({ metric: 'earnedUSD' }).load(user.id),
+      ]);
 
-        return container.model.queueService().push('sendTelegram', {
-          chatId,
-          locale: user.locale,
-          params: {
-            totalStackedUSD,
-            totalEarnedUSD,
-          },
-          template: 'portfolioMetrics',
-        });
-      }),
+      return container.model.queueService().push('sendTelegram', {
+        chatId,
+        locale: user.locale,
+        params: {
+          totalStackedUSD,
+          totalEarnedUSD,
+        },
+        template: 'portfolioMetrics',
+      });
+    }),
   );
 
   return process.done();
