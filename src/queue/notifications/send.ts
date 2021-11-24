@@ -31,7 +31,7 @@ export default async (process: Process) => {
     }
     const user = await container.model.userTable().where('id', contact.user).first();
     if (!user) {
-      throw new Error('User own contact not found');
+      throw new Error('Contact owner not found');
     }
 
     let sendParams = {};
