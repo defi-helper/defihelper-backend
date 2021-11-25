@@ -136,7 +136,7 @@ export const RestakeStrategyQuery: GraphQLFieldConfig<any, Request> = {
       },
     );
     const optimalPoints = calcRestakeOptimal(balance, 0, apd, fee, seq, optimalRes);
-    const targetDays = [31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365];
+    const targetDays = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365];
 
     return {
       hold: targetDays.map((t) => holdPoints[t]),
