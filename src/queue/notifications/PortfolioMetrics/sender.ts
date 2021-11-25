@@ -2,6 +2,7 @@ import { Process } from '@models/Queue/Entity';
 import container from '@container';
 import { ContactBroker, ContactStatus } from '@models/Notification/Entity';
 import { DataLoaderContainer } from '@api/dataLoader/container';
+import BN from 'bignumber.js';
 
 export default async (process: Process) => {
   const { userId } = process.task.params as { userId: string };
@@ -28,12 +29,14 @@ export default async (process: Process) => {
         dataLoader.userMetric({ metric: 'earnedUSD' }).load(user.id),
       ]);
 
+      new BN('0').toFixed(2);
+
       return container.model.queueService().push('sendTelegram', {
         chatId,
         locale: user.locale,
         params: {
-          totalStackedUSD: parseFloat(totalStackedUSD).toFixed(2),
-          totalEarnedUSD: parseFloat(totalEarnedUSD).toFixed(2),
+          totalStackedUSD: new BN(totalStackedUSD).toFixed(2),
+          totalEarnedUSD: new BN(totalEarnedUSD).toFixed(2),
         },
         template: 'portfolioMetrics',
       });
