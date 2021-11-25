@@ -32,8 +32,8 @@ export default async (process: Process) => {
         chatId,
         locale: user.locale,
         params: {
-          totalStackedUSD: totalStackedUSD.toFixed(2),
-          totalEarnedUSD: totalEarnedUSD.toFixed(2),
+          totalStackedUSD: parseFloat(totalStackedUSD).toFixed(2),
+          totalEarnedUSD: parseFloat(totalEarnedUSD).toFixed(2),
         },
         template: 'portfolioMetrics',
       });
