@@ -1,4 +1,4 @@
-/* eslint-disable no-nested-ternary */
+/* eslint-disable no-nested-ternary, no-template-curly-in-string */
 export default {
   plural: (n: number) =>
     n % 10 === 1 && n % 100 !== 11
@@ -15,6 +15,8 @@ export default {
     'Confirm': 'Подтвердить',
     'New {{eventName}} events in {{contractAddress}} on {{network}}:':
       'Новое событие {{eventName}} в контракте {{contractAddress}} сети {{network}}:',
+    'Your portfolio: total stacked ${{totalStackedUSD}}, total earned ${{totalEarnedUSD}}':
+      'Ваше портфолио\nВсего застейкано: {{totalStackedUSD}}$, всего заработано: {{totalEarnedUSD}}$',
     'automate:trigger:contractEvent:name': 'Событие контракта',
     'automate:trigger:contractEvent:description': 'Вызов триггера в ответ на событие в контракте',
     'automate:trigger:everyMonth:name': 'Периодически',

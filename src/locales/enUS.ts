@@ -1,3 +1,4 @@
+/* eslint-disable no-template-curly-in-string */
 export default {
   plural: (n: number) => (n === 1 ? 0 : 1),
   messages: {
@@ -9,6 +10,8 @@ export default {
     'Confirm': 'Confirm',
     'New {{eventName}} events in {{contractAddress}} on {{network}}:':
       'New {{eventName}} events in {{contractAddress}} on {{network}}:',
+    'Your portfolio: total stacked ${{totalStackedUSD}}, total earned ${{totalEarnedUSD}}':
+      'Your portfolio: total stacked ${{totalStackedUSD}}, total earned ${{totalEarnedUSD}}',
     'automate:trigger:contractEvent:name': 'Contract event',
     'automate:trigger:contractEvent:description': 'Call trigger for contract event',
     'automate:trigger:everyMonth:name': 'Periodic',
