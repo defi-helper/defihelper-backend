@@ -8,6 +8,7 @@ export * as Token from './Token';
 export * as Proposal from './Proposal';
 export * as Metric from './Metric';
 export * as Notification from './Notification';
+export * as UserNotification from './UserNotification';
 export * as Billing from './Billing';
 export * as Store from './Store';
 export * as Governance from './Governance';

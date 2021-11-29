@@ -17,6 +17,11 @@ import {
 } from '@api/schema/notification';
 import container from '@container';
 import {
+  UserNotificationDisableMutation,
+  UserNotificationEnabledListQuery,
+  UserNotificationEnableMutation,
+} from '@api/schema/userNotification';
+import {
   AddWalletMutation,
   AuthEthereumMutation,
   AuthWavesMutation,
@@ -96,6 +101,7 @@ export function route({ express, server }: { express: Express; server: Server })
           proposals: ProposalListQuery,
           userContact: UserContactQuery,
           userContacts: UserContactListQuery,
+          userNotificationsEnabled: UserNotificationEnabledListQuery,
           userEventSubscription: UserEventSubscriptionQuery,
           userEventSubscriptions: UserEventSubscriptionListQuery,
           tokens: TokenListQuery,
@@ -131,6 +137,8 @@ export function route({ express, server }: { express: Express; server: Server })
           contractCreate: ContractCreateMutation,
           contractUpdate: ContractUpdateMutation,
           contractDelete: ContractDeleteMutation,
+          userNotificationEnable: UserNotificationEnableMutation,
+          userNotificationDisable: UserNotificationDisableMutation,
           contractWalletLink: ContractWalletLinkMutation,
           contractWalletUnlink: ContractWalletUnlinkMutation,
           tokenUpdate: TokenUpdateMutation,
