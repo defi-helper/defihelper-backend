@@ -3,6 +3,7 @@ import container from '@container';
 
 interface Event {
   address: string;
+  from: string;
   blockNumber: number;
   blockHash: string;
   transactionIndex: number;
@@ -42,7 +43,7 @@ export default async (process: Process) => {
         .where({
           blockchain: contract.blockchain,
           network: contract.network,
-          address: event.address.toLowerCase(),
+          address: event.from.toLowerCase(),
         })
         .first();
 
