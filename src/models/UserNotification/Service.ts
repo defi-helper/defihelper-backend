@@ -12,11 +12,7 @@ export class UserNotificationService {
 
   async isNotificationEnabled(user: User, type: UserNotificationType): Promise<boolean> {
     const c = await this.table().count('id').where({ user: user.id, type }).first();
-    if (c) {
-      return c.count > 0;
-    }
-
-    return false;
+    return c !== undefined && c.count > 0;
   }
 
   async enable(user: User, type: UserNotificationType): Promise<UserNotification> {
