@@ -29,7 +29,7 @@ export const UserNotificationType = new GraphQLObjectType<UserNotification.UserN
   },
 });
 
-export const UserNotificationEnabledListQuery: GraphQLFieldConfig<any, Request> = {
+export const UserNotificationListQuery: GraphQLFieldConfig<any, Request> = {
   type: GraphQLNonNull(GraphQLList(GraphQLNonNull(UserNotificationType))),
   resolve: async (root, _, { currentUser }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');

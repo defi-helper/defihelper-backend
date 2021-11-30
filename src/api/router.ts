@@ -18,7 +18,7 @@ import {
 import container from '@container';
 import {
   UserNotificationToggleMutation,
-  UserNotificationEnabledListQuery,
+  UserNotificationListQuery,
 } from '@api/schema/userNotification';
 import {
   AddWalletMutation,
@@ -100,7 +100,7 @@ export function route({ express, server }: { express: Express; server: Server })
           proposals: ProposalListQuery,
           userContact: UserContactQuery,
           userContacts: UserContactListQuery,
-          userNotificationsEnabled: UserNotificationEnabledListQuery,
+          userNotifications: UserNotificationListQuery,
           userEventSubscription: UserEventSubscriptionQuery,
           userEventSubscriptions: UserEventSubscriptionListQuery,
           tokens: TokenListQuery,
