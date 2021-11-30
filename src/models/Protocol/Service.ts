@@ -14,6 +14,8 @@ import {
   WalletContractLink,
   ProtocolLinkMap,
   ProtocolUserFavoriteTable,
+  MetadataTable,
+  MetadataType,
 } from './Entity';
 
 export class ProtocolService {
@@ -209,5 +211,46 @@ export class ContractService {
     if (!duplicate) return;
 
     await this.walletLinkTable().where('id', duplicate.id).delete();
+  }
+}
+
+export class MetadataService {
+  constructor(readonly metadataTable: Factory<MetadataTable>) {}
+
+  async createOrUpdate(contract: Contract, type: MetadataType, value: any) {
+    const actualRow = await this.metadataTable()
+      .where({
+        contract: contract.id,
+        type,
+      })
+      .first();
+
+    if (!actualRow) {
+      const v = {
+        id: uuid(),
+        type,
+        contract: contract.id,
+        value: { value },
+        createdAt: new Date(),
+      };
+
+      await this.metadataTable().insert(v);
+      return v;
+    }
+
+    await this.metadataTable()
+      .where({
+        contract: contract.id,
+        type,
+      })
+      .update({
+        ...actualRow,
+        value: { value },
+      });
+
+    return {
+      ...actualRow,
+      value: { value },
+    };
   }
 }

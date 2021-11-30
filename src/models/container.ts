@@ -191,6 +191,12 @@ export class ModelContainer extends Container<typeof AppContainer> {
       ),
   );
 
+  readonly metadataTable = Models.Protocol.Entity.metadataTableFactory(this.parent.database);
+
+  readonly metadataService = singleton(
+    () => new Models.Protocol.Service.MetadataService(this.metadataTable),
+  );
+
   readonly govProposalTable = Models.Governance.Entity.proposalTableFactory(this.parent.database);
 
   readonly govReceiptTable = Models.Governance.Entity.receiptTableFactory(this.parent.database);

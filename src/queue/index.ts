@@ -38,6 +38,7 @@ export * as notificationSend from './notifications/send';
 export * as notificationPortfolioMetricsNotify from './notifications/PortfolioMetrics/sender';
 export * as notificationPortfolioMetricsBroker from './notifications/PortfolioMetrics/broker';
 export * as contractResolveDeployBlockNumber from './contract/resolveDeployBlockNumber';
+export * as contractResolveAbi from './contract/resolveAbi';
 export * as billingBroker from './billing/broker';
 export * as billingTransferScan from './billing/transferScan';
 export * as billingClaimScan from './billing/claimScan';

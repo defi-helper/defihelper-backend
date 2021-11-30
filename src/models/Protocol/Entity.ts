@@ -92,3 +92,20 @@ export const walletContractLinkTableFactory = createTableFactory<WalletContractL
 );
 
 export type WalletContractLinkTable = ReturnType<ReturnType<typeof walletContractLinkTableFactory>>;
+
+export enum MetadataType {
+  EthereumContractAbi = 'ethereumContractAbi',
+}
+export interface Metadata {
+  id: string;
+  contract: string;
+  type: MetadataType;
+  value: { value: any };
+  createdAt: Date;
+}
+
+export const metadataTableName = 'protocol_contract_metadata';
+
+export const metadataTableFactory = createTableFactory<Metadata>(metadataTableName);
+
+export type MetadataTable = ReturnType<ReturnType<typeof metadataTableFactory>>;
