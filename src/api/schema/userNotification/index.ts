@@ -40,35 +40,26 @@ export const UserNotificationEnabledListQuery: GraphQLFieldConfig<any, Request> 
   },
 };
 
-export const UserNotificationEnableMutation: GraphQLFieldConfig<any, Request> = {
+export const UserNotificationToggleMutation: GraphQLFieldConfig<any, Request> = {
   type: GraphQLNonNull(GraphQLBoolean),
   args: {
     type: {
       type: GraphQLNonNull(UserNotificationTypeEnum),
     },
+    state: {
+      type: GraphQLNonNull(GraphQLBoolean),
+    },
   },
-  resolve: async (root, { type }, { currentUser }) => {
+  resolve: async (root, { type, state }, { currentUser }) => {
     if (!currentUser) {
       throw new AuthenticationError('UNAUTHENTICATED');
     }
 
-    await container.model.userNotificationService().enable(currentUser, type);
-    return true;
-  },
-};
-export const UserNotificationDisableMutation: GraphQLFieldConfig<any, Request> = {
-  type: GraphQLNonNull(GraphQLBoolean),
-  args: {
-    type: {
-      type: GraphQLNonNull(UserNotificationTypeEnum),
-    },
-  },
-  resolve: async (root, { type }, { currentUser }) => {
-    if (!currentUser) {
-      throw new AuthenticationError('UNAUTHENTICATED');
+    if (state) {
+      await container.model.userNotificationService().enable(currentUser, type);
+      return;
     }
 
     await container.model.userNotificationService().disable(currentUser, type);
-    return true;
   },
 };

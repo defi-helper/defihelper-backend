@@ -10,13 +10,22 @@ import {
 export class UserNotificationService {
   constructor(readonly table: Factory<UserNotificationTable>) {}
 
-  async enable(user: User, type: UserNotificationType): Promise<void> {
+  async isNotificationEnabled(user: User, type: UserNotificationType): Promise<boolean> {
+    const c = await this.table().count('id').where({ user: user.id, type }).first();
+    if (c) {
+      return c.count > 0;
+    }
+
+    return false;
+  }
+
+  async enable(user: User, type: UserNotificationType): Promise<UserNotification> {
     const duplicates = await this.table().where({
       user: user.id,
       type,
     });
     if (duplicates.length > 0) {
-      return;
+      return duplicates[0];
     }
 
     const created: UserNotification = {
@@ -27,6 +36,7 @@ export class UserNotificationService {
     };
 
     await this.table().insert(created);
+    return created;
   }
 
   async disable(user: User, type: UserNotificationType): Promise<void> {
