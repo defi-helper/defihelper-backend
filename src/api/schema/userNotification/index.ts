@@ -13,7 +13,7 @@ import { AuthenticationError } from 'apollo-server-express';
 
 export const UserNotificationTypeEnum = new GraphQLEnumType({
   name: 'UserNotificationTypeEnum',
-  values: Object.keys(UserNotification.UserNotificationType).reduce(
+  values: Object.values(UserNotification.UserNotificationType).reduce(
     (res, type) => ({ ...res, [type]: { value: type } }),
     {},
   ),
