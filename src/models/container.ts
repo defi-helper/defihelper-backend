@@ -38,6 +38,14 @@ export class ModelContainer extends Container<typeof AppContainer> {
       ),
   );
 
+  readonly userNotificationTable = Models.UserNotification.Entity.userNotificationTableFactory(
+    this.parent.database,
+  );
+
+  readonly userNotificationService = singleton(
+    () => new Models.UserNotification.Service.UserNotificationService(this.userNotificationTable),
+  );
+
   readonly walletTable = Models.Wallet.Entity.tableFactory(this.parent.database);
 
   readonly walletService = singleton(
