@@ -57,9 +57,10 @@ export const UserNotificationToggleMutation: GraphQLFieldConfig<any, Request> = 
 
     if (state) {
       await container.model.userNotificationService().enable(currentUser, type);
-      return;
+      return true;
     }
 
     await container.model.userNotificationService().disable(currentUser, type);
+    return true;
   },
 };
