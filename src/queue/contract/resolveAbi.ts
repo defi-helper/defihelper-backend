@@ -14,7 +14,7 @@ export default async (process: Process) => {
   const metadataService = container.model.metadataService();
 
   const contract = await contractService.contractTable().where({ id }).first();
-  if (!contract || contract.blockchain === 'waves') {
+  if (!contract || contract.blockchain !== 'ethereum') {
     throw new Error(`Contract "${id}" not found or incompatible`);
   }
 
@@ -24,7 +24,7 @@ export default async (process: Process) => {
 
     await metadataService.createOrUpdate(contract, MetadataType.EthereumContractAbi, abi);
   } catch (e) {
-    return process.later(dayjs().add(10, 'seconds').toDate());
+    return process.later(dayjs().add(1, 'minute').toDate());
   }
 
   return process.done();
