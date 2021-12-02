@@ -19,10 +19,12 @@ export default async (process: Process) => {
 
   const deployBlockNumber =
     contract.deployBlockNumber === null ? undefined : parseInt(contract.deployBlockNumber, 10);
+
   const contractFromScanner = await container
     .scanner()
     .findContract(contract.network, contract.address);
-  if (!contractFromScanner || !contractFromScanner.abi) {
+
+  if (!contractFromScanner) {
     const servedAbi = await container.model
       .metadataTable()
       .where({

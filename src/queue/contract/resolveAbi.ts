@@ -24,6 +24,11 @@ export default async (process: Process) => {
 
     await metadataService.createOrUpdate(contract, MetadataType.EthereumContractAbi, abi);
   } catch (e) {
+    if (e.message === 'NOT_VERIFIED') {
+      await metadataService.createOrUpdate(contract, MetadataType.EthereumContractAbi, null);
+      return process.done();
+    }
+
     return process.later(dayjs().add(1, 'minute').toDate());
   }
 
