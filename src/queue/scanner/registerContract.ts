@@ -1,6 +1,7 @@
 import { Process } from '@models/Queue/Entity';
 import container from '@container';
 import dayjs from 'dayjs';
+import { MetadataType } from '@models/Protocol/Entity';
 
 export interface ContractRegisterParams {
   contract: string;
@@ -18,13 +19,40 @@ export default async (process: Process) => {
 
   const deployBlockNumber =
     contract.deployBlockNumber === null ? undefined : parseInt(contract.deployBlockNumber, 10);
+
   const contractFromScanner = await container
     .scanner()
     .findContract(contract.network, contract.address);
-  if (!contractFromScanner || !contractFromScanner.abi) {
+
+  if (!contractFromScanner) {
+    const servedAbi = await container.model
+      .metadataTable()
+      .where({
+        contract: contract.id,
+        type: MetadataType.EthereumContractAbi,
+      })
+      .first();
+
+    if (!servedAbi) {
+      await container.model.queueService().push('contractResolveAbi', {
+        id: contract.id,
+      });
+      return process.later(dayjs().add(5, 'minutes').toDate());
+    }
+    if (servedAbi.value.value === null) {
+      return process.done();
+    }
+
     await container
       .scanner()
-      .registerContract(contract.network, contract.address, contract.name, deployBlockNumber);
+      .registerContract(
+        contract.network,
+        contract.address,
+        contract.name,
+        servedAbi.value.value,
+        deployBlockNumber,
+      );
+
     return process.later(dayjs().add(1, 'minutes').toDate());
   }
 
