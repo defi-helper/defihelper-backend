@@ -39,6 +39,9 @@ export default async (process: Process) => {
       });
       return process.later(dayjs().add(5, 'minutes').toDate());
     }
+    if (servedAbi.value.value === null) {
+      return process.done();
+    }
 
     await container
       .scanner()
