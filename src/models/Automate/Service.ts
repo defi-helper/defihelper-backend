@@ -38,6 +38,7 @@ export class AutomateService {
         trigger.params.event,
         `${container.parent.api.internalUrl}/callback/trigger/${trigger.id}?secret=${container.parent.api.secret}`,
       );
+
       await this.updateTrigger({
         ...trigger,
         params: {

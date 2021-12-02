@@ -101,6 +101,7 @@ export class ScannerService {
   async registerContract(
     network: string,
     address: string,
+    abi: Object,
     name?: string,
     startHeight?: number,
   ): Promise<Contract> {
@@ -109,7 +110,7 @@ export class ScannerService {
       network,
       address: address.toLowerCase(),
       startHeight: startHeight || (await this.currentBlock(network)) - 10,
-      abi: '',
+      abi: JSON.stringify(abi),
     });
 
     return contract.data;
@@ -155,9 +156,9 @@ export class ScannerService {
     event: string,
     callBackUrl: string,
   ): Promise<CallBack> {
-    let contract = await this.findContract(network, address.toLowerCase());
+    const contract = await this.findContract(network, address.toLowerCase());
     if (!contract) {
-      contract = await this.registerContract(network, address.toLowerCase());
+      throw new Error('Contract not found');
     }
 
     let listener = await this.findListener(contract.id, event);
