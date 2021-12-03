@@ -18,9 +18,9 @@ export default async (schema: SchemaBuilder) => {
 
   schema.raw(`
     UPDATE metric_wallet_token as mwt
-        SET token = tkn.id
-    FROM token AS tkn
-        WHERE tkn.address = mwt."tokenAddress"
+      SET token = tkn.id
+    FROM token AS tkn, wallet as wlt
+      WHERE tkn.address = mwt."tokenAddress" AND wlt.blockchain = tkn.blockchain
   `);
 
   schema.alterTable(metricWalletTokenTableName, (table) => {
