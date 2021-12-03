@@ -80,14 +80,22 @@ export class MetricContractService {
     return created;
   }
 
-  async createToken(contract: Contract, wallet: Wallet, token: Token, data: MetricMap, date: Date) {
-    if (contract.blockchain !== wallet.blockchain || contract.network !== wallet.network) {
-      throw new Error('Invalid wallet');
+  async createToken(
+    contract: Contract | null,
+    wallet: Wallet,
+    token: Token,
+    data: MetricMap,
+    date: Date,
+  ) {
+    if (contract !== null) {
+      if (contract.blockchain !== wallet.blockchain || contract.network !== wallet.network) {
+        throw new Error('Invalid wallet');
+      }
     }
 
     const created = {
       id: uuid(),
-      contract: contract.id,
+      contract: contract ? contract.id : null,
       wallet: wallet.id,
       token: token.id,
       data,
