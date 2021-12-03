@@ -70,7 +70,7 @@ export const metricWalletTableFactory = createTableFactory<MetricWallet>(metricW
 export type MetricWalletTable = ReturnType<ReturnType<typeof metricWalletTableFactory>>;
 
 export interface MetricWalletToken extends Metric {
-  contract: string;
+  contract: string | null;
   wallet: string;
   token: string;
 }
