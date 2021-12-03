@@ -12,7 +12,7 @@ export default async (schema: SchemaBuilder) => {
 
   schema
     .alterTable(metricWalletTokenTableName, (table) => {
-      table.string('token', 36).notNullable();
+      table.string('token', 36);
     })
     .toQuery();
 
@@ -22,6 +22,12 @@ export default async (schema: SchemaBuilder) => {
     FROM token AS tkn, wallet as wlt
       WHERE tkn.address = mwt."tokenAddress" AND wlt.blockchain = tkn.blockchain
   `);
+
+  schema
+    .alterTable(metricWalletTokenTableName, (table) => {
+      table.string('token', 36).notNullable().alter();
+    })
+    .toQuery();
 
   schema.alterTable(metricWalletTokenTableName, (table) => {
     table.dropColumn('tokenAddress');
