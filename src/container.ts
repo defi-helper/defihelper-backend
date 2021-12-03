@@ -12,6 +12,7 @@ import { TemplateContainer } from '@services/Template/container';
 import { emailServiceFactory } from '@services/Email';
 import { telegramServiceFactory } from '@services/Telegram';
 import { scannerServiceFactory } from '@services/Scanner';
+import { moralisServiceFactory } from '@services/Moralis';
 import config from './config';
 
 class AppContainer extends Container<typeof config> {
@@ -26,6 +27,8 @@ class AppContainer extends Container<typeof config> {
   readonly email = singleton(emailServiceFactory(this.parent.email));
 
   readonly telegram = singleton(telegramServiceFactory(this.parent.telegram.token));
+
+  readonly moralis = singleton(moralisServiceFactory(this.parent.moralis));
 
   readonly scanner = singleton(scannerServiceFactory(this.parent.scanner));
 
