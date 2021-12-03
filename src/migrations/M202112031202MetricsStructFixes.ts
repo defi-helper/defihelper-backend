@@ -12,7 +12,7 @@ export default async (schema: SchemaBuilder) => {
 
   schema
     .alterTable(metricWalletTokenTableName, (table) => {
-      table.string('token', 36);
+      table.string('token', 36).notNullable();
     })
     .toQuery();
 
