@@ -3,6 +3,7 @@ import { Blockchain } from '@models/types';
 import { Protocol, Contract } from '@models/Protocol/Entity';
 import { Factory } from '@services/Container';
 import { Wallet } from '@models/Wallet/Entity';
+import { Token } from '@models/Token/Entity';
 import {
   MetricBlockchainTable,
   MetricContractTable,
@@ -79,13 +80,7 @@ export class MetricContractService {
     return created;
   }
 
-  async createToken(
-    contract: Contract,
-    wallet: Wallet,
-    token: string,
-    data: MetricMap,
-    date: Date,
-  ) {
+  async createToken(contract: Contract, wallet: Wallet, token: Token, data: MetricMap, date: Date) {
     if (contract.blockchain !== wallet.blockchain || contract.network !== wallet.network) {
       throw new Error('Invalid wallet');
     }
@@ -94,7 +89,7 @@ export class MetricContractService {
       id: uuid(),
       contract: contract.id,
       wallet: wallet.id,
-      token,
+      token: token.id,
       data,
       date,
       createdAt: new Date(),

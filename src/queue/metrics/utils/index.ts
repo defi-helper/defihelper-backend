@@ -104,7 +104,26 @@ export async function walletMetrics(process: Process) {
   ) {
     await Promise.all(
       Object.entries(walletAdapterData.tokens).map(async ([tokenAddress, metric]) => {
-        await metricService.createToken(contract, wallet, tokenAddress, metric, date);
+        let address = tokenAddress;
+        if (contract.blockchain === 'ethereum') {
+          address = tokenAddress.toLowerCase();
+        }
+
+        let token = await container.model
+          .tokenTable()
+          .where({
+            blockchain: contract.blockchain,
+            network: contract.network,
+            address,
+          })
+          .first();
+        if (!token) {
+          token = await container.model
+            .tokenService()
+            .create(null, contract.blockchain, contract.network, address, '', '', 0);
+        }
+
+        await metricService.createToken(contract, wallet, token, metric, date);
         await queue.push(
           'tokenCreate',
           {
