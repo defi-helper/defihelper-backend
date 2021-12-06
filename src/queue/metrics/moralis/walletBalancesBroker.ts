@@ -1,9 +1,10 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import dayjs from 'dayjs';
+import { WalletType } from '@models/Wallet/Entity';
 
 export default async (process: Process) => {
-  const wallets = await container.model.walletTable();
+  const wallets = await container.model.walletTable().where('type', WalletType.Wallet);
 
   const lag = 86400 / wallets.length;
   await wallets.reduce<Promise<dayjs.Dayjs>>(async (prev, wallet) => {
