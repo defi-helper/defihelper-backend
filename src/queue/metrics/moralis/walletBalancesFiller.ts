@@ -23,10 +23,27 @@ export default async (process: Process) => {
   const { id } = process.task.params as Params;
 
   const wallet = await container.model.walletTable().where({ id }).first();
-  const chain = 'eth';
+  let chain: 'eth' | 'bsc' | 'avalanche' | 'polygon';
 
   if (!wallet || wallet.blockchain !== 'ethereum') {
     throw new Error('wallet not found or unsupported blockchain');
+  }
+
+  switch (wallet.network) {
+    case '1':
+      chain = 'eth';
+      break;
+    case '56':
+      chain = 'bsc';
+      break;
+    case '137':
+      chain = 'polygon';
+      break;
+    case '43114':
+      chain = 'avalanche';
+      break;
+    default:
+      throw new Error('unsupported network');
   }
 
   const moralis = await container.moralis().getWeb3API();
@@ -66,7 +83,7 @@ export default async (process: Process) => {
         (t) => t && t.exchangeAddress === tokenBalance.token_address,
       );
       if (!tokenPrice) {
-        return new Promise(() => {});
+        return null;
       }
       let tokenRecord = existingTokensRecords.find((t) => t.address === tokenBalance.token_address);
       if (!tokenRecord) {
@@ -83,17 +100,16 @@ export default async (process: Process) => {
           );
       }
 
-      const significand = new BN(10).pow(tokenBalance.decimals);
-      const totalTokenNumber = new BN(tokenBalance.balance).dividedBy(significand);
-      const totalTokenPrice = new BN(tokenPrice.usdPrice);
+      const totalTokenNumber = new BN(tokenBalance.balance).div(`1e${tokenBalance.decimals}`);
+      const totalTokenPrice = new BN(tokenPrice.usdPrice).multipliedBy(totalTokenNumber);
 
       return walletMetrics.createToken(
         null,
         wallet,
         tokenRecord,
         {
-          usd: totalTokenPrice.toString(),
-          balance: totalTokenNumber.toString(),
+          usd: totalTokenPrice.toString(10),
+          balance: totalTokenNumber.toString(10),
         },
         new Date(),
       );
