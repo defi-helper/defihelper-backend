@@ -14,6 +14,7 @@ export interface MoralisTokenPrice {
     symbol: string;
   };
   usdPrice: number;
+  tokenAddress: string;
   exchangeAddress?: string;
   exchangeName?: string;
   symbol: unknown;
@@ -62,7 +63,12 @@ export default async (process: Process) => {
               chain,
               address: token.token_address,
             })
-            .then((v) => resolve(v))
+            .then((resolvedTokensInfo) =>
+              resolve({
+                ...resolvedTokensInfo,
+                tokenAddress: token.token_address,
+              }),
+            )
             .catch(() => resolve(null));
         }),
     ),
@@ -72,28 +78,44 @@ export default async (process: Process) => {
     .tokenTable()
     .whereIn(
       'address',
-      tokensBalances.map((v) => v.token_address),
+      tokensBalances.map((v) => v.token_address.toLowerCase()),
     )
     .andWhere('blockchain', wallet.blockchain)
     .andWhere('network', wallet.network);
 
   await Promise.all(
     tokensBalances.map(async (tokenBalance) => {
-      const tokenPrice = tokensPrices.find(
-        (t) => t && t.exchangeAddress === tokenBalance.token_address,
-      );
+      const tokenPrice = tokensPrices.find((t) => {
+        return (
+          t && (t.tokenAddress || '').toLowerCase() === tokenBalance.token_address.toLowerCase()
+        );
+      });
+
       if (!tokenPrice) {
         return null;
       }
-      let tokenRecord = existingTokensRecords.find((t) => t.address === tokenBalance.token_address);
+      let tokenRecord = existingTokensRecords.find(
+        (t) => t.address.toLowerCase() === tokenBalance.token_address.toLowerCase(),
+      );
       if (!tokenRecord) {
+        let tokenRecordAlias = await container.model
+          .tokenAliasTable()
+          .where('symbol', tokenBalance.symbol)
+          .first();
+
+        if (!tokenRecordAlias) {
+          tokenRecordAlias = await container.model
+            .tokenAliasService()
+            .create(tokenBalance.name, tokenBalance.symbol, false);
+        }
+
         tokenRecord = await container.model
           .tokenService()
           .create(
-            null,
+            tokenRecordAlias,
             wallet.blockchain,
             wallet.network,
-            tokenBalance.token_address,
+            tokenBalance.token_address.toLowerCase(),
             tokenBalance.name,
             tokenBalance.symbol,
             new BN(tokenBalance.decimals).toNumber(),
@@ -101,7 +123,7 @@ export default async (process: Process) => {
       }
 
       const totalTokenNumber = new BN(tokenBalance.balance).div(`1e${tokenBalance.decimals}`);
-      const totalTokenPrice = new BN(tokenPrice.usdPrice).multipliedBy(totalTokenNumber);
+      const totalTokenPrice = new BN(tokenPrice.usdPrice);
 
       return walletMetrics.createToken(
         null,

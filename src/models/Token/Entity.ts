@@ -6,7 +6,7 @@ export interface TokenAlias {
   name: string;
   symbol: string;
   stable: boolean;
-  protocol: string;
+  protocol: string | null;
   updatedAt: Date;
   createdAt: Date;
 }
