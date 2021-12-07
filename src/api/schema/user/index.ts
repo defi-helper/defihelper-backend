@@ -715,7 +715,7 @@ export const UserType = new GraphQLObjectType<User, Request>({
                 this.andWhere('date', '<', filter.dateBefore.toDate());
               }
             })
-            .groupBy('contract', 'wallet'),
+            .groupBy('contract', 'wallet', 'token'),
           group,
           metric,
         )
@@ -792,6 +792,8 @@ export const UserType = new GraphQLObjectType<User, Request>({
             }
           });
 
+        // type here
+
         return metricsChartSelector(
           container.model
             .metricWalletTokenTable()
@@ -809,7 +811,7 @@ export const UserType = new GraphQLObjectType<User, Request>({
                   'token',
                   container.model
                     .tokenTable()
-                    .column('address')
+                    .column('id')
                     .whereIn(
                       'alias',
                       container.model
@@ -836,7 +838,7 @@ export const UserType = new GraphQLObjectType<User, Request>({
                 this.andWhere('date', '<', filter.dateBefore.toDate());
               }
             })
-            .groupBy('contract', 'wallet', 'token'),
+            .groupBy('contract', 'wallet'),
           group,
           metric,
         )

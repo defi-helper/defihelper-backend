@@ -14,6 +14,7 @@ export class TokenAliasService {
       name,
       symbol,
       stable,
+      protocol: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
