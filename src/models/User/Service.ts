@@ -2,9 +2,17 @@ import { Factory } from '@services/Container';
 import { Locale } from '@services/I18n/container';
 import { RedisClient } from 'redis';
 import { v4 as uuid } from 'uuid';
+import { Emitter } from '@services/Event';
+import container from '@container';
 import { User, Table as UserTable, Role } from './Entity';
 
 export class UserService {
+  public readonly onCreated = new Emitter<User>((user) =>
+    container.model.queueService().push('eventsUserCreated', {
+      id: user.id,
+    }),
+  );
+
   constructor(readonly table: Factory<UserTable>) {}
 
   async create(role: Role, locale: Locale = 'enUS') {
@@ -16,6 +24,7 @@ export class UserService {
       updatedAt: new Date(),
     };
     await this.table().insert(created);
+    this.onCreated.emit(created);
 
     return created;
   }
