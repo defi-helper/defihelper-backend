@@ -181,7 +181,7 @@ export const TokenAliasMetricType = new GraphQLObjectType({
     myBalance: {
       type: GraphQLNonNull(GraphQLString),
     },
-    myValue: {
+    myUSD: {
       type: GraphQLNonNull(GraphQLString),
     },
     myPortfolioPercent: {
@@ -214,7 +214,7 @@ export const TokenAliasType = new GraphQLObjectType<TokenAlias>({
       resolve: async (tokenAlias, args, { currentUser }) => {
         const emptyMetric = {
           myBalance: '0',
-          myValue: '0',
+          myUSD: '0',
           myPortfolioPercent: '0',
         };
         if (!currentUser) {
@@ -224,7 +224,7 @@ export const TokenAliasType = new GraphQLObjectType<TokenAlias>({
         const database = container.database();
         const metric = await container
           .database()
-          .sum({ myBalance: 'balance', myValue: 'usd' })
+          .sum({ myBalance: 'balance', myUSD: 'usd' })
           .from(
             container.model
               .metricWalletTokenTable()
@@ -254,7 +254,7 @@ export const TokenAliasType = new GraphQLObjectType<TokenAlias>({
         return {
           ...metric,
           myPortfolioPercent: 0,
-          myValue: new BN(metric.myBalance).multipliedBy(new BN(metric.myValue)).toString(10),
+          myUSD: new BN(metric.myBalance).multipliedBy(new BN(metric.myUSD)).toString(10),
         };
       },
     },
