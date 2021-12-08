@@ -1,7 +1,8 @@
 import { AuthenticationError, UserInputError } from 'apollo-server-express';
 import container from '@container';
 import { Request } from 'express';
-import { Token, TokenAlias } from '@models/Token/Entity';
+import { Token, TokenAlias, tokenAliasTableName, tokenTableName } from '@models/Token/Entity';
+
 import {
   GraphQLBoolean,
   GraphQLFieldConfig,
@@ -12,6 +13,7 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from 'graphql';
+import { metricWalletTokenTableName } from '@models/Metric/Entity';
 import {
   BlockchainEnum,
   BlockchainFilterInputType,
@@ -173,6 +175,21 @@ export const TokenUpdateMutation: GraphQLFieldConfig<any, Request> = {
   }),
 };
 
+export const TokenAliasMetricType = new GraphQLObjectType({
+  name: 'TokenAliasMetricType',
+  fields: {
+    myBalance: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    myUSD: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    myPortfolioPercent: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+  },
+});
+
 export const TokenAliasType = new GraphQLObjectType<TokenAlias>({
   name: 'TokenAlias',
   fields: {
@@ -191,6 +208,55 @@ export const TokenAliasType = new GraphQLObjectType<TokenAlias>({
     stable: {
       type: GraphQLNonNull(GraphQLBoolean),
       description: 'Is stable price',
+    },
+    metric: {
+      type: GraphQLNonNull(TokenAliasMetricType),
+      resolve: async (tokenAlias, args, { currentUser }) => {
+        const emptyMetric = {
+          myBalance: '0',
+          myUSD: '0',
+          myPortfolioPercent: '0',
+        };
+        if (!currentUser) {
+          return emptyMetric;
+        }
+
+        const database = container.database();
+        const metric = await container
+          .database()
+          .sum({ myBalance: 'balance', myUSD: 'usd' })
+          .from(
+            container.model
+              .metricWalletTokenTable()
+              .distinctOn(`${metricWalletTokenTableName}.token`)
+              .columns([
+                database.raw(`(${metricWalletTokenTableName}.data->>'usd')::numeric AS usd`),
+                database.raw(
+                  `(${metricWalletTokenTableName}.data->>'balance')::numeric AS balance`,
+                ),
+              ])
+              .innerJoin(`${tokenTableName} AS t`, 't.id', `${metricWalletTokenTableName}.token`)
+              .innerJoin(`${tokenAliasTableName} AS ta`, 't.alias', 'ta.id')
+              .whereRaw(
+                `(${metricWalletTokenTableName}.data->>'usd' IS NOT NULL OR ${metricWalletTokenTableName}.data->>'balance' IS NOT NULL)`,
+              )
+              .andWhere('ta.id', tokenAlias.id)
+              .orderByRaw(
+                `${metricWalletTokenTableName}.token, ${metricWalletTokenTableName}.date DESC`,
+              )
+              .as('metric'),
+          )
+          .first();
+
+        if (!metric) {
+          return emptyMetric;
+        }
+
+        return {
+          ...metric,
+          myPortfolioPercent: 0,
+        };
+      },
     },
     tokens: {
       type: GraphQLNonNull(PaginateList('TokenListType', GraphQLNonNull(TokenType))),
