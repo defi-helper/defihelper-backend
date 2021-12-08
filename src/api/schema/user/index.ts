@@ -20,6 +20,10 @@ import BN from 'bignumber.js';
 import * as WavesCrypto from '@waves/ts-lib-crypto';
 import * as WavesMarshall from '@waves/marshall';
 import { AuthenticationError, UserInputError } from 'apollo-server-express';
+import { TokenAliasType } from '@api/schema/token';
+import { tableName as walletTableName } from '@models/Wallet/Entity';
+import { metricWalletTokenTableName } from '@models/Metric/Entity';
+import { tokenAliasTableName, tokenTableName } from '@models/Token/Entity';
 import { ContractType } from '../protocol';
 import {
   BlockchainEnum,
@@ -564,6 +568,37 @@ export const UserType = new GraphQLObjectType<User, Request>({
       type: GraphQLNonNull(LocaleEnum),
       description: 'Current user locale',
     },
+    tokenAliases: {
+      type: GraphQLNonNull(PaginateList('TokenAliasListType', GraphQLNonNull(TokenAliasType))),
+      args: {
+        pagination: PaginationArgument('AliasListPaginationInputType'),
+      },
+      resolve: async (user, { pagination }) => {
+        const select = container.model
+          .metricWalletTokenTable()
+          .column(`${tokenAliasTableName}.*`)
+          .innerJoin(tokenTableName, `${tokenTableName}.id`, `${metricWalletTokenTableName}.token`)
+          .innerJoin(tokenAliasTableName, `${tokenAliasTableName}.id`, `${tokenTableName}.alias`)
+          .innerJoin(
+            walletTableName,
+            `${walletTableName}.id`,
+            `${metricWalletTokenTableName}.wallet`,
+          )
+          .where(`${walletTableName}.user`, user.id)
+          .groupBy(`${tokenAliasTableName}.id`);
+
+        return {
+          list: await select
+            .clone()
+            .orderBy('createdAt', 'desc')
+            .limit(pagination.limit)
+            .offset(pagination.offset),
+          pagination: {
+            count: await select.clone().countDistinct(`${tokenAliasTableName}.id`).first(),
+          },
+        };
+      },
+    },
     wallets: {
       type: GraphQLNonNull(PaginateList('WalletListType', GraphQLNonNull(WalletType))),
       args: {
@@ -791,8 +826,6 @@ export const UserType = new GraphQLObjectType<User, Request>({
               }
             }
           });
-
-        // type here
 
         return metricsChartSelector(
           container.model
