@@ -72,8 +72,16 @@ export default {
         consumers: array(process.env.POLYGON_CONSUMERS ?? '[]'),
         avgBlockTime: 2.5,
       },
-      // Avalanch
-      avalanch: {
+      // Moonriver
+      moonriver: {
+        node: array(process.env.MOONRIVER_NODE ?? '[]'),
+        historicalNode: array(process.env.MOONRIVER_NODE_HISTORICAL ?? '[]'),
+        inspectors: array(process.env.MOONRIVER_INSPECTORS ?? '[]'),
+        consumers: array(process.env.MOONRIVER_CONSUMERS ?? '[]'),
+        avgBlockTime: 1,
+      },
+      // Avalanche
+      avalanche: {
         node: array(process.env.AVALANCHE_NODE ?? '[]'),
         historicalNode: array(process.env.AVALANCHE_NODE_HISTORICAL ?? '[]'),
         inspectors: array(process.env.AVALANCHE_INSPECTORS ?? '[]'),
