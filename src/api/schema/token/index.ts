@@ -2,7 +2,7 @@ import { AuthenticationError, UserInputError } from 'apollo-server-express';
 import container from '@container';
 import { Request } from 'express';
 import { Token, TokenAlias, tokenAliasTableName, tokenTableName } from '@models/Token/Entity';
-import BN from 'bignumber.js';
+
 import {
   GraphQLBoolean,
   GraphQLFieldConfig,
@@ -254,7 +254,6 @@ export const TokenAliasType = new GraphQLObjectType<TokenAlias>({
         return {
           ...metric,
           myPortfolioPercent: 0,
-          myUSD: new BN(metric.myBalance).multipliedBy(new BN(metric.myUSD)).toString(10),
         };
       },
     },
