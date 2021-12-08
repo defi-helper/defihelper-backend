@@ -123,14 +123,14 @@ export default async (process: Process) => {
       }
 
       const totalTokenNumber = new BN(tokenBalance.balance).div(`1e${tokenBalance.decimals}`);
-      const totalTokenPrice = new BN(tokenPrice.usdPrice);
+      const totalTokensUSDPrice = new BN(tokenPrice.usdPrice).multipliedBy(totalTokenNumber);
 
       return walletMetrics.createToken(
         null,
         wallet,
         tokenRecord,
         {
-          usd: totalTokenPrice.toString(10),
+          usd: totalTokensUSDPrice.toString(10),
           balance: totalTokenNumber.toString(10),
         },
         new Date(),
