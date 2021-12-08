@@ -228,6 +228,7 @@ export const TokenAliasType = new GraphQLObjectType<TokenAlias>({
           .from(
             container.model
               .metricWalletTokenTable()
+              .distinctOn(`${metricWalletTokenTableName}.token`)
               .columns([
                 database.raw(`(${metricWalletTokenTableName}.data->>'usd')::numeric AS usd`),
                 database.raw(
