@@ -18,38 +18,37 @@ export default async (schema: SchemaBuilder) => {
 
   schema.raw(`
     UPDATE metric_wallet_token as mwt
-        SET token = tkn.id
-    FROM token AS tkn
-        WHERE tkn.address = mwt."tokenAddress"
+      SET token = tkn.id
+    FROM token AS tkn, wallet as wlt
+      WHERE tkn.address = mwt."tokenAddress" AND wlt.blockchain = tkn.blockchain
   `);
+
+  schema
+    .alterTable(metricWalletTokenTableName, (table) => {
+      table.string('token', 36).notNullable().alter();
+    })
+    .toQuery();
 
   schema.alterTable(metricWalletTokenTableName, (table) => {
     table.dropColumn('tokenAddress');
   });
 
-  schema.raw(
-    `CREATE UNIQUE INDEX metric_wallet_token_token_uniq ON ${metricWalletTokenTableName} (token)`,
-  );
   schema.alterTable(metricWalletTokenTableName, (table) => {
     table
-      .foreign(tokenTableName)
-      .references(`${metricWalletTokenTableName}.token`)
+      .foreign('token')
+      .references(`${tokenTableName}.id`)
       .onUpdate('CASCADE')
       .onDelete('CASCADE');
   });
 
-  schema.raw(
-    `CREATE UNIQUE INDEX token_alias_protocol_protocol_uniq ON ${tokenAliasTableName} (protocol)`,
-  );
-  schema.raw('alter table token_alias alter column protocol drop not null');
   schema.alterTable(tokenAliasTableName, (table) => {
-    table.string('protocol', 36).nullable().alter();
+    table.string('protocol', 36).nullable();
 
     table
-      .foreign(protocolTableName)
-      .references(`${tokenAliasTableName}.protocol`)
+      .foreign('protocol')
+      .references(`${protocolTableName}.id`)
       .onUpdate('CASCADE')
-      .onDelete('CASCADE');
+      .onDelete('SET NULL');
   });
 
   return schema.raw(

@@ -14,6 +14,7 @@ export class TokenAliasService {
       name,
       symbol,
       stable,
+      protocol: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -39,7 +40,10 @@ export class TokenAliasService {
 
 export class TokenService {
   public readonly onCreated = new Emitter<Token>((token) => {
-    if (token.blockchain === 'ethereum') {
+    if (
+      token.blockchain === 'ethereum' &&
+      (token.name === '' || token.symbol === '' || token.decimals === 0)
+    ) {
       return container.model.queueService().push('tokenInfoEth', { token: token.id });
     }
     if (token.blockchain === 'waves') {

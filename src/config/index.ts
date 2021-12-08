@@ -1,5 +1,6 @@
 import { Config as EthereumConfig } from '@services/Blockchain/Ethereum';
 import dotenv from 'dotenv';
+import Moralis from 'moralis/node';
 
 dotenv.config();
 
@@ -101,6 +102,9 @@ export default {
   telegram: {
     token: process.env.TELEGRAM_TOKEN ?? '',
   },
+  moralis: {
+    serverUrl: process.env.MORALIS_SERVER ?? '',
+  } as Moralis.StartOptions,
   session: {
     ttl: int(process.env.SESSION_TTL ?? '600'),
   },
