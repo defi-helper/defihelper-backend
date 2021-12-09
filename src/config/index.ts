@@ -103,7 +103,8 @@ export default {
     token: process.env.TELEGRAM_TOKEN ?? '',
   },
   moralis: {
-    serverUrl: process.env.MORALIS_SERVER ?? '',
+    moralisSecret: process.env.MORALIS_API_KEY ?? '',
+    apiKey: process.env.MORALIS_API_KEY ?? '',
   } as Moralis.StartOptions,
   session: {
     ttl: int(process.env.SESSION_TTL ?? '600'),
