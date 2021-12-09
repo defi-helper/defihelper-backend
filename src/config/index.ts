@@ -104,7 +104,7 @@ export default {
   },
   moralis: {
     moralisSecret: process.env.MORALIS_API_KEY ?? '',
-    apiKey: process.env.MORALIS_API_KEY ?? '',
+    serverUrl: process.env.MORALIS_SERVER_URL ?? '',
   } as Moralis.StartOptions,
   session: {
     ttl: int(process.env.SESSION_TTL ?? '600'),
