@@ -8,12 +8,13 @@ import container from '@container';
 export class TokenAliasService {
   constructor(readonly table: Factory<TokenAliasTable>) {}
 
-  async create(name: string, symbol: string, stable: boolean) {
+  async create(name: string, symbol: string, stable: boolean, logoUrl: string|null) {
     const created = {
       id: uuid(),
       name,
       symbol,
       stable,
+      logoUrl,
       protocol: null,
       createdAt: new Date(),
       updatedAt: new Date(),

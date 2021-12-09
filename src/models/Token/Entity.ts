@@ -6,6 +6,7 @@ export interface TokenAlias {
   name: string;
   symbol: string;
   stable: boolean;
+  logoUrl: string | null;
   protocol: string | null;
   updatedAt: Date;
   createdAt: Date;

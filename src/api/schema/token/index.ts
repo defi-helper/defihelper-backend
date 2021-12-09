@@ -2,6 +2,8 @@ import { AuthenticationError, UserInputError } from 'apollo-server-express';
 import container from '@container';
 import { Request } from 'express';
 import { Token, TokenAlias, tokenAliasTableName, tokenTableName } from '@models/Token/Entity';
+import { tableName as walletTableName } from '@models/Wallet/Entity';
+import { tableName as userTableName } from '@models/User/Entity';
 
 import {
   GraphQLBoolean,
@@ -205,6 +207,10 @@ export const TokenAliasType = new GraphQLObjectType<TokenAlias>({
       type: GraphQLNonNull(GraphQLString),
       description: 'Symbol',
     },
+    logoUrl: {
+      type: GraphQLString,
+      description: 'Logo url',
+    },
     stable: {
       type: GraphQLNonNull(GraphQLBoolean),
       description: 'Is stable price',
@@ -237,10 +243,17 @@ export const TokenAliasType = new GraphQLObjectType<TokenAlias>({
               ])
               .innerJoin(`${tokenTableName} AS t`, 't.id', `${metricWalletTokenTableName}.token`)
               .innerJoin(`${tokenAliasTableName} AS ta`, 't.alias', 'ta.id')
+              .innerJoin(
+                `${walletTableName} AS wlt`,
+                `${metricWalletTokenTableName}.wallet`,
+                'wlt.id',
+              )
+              .innerJoin(`${userTableName} AS usr`, `wlt.user`, 'usr.id')
               .whereRaw(
                 `(${metricWalletTokenTableName}.data->>'usd' IS NOT NULL OR ${metricWalletTokenTableName}.data->>'balance' IS NOT NULL)`,
               )
               .andWhere('ta.id', tokenAlias.id)
+              .andWhere('usr.id', currentUser.id)
               .orderByRaw(
                 `${metricWalletTokenTableName}.token, ${metricWalletTokenTableName}.date DESC`,
               )
@@ -253,7 +266,8 @@ export const TokenAliasType = new GraphQLObjectType<TokenAlias>({
         }
 
         return {
-          ...metric,
+          myBalance: metric.myBalance || '0',
+          myUSD: metric.myUSD || '0',
           myPortfolioPercent: 0,
         };
       },
@@ -435,7 +449,7 @@ export const TokenAliasCreateMutation: GraphQLFieldConfig<any, Request> = {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
     const { name, symbol, stable } = input;
-    const created = await container.model.tokenAliasService().create(name, symbol, stable);
+    const created = await container.model.tokenAliasService().create(name, symbol, stable, null);
 
     return created;
   }),
