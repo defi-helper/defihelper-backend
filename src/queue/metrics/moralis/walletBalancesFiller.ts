@@ -1,6 +1,7 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import BN from 'bignumber.js';
+import { MoralisRestAPIChain } from '@services/Moralis';
 
 export interface Params {
   id: string;
@@ -24,7 +25,7 @@ export default async (process: Process) => {
   const { id } = process.task.params as Params;
 
   const wallet = await container.model.walletTable().where({ id }).first();
-  let chain: 'eth' | 'bsc' | 'avalanche' | 'polygon';
+  let chain: MoralisRestAPIChain;
 
   if (!wallet || wallet.blockchain !== 'ethereum') {
     throw new Error('wallet not found or unsupported blockchain');
@@ -32,37 +33,31 @@ export default async (process: Process) => {
 
   switch (wallet.network) {
     case '1':
-      chain = 'eth';
+      chain = MoralisRestAPIChain.eth;
       break;
     case '56':
-      chain = 'bsc';
+      chain = MoralisRestAPIChain.bsc;
       break;
     case '137':
-      chain = 'polygon';
+      chain = MoralisRestAPIChain.polygon;
       break;
     case '43114':
-      chain = 'avalanche';
+      chain = MoralisRestAPIChain.avalanche;
       break;
     default:
       throw new Error('unsupported network');
   }
 
-  const moralis = await container.moralis().getWeb3API();
+  const moralis = container.moralis().getRestAPI();
   const walletMetrics = container.model.metricService();
-  const tokensBalances = await moralis.account.getTokenBalances({
-    chain,
-    address: wallet.address,
-  });
+  const tokensBalances = await moralis.accountERC20Tokens(wallet.address, chain);
 
   const tokensPrices = (await Promise.all(
     tokensBalances.map(
       (token) =>
         new Promise((resolve) => {
-          moralis.token
-            .getTokenPrice({
-              chain,
-              address: token.token_address,
-            })
+          moralis
+            .ERC20TokenPrice(token.token_address, chain)
             .then((resolvedTokensInfo) =>
               resolve({
                 ...resolvedTokensInfo,
@@ -97,6 +92,7 @@ export default async (process: Process) => {
       let tokenRecord = existingTokensRecords.find(
         (t) => t.address.toLowerCase() === tokenBalance.token_address.toLowerCase(),
       );
+
       if (!tokenRecord) {
         let tokenRecordAlias = await container.model
           .tokenAliasTable()
@@ -124,7 +120,6 @@ export default async (process: Process) => {
 
       const totalTokenNumber = new BN(tokenBalance.balance).div(`1e${tokenBalance.decimals}`);
       const totalTokensUSDPrice = new BN(tokenPrice.usdPrice).multipliedBy(totalTokenNumber);
-
       return walletMetrics.createToken(
         null,
         wallet,
