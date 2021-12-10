@@ -17,6 +17,7 @@ import {
   contractTableName,
   Protocol,
   walletContractLinkTableName,
+  ContractAutomate,
 } from '@models/Protocol/Entity';
 import { tableName as walletTableName } from '@models/Wallet/Entity';
 import { AuthenticationError, ForbiddenError, UserInputError } from 'apollo-server-express';
@@ -56,6 +57,21 @@ export const ContractMetricType = new GraphQLObjectType({
   },
 });
 
+export const ContractAutomatesType = new GraphQLObjectType<ContractAutomate, Request>({
+  name: 'ContractAutomatesType',
+  fields: {
+    adapters: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString))),
+      description: 'Usable automate adapters',
+    },
+    autorestake: {
+      type: GraphQLString,
+      description: 'Autorestake adapter name',
+      resolve: ({ autorestakeAdapter }) => autorestakeAdapter,
+    },
+  },
+});
+
 export const ContractType = new GraphQLObjectType<Contract, Request>({
   name: 'ContractType',
   fields: {
@@ -91,10 +107,9 @@ export const ContractType = new GraphQLObjectType<Contract, Request>({
       type: GraphQLString,
       description: 'Contract deployment block number',
     },
-    automates: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString))),
+    automate: {
+      type: GraphQLNonNull(ContractAutomatesType),
       description: 'Usable automates',
-      resolve: ({ automate }) => automate.adapters,
     },
     name: {
       type: GraphQLNonNull(GraphQLString),
