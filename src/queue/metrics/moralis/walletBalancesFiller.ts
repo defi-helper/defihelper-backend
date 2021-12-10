@@ -96,7 +96,7 @@ export default async (process: Process) => {
       if (!tokenRecord) {
         let tokenRecordAlias = await container.model
           .tokenAliasTable()
-          .where('symbol', tokenBalance.symbol)
+          .where('name', 'ilike', tokenBalance.name)
           .first();
 
         if (!tokenRecordAlias) {
@@ -154,7 +154,7 @@ export default async (process: Process) => {
   if (!nativeTokenRecord) {
     let nativeTokenAlias = await container.model
       .tokenAliasTable()
-      .where('symbol', nativeToken.symbol)
+      .where('name', 'ilike', nativeToken.name)
       .first();
 
     if (!nativeTokenAlias) {
