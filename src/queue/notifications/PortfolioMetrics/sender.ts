@@ -29,11 +29,13 @@ export default async (process: Process) => {
         dataLoader.userMetric({ metric: 'earnedUSD' }).load(user.id),
       ]);
 
+      if (!totalStackedUSD) return null;
+
       return container.model.queueService().push('sendTelegram', {
         chatId,
         locale: user.locale,
         params: {
-          totalStackedUSD: new BN(totalStackedUSD).toFixed(2),
+          totalNetWorth: new BN(totalStackedUSD).plus(totalEarnedUSD).toFixed(2),
           totalEarnedUSD: new BN(totalEarnedUSD).toFixed(2),
         },
         template: 'portfolioMetrics',

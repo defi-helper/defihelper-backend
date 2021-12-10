@@ -10,8 +10,8 @@ export default {
     'Confirm': 'Confirm',
     'New {{eventName}} events in {{contractAddress}} on {{network}}:':
       'New {{eventName}} events in {{contractAddress}} on {{network}}:',
-    'Your portfolio: total stacked ${{totalStackedUSD}}, total earned ${{totalEarnedUSD}}':
-      'Your portfolio: total stacked ${{totalStackedUSD}}, total earned ${{totalEarnedUSD}}',
+    'Total Net Worth ${{totalNetWorth}}, Total unclaimed ${{totalEarnedUSD}}':
+      'Total Net Worth ${{totalNetWorth}}, Total unclaimed ${{totalEarnedUSD}}',
     'automate:trigger:contractEvent:name': 'Contract event',
     'automate:trigger:contractEvent:description': 'Call trigger for contract event',
     'automate:trigger:everyMonth:name': 'Periodic',
