@@ -1,9 +1,8 @@
 import { AuthenticationError, UserInputError } from 'apollo-server-express';
 import container from '@container';
 import { Request } from 'express';
-import { Token, TokenAlias, tokenAliasTableName, tokenTableName } from '@models/Token/Entity';
+import { Token, TokenAlias, tokenTableName } from '@models/Token/Entity';
 import { tableName as walletTableName } from '@models/Wallet/Entity';
-import { tableName as userTableName } from '@models/User/Entity';
 
 import {
   GraphQLBoolean,
@@ -234,7 +233,11 @@ export const TokenAliasType = new GraphQLObjectType<TokenAlias>({
           .from(
             container.model
               .metricWalletTokenTable()
-              .distinctOn(`${metricWalletTokenTableName}.token`)
+              .distinctOn(
+                `${metricWalletTokenTableName}.wallet`,
+                `${metricWalletTokenTableName}.contract`,
+                `${metricWalletTokenTableName}.token`,
+              )
               .columns([
                 database.raw(`(${metricWalletTokenTableName}.data->>'usd')::numeric AS usd`),
                 database.raw(
@@ -242,21 +245,20 @@ export const TokenAliasType = new GraphQLObjectType<TokenAlias>({
                 ),
               ])
               .innerJoin(`${tokenTableName} AS t`, 't.id', `${metricWalletTokenTableName}.token`)
-              .innerJoin(`${tokenAliasTableName} AS ta`, 't.alias', 'ta.id')
               .innerJoin(
                 `${walletTableName} AS wlt`,
                 `${metricWalletTokenTableName}.wallet`,
                 'wlt.id',
               )
-              .innerJoin(`${userTableName} AS usr`, `wlt.user`, 'usr.id')
               .whereRaw(
                 `(${metricWalletTokenTableName}.data->>'usd' IS NOT NULL OR ${metricWalletTokenTableName}.data->>'balance' IS NOT NULL)`,
               )
-              .andWhere('ta.id', tokenAlias.id)
-              .andWhere('usr.id', currentUser.id)
-              .orderByRaw(
-                `${metricWalletTokenTableName}.token, ${metricWalletTokenTableName}.date DESC`,
-              )
+              .andWhere('t.alias', tokenAlias.id)
+              .andWhere('wlt.user', currentUser.id)
+              .orderBy(`${metricWalletTokenTableName}.wallet`)
+              .orderBy(`${metricWalletTokenTableName}.contract`)
+              .orderBy(`${metricWalletTokenTableName}.token`)
+              .orderBy(`${metricWalletTokenTableName}.date`, 'DESC')
               .as('metric'),
           )
           .first();
