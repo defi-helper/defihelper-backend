@@ -750,7 +750,7 @@ export const UserType = new GraphQLObjectType<User, Request>({
                 this.andWhere('date', '<', filter.dateBefore.toDate());
               }
             })
-            .groupBy('contract', 'wallet', 'token'),
+            .groupBy('contract', 'wallet'),
           group,
           metric,
         )

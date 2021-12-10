@@ -1,6 +1,7 @@
 import Moralis from 'moralis/node';
 import axios from 'axios';
 import buildUrl from 'build-url';
+import container from "@container";
 
 export interface MoralisRestAPIRequestResponse {
   code: number;
@@ -27,6 +28,17 @@ export interface MoralisRestAPITypeAccountERC20Tokens {
   thumbnail: string | null;
   decimals: string;
   balance: string;
+}
+
+export interface MoralisRestAPITypeAccountNativeBalance {
+  balance: string;
+}
+
+export interface MoralisRestAPITypeChainNativeToken {
+  priceUSD: string;
+  symbol: string;
+  decimals: number;
+  name: string;
 }
 
 export enum MoralisRestAPIChain {
@@ -57,6 +69,52 @@ export class MoralisRestApi {
   ): Promise<MoralisRestAPITypeAccountERC20Tokens[]> {
     const r = await this.request(`${address}/erc20`, { chain });
     return r.data as MoralisRestAPITypeAccountERC20Tokens[];
+  }
+
+  public async accountNativeBalance(
+    address: string,
+    chain: MoralisRestAPIChain,
+  ): Promise<MoralisRestAPITypeAccountNativeBalance> {
+    const r = await this.request(`${address}/balance`, { chain });
+    return r.data as MoralisRestAPITypeAccountNativeBalance;
+  }
+
+  public chainNativeToken = async (
+    chain: MoralisRestAPIChain,
+  ): Promise<MoralisRestAPITypeChainNativeToken> => {
+    switch (chain) {
+      case MoralisRestAPIChain.eth:
+        return {
+          decimals: 18,
+          symbol: 'ETH',
+          name: 'Ethereum',
+          priceUSD: await container.blockchain.ethereum.byNetwork('1').priceFeedUSD(),
+        };
+      case MoralisRestAPIChain.bsc:
+        return {
+          decimals: 18,
+          symbol: 'BSC',
+          name: 'Binance Smart Chain',
+          priceUSD: await container.blockchain.ethereum.byNetwork('56').priceFeedUSD(),
+        };
+      case MoralisRestAPIChain.avalanche:
+        return {
+          decimals: 18,
+          symbol: 'AVAX',
+          name: 'Avalanche',
+          priceUSD: await container.blockchain.ethereum.byNetwork('43114').priceFeedUSD(),
+        };
+      case MoralisRestAPIChain.polygon:
+        return {
+          decimals: 18,
+          symbol: 'MATIC',
+          name: 'Polygon',
+          priceUSD: await container.blockchain.ethereum.byNetwork('137').priceFeedUSD(),
+        };
+
+      default:
+        throw new Error('unknown chain');
+    }
   }
 
   protected request = async (

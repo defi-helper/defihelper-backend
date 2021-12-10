@@ -96,13 +96,13 @@ export default async (process: Process) => {
       if (!tokenRecord) {
         let tokenRecordAlias = await container.model
           .tokenAliasTable()
-          .where('symbol', tokenBalance.symbol)
+          .where('name', 'ilike', tokenBalance.name)
           .first();
 
         if (!tokenRecordAlias) {
           tokenRecordAlias = await container.model
             .tokenAliasService()
-            .create(tokenBalance.name, tokenBalance.symbol, false);
+            .create(tokenBalance.name, tokenBalance.symbol, false, tokenBalance.thumbnail);
         }
 
         tokenRecord = await container.model
@@ -131,6 +131,60 @@ export default async (process: Process) => {
         new Date(),
       );
     }),
+  );
+
+  let nativeBalance;
+  const nativeToken = await moralis.chainNativeToken(chain);
+  try {
+    nativeBalance = new BN((await moralis.accountNativeBalance(wallet.address, chain)).balance).div(
+      `1e${nativeToken.decimals}`,
+    );
+  } catch {
+    return process.done();
+  }
+
+  const nativeUSD = nativeBalance.multipliedBy(nativeToken.priceUSD);
+  let nativeTokenRecord = await container.model
+    .tokenTable()
+    .where('address', '0x0000000000000000000000000000000000000000')
+    .andWhere('blockchain', wallet.blockchain)
+    .andWhere('network', wallet.network)
+    .first();
+
+  if (!nativeTokenRecord) {
+    let nativeTokenAlias = await container.model
+      .tokenAliasTable()
+      .where('name', 'ilike', nativeToken.name)
+      .first();
+
+    if (!nativeTokenAlias) {
+      nativeTokenAlias = await container.model
+        .tokenAliasService()
+        .create(nativeToken.name, nativeToken.symbol, false, null);
+    }
+
+    nativeTokenRecord = await container.model
+      .tokenService()
+      .create(
+        nativeTokenAlias,
+        wallet.blockchain,
+        wallet.network,
+        '0x0000000000000000000000000000000000000000',
+        nativeToken.name,
+        nativeToken.symbol,
+        nativeToken.decimals,
+      );
+  }
+
+  await walletMetrics.createToken(
+    null,
+    wallet,
+    nativeTokenRecord,
+    {
+      usd: nativeBalance.toString(10),
+      balance: nativeUSD.toString(10),
+    },
+    new Date(),
   );
 
   return process.done();

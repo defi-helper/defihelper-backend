@@ -13,7 +13,9 @@ export default async (process: Process) => {
   if (!token) throw new Error('Token not found');
   if (token.alias !== null) throw new Error('Token alias already registered');
 
-  const alias = await container.model.tokenAliasService().create(token.name, token.symbol, false);
+  const alias = await container.model
+    .tokenAliasService()
+    .create(token.name, token.symbol, false, null);
   await tokenService.update({
     ...token,
     alias: alias.id,
