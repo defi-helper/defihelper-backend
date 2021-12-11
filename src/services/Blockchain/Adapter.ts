@@ -91,6 +91,7 @@ export class AdapterService {
   async loadAdapter(protocol: string): Promise<ProtocolAdapter> {
     const adapterResponse = await axios.get(`${this.host}/${protocol}.js`);
     const context = vm.createContext({
+      Error,
       module: { exports: new Error('Adapter not evaluated') },
       console,
       bignumber: BigNumber,
