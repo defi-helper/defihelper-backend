@@ -12,6 +12,7 @@ export default async (process: Process) => {
     throw new Error('User not found');
   }
 
+  const database = container.database();
   const triggers = await container.model
     .automateTriggerTable()
     .columns(
@@ -26,7 +27,7 @@ export default async (process: Process) => {
   const walletsFunds = await container.model
     .billingTransferTable()
     .column(`${walletTableName}.id as id`)
-    .column('coalesce(sum(amount), 0) as funds')
+    .column(database.raw('coalesce(sum(amount), 0) as funds'))
     .innerJoin(walletTableName, `${walletTableName}.address`, `${transferTableName}.account`)
     .whereIn(
       `${walletTableName}.id`,

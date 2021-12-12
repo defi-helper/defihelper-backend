@@ -1,6 +1,5 @@
 import { Process } from '@models/Queue/Entity';
 import container from '@container';
-import { userContactTableName } from '@models/Notification/Entity';
 import { Role, tableName as userTableName } from '@models/User/Entity';
 import dayjs from 'dayjs';
 import { userNotificationTableName, UserNotificationType } from '@models/UserNotification/Entity';
