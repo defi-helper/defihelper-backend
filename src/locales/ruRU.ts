@@ -17,7 +17,7 @@ export default {
       'Новое событие {{eventName}} в контракте {{contractAddress}} сети {{network}}:',
     'Your portfolio: total stacked ${{totalStackedUSD}}, total earned ${{totalEarnedUSD}}':
       'Ваше портфолио\nВсего застейкано: {{totalStackedUSD}}$, всего заработано: {{totalEarnedUSD}}$',
-    'Attention, one of yours automates may be pause due to insufficient funds':
+    'Attention, one of yours automates may be paused due to insufficient funds':
       'Внимание, одна из ваших автоматизаций скоро будет заморожена ввиду нехватки средств',
     'automate:trigger:contractEvent:name': 'Событие контракта',
     'automate:trigger:contractEvent:description': 'Вызов триггера в ответ на событие в контракте',

@@ -12,8 +12,8 @@ export default {
       'New {{eventName}} events in {{contractAddress}} on {{network}}:',
     'Your portfolio: total stacked ${{totalStackedUSD}}, total earned ${{totalEarnedUSD}}':
       'Your portfolio: total stacked ${{totalStackedUSD}}, total earned ${{totalEarnedUSD}}',
-    'Attention, one of yours automates may be pause due to insufficient funds':
-      'Attention, one of yours automates may be pause due to insufficient funds',
+    'Attention, one of yours automates may be paused due to insufficient funds':
+      'Attention, one of yours automates may be paused due to insufficient funds',
     'automate:trigger:contractEvent:name': 'Contract event',
     'automate:trigger:contractEvent:description': 'Call trigger for contract event',
     'automate:trigger:everyMonth:name': 'Periodic',
