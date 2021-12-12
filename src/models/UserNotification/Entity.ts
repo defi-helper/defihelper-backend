@@ -2,6 +2,7 @@ import { tableFactory as createTableFactory } from '@services/Database';
 
 export enum UserNotificationType {
   PortfolioMetrics = 'portfolioMetrics',
+  AutomateCallNotEnoughFunds = 'automateCallNotEnoughFunds',
 }
 
 export interface UserNotification {

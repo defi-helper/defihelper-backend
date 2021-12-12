@@ -14,6 +14,8 @@ export default async (process: Process) => {
   if (!trigger) throw new Error('Trigger not found');
   if (!trigger.active) return process.done();
 
+  await automateService.incrementTriggerRetries(trigger);
+
   try {
     const conditions = await automateService
       .conditionTable()
@@ -60,5 +62,6 @@ export default async (process: Process) => {
     );
   }
 
+  await automateService.resetTriggerRetries(trigger);
   return process.done();
 };

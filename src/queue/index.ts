@@ -3,9 +3,6 @@ export * as scheduleHourStart from './schedule/hourStart';
 export * as scheduleDayStart from './schedule/dayStart';
 export * as scheduleWeekStart from './schedule/weekStart';
 export * as scheduleMonthStart from './schedule/monthStart';
-export * as eventsContractCreated from './events/contractCreated';
-export * as eventsUserCreated from './events/userCreated';
-export * as eventsAutomateContractVerificationConfirmed from './events/automate/contractVerificationConfirmed';
 export * as tokenCreate from './token/create';
 export * as tokenAlias from './token/alias';
 export * as tokenInfoEth from './token/ethereumInfo';
@@ -38,8 +35,6 @@ export * as registerContractInScanner from './scanner/registerContract';
 export * as sendEventsNotifications from './notifications/webHook';
 export * as linkContractsFromEvents from './wallet/linkContractsFromEvents';
 export * as notificationSend from './notifications/send';
-export * as notificationPortfolioMetricsNotify from './notifications/PortfolioMetrics/sender';
-export * as notificationPortfolioMetricsBroker from './notifications/PortfolioMetrics/broker';
 export * as contractResolveDeployBlockNumber from './contract/resolveDeployBlockNumber';
 export * as contractResolveAbi from './contract/resolveAbi';
 export * as billingBroker from './billing/broker';
@@ -56,3 +51,15 @@ export * as automateTriggerRun from './automate/run';
 export * as automateTriggerByTime from './automate/trigger/byTime';
 export * as swopfiLPFarmingPoolScanner from './pools/swopfiLPFarming';
 export * as logBilling from './log/billingLogger';
+
+/* regular notifications */
+export * as notificationPortfolioMetricsNotify from './notifications/PortfolioMetrics/sender';
+export * as notificationPortfolioMetricsBroker from './notifications/PortfolioMetrics/broker';
+
+export * as notificationAutomateWalletsNotEnoughFundsNotify from './notifications/AutomateWalletsNotEnoughFunds/sender';
+export * as notificationAutomateWalletsNotEnoughFundsBroker from './notifications/AutomateWalletsNotEnoughFunds/broker';
+
+/* events */
+export * as eventsContractCreated from './events/contractCreated';
+export * as eventsUserCreated from './events/userCreated';
+export * as eventsAutomateContractVerificationConfirmed from './events/automate/contractVerificationConfirmed';

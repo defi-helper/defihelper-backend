@@ -278,7 +278,7 @@ export const WalletBillingType = new GraphQLObjectType<Wallet>({
               network: wallet.network,
               account: wallet.address,
             })
-            .first(),
+            .first(), //000000HERE BALANCE
           container.model
             .billingBillTable()
             .sum('claim')
