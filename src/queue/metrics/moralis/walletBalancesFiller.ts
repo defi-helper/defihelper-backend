@@ -138,5 +138,64 @@ export default async (process: Process) => {
     }),
   );
 
+  let nativeBalance;
+  const nativeToken = await container.moralis().chainNativeToken(chain);
+  try {
+    nativeBalance = new BN(
+      (
+        await moralis.account.getNativeBalance({
+          address: wallet.address,
+          chain,
+        })
+      ).balance,
+    ).div(`1e${nativeToken.decimals}`);
+  } catch {
+    return process.info('No native balance').done();
+  }
+
+  const nativeUSD = nativeBalance.multipliedBy(nativeToken.priceUSD);
+  let nativeTokenRecord = await container.model
+    .tokenTable()
+    .where('address', '0x0000000000000000000000000000000000000000')
+    .andWhere('blockchain', wallet.blockchain)
+    .andWhere('network', wallet.network)
+    .first();
+
+  if (!nativeTokenRecord) {
+    let nativeTokenAlias = await container.model
+      .tokenAliasTable()
+      .where('name', 'ilike', nativeToken.name)
+      .first();
+
+    if (!nativeTokenAlias) {
+      nativeTokenAlias = await container.model
+        .tokenAliasService()
+        .create(nativeToken.name, nativeToken.symbol, false, null);
+    }
+
+    nativeTokenRecord = await container.model
+      .tokenService()
+      .create(
+        nativeTokenAlias,
+        wallet.blockchain,
+        wallet.network,
+        '0x0000000000000000000000000000000000000000',
+        nativeToken.name,
+        nativeToken.symbol,
+        nativeToken.decimals,
+      );
+  }
+
+  await walletMetrics.createToken(
+    null,
+    wallet,
+    nativeTokenRecord,
+    {
+      usd: nativeBalance.toString(10),
+      balance: nativeUSD.toString(10),
+    },
+    new Date(),
+  );
+
   return process.done();
 };
