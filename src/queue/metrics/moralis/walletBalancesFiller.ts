@@ -1,7 +1,6 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import BN from 'bignumber.js';
-import { MoralisRestAPIChain } from '@services/Moralis';
 
 export interface Params {
   id: string;
@@ -25,7 +24,7 @@ export default async (process: Process) => {
   const { id } = process.task.params as Params;
 
   const wallet = await container.model.walletTable().where({ id }).first();
-  let chain: MoralisRestAPIChain;
+  let chain: 'eth' | 'bsc' | 'avalanche' | 'polygon';
 
   if (!wallet || wallet.blockchain !== 'ethereum') {
     throw new Error('wallet not found or unsupported blockchain');
@@ -33,31 +32,37 @@ export default async (process: Process) => {
 
   switch (wallet.network) {
     case '1':
-      chain = MoralisRestAPIChain.eth;
+      chain = 'eth';
       break;
     case '56':
-      chain = MoralisRestAPIChain.bsc;
+      chain = 'bsc';
       break;
     case '137':
-      chain = MoralisRestAPIChain.polygon;
+      chain = 'polygon';
       break;
     case '43114':
-      chain = MoralisRestAPIChain.avalanche;
+      chain = 'avalanche';
       break;
     default:
       throw new Error('unsupported network');
   }
 
-  const moralis = container.moralis().getRestAPI();
+  const moralis = await container.moralis().getWeb3API();
   const walletMetrics = container.model.metricService();
-  const tokensBalances = await moralis.accountERC20Tokens(wallet.address, chain);
+  const tokensBalances = await moralis.account.getTokenBalances({
+    chain,
+    address: wallet.address,
+  });
 
   const tokensPrices = (await Promise.all(
     tokensBalances.map(
       (token) =>
         new Promise((resolve) => {
-          moralis
-            .ERC20TokenPrice(token.token_address, chain)
+          moralis.token
+            .getTokenPrice({
+              chain,
+              address: token.token_address,
+            })
             .then((resolvedTokensInfo) =>
               resolve({
                 ...resolvedTokensInfo,
@@ -92,17 +97,16 @@ export default async (process: Process) => {
       let tokenRecord = existingTokensRecords.find(
         (t) => t.address.toLowerCase() === tokenBalance.token_address.toLowerCase(),
       );
-
       if (!tokenRecord) {
         let tokenRecordAlias = await container.model
           .tokenAliasTable()
-          .where('name', 'ilike', tokenBalance.name)
+          .where('symbol', tokenBalance.symbol)
           .first();
 
         if (!tokenRecordAlias) {
           tokenRecordAlias = await container.model
             .tokenAliasService()
-            .create(tokenBalance.name, tokenBalance.symbol, false, tokenBalance.thumbnail);
+            .create(tokenBalance.name, tokenBalance.symbol, false, tokenBalance.thumbnail || null);
         }
 
         tokenRecord = await container.model
@@ -120,6 +124,7 @@ export default async (process: Process) => {
 
       const totalTokenNumber = new BN(tokenBalance.balance).div(`1e${tokenBalance.decimals}`);
       const totalTokensUSDPrice = new BN(tokenPrice.usdPrice).multipliedBy(totalTokenNumber);
+
       return walletMetrics.createToken(
         null,
         wallet,
@@ -131,60 +136,6 @@ export default async (process: Process) => {
         new Date(),
       );
     }),
-  );
-
-  let nativeBalance;
-  const nativeToken = await moralis.chainNativeToken(chain);
-  try {
-    nativeBalance = new BN((await moralis.accountNativeBalance(wallet.address, chain)).balance).div(
-      `1e${nativeToken.decimals}`,
-    );
-  } catch {
-    return process.info('No native balance').done();
-  }
-
-  const nativeUSD = nativeBalance.multipliedBy(nativeToken.priceUSD);
-  let nativeTokenRecord = await container.model
-    .tokenTable()
-    .where('address', '0x0000000000000000000000000000000000000000')
-    .andWhere('blockchain', wallet.blockchain)
-    .andWhere('network', wallet.network)
-    .first();
-
-  if (!nativeTokenRecord) {
-    let nativeTokenAlias = await container.model
-      .tokenAliasTable()
-      .where('name', 'ilike', nativeToken.name)
-      .first();
-
-    if (!nativeTokenAlias) {
-      nativeTokenAlias = await container.model
-        .tokenAliasService()
-        .create(nativeToken.name, nativeToken.symbol, false, null);
-    }
-
-    nativeTokenRecord = await container.model
-      .tokenService()
-      .create(
-        nativeTokenAlias,
-        wallet.blockchain,
-        wallet.network,
-        '0x0000000000000000000000000000000000000000',
-        nativeToken.name,
-        nativeToken.symbol,
-        nativeToken.decimals,
-      );
-  }
-
-  await walletMetrics.createToken(
-    null,
-    wallet,
-    nativeTokenRecord,
-    {
-      usd: nativeBalance.toString(10),
-      balance: nativeUSD.toString(10),
-    },
-    new Date(),
   );
 
   return process.done();
