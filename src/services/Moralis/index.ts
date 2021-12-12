@@ -120,7 +120,12 @@ export class MoralisService {
       return;
     }
 
-    await Moralis.start(this.config);
+    console.log(this.config);
+
+    await Moralis.start({
+      ...this.config,
+      moralisSecret: undefined,
+    });
     this.isMoralisInitialized = true;
   }
 

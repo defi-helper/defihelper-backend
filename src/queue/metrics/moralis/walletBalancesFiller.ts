@@ -1,6 +1,7 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import BN from 'bignumber.js';
+import dayjs from 'dayjs';
 
 export interface Params {
   id: string;
@@ -44,15 +45,26 @@ export default async (process: Process) => {
       chain = 'avalanche';
       break;
     default:
-      throw new Error('unsupported network');
+      throw new Error(`unsupported network: ${wallet.network}`);
   }
 
   const moralis = await container.moralis().getWeb3API();
   const walletMetrics = container.model.metricService();
-  const tokensBalances = await moralis.account.getTokenBalances({
-    chain,
-    address: wallet.address,
-  });
+
+  let tokensBalances = [];
+  try {
+    tokensBalances = await moralis.account.getTokenBalances({
+      chain,
+      address: wallet.address,
+    });
+  } catch (e) {
+    if (e.code === 141) {
+      return process.info('throttler`s limit').later(dayjs().add(3, 'minutes').toDate());
+    }
+    return process
+      .info('Unable to resolve account`s tokens lists')
+      .error(new Error(`${e.code}: ${e.error}`));
+  }
 
   const tokensPrices = (await Promise.all(
     tokensBalances.map(
@@ -68,7 +80,7 @@ export default async (process: Process) => {
                 ...resolvedTokensInfo,
                 tokenAddress: token.token_address,
               }),
-            )
+            ) // todo catch throttler error
             .catch(() => resolve(null));
         }),
     ),
@@ -149,8 +161,11 @@ export default async (process: Process) => {
         })
       ).balance,
     ).div(`1e${nativeToken.decimals}`);
-  } catch {
-    return process.info('No native balance').done();
+  } catch (e) {
+    if (e.code === 141) {
+      return process.info('throttler`s limit').later(dayjs().add(3, 'minutes').toDate());
+    }
+    return process.info(`No native balance: ${e.code}, ${e.error}`).done();
   }
 
   const nativeUSD = nativeBalance.multipliedBy(nativeToken.priceUSD);
