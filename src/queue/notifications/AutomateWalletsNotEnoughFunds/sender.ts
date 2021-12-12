@@ -37,43 +37,45 @@ export default async (process: Process) => {
     .groupBy(`${walletTableName}.id`);
 
   // promise all send notifications
-  triggers.map((t: { walletId: string; triggerId: string; walletNetwork: string }) => {
-    let walletFunds = walletsFunds.find((w) => w.id === t.walletId);
+  await Promise.all(
+    triggers.map((t: { walletId: string; triggerId: string; walletNetwork: string }) => {
+      let walletFunds = walletsFunds.find((w) => w.id === t.walletId);
 
-    if (!walletFunds) {
-      walletFunds = { id: t.walletId, funds: 0 };
-    }
+      if (!walletFunds) {
+        walletFunds = { id: t.walletId, funds: 0 };
+      }
 
-    // check wallet chain and select minimum transaction price
+      // check wallet chain and select minimum transaction price
 
-    let automateCallMinimumRequiredBalance = 0;
-    switch (t.walletNetwork) {
-      case '1':
-        // MoralisRestAPIChain.eth;
-        automateCallMinimumRequiredBalance = 1;
-        break;
-      case '56':
-        // MoralisRestAPIChain.bsc;
-        automateCallMinimumRequiredBalance = 1;
-        break;
-      case '137':
-        // MoralisRestAPIChain.polygon;
-        automateCallMinimumRequiredBalance = 1;
-        break;
-      case '43114':
-        // MoralisRestAPIChain.avalanche;
-        automateCallMinimumRequiredBalance = 1;
-        break;
-      default:
-        throw new Error('unsupported network');
-    }
+      let automateCallMinimumRequiredBalance = 0;
+      switch (t.walletNetwork) {
+        case '1':
+          // MoralisRestAPIChain.eth;
+          automateCallMinimumRequiredBalance = 1;
+          break;
+        case '56':
+          // MoralisRestAPIChain.bsc;
+          automateCallMinimumRequiredBalance = 1;
+          break;
+        case '137':
+          // MoralisRestAPIChain.polygon;
+          automateCallMinimumRequiredBalance = 1;
+          break;
+        case '43114':
+          // MoralisRestAPIChain.avalanche;
+          automateCallMinimumRequiredBalance = 1;
+          break;
+        default:
+          throw new Error('unsupported network');
+      }
 
-    if (walletFunds.funds < automateCallMinimumRequiredBalance) {
-      // send notification
-    }
+      if (walletFunds.funds < automateCallMinimumRequiredBalance) {
+        // send notification
+      }
 
-    return null;
-  });
+      return null;
+    }),
+  );
 
   return process.done();
 };

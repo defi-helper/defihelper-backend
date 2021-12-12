@@ -8,18 +8,25 @@ import { tableName as walletTableName } from '@models/Wallet/Entity';
 import { triggerTableName } from '@models/Automate/Entity';
 
 export default async (process: Process) => {
+  const database = container.database();
+
   const users = await container.model
     .userTable()
     .column(`${userTableName}.id`)
     .distinct(`${userTableName}.id`)
-    .innerJoin(userContactTableName, `${userTableName}.id`, `${userContactTableName}.user`)
     .innerJoin(walletTableName, `${userTableName}.id`, `${walletTableName}.user`)
     .innerJoin(triggerTableName, `${walletTableName}.id`, `${triggerTableName}.wallet`)
+    .innerJoin(
+      userNotificationTableName,
+      `${userTableName}.id`,
+      `${userNotificationTableName}.user`,
+    )
     .where(`${triggerTableName}.active`, true)
     .andWhere(`${walletTableName}.blockchain`, 'ethereum')
-    .having(`count(distinct ${triggerTableName}.id)`, '>', 0)
+    .having(database.raw(`count(distinct ${triggerTableName}.id) > 0`))
     .andWhere(`${userNotificationTableName}.type`, UserNotificationType.AutomateCallNotEnoughFunds)
-    .andWhereNot(`${userTableName}.role`, Role.Candidate);
+    .andWhereNot(`${userTableName}.role`, Role.Candidate)
+    .groupBy(`${userTableName}.id`);
 
   const lag = 86400 / users.length; // seconds in day
   await users.reduce<Promise<dayjs.Dayjs>>(async (prev, user) => {
