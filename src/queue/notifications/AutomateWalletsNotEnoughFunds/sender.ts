@@ -3,6 +3,8 @@ import container from '@container';
 import { triggerTableName } from '@models/Automate/Entity';
 import { tableName as walletTableName } from '@models/Wallet/Entity';
 import { transferTableName } from '@models/Billing/Entity';
+import { ContactBroker, ContactStatus } from '@models/Notification/Entity';
+import BN from 'bignumber.js';
 
 export default async (process: Process) => {
   const { userId } = process.task.params as { userId: string };
@@ -33,48 +35,78 @@ export default async (process: Process) => {
       `${walletTableName}.id`,
       triggers.map((t) => t.walletId),
     )
-    .andWhere(`${transferTableName}.network`, `${walletTableName}.network`)
-    .andWhere(`${transferTableName}.blockchain`, `${walletTableName}.blockchain`)
+    .andWhere(`${transferTableName}.network`, database.raw(`${walletTableName}.network`))
+    .andWhere(`${transferTableName}.blockchain`, database.raw(`${walletTableName}.blockchain`))
     .groupBy(`${walletTableName}.id`);
 
-  // promise all send notifications
+  const notify = triggers.some((t) => {
+    const walletFunds = walletsFunds.find((w) => w.id === t.walletId);
+
+    if (!walletFunds) {
+      throw new Error('wallet funds must be found here');
+    }
+
+    let automateCallMinimumRequiredBalance = 0;
+    switch (t.walletNetwork) {
+      case '1':
+        // MoralisRestAPIChain.eth;
+        automateCallMinimumRequiredBalance = 1;
+        break;
+      case '56':
+        // MoralisRestAPIChain.bsc;
+        automateCallMinimumRequiredBalance = 1;
+        break;
+      case '137':
+        // MoralisRestAPIChain.polygon;
+        automateCallMinimumRequiredBalance = 1;
+        break;
+      case '43114':
+        // MoralisRestAPIChain.avalanche;
+        automateCallMinimumRequiredBalance = 1;
+        break;
+      default:
+        throw new Error('unsupported network');
+    }
+
+    return walletFunds.funds < automateCallMinimumRequiredBalance;
+  });
+
+  if (!notify) {
+    return process.done();
+  }
+
+  const contacts = await container.model.userContactTable().where({
+    user: user.id,
+    status: ContactStatus.Active,
+  });
+
   await Promise.all(
-    triggers.map((t: { walletId: string; triggerId: string; walletNetwork: string }) => {
-      let walletFunds = walletsFunds.find((w) => w.id === t.walletId);
+    contacts.map((contact) => {
+      switch (contact.broker) {
+        case ContactBroker.Email:
+          return container.model.queueService().push('sendEmail', {
+            email: contact.address,
+            template: 'automateNotEnoughFunds',
+            subject: '🚨Action required: automate may be paused',
+            params: {},
+            locale: user.locale,
+          });
 
-      if (!walletFunds) {
-        walletFunds = { id: t.walletId, funds: 0 };
-      }
+        case ContactBroker.Telegram:
+          if (!contact.params?.chatId) {
+            return null;
+          }
 
-      // check wallet chain and select minimum transaction price
+          return container.model.queueService().push('sendTelegram', {
+            chatId: contact.params.chatId,
+            locale: user.locale,
+            params: {},
+            template: 'automateNotEnoughFunds',
+          });
 
-      let automateCallMinimumRequiredBalance = 0;
-      switch (t.walletNetwork) {
-        case '1':
-          // MoralisRestAPIChain.eth;
-          automateCallMinimumRequiredBalance = 1;
-          break;
-        case '56':
-          // MoralisRestAPIChain.bsc;
-          automateCallMinimumRequiredBalance = 1;
-          break;
-        case '137':
-          // MoralisRestAPIChain.polygon;
-          automateCallMinimumRequiredBalance = 1;
-          break;
-        case '43114':
-          // MoralisRestAPIChain.avalanche;
-          automateCallMinimumRequiredBalance = 1;
-          break;
         default:
-          throw new Error('unsupported network');
+          throw new Error(`unexpected contact broker: ${contact.broker}`);
       }
-
-      if (walletFunds.funds < automateCallMinimumRequiredBalance) {
-        // send notification
-      }
-
-      return null;
     }),
   );
 
