@@ -70,17 +70,6 @@ export default async (process: Process) => {
       .error(new Error(`${e.code}: ${e.error}`));
   }
 
-  /*
-
-        .then((resolvedTokensInfo) =>
-          resolve({
-            ...resolvedTokensInfo,
-            tokenAddress: token.token_address,
-          }),
-        ) // todo catch throttler error
-        .catch(() => resolve(null));
-        */
-
   const tokensPrices = (await Promise.all(
     tokensBalances.map(async (token) => {
       try {
