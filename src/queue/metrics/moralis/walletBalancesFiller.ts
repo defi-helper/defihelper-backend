@@ -48,16 +48,22 @@ export default async (process: Process) => {
       throw new Error('unsupported network');
   }
 
-  const moralis = container.moralis().getRestAPI();
+  const moralis = await container.moralis().getWeb3API();
   const walletMetrics = container.model.metricService();
-  const tokensBalances = await moralis.accountERC20Tokens(wallet.address, chain);
+  const tokensBalances = await moralis.account.getTokenBalances({
+    chain,
+    address: wallet.address,
+  });
 
   const tokensPrices = (await Promise.all(
     tokensBalances.map(
       (token) =>
         new Promise((resolve) => {
-          moralis
-            .ERC20TokenPrice(token.token_address, chain)
+          moralis.token
+            .getTokenPrice({
+              chain,
+              address: token.token_address,
+            })
             .then((resolvedTokensInfo) =>
               resolve({
                 ...resolvedTokensInfo,
