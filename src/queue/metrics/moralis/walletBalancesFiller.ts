@@ -1,7 +1,7 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import BN from 'bignumber.js';
-import { MoralisRestAPIChain } from '@services/Moralis';
+import dayjs from 'dayjs';
 
 export interface Params {
   id: string;
@@ -25,7 +25,7 @@ export default async (process: Process) => {
   const { id } = process.task.params as Params;
 
   const wallet = await container.model.walletTable().where({ id }).first();
-  let chain: MoralisRestAPIChain;
+  let chain: 'eth' | 'bsc' | 'avalanche' | 'polygon';
 
   if (!wallet || wallet.blockchain !== 'ethereum') {
     throw new Error('wallet not found or unsupported blockchain');
@@ -33,37 +33,54 @@ export default async (process: Process) => {
 
   switch (wallet.network) {
     case '1':
-      chain = MoralisRestAPIChain.eth;
+      chain = 'eth';
       break;
     case '56':
-      chain = MoralisRestAPIChain.bsc;
+      chain = 'bsc';
       break;
     case '137':
-      chain = MoralisRestAPIChain.polygon;
+      chain = 'polygon';
       break;
     case '43114':
-      chain = MoralisRestAPIChain.avalanche;
+      chain = 'avalanche';
       break;
     default:
-      throw new Error('unsupported network');
+      throw new Error(`unsupported network: ${wallet.network}`);
   }
 
-  const moralis = container.moralis().getRestAPI();
+  const moralis = await container.moralis().getWeb3API();
   const walletMetrics = container.model.metricService();
-  const tokensBalances = await moralis.accountERC20Tokens(wallet.address, chain);
+
+  let tokensBalances = [];
+  try {
+    tokensBalances = await moralis.account.getTokenBalances({
+      chain,
+      address: wallet.address,
+    });
+  } catch (e) {
+    if (e.code === 141) {
+      return process.info('throttler`s limit').later(dayjs().add(3, 'minutes').toDate());
+    }
+    return process
+      .info('Unable to resolve account`s tokens lists')
+      .error(new Error(`${e.code}: ${e.error}`));
+  }
 
   const tokensPrices = (await Promise.all(
     tokensBalances.map(
       (token) =>
         new Promise((resolve) => {
-          moralis
-            .ERC20TokenPrice(token.token_address, chain)
+          moralis.token
+            .getTokenPrice({
+              chain,
+              address: token.token_address,
+            })
             .then((resolvedTokensInfo) =>
               resolve({
                 ...resolvedTokensInfo,
                 tokenAddress: token.token_address,
               }),
-            )
+            ) // todo catch throttler error
             .catch(() => resolve(null));
         }),
     ),
@@ -92,7 +109,6 @@ export default async (process: Process) => {
       let tokenRecord = existingTokensRecords.find(
         (t) => t.address.toLowerCase() === tokenBalance.token_address.toLowerCase(),
       );
-
       if (!tokenRecord) {
         let tokenRecordAlias = await container.model
           .tokenAliasTable()
@@ -102,7 +118,7 @@ export default async (process: Process) => {
         if (!tokenRecordAlias) {
           tokenRecordAlias = await container.model
             .tokenAliasService()
-            .create(tokenBalance.name, tokenBalance.symbol, false, tokenBalance.thumbnail);
+            .create(tokenBalance.name, tokenBalance.symbol, false, tokenBalance.thumbnail || null);
         }
 
         tokenRecord = await container.model
@@ -120,6 +136,7 @@ export default async (process: Process) => {
 
       const totalTokenNumber = new BN(tokenBalance.balance).div(`1e${tokenBalance.decimals}`);
       const totalTokensUSDPrice = new BN(tokenPrice.usdPrice).multipliedBy(totalTokenNumber);
+
       return walletMetrics.createToken(
         null,
         wallet,
@@ -134,13 +151,21 @@ export default async (process: Process) => {
   );
 
   let nativeBalance;
-  const nativeToken = await moralis.chainNativeToken(chain);
+  const nativeToken = await container.moralis().chainNativeToken(chain);
   try {
-    nativeBalance = new BN((await moralis.accountNativeBalance(wallet.address, chain)).balance).div(
-      `1e${nativeToken.decimals}`,
-    );
-  } catch {
-    return process.info('No native balance').done();
+    nativeBalance = new BN(
+      (
+        await moralis.account.getNativeBalance({
+          address: wallet.address,
+          chain,
+        })
+      ).balance,
+    ).div(`1e${nativeToken.decimals}`);
+  } catch (e) {
+    if (e.code === 141) {
+      return process.info('throttler`s limit').later(dayjs().add(3, 'minutes').toDate());
+    }
+    return process.info(`No native balance: ${e.code}, ${e.error}`).done();
   }
 
   const nativeUSD = nativeBalance.multipliedBy(nativeToken.priceUSD);
