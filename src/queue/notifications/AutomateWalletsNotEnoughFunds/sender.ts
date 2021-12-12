@@ -87,7 +87,7 @@ export default async (process: Process) => {
           return container.model.queueService().push('sendEmail', {
             email: contact.address,
             template: 'automateNotEnoughFunds',
-            subject: '🚨Action required: automate may be pausedd',
+            subject: '🚨Action required: automate may be paused',
             params: {},
             locale: user.locale,
           });
