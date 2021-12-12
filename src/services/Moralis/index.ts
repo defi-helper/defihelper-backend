@@ -120,8 +120,6 @@ export class MoralisService {
       return;
     }
 
-    console.log(this.config);
-
     await Moralis.start({
       ...this.config,
       moralisSecret: undefined,
