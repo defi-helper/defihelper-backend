@@ -24,6 +24,10 @@ export interface MoralisTokenPrice {
 export default async (process: Process) => {
   const { id } = process.task.params as Params;
 
+  const timeout = (n: number) =>
+    new Promise((resolve) => {
+      setTimeout(resolve, n);
+    });
   const wallet = await container.model.walletTable().where({ id }).first();
   let chain: 'eth' | 'bsc' | 'avalanche' | 'polygon';
 
@@ -59,31 +63,40 @@ export default async (process: Process) => {
     });
   } catch (e) {
     if (e.code === 141) {
-      return process.info('throttler`s limit').later(dayjs().add(3, 'minutes').toDate());
+      return process.info(e.error).later(dayjs().add(3, 'minutes').toDate());
     }
     return process
       .info('Unable to resolve account`s tokens lists')
       .error(new Error(`${e.code}: ${e.error}`));
   }
 
+  /*
+
+        .then((resolvedTokensInfo) =>
+          resolve({
+            ...resolvedTokensInfo,
+            tokenAddress: token.token_address,
+          }),
+        ) // todo catch throttler error
+        .catch(() => resolve(null));
+        */
+
   const tokensPrices = (await Promise.all(
-    tokensBalances.map(
-      (token) =>
-        new Promise((resolve) => {
-          moralis.token
-            .getTokenPrice({
-              chain,
-              address: token.token_address,
-            })
-            .then((resolvedTokensInfo) =>
-              resolve({
-                ...resolvedTokensInfo,
-                tokenAddress: token.token_address,
-              }),
-            ) // todo catch throttler error
-            .catch(() => resolve(null));
-        }),
-    ),
+    tokensBalances.map(async (token) => {
+      try {
+        const r = await moralis.token.getTokenPrice({
+          chain,
+          address: token.token_address,
+        });
+        await timeout(500);
+        return {
+          ...r,
+          tokenAddress: token.token_address,
+        };
+      } catch (e) {
+        return null;
+      }
+    }),
   )) as (MoralisTokenPrice | null)[];
 
   const existingTokensRecords = await container.model
@@ -99,7 +112,7 @@ export default async (process: Process) => {
     tokensBalances.map(async (tokenBalance) => {
       const tokenPrice = tokensPrices.find((t) => {
         return (
-          t && (t.tokenAddress || '').toLowerCase() === tokenBalance.token_address.toLowerCase()
+          t && (t?.tokenAddress || '').toLowerCase() === tokenBalance.token_address.toLowerCase()
         );
       });
 
@@ -163,7 +176,7 @@ export default async (process: Process) => {
     ).div(`1e${nativeToken.decimals}`);
   } catch (e) {
     if (e.code === 141) {
-      return process.info('throttler`s limit').later(dayjs().add(3, 'minutes').toDate());
+      return process.info(e.error).later(dayjs().add(3, 'minutes').toDate());
     }
     return process.info(`No native balance: ${e.code}, ${e.error}`).done();
   }
