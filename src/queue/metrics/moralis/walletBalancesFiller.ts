@@ -140,7 +140,7 @@ export default async (process: Process) => {
       `1e${nativeToken.decimals}`,
     );
   } catch {
-    return process.done();
+    return process.info('No native balance').done();
   }
 
   const nativeUSD = nativeBalance.multipliedBy(nativeToken.priceUSD);
