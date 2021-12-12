@@ -101,7 +101,7 @@ export default async (process: Process) => {
     tokensBalances.map(async (tokenBalance) => {
       const tokenPrice = tokensPrices.find((t) => {
         return (
-          t && (t?.tokenAddress || '').toLowerCase() === tokenBalance.token_address.toLowerCase()
+          t && (t.tokenAddress || '').toLowerCase() === tokenBalance.token_address.toLowerCase()
         );
       });
 
