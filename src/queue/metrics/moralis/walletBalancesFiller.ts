@@ -1,5 +1,6 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
+import { TokenAliasLiquidity } from '@models/Token/Entity';
 import BN from 'bignumber.js';
 import dayjs from 'dayjs';
 
@@ -120,7 +121,12 @@ export default async (process: Process) => {
         if (!tokenRecordAlias) {
           tokenRecordAlias = await container.model
             .tokenAliasService()
-            .create(tokenBalance.name, tokenBalance.symbol, false, tokenBalance.thumbnail || null);
+            .create(
+              tokenBalance.name,
+              tokenBalance.symbol,
+              TokenAliasLiquidity.Trash,
+              tokenBalance.thumbnail || null,
+            );
         }
 
         tokenRecord = await container.model
@@ -187,7 +193,7 @@ export default async (process: Process) => {
     if (!nativeTokenAlias) {
       nativeTokenAlias = await container.model
         .tokenAliasService()
-        .create(nativeToken.name, nativeToken.symbol, false, null);
+        .create(nativeToken.name, nativeToken.symbol, TokenAliasLiquidity.Trash, null);
     }
 
     nativeTokenRecord = await container.model
