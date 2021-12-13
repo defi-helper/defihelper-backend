@@ -214,8 +214,8 @@ export default async (process: Process) => {
     wallet,
     nativeTokenRecord,
     {
-      usd: nativeBalance.toString(10),
-      balance: nativeUSD.toString(10),
+      usd: nativeUSD.toString(10),
+      balance: nativeBalance.toString(),
     },
     new Date(),
   );
