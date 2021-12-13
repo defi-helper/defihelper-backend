@@ -1,6 +1,6 @@
 import { Process } from '@models/Queue/Entity';
 import container from '@container';
-import { Role, tableName as userTableName } from '@models/User/Entity';
+import { tableName as userTableName } from '@models/User/Entity';
 import dayjs from 'dayjs';
 import { userNotificationTableName, UserNotificationType } from '@models/UserNotification/Entity';
 import { tableName as walletTableName } from '@models/Wallet/Entity';
@@ -24,7 +24,6 @@ export default async (process: Process) => {
     .andWhere(`${walletTableName}.blockchain`, 'ethereum')
     .having(database.raw(`count(distinct ${triggerTableName}.id) > 0`))
     .andWhere(`${userNotificationTableName}.type`, UserNotificationType.AutomateCallNotEnoughFunds)
-    .andWhereNot(`${userTableName}.role`, Role.Candidate)
     .groupBy(`${userTableName}.id`);
 
   const lag = 86400 / users.length; // seconds in day

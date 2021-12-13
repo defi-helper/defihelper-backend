@@ -39,36 +39,28 @@ export default async (process: Process) => {
     .andWhere(`${transferTableName}.blockchain`, database.raw(`${walletTableName}.blockchain`))
     .groupBy(`${walletTableName}.id`);
 
-  const notify = triggers.some((t) => {
+  const chainsNativePriceMap: { [chain: string]: number } = {};
+  const chainNativePriceUSD = async (chain: string): Promise<number> => {
+    if (chainsNativePriceMap[chain]) {
+      return chainsNativePriceMap[chain];
+    }
+
+    const chainNativeUSD = new BN(
+      await container.blockchain.ethereum.byNetwork(chain).priceFeedUSD(),
+    );
+    chainsNativePriceMap[chain] = chainNativeUSD.toNumber();
+
+    return chainNativeUSD.toNumber();
+  };
+  const notify = triggers.some(async (t) => {
     const walletFunds = walletsFunds.find((w) => w.id === t.walletId);
 
     if (!walletFunds) {
       throw new Error('wallet funds must be found here');
     }
 
-    let automateCallMinimumRequiredBalance = 0;
-    switch (t.walletNetwork) {
-      case '1':
-        // MoralisRestAPIChain.eth;
-        automateCallMinimumRequiredBalance = 1;
-        break;
-      case '56':
-        // MoralisRestAPIChain.bsc;
-        automateCallMinimumRequiredBalance = 1;
-        break;
-      case '137':
-        // MoralisRestAPIChain.polygon;
-        automateCallMinimumRequiredBalance = 1;
-        break;
-      case '43114':
-        // MoralisRestAPIChain.avalanche;
-        automateCallMinimumRequiredBalance = 1;
-        break;
-      default:
-        throw new Error('unsupported network');
-    }
-
-    return walletFunds.funds < automateCallMinimumRequiredBalance;
+    const chainNativePrice = await chainNativePriceUSD(t.walletNetwork);
+    return walletFunds.funds * chainNativePrice - (1 + chainNativePrice * 0.1) <= 0;
   });
 
   if (!notify) {
@@ -88,7 +80,6 @@ export default async (process: Process) => {
             email: contact.address,
             template: 'automateNotEnoughFunds',
             subject: '🚨Action required: automate may be paused',
-            params: {},
             locale: user.locale,
           });
 
@@ -100,7 +91,6 @@ export default async (process: Process) => {
           return container.model.queueService().push('sendTelegram', {
             chatId: contact.params.chatId,
             locale: user.locale,
-            params: {},
             template: 'automateNotEnoughFunds',
           });
 

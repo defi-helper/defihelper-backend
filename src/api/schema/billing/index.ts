@@ -18,6 +18,7 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from 'graphql';
+import BN from 'bignumber.js';
 import {
   BlockchainEnum,
   BlockchainFilterInputType,
@@ -149,6 +150,9 @@ export const TransferType = new GraphQLObjectType<Transfer>({
 export const BalanceType = new GraphQLObjectType({
   name: 'BillingBalanceType',
   fields: {
+    lowFeeFunds: {
+      type: GraphQLNonNull(GraphQLBoolean),
+    },
     balance: {
       type: GraphQLNonNull(GraphQLFloat),
     },
@@ -161,6 +165,15 @@ export const BalanceType = new GraphQLObjectType({
   },
 });
 
+const cacheGet = (key: string): Promise<string | null> => {
+  return new Promise((resolve) =>
+    container.cache().get(key, (err, result) => {
+      if (err || !result) return resolve(null);
+
+      return resolve(result);
+    }),
+  );
+};
 export const WalletBillingType = new GraphQLObjectType<Wallet>({
   name: 'WalletBillingType',
   fields: {
@@ -269,7 +282,7 @@ export const WalletBillingType = new GraphQLObjectType<Wallet>({
     balance: {
       type: GraphQLNonNull(BalanceType),
       resolve: async (wallet) => {
-        const [transferSum, billSum] = await Promise.all([
+        const [transferSum, billSum, activeAutomates] = await Promise.all([
           container.model
             .billingTransferTable()
             .sum('amount')
@@ -288,14 +301,47 @@ export const WalletBillingType = new GraphQLObjectType<Wallet>({
               account: wallet.address,
             })
             .first(),
+          container.model
+            .automateTriggerTable()
+            .where({
+              wallet: wallet.id,
+              active: true,
+            })
+            .count()
+            .first(),
         ]);
         const balance = transferSum?.sum || 0;
         const claim = billSum?.sum || 0;
+        const activeAutomatesCount = activeAutomates?.count || 0;
 
+        console.log(activeAutomatesCount);
+
+        if (wallet.blockchain !== 'ethereum' || activeAutomatesCount < 1) {
+          return {
+            balance,
+            claim,
+            netBalance: balance - claim,
+            lowFeeFunds: false,
+          };
+        }
+        const key = `defihelper:token:native:${wallet.blockchain}:${wallet.network}`;
+        let chainNativeUSD: BN | string | null = await cacheGet(key);
+        if (!chainNativeUSD) {
+          chainNativeUSD = await container.blockchain.ethereum
+            .byNetwork(wallet.network)
+            .priceFeedUSD();
+          container.cache().set(key, chainNativeUSD, () => {
+            container.cache().expire(key, 3600); // 1 hour
+          });
+        }
+
+        chainNativeUSD = new BN(chainNativeUSD);
         return {
           balance,
           claim,
           netBalance: balance - claim,
+          lowFeeFunds:
+            balance * chainNativeUSD.toNumber() - (1 + chainNativeUSD.toNumber() * 0.1) <= 0,
         };
       },
     },
