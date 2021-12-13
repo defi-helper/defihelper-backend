@@ -14,6 +14,7 @@ import { telegramServiceFactory } from '@services/Telegram';
 import { scannerServiceFactory } from '@services/Scanner';
 import { moralisServiceFactory } from '@services/Moralis';
 import config from './config';
+import { coinResolverServiceFactory } from "@services/CoinResolver";
 
 class AppContainer extends Container<typeof config> {
   readonly logger = singleton(consoleFactory());
@@ -29,6 +30,8 @@ class AppContainer extends Container<typeof config> {
   readonly telegram = singleton(telegramServiceFactory(this.parent.telegram.token));
 
   readonly moralis = singleton(moralisServiceFactory(this.parent.moralis));
+
+  readonly coinResolver = singleton(coinResolverServiceFactory());
 
   readonly scanner = singleton(scannerServiceFactory(this.parent.scanner));
 

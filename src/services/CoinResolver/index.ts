@@ -1,77 +1,139 @@
-import Moralis from 'moralis/node';
 import container from '@container';
 import BN from 'bignumber.js';
 
-export interface CoinResolverTokenDetails {
+export interface CoinResolverNativeDetails {
   decimals: number;
   symbol: string;
   name: string;
   logo: string | null;
-  priceUSD: BN;
+  priceUSD: string | null;
+}
+
+export interface CoinResolverErc20Price {
+  usd: string;
 }
 
 export class CoinResolverService {
-  public erc20 = async (
+  protected cacheGet = async (tokenKey: string): Promise<string | null> => {
+    const cache = container.cache();
+    const key = `defihelper:token:details:${tokenKey}`;
+
+    return new Promise((resolve) =>
+      cache.get(key, (err, result) => {
+        if (err || !result) return resolve(null);
+        return resolve(result);
+      }),
+    );
+  };
+
+  protected cacheSet = (tokenKey: string, value: string): void => {
+    const key = `defihelper:token:details:${tokenKey}`;
+    container.cache().setex(key, 3600, value);
+  };
+
+  public erc20Price = async (
     blockchain: 'ethereum',
     network: string,
     address: string,
-  ): Promise<CoinResolverTokenDetails> => {
+  ): Promise<CoinResolverErc20Price> => {
+    let chain: 'eth' | 'bsc' | 'avalanche' | 'polygon';
+    const key = `${blockchain}:${network}:${address}:price`;
     const moralis = await container.moralis().getWeb3API();
-    let chain;
 
-    
+    const cachedPrice = await this.cacheGet(key);
+    if (cachedPrice) {
+      return {
+        usd: cachedPrice,
+      };
+    }
 
-    const token = moralis.token.getTokenPrice({
+    switch (network) {
+      case '1':
+        chain = 'eth';
+        break;
+      case '56':
+        chain = 'bsc';
+        break;
+      case '137':
+        chain = 'polygon';
+        break;
+      case '43114':
+        chain = 'avalanche';
+        break;
+      default:
+        throw new Error(`unsupported network: ${network}`);
+    }
+
+    const result = await moralis.token.getTokenPrice({
       chain,
-      address: token.token_address,
+      address,
     });
 
-  }
+    const usdPrice = new BN(result.usdPrice);
+    this.cacheSet(key, usdPrice.toString(10));
+    return {
+      usd: usdPrice.toString(10),
+    };
+  };
 
   public native = async (
     blockchain: 'ethereum',
     network: string,
-  ): Promise<CoinResolverTokenDetails> => {
+  ): Promise<CoinResolverNativeDetails> => {
+    const key = `${blockchain}:${network}:0x0`;
+    let token;
+
     switch (network) {
       case '1':
-        return {
+        token = {
           decimals: 18,
           symbol: 'ETH',
           name: 'Ethereum',
           logo: null,
-          priceUSD: new BN(await container.blockchain.ethereum.byNetwork(network).priceFeedUSD()),
         };
+        break;
       case '56':
-        return {
+        token = {
           decimals: 18,
           symbol: 'BSC',
           name: 'Binance Smart Chain',
           logo: null,
-          priceUSD: new BN(await container.blockchain.ethereum.byNetwork(network).priceFeedUSD()),
         };
+        break;
       case '43114':
-        return {
+        token = {
           decimals: 18,
           symbol: 'AVAX',
           name: 'Avalanche',
           logo: null,
-          priceUSD: new BN(await container.blockchain.ethereum.byNetwork(network).priceFeedUSD()),
         };
+        break;
       case '137':
-        return {
+        token = {
           decimals: 18,
           symbol: 'MATIC',
           name: 'Polygon',
           logo: null,
-          priceUSD: new BN(await container.blockchain.ethereum.byNetwork(network).priceFeedUSD()),
         };
+        break;
 
       default:
         throw new Error(`unknown chain: ${network}`);
     }
+
+    let cachedPrice = await this.cacheGet(key);
+    if (!cachedPrice) {
+      cachedPrice = await container.blockchain.ethereum.byNetwork(network).priceFeedUSD();
+      this.cacheSet(key, cachedPrice);
+    }
+
+    return {
+      ...token,
+      priceUSD: cachedPrice,
+    };
   };
 }
 
-export function moralisServiceFactory(config: Moralis.StartOptions) {
-  return () => new CoinResolverService(config);
+export function coinResolverServiceFactory() {
+  return () => new CoinResolverService();
 }
