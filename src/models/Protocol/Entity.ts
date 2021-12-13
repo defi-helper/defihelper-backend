@@ -51,6 +51,7 @@ export type ProtocolUserFavoriteTable = ReturnType<
 >;
 
 export interface ContractAutomate {
+  autorestakeAdapter?: string;
   adapters: string[];
 }
 

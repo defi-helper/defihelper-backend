@@ -120,7 +120,8 @@ export interface Config {
   ethRopsten: NetworkConfig;
   bsc: NetworkConfig;
   polygon: NetworkConfig;
-  avalanch: NetworkConfig;
+  moonriver: NetworkConfig;
+  avalanche: NetworkConfig;
   local: NetworkConfig;
 }
 
@@ -164,6 +165,15 @@ export class BlockchainContainer extends Container<Config> {
       coingeckoPriceFeedUSD('matic-network'),
       this.parent.polygon,
     ),
+    '1285': networkFactory(
+      '1285',
+      'Moonriver',
+      new URL('https://moonriver.moonscan.io/tx'),
+      new URL('https://moonriver.moonscan.io/address'),
+      useEtherscanContractAbi('https://api-moonriver.moonscan.io/api'),
+      coingeckoPriceFeedUSD('moonriver'),
+      this.parent.moonriver,
+    ),
     '43114': networkFactory(
       '43114',
       'Avalanche',
@@ -176,7 +186,7 @@ export class BlockchainContainer extends Container<Config> {
         return res.data.output.abi;
       },
       coingeckoPriceFeedUSD('avalanche-2'),
-      this.parent.avalanch,
+      this.parent.avalanche,
     ),
     '31337': networkFactory(
       '31337',

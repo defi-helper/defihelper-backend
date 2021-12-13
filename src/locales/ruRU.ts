@@ -19,6 +19,8 @@ export default {
       'Ваше портфолио\nВсего застейкано: {{totalStackedUSD}}$, всего заработано: {{totalEarnedUSD}}$',
     'Attention, one of yours automates may be paused due to insufficient funds':
       'Внимание, одна из ваших автоматизаций скоро будет заморожена ввиду нехватки средств',
+    'Total Net Worth ${{totalNetWorth}}, Total unclaimed ${{totalEarnedUSD}}':
+      'Всего в портфолио: {{totalNetWorth}}$, можно забрать: {{totalEarnedUSD}}$',
     'automate:trigger:contractEvent:name': 'Событие контракта',
     'automate:trigger:contractEvent:description': 'Вызов триггера в ответ на событие в контракте',
     'automate:trigger:everyMonth:name': 'Периодически',

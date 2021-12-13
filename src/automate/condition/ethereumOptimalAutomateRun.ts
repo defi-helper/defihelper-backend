@@ -41,9 +41,12 @@ export default async (params: Params) => {
   if (!targetContract) throw new Error('Target contract not found');
 
   const network = container.blockchain.ethereum.byNetwork(wallet.network);
-  const signer = network.consumers()[0];
   const provider = network.provider();
   const gasPriceUSD = await network.priceFeedUSD();
+  const signer = network.consumers()[0];
+  if (!signer) {
+    throw new Error('Consumer not found');
+  }
 
   const adapters = await container.blockchainAdapter.loadAdapter(protocol.adapter);
   if (!adapters.automates || typeof adapters.automates !== 'object') {
