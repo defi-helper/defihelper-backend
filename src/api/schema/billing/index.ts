@@ -149,6 +149,9 @@ export const TransferType = new GraphQLObjectType<Transfer>({
 export const BalanceType = new GraphQLObjectType({
   name: 'BillingBalanceType',
   fields: {
+    lowFeeFunds: {
+      type: GraphQLNonNull(GraphQLBoolean),
+    },
     balance: {
       type: GraphQLNonNull(GraphQLFloat),
     },
@@ -161,6 +164,15 @@ export const BalanceType = new GraphQLObjectType({
   },
 });
 
+const cacheGet = (key: string): Promise<string | null> => {
+  return new Promise((resolve) =>
+    container.cache().get(key, (err, result) => {
+      if (err || !result) return resolve(null);
+
+      return resolve(result);
+    }),
+  );
+};
 export const WalletBillingType = new GraphQLObjectType<Wallet>({
   name: 'WalletBillingType',
   fields: {
@@ -269,7 +281,7 @@ export const WalletBillingType = new GraphQLObjectType<Wallet>({
     balance: {
       type: GraphQLNonNull(BalanceType),
       resolve: async (wallet) => {
-        const [transferSum, billSum] = await Promise.all([
+        const [transferSum, billSum, activeAutomates] = await Promise.all([
           container.model
             .billingTransferTable()
             .sum('amount')
@@ -288,14 +300,41 @@ export const WalletBillingType = new GraphQLObjectType<Wallet>({
               account: wallet.address,
             })
             .first(),
+          container.model
+            .automateTriggerTable()
+            .where({
+              wallet: wallet.id,
+              active: true,
+            })
+            .count()
+            .first(),
         ]);
         const balance = transferSum?.sum || 0;
         const claim = billSum?.sum || 0;
+        const activeAutomatesCount = activeAutomates?.count || 0;
+
+        if (wallet.blockchain !== 'ethereum' || activeAutomatesCount < 1) {
+          return {
+            balance,
+            claim,
+            netBalance: balance - claim,
+            lowFeeFunds: false,
+          };
+        }
+        const key = `defihelper:token:native:${wallet.blockchain}:${wallet.network}`;
+        let chainNativeUSD: string | null = await cacheGet(key);
+        if (!chainNativeUSD) {
+          chainNativeUSD = await container.blockchain.ethereum
+            .byNetwork(wallet.network)
+            .priceFeedUSD();
+          container.cache().setex(key, 3600, chainNativeUSD);
+        }
 
         return {
           balance,
           claim,
           netBalance: balance - claim,
+          lowFeeFunds: balance * Number(chainNativeUSD) - (1 + Number(chainNativeUSD) * 0.1) <= 0,
         };
       },
     },

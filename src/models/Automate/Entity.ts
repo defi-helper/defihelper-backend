@@ -36,6 +36,7 @@ export type Trigger = {
   wallet: string;
   name: string;
   active: boolean;
+  retries: number;
   lastCallAt: Date | null;
   updatedAt: Date;
   createdAt: Date;

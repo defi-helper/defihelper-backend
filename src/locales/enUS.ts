@@ -10,6 +10,10 @@ export default {
     'Confirm': 'Confirm',
     'New {{eventName}} events in {{contractAddress}} on {{network}}:':
       'New {{eventName}} events in {{contractAddress}} on {{network}}:',
+    'Your portfolio: total stacked ${{totalStackedUSD}}, total earned ${{totalEarnedUSD}}':
+      'Your portfolio: total stacked ${{totalStackedUSD}}, total earned ${{totalEarnedUSD}}',
+    'Attention, one of yours automates may be paused due to insufficient funds':
+      'Attention, one of yours automates may be paused due to insufficient funds',
     'Total Net Worth ${{totalNetWorth}}, Total unclaimed ${{totalEarnedUSD}}':
       'Total Net Worth ${{totalNetWorth}}, Total unclaimed ${{totalEarnedUSD}}',
     'automate:trigger:contractEvent:name': 'Contract event',
