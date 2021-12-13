@@ -18,7 +18,6 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from 'graphql';
-import BN from 'bignumber.js';
 import {
   BlockchainEnum,
   BlockchainFilterInputType,
