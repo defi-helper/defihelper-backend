@@ -314,8 +314,6 @@ export const WalletBillingType = new GraphQLObjectType<Wallet>({
         const claim = billSum?.sum || 0;
         const activeAutomatesCount = activeAutomates?.count || 0;
 
-        console.log(activeAutomatesCount);
-
         if (wallet.blockchain !== 'ethereum' || activeAutomatesCount < 1) {
           return {
             balance,
