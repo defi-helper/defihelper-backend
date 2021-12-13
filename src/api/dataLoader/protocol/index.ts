@@ -304,7 +304,7 @@ export const contractUserLastMetricLoader = ({
   userId: string;
   metric: MetricWalletField;
 }) =>
-  new DataLoader<string, string>(async (contractsId) => {
+  new DataLoader<string, { v: string; date: Date | null }>(async (contractsId) => {
     const database = container.database();
     const map = new Map(
       await container.model
@@ -312,13 +312,14 @@ export const contractUserLastMetricLoader = ({
         .distinctOn(`${metricWalletTableName}.contract`)
         .column(`${metricWalletTableName}.contract`)
         .column(database.raw(`(${metricWalletTableName}.data->>'${metric}')::numeric AS v`))
+        .column(`${metricWalletTableName}.date`)
         .innerJoin(walletTableName, `${walletTableName}.id`, `${metricWalletTableName}.wallet`)
         .andWhere(`${walletTableName}.user`, userId)
         .andWhere(database.raw(`${metricWalletTableName}.data->>'${metric}' IS NOT NULL`))
         .orderBy(`${metricWalletTableName}.contract`)
         .orderBy(`${metricWalletTableName}.date`, 'DESC')
-        .then((rows) => rows.map(({ contract, v }) => [contract, v])),
+        .then((rows) => rows.map(({ contract, date, v }) => [contract, { v, date }])),
     );
 
-    return contractsId.map((id) => map.get(id) ?? '0');
+    return contractsId.map((id) => map.get(id) ?? { v: '0', date: null });
   });
