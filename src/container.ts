@@ -13,8 +13,8 @@ import { emailServiceFactory } from '@services/Email';
 import { telegramServiceFactory } from '@services/Telegram';
 import { scannerServiceFactory } from '@services/Scanner';
 import { moralisServiceFactory } from '@services/Moralis';
+import { coinResolverServiceFactory } from '@services/CoinResolver';
 import config from './config';
-import { coinResolverServiceFactory } from "@services/CoinResolver";
 
 class AppContainer extends Container<typeof config> {
   readonly logger = singleton(consoleFactory());

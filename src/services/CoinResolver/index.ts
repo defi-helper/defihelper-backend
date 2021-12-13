@@ -6,7 +6,7 @@ export interface CoinResolverNativeDetails {
   symbol: string;
   name: string;
   logo: string | null;
-  priceUSD: string | null;
+  priceUSD: string;
 }
 
 export interface CoinResolverErc20Price {
@@ -16,7 +16,7 @@ export interface CoinResolverErc20Price {
 export class CoinResolverService {
   protected cacheGet = async (tokenKey: string): Promise<string | null> => {
     const cache = container.cache();
-    const key = `defihelper:token:details:${tokenKey}`;
+    const key = `defihelper:token:${tokenKey}`;
 
     return new Promise((resolve) =>
       cache.get(key, (err, result) => {
@@ -27,7 +27,7 @@ export class CoinResolverService {
   };
 
   protected cacheSet = (tokenKey: string, value: string): void => {
-    const key = `defihelper:token:details:${tokenKey}`;
+    const key = `defihelper:token:${tokenKey}`;
     container.cache().setex(key, 3600, value);
   };
 
@@ -80,7 +80,7 @@ export class CoinResolverService {
     blockchain: 'ethereum',
     network: string,
   ): Promise<CoinResolverNativeDetails> => {
-    const key = `${blockchain}:${network}:0x0`;
+    const key = `${blockchain}:${network}:0x0:price`;
     let token;
 
     switch (network) {

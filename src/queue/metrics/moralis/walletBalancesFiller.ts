@@ -24,10 +24,6 @@ export interface MoralisTokenPrice {
 export default async (process: Process) => {
   const { id } = process.task.params as Params;
 
-  const timeout = (n: number) =>
-    new Promise((resolve) => {
-      setTimeout(resolve, n);
-    });
   const wallet = await container.model.walletTable().where({ id }).first();
   let chain: 'eth' | 'bsc' | 'avalanche' | 'polygon';
 
@@ -73,11 +69,7 @@ export default async (process: Process) => {
   const tokensPrices = (await Promise.all(
     tokensBalances.map(async (token) => {
       try {
-        const r = await moralis.token.getTokenPrice({
-          chain,
-          address: token.token_address,
-        });
-        await timeout(500);
+        const r = await container.coinResolver().erc20Price('ethereum', chain, token.token_address);
         return {
           ...r,
           tokenAddress: token.token_address,
@@ -153,7 +145,7 @@ export default async (process: Process) => {
   );
 
   let nativeBalance;
-  const nativeToken = await container.moralis().chainNativeToken(chain);
+  const nativeToken = await container.coinResolver().native('ethereum', chain);
   try {
     nativeBalance = new BN(
       (
