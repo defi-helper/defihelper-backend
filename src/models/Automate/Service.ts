@@ -116,6 +116,10 @@ export class AutomateService {
   }
 
   async resetTriggerRetries(trigger: Trigger) {
+    if (trigger.retries < 1) {
+      return trigger;
+    }
+
     const updated: Trigger = {
       ...trigger,
       retries: 0,
@@ -132,7 +136,6 @@ export class AutomateService {
     if (c >= 3) {
       const t = await this.updateTrigger({
         ...trigger,
-        retries: 0,
         active: false,
       });
 

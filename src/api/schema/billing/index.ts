@@ -323,23 +323,19 @@ export const WalletBillingType = new GraphQLObjectType<Wallet>({
           };
         }
         const key = `defihelper:token:native:${wallet.blockchain}:${wallet.network}`;
-        let chainNativeUSD: BN | string | null = await cacheGet(key);
+        let chainNativeUSD: string | null = await cacheGet(key);
         if (!chainNativeUSD) {
           chainNativeUSD = await container.blockchain.ethereum
             .byNetwork(wallet.network)
             .priceFeedUSD();
-          container.cache().set(key, chainNativeUSD, () => {
-            container.cache().expire(key, 3600); // 1 hour
-          });
+          container.cache().setex(key, 3600, chainNativeUSD);
         }
 
-        chainNativeUSD = new BN(chainNativeUSD);
         return {
           balance,
           claim,
           netBalance: balance - claim,
-          lowFeeFunds:
-            balance * chainNativeUSD.toNumber() - (1 + chainNativeUSD.toNumber() * 0.1) <= 0,
+          lowFeeFunds: balance * Number(chainNativeUSD) - (1 + Number(chainNativeUSD) * 0.1) <= 0,
         };
       },
     },
