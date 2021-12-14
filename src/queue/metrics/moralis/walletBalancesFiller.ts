@@ -2,6 +2,7 @@ import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import BN from 'bignumber.js';
 import dayjs from 'dayjs';
+import { CoinResolverErc20Price } from '@services/CoinResolver';
 
 export interface Params {
   id: string;
@@ -66,19 +67,21 @@ export default async (process: Process) => {
       .error(new Error(`${e.code}: ${e.error}`));
   }
 
-  const tokensPrices = (await Promise.all(
-    tokensBalances.map(async (token) => {
-      try {
-        const r = await container.coinResolver().erc20Price('ethereum', chain, token.token_address);
-        return {
-          ...r,
-          tokenAddress: token.token_address,
-        };
-      } catch (e) {
-        return null;
-      }
-    }),
-  )) as (MoralisTokenPrice | null)[];
+  const tokensPrices = await tokensBalances.reduce<Promise<(CoinResolverErc20Price | null)[]>>(
+    async (result, token) => {
+      return [
+        ...(await result),
+        await new Promise((resolve) => {
+          container
+            .coinResolver()
+            .erc20Price('ethereum', chain, token.token_address)
+            .then((r) => resolve(r))
+            .catch(() => resolve(null));
+        }),
+      ];
+    },
+    Promise.resolve([]),
+  );
 
   const existingTokensRecords = await container.model
     .tokenTable()
@@ -129,7 +132,7 @@ export default async (process: Process) => {
       }
 
       const totalTokenNumber = new BN(tokenBalance.balance).div(`1e${tokenBalance.decimals}`);
-      const totalTokensUSDPrice = new BN(tokenPrice.usdPrice).multipliedBy(totalTokenNumber);
+      const totalTokensUSDPrice = new BN(tokenPrice.usd).multipliedBy(totalTokenNumber);
 
       return walletMetrics.createToken(
         null,

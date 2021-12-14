@@ -13,6 +13,7 @@ export interface CoinResolverNativeCoin {
 
 export interface CoinResolverErc20Price {
   usd: string;
+  tokenAddress: string;
 }
 
 export class CoinResolverService {
@@ -61,6 +62,7 @@ export class CoinResolverService {
     const cachedPrice = await this.cacheGet(key);
     if (cachedPrice) {
       return {
+        tokenAddress: address,
         usd: cachedPrice,
       };
     }
@@ -72,6 +74,7 @@ export class CoinResolverService {
 
     this.cacheSet(key, result.usdPrice.toString(10));
     return {
+      tokenAddress: address,
       usd: result.usdPrice.toString(10),
     };
   };
