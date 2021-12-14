@@ -21,9 +21,13 @@ export default async (process: Process) => {
   const lag = 86400 / users.length; // seconds in day
   await users.reduce<Promise<dayjs.Dayjs>>(async (prev, user) => {
     const startAt = await prev;
-    await container.model.queueService().push('notificationPortfolioMetricsNotify', {
-      userId: user.id,
-    });
+    await container.model.queueService().push(
+      'notificationPortfolioMetricsNotify',
+      {
+        userId: user.id,
+      },
+      { startAt: startAt.toDate() },
+    );
     return startAt.clone().add(lag, 'seconds');
   }, Promise.resolve(dayjs()));
 

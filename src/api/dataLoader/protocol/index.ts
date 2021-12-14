@@ -6,6 +6,8 @@ import {
   MetricContractField,
   MetricWalletField,
   MetricContractAPRField,
+  MetricWallet,
+  MetricContract,
 } from '@models/Metric/Entity';
 import { tableName as walletTableName } from '@models/Wallet/Entity';
 import BN from 'bignumber.js';
@@ -278,47 +280,35 @@ export const contractLoader = () =>
     return contractsId.map((id) => map.get(id) ?? null);
   });
 
-export const contractLastMetricLoader = ({ metric }: { metric: MetricContractField }) =>
-  new DataLoader<string, string>(async (contractsId) => {
-    const database = container.database();
+export const contractLastMetricLoader = () =>
+  new DataLoader<string, MetricContract | null>(async (contractsId) => {
     const map = new Map(
       await container.model
         .metricContractTable()
         .distinctOn(`${metricContractTableName}.contract`)
-        .column(`${metricContractTableName}.contract`)
-        .column(database.raw(`(${metricContractTableName}.data->>'${metric}')::numeric AS v`))
+        .column(`${metricContractTableName}.*`)
         .whereIn(`${metricContractTableName}.contract`, contractsId)
-        .andWhere(database.raw(`${metricContractTableName}.data->>'${metric}' IS NOT NULL`))
         .orderBy(`${metricContractTableName}.contract`)
         .orderBy(`${metricContractTableName}.date`, 'DESC')
-        .then((rows) => rows.map(({ contract, v }) => [contract, v])),
+        .then((rows) => rows.map((row) => [row.contract, row])),
     );
 
-    return contractsId.map((id) => map.get(id) ?? '0');
+    return contractsId.map((id) => map.get(id) ?? null);
   });
 
-export const contractUserLastMetricLoader = ({
-  userId,
-  metric,
-}: {
-  userId: string;
-  metric: MetricWalletField;
-}) =>
-  new DataLoader<string, string>(async (contractsId) => {
-    const database = container.database();
+export const contractUserLastMetricLoader = ({ userId }: { userId: string }) =>
+  new DataLoader<string, MetricWallet | null>(async (contractsId) => {
     const map = new Map(
       await container.model
         .metricWalletTable()
         .distinctOn(`${metricWalletTableName}.contract`)
-        .column(`${metricWalletTableName}.contract`)
-        .column(database.raw(`(${metricWalletTableName}.data->>'${metric}')::numeric AS v`))
+        .column(`${metricWalletTableName}.*`)
         .innerJoin(walletTableName, `${walletTableName}.id`, `${metricWalletTableName}.wallet`)
         .andWhere(`${walletTableName}.user`, userId)
-        .andWhere(database.raw(`${metricWalletTableName}.data->>'${metric}' IS NOT NULL`))
         .orderBy(`${metricWalletTableName}.contract`)
         .orderBy(`${metricWalletTableName}.date`, 'DESC')
-        .then((rows) => rows.map(({ contract, v }) => [contract, v])),
+        .then((rows) => rows.map((row) => [row.contract, row])),
     );
 
-    return contractsId.map((id) => map.get(id) ?? '0');
+    return contractsId.map((id) => map.get(id) ?? null);
   });

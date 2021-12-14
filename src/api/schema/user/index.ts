@@ -20,7 +20,7 @@ import BN from 'bignumber.js';
 import * as WavesCrypto from '@waves/ts-lib-crypto';
 import * as WavesMarshall from '@waves/marshall';
 import { AuthenticationError, UserInputError } from 'apollo-server-express';
-import { TokenAliasType } from '@api/schema/token';
+import { TokenAliasLiquidityEnum, TokenAliasType } from '@api/schema/token';
 import { tableName as walletTableName } from '@models/Wallet/Entity';
 import { metricWalletTokenTableName } from '@models/Metric/Entity';
 import { tokenAliasTableName, tokenTableName } from '@models/Token/Entity';
@@ -57,9 +57,9 @@ const TokenAliasFilterInputType = new GraphQLInputObjectType({
     id: {
       type: GraphQLList(GraphQLNonNull(UuidType)),
     },
-    stable: {
-      type: GraphQLBoolean,
-      description: 'Is stable token',
+    liquidity: {
+      type: GraphQLList(GraphQLNonNull(TokenAliasLiquidityEnum)),
+      description: 'Liquidity token',
     },
   },
 });
@@ -73,10 +73,16 @@ export const WalletMetricType = new GraphQLObjectType({
     earnedUSD: {
       type: GraphQLNonNull(GraphQLString),
     },
+    balance: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    usd: {
+      type: GraphQLNonNull(GraphQLString),
+    },
   },
 });
 
-export const WalletType = new GraphQLObjectType<Wallet.Wallet>({
+export const WalletType = new GraphQLObjectType<Wallet.Wallet, Request>({
   name: 'WalletType',
   fields: {
     id: {
@@ -319,7 +325,7 @@ export const WalletType = new GraphQLObjectType<Wallet.Wallet>({
                 this.whereIn('token', filter.tokenAddress);
               }
               if (filter.tokenAlias) {
-                const { id, stable } = filter.tokenAlias;
+                const { id, liquidity } = filter.tokenAlias;
                 this.whereIn(
                   'token',
                   container.model
@@ -334,8 +340,8 @@ export const WalletType = new GraphQLObjectType<Wallet.Wallet>({
                           if (id) {
                             this.whereIn('id', id);
                           }
-                          if (typeof stable === 'boolean') {
-                            this.where('stable', stable);
+                          if (Array.isArray(liquidity) && liquidity.length > 0) {
+                            this.whereIn('liquidity', liquidity);
                           }
                         }),
                     ),
@@ -359,13 +365,33 @@ export const WalletType = new GraphQLObjectType<Wallet.Wallet>({
     },
     metric: {
       type: GraphQLNonNull(WalletMetricType),
-      resolve: async (wallet, args, { dataLoader }) => {
-        const stakedUSD = await dataLoader.walletMetric({ metric: 'stakingUSD' }).load(wallet.id);
-        const earnedUSD = await dataLoader.walletMetric({ metric: 'earnedUSD' }).load(wallet.id);
+      args: {
+        filter: {
+          type: new GraphQLInputObjectType({
+            name: 'WalletMetricFilterInputType',
+            fields: {
+              tokenAlias: {
+                type: TokenAliasFilterInputType,
+                description: 'Target token alias',
+              },
+            },
+          }),
+          defaultValue: {},
+        },
+      },
+      resolve: async (wallet, { filter }, { dataLoader }) => {
+        const walletMetric = await dataLoader.walletMetric().load(wallet.id);
+        const tokenMetric = await dataLoader
+          .walletTokenMetric({
+            tokenAlias: filter.tokenAlias,
+          })
+          .load(wallet.id);
 
         return {
-          stakedUSD,
-          earnedUSD,
+          stakedUSD: walletMetric?.data.stakingUSD ?? '0',
+          earnedUSD: walletMetric?.data.earnedUSD ?? '0',
+          balance: tokenMetric.balance,
+          usd: tokenMetric.usd,
         };
       },
     },
@@ -569,11 +595,23 @@ export const UserType = new GraphQLObjectType<User, Request>({
       description: 'Current user locale',
     },
     tokenAliases: {
-      type: GraphQLNonNull(PaginateList('TokenAliasListType', GraphQLNonNull(TokenAliasType))),
+      type: GraphQLNonNull(PaginateList('UserTokenAliasListType', GraphQLNonNull(TokenAliasType))),
       args: {
-        pagination: PaginationArgument('AliasListPaginationInputType'),
+        filter: {
+          type: new GraphQLInputObjectType({
+            name: 'UserTokenAliasListFilterInputType',
+            fields: {
+              liquidity: {
+                type: GraphQLList(GraphQLNonNull(TokenAliasLiquidityEnum)),
+                description: 'Liquidity token',
+              },
+            },
+          }),
+          defaultValue: {},
+        },
+        pagination: PaginationArgument('UserTokenAliasListPaginationInputType'),
       },
-      resolve: async (user, { pagination }) => {
+      resolve: async (user, { filter, pagination }) => {
         const select = container.model
           .metricWalletTokenTable()
           .column(`${tokenAliasTableName}.*`)
@@ -584,7 +622,12 @@ export const UserType = new GraphQLObjectType<User, Request>({
             `${walletTableName}.id`,
             `${metricWalletTokenTableName}.wallet`,
           )
-          .where(`${walletTableName}.user`, user.id)
+          .where(function () {
+            this.where(`${walletTableName}.user`, user.id);
+            if (Array.isArray(filter.liquidity) && filter.liquidity.length > 0) {
+              this.whereIn(`${tokenAliasTableName}.liquidity`, filter.liquidity);
+            }
+          })
           .groupBy(`${tokenAliasTableName}.id`);
 
         return {
@@ -839,7 +882,7 @@ export const UserType = new GraphQLObjectType<User, Request>({
                 this.whereIn('token', filter.tokenAddress);
               }
               if (filter.tokenAlias) {
-                const { id, stable } = filter.tokenAlias;
+                const { id, liquidity } = filter.tokenAlias;
                 this.whereIn(
                   'token',
                   container.model
@@ -854,8 +897,8 @@ export const UserType = new GraphQLObjectType<User, Request>({
                           if (id) {
                             this.whereIn('id', id);
                           }
-                          if (typeof stable === 'boolean') {
-                            this.where('stable', stable);
+                          if (Array.isArray(liquidity) && liquidity.length > 0) {
+                            this.whereIn('liquidity', liquidity);
                           }
                         }),
                     ),

@@ -104,6 +104,7 @@ export class AutomateService {
       ...type,
       name,
       active,
+      retries: 0,
       lastCallAt: null,
       updatedAt: new Date(),
       createdAt: new Date(),
@@ -112,6 +113,39 @@ export class AutomateService {
     this.onTriggerCreated.emit(created);
 
     return created;
+  }
+
+  async resetTriggerRetries(trigger: Trigger) {
+    if (trigger.retries < 1) {
+      return trigger;
+    }
+
+    const updated: Trigger = {
+      ...trigger,
+      retries: 0,
+      updatedAt: new Date(),
+    };
+    await this.triggerTable().where({ id: trigger.id }).update(updated);
+
+    return updated;
+  }
+
+  async incrementTriggerRetries(trigger: Trigger) {
+    const c = await this.triggerTable().where({ id: trigger.id }).increment('retries', 1);
+
+    if (c >= 3) {
+      const t = await this.updateTrigger({
+        ...trigger,
+        active: false,
+      });
+
+      return t;
+    }
+
+    return {
+      ...trigger,
+      retries: c,
+    };
   }
 
   async updateTrigger(trigger: Trigger) {

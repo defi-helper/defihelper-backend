@@ -10,6 +10,10 @@ export default {
     'Confirm': 'Confirm',
     'New {{eventName}} events in {{contractAddress}} on {{network}}:':
       'New {{eventName}} events in {{contractAddress}} on {{network}}:',
+    'Your portfolio: total stacked ${{totalStackedUSD}}, total earned ${{totalEarnedUSD}}':
+      'Your portfolio: total stacked ${{totalStackedUSD}}, total earned ${{totalEarnedUSD}}',
+    'Attention, one of yours automates may be paused due to insufficient funds':
+      'Attention, one of yours automates may be paused due to insufficient funds',
     'Total Net Worth ${{totalNetWorth}}, Total unclaimed ${{totalEarnedUSD}}':
       'Total Net Worth ${{totalNetWorth}}, Total unclaimed ${{totalEarnedUSD}}',
     'automate:trigger:contractEvent:name': 'Contract event',
@@ -31,6 +35,8 @@ export default {
       'Wallet balance {{wallet}} in network {{network}} {{op}} {{value}}',
     'automate:condition:ethereumOptimalAutomateRun:name': 'Optimal Staking',
     'automate:condition:ethereumOptimalAutomateRun:description': 'Use our Autostaking feature',
+    'automate:action:ethereumOptimalAutomateRun:paramsDescription':
+      'Autostaking for action: {{id}}',
     'automate:condition:ethereumOptimalAutomateRun:paramsDescription':
       'Restake optimal run for {{id}}',
     'automate:condition:ethereumAvgGasPrice:name': 'GAS price variation',

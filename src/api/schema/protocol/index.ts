@@ -19,6 +19,7 @@ import {
   walletContractLinkTableName,
   ContractAutomate,
 } from '@models/Protocol/Entity';
+import { metricWalletTableName } from '@models/Metric/Entity';
 import { tableName as walletTableName } from '@models/Wallet/Entity';
 import { AuthenticationError, ForbiddenError, UserInputError } from 'apollo-server-express';
 import { Blockchain } from '@models/types';
@@ -53,6 +54,9 @@ export const ContractMetricType = new GraphQLObjectType({
     },
     myEarned: {
       type: GraphQLNonNull(GraphQLString),
+    },
+    myLastUpdatedAt: {
+      type: DateTimeType,
     },
   },
 });
@@ -183,22 +187,24 @@ export const ContractType = new GraphQLObjectType<Contract, Request>({
     metric: {
       type: GraphQLNonNull(ContractMetricType),
       resolve: async (contract, args, { currentUser, dataLoader }) => {
+        const contractMetric = await dataLoader.contractMetric().load(contract.id);
         const metric = {
-          tvl: await dataLoader.contractMetric({ metric: 'tvl' }).load(contract.id),
-          aprYear: await dataLoader.contractMetric({ metric: 'aprYear' }).load(contract.id),
+          tvl: contractMetric?.data.tvl ?? '0',
+          aprYear: contractMetric?.data.aprYear ?? '0',
           myStaked: '0',
           myEarned: '0',
+          myLastUpdatedAt: null,
         };
         if (!currentUser) return metric;
 
+        const userMetric = await dataLoader
+          .contractUserMetric({ userId: currentUser.id })
+          .load(contract.id);
         return {
           ...metric,
-          myStaked: await dataLoader
-            .contractUserMetric({ metric: 'stakingUSD', userId: currentUser.id })
-            .load(contract.id),
-          myEarned: await dataLoader
-            .contractUserMetric({ metric: 'earnedUSD', userId: currentUser.id })
-            .load(contract.id),
+          myStaked: userMetric?.data.stakingUSD ?? '0',
+          myEarned: userMetric?.data.earnedUSD ?? '0',
+          myLastUpdatedAt: userMetric?.date ?? null,
         };
       },
     },
@@ -704,12 +710,12 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
         },
         sort: SortArgument(
           'ContractListSortInputType',
-          ['id', 'name', 'address', 'createdAt'],
+          ['id', 'name', 'address', 'createdAt', 'myStaked'],
           [{ column: 'name', order: 'asc' }],
         ),
         pagination: PaginationArgument('ContractListPaginationInputType'),
       },
-      resolve: async (protocol, { filter, sort, pagination }) => {
+      resolve: async (protocol, { filter, sort, pagination }, { currentUser }) => {
         const select = container.model.contractTable().where(function () {
           const { id, hidden, search } = filter;
           if (id) {
@@ -734,9 +740,43 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
             }
           }
         });
+        let listSelect = select.clone();
+        if (sort.find(({ column }: { column: string }) => column === 'myStaked')) {
+          const database = container.database();
+          if (currentUser) {
+            listSelect = listSelect
+              .column(`${contractTableName}.*`)
+              .column(database.raw(`COALESCE(metric."myStaked", '0') AS "myStaked"`))
+              .leftJoin(
+                container.model
+                  .metricWalletTable()
+                  .distinctOn(`${metricWalletTableName}.contract`)
+                  .column(`${metricWalletTableName}.contract`)
+                  .column(
+                    database.raw(`${metricWalletTableName}.data->>'stakingUSD' AS "myStaked"`),
+                  )
+                  .innerJoin(
+                    walletTableName,
+                    `${walletTableName}.id`,
+                    `${metricWalletTableName}.wallet`,
+                  )
+                  .where(`${walletTableName}.user`, currentUser.id)
+                  .andWhere(database.raw(`${metricWalletTableName}.contract = contract`))
+                  .orderBy(`${metricWalletTableName}.contract`)
+                  .orderBy(`${metricWalletTableName}.date`, 'DESC')
+                  .as('metric'),
+                `${contractTableName}.id`,
+                'metric.contract',
+              );
+          } else {
+            listSelect = listSelect
+              .column(`${contractTableName}.*`)
+              .column(database.raw(`'0' AS "myStaked"`));
+          }
+        }
 
         return {
-          list: await select
+          list: await listSelect
             .clone()
             .orderBy(sort)
             .limit(pagination.limit)

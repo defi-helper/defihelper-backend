@@ -1,5 +1,11 @@
 import { Factory } from '@services/Container';
-import { TokenAlias, Token, TokenTable, TokenAliasTable } from '@models/Token/Entity';
+import {
+  TokenAlias,
+  Token,
+  TokenTable,
+  TokenAliasTable,
+  TokenAliasLiquidity,
+} from '@models/Token/Entity';
 import { Blockchain } from '@models/types';
 import { v4 as uuid } from 'uuid';
 import { Emitter } from '@services/Event';
@@ -8,12 +14,17 @@ import container from '@container';
 export class TokenAliasService {
   constructor(readonly table: Factory<TokenAliasTable>) {}
 
-  async create(name: string, symbol: string, stable: boolean, logoUrl: string|null) {
+  async create(
+    name: string,
+    symbol: string,
+    liquidity: TokenAliasLiquidity,
+    logoUrl: string | null,
+  ) {
     const created = {
       id: uuid(),
       name,
       symbol,
-      stable,
+      liquidity,
       logoUrl,
       protocol: null,
       createdAt: new Date(),

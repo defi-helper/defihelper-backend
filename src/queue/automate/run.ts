@@ -54,11 +54,13 @@ export default async (process: Process) => {
       });
     }
   } catch (e) {
+    await automateService.incrementTriggerRetries(trigger);
     await automateService.createTriggerCallHistory(
       trigger,
       e instanceof Error ? e : new Error(`${e}`),
     );
   }
 
+  await automateService.resetTriggerRetries(trigger);
   return process.done();
 };

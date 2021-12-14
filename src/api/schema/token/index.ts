@@ -1,11 +1,12 @@
 import { AuthenticationError, UserInputError } from 'apollo-server-express';
 import container from '@container';
 import { Request } from 'express';
-import { Token, TokenAlias, tokenTableName } from '@models/Token/Entity';
+import { Token, TokenAlias, TokenAliasLiquidity, tokenTableName } from '@models/Token/Entity';
 import { tableName as walletTableName } from '@models/Wallet/Entity';
 
 import {
   GraphQLBoolean,
+  GraphQLEnumType,
   GraphQLFieldConfig,
   GraphQLInputObjectType,
   GraphQLInt,
@@ -176,6 +177,14 @@ export const TokenUpdateMutation: GraphQLFieldConfig<any, Request> = {
   }),
 };
 
+export const TokenAliasLiquidityEnum = new GraphQLEnumType({
+  name: 'TokenAliasLiquidityEnum',
+  values: Object.values(TokenAliasLiquidity).reduce(
+    (prev, name) => ({ ...prev, [name]: { value: name } }),
+    {},
+  ),
+});
+
 export const TokenAliasMetricType = new GraphQLObjectType({
   name: 'TokenAliasMetricType',
   fields: {
@@ -210,9 +219,9 @@ export const TokenAliasType = new GraphQLObjectType<TokenAlias>({
       type: GraphQLString,
       description: 'Logo url',
     },
-    stable: {
-      type: GraphQLNonNull(GraphQLBoolean),
-      description: 'Is stable price',
+    liquidity: {
+      type: GraphQLNonNull(TokenAliasLiquidityEnum),
+      description: 'Token liquidity',
     },
     metric: {
       type: GraphQLNonNull(TokenAliasMetricType),
@@ -367,8 +376,8 @@ export const TokenAliasListQuery: GraphQLFieldConfig<any, Request> = {
           blockchain: {
             type: BlockchainFilterInputType,
           },
-          stable: {
-            type: GraphQLBoolean,
+          liquidity: {
+            type: TokenAliasLiquidityEnum,
           },
           symbol: {
             type: GraphQLString,
@@ -402,8 +411,8 @@ export const TokenAliasListQuery: GraphQLFieldConfig<any, Request> = {
           });
         this.whereIn('id', tokenSelect);
       }
-      if (filter.stable !== undefined) {
-        this.andWhere('stable', filter.stable);
+      if (filter.liquidity !== undefined) {
+        this.andWhere('liquidity', filter.liquidity);
       }
       if (filter.symbol !== undefined) {
         this.andWhere('symbol', filter.symbol);
@@ -438,9 +447,9 @@ export const TokenAliasCreateMutation: GraphQLFieldConfig<any, Request> = {
               type: GraphQLString,
               description: 'Symbol',
             },
-            stable: {
-              type: GraphQLBoolean,
-              description: 'Is stable coin',
+            liquidity: {
+              type: TokenAliasLiquidityEnum,
+              description: 'Token liquidity',
             },
           },
         }),
@@ -450,8 +459,8 @@ export const TokenAliasCreateMutation: GraphQLFieldConfig<any, Request> = {
   resolve: onlyAllowed('tokenAlias.create', async (root, { input }, { currentUser }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
-    const { name, symbol, stable } = input;
-    const created = await container.model.tokenAliasService().create(name, symbol, stable, null);
+    const { name, symbol, liquidity } = input;
+    const created = await container.model.tokenAliasService().create(name, symbol, liquidity, null);
 
     return created;
   }),
@@ -476,9 +485,9 @@ export const TokenAliasUpdateMutation: GraphQLFieldConfig<any, Request> = {
               type: GraphQLString,
               description: 'Symbol',
             },
-            stable: {
-              type: GraphQLBoolean,
-              description: 'Is stable coin',
+            liquidity: {
+              type: TokenAliasLiquidityEnum,
+              description: 'Token liquidity',
             },
           },
         }),
@@ -491,12 +500,13 @@ export const TokenAliasUpdateMutation: GraphQLFieldConfig<any, Request> = {
     const tokenAlias = await container.model.tokenAliasTable().where('id', id).first();
     if (!tokenAlias) throw new UserInputError('Token alias not found');
 
-    const { name, symbol, stable } = input;
+    const { name, symbol, liquidity } = input;
     const updated = await container.model.tokenAliasService().update({
       ...tokenAlias,
       name: typeof name === 'string' ? name : tokenAlias.name,
       symbol: typeof symbol === 'string' ? symbol : tokenAlias.symbol,
-      stable: typeof stable === 'boolean' ? stable : tokenAlias.stable,
+      liquidity:
+        typeof liquidity === 'string' ? (liquidity as TokenAliasLiquidity) : tokenAlias.liquidity,
     });
 
     return updated;
