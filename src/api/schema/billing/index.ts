@@ -164,15 +164,6 @@ export const BalanceType = new GraphQLObjectType({
   },
 });
 
-const cacheGet = (key: string): Promise<string | null> => {
-  return new Promise((resolve) =>
-    container.cache().get(key, (err, result) => {
-      if (err || !result) return resolve(null);
-
-      return resolve(result);
-    }),
-  );
-};
 export const WalletBillingType = new GraphQLObjectType<Wallet>({
   name: 'WalletBillingType',
   fields: {
@@ -321,15 +312,10 @@ export const WalletBillingType = new GraphQLObjectType<Wallet>({
             lowFeeFunds: false,
           };
         }
-        const key = `defihelper:token:native:${wallet.blockchain}:${wallet.network}`;
-        let chainNativeUSD: string | null = await cacheGet(key);
-        if (!chainNativeUSD) {
-          chainNativeUSD = await container.blockchain.ethereum
-            .byNetwork(wallet.network)
-            .nativeTokenPrice();
-          container.cache().setex(key, 3600, chainNativeUSD);
-        }
 
+        const chainNativeUSD = await container.blockchain.ethereum
+          .byNetwork(wallet.network)
+          .nativeTokenPrice();
         return {
           balance,
           claim,

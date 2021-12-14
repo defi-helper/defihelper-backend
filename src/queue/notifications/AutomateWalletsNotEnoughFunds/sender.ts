@@ -4,7 +4,6 @@ import { triggerTableName } from '@models/Automate/Entity';
 import { tableName as walletTableName } from '@models/Wallet/Entity';
 import { transferTableName } from '@models/Billing/Entity';
 import { ContactBroker, ContactStatus } from '@models/Notification/Entity';
-import BN from 'bignumber.js';
 
 export default async (process: Process) => {
   const { userId } = process.task.params as { userId: string };
@@ -45,12 +44,12 @@ export default async (process: Process) => {
       return chainsNativePriceMap[chain];
     }
 
-    const chainNativeUSD = new BN(
+    const chainNativeUSD = Number(
       await container.blockchain.ethereum.byNetwork(chain).nativeTokenPrice(),
     );
-    chainsNativePriceMap[chain] = chainNativeUSD.toNumber();
+    chainsNativePriceMap[chain] = chainNativeUSD;
 
-    return chainNativeUSD.toNumber();
+    return chainNativeUSD;
   };
   const notify = triggers.some(async (t) => {
     const walletFunds = walletsFunds.find((w) => w.id === t.walletId);
