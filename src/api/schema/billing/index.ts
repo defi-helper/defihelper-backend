@@ -317,6 +317,7 @@ export const WalletBillingType = new GraphQLObjectType<Wallet>({
         const chainNativeUSD = new BN(
           await container.blockchain.ethereum.byNetwork(wallet.network).nativeTokenPrice(),
         ).toNumber();
+
         return {
           balance,
           claim,
