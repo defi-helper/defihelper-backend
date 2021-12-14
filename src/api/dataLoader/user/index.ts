@@ -5,10 +5,13 @@ import {
   MetricWalletField,
   metricContractTableName,
   MetricContractAPRField,
+  MetricWallet,
+  metricWalletTokenTableName,
 } from '@models/Metric/Entity';
 import { walletContractLinkTableName } from '@models/Protocol/Entity';
 import { Wallet, tableName as walletTableName } from '@models/Wallet/Entity';
 import DataLoader from 'dataloader';
+import { TokenAliasLiquidity, tokenAliasTableName, tokenTableName } from '@models/Token/Entity';
 
 export const userBlockchainLoader = () =>
   new DataLoader(async (usersId: ReadonlyArray<string>) => {
@@ -144,21 +147,80 @@ export const walletLoader = () =>
     return walletsId.map((id) => map.get(id) ?? null);
   });
 
-export const walletLastMetricLoader = ({ metric }: { metric: MetricWalletField }) =>
-  new DataLoader(async (walletsId: ReadonlyArray<string>) => {
-    const database = container.database();
+export const walletLastMetricLoader = () =>
+  new DataLoader<string, MetricWallet | null>(async (walletsId: ReadonlyArray<string>) => {
     const map = new Map(
       await container.model
         .metricWalletTable()
         .distinctOn('wallet')
-        .columns('wallet')
-        .column({ v: database.raw(`(data->>'${metric}')::numeric`) })
+        .columns('*')
         .whereIn('wallet', walletsId)
-        .andWhere(database.raw(`data->>'${metric}' IS NOT NULL`))
         .orderBy('wallet')
         .orderBy('date', 'DESC')
-        .then((rows) => rows.map(({ wallet, v }) => [wallet, v])),
+        .then((rows) => rows.map((row) => [row.wallet, row])),
     );
 
-    return walletsId.map((id) => map.get(id) ?? '0');
+    return walletsId.map((id) => map.get(id) ?? null);
   });
+
+export const walletTokenLastMetricLoader = (filter: {
+  tokenAlias?: { id?: string[]; liquidity?: TokenAliasLiquidity[] };
+}) =>
+  new DataLoader<string, { wallet: string; balance: string; usd: string }>(
+    async (walletsId: ReadonlyArray<string>) => {
+      const database = container.database();
+      const map = new Map(
+        await container
+          .database()
+          .column('wallet')
+          .sum('usd AS usd')
+          .sum('balance AS balance')
+          .from(
+            container.model
+              .metricWalletTokenTable()
+              .distinctOn(
+                `${metricWalletTokenTableName}.wallet`,
+                `${metricWalletTokenTableName}.token`,
+              )
+              .column(`${metricWalletTokenTableName}.wallet`)
+              .column(database.raw(`(${metricWalletTokenTableName}.data->>'usd')::numeric AS usd`))
+              .column(
+                database.raw(
+                  `(${metricWalletTokenTableName}.data->>'balance')::numeric AS balance`,
+                ),
+              )
+              .innerJoin(
+                tokenTableName,
+                `${metricWalletTokenTableName}.token`,
+                `${tokenTableName}.id`,
+              )
+              .innerJoin(
+                tokenAliasTableName,
+                `${tokenTableName}.alias`,
+                `${tokenAliasTableName}.id`,
+              )
+              .where(function () {
+                this.whereIn(`${metricWalletTokenTableName}.wallet`, walletsId);
+                if (filter.tokenAlias) {
+                  if (Array.isArray(filter.tokenAlias.id)) {
+                    this.whereIn(`${tokenAliasTableName}.id`, filter.tokenAlias.id);
+                  }
+                  if (Array.isArray(filter.tokenAlias.liquidity)) {
+                    this.whereIn(`${tokenAliasTableName}.liquidity`, filter.tokenAlias.liquidity);
+                  }
+                }
+              })
+              .orderBy(`${metricWalletTokenTableName}.wallet`)
+              .orderBy(`${metricWalletTokenTableName}.token`)
+              .orderBy(`${metricWalletTokenTableName}.date`, 'DESC')
+              .as('metric'),
+          )
+          .groupBy('wallet')
+          .then((rows) =>
+            rows.map(({ wallet, balance, usd }) => [wallet, { wallet, balance, usd }]),
+          ),
+      );
+
+      return walletsId.map((id) => map.get(id) ?? { wallet: id, usd: '0', balance: '0' });
+    },
+  );

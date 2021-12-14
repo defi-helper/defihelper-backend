@@ -58,7 +58,7 @@ const TokenAliasFilterInputType = new GraphQLInputObjectType({
       type: GraphQLList(GraphQLNonNull(UuidType)),
     },
     liquidity: {
-      type: TokenAliasLiquidityEnum,
+      type: GraphQLList(GraphQLNonNull(TokenAliasLiquidityEnum)),
       description: 'Liquidity token',
     },
   },
@@ -73,10 +73,16 @@ export const WalletMetricType = new GraphQLObjectType({
     earnedUSD: {
       type: GraphQLNonNull(GraphQLString),
     },
+    balance: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    usd: {
+      type: GraphQLNonNull(GraphQLString),
+    },
   },
 });
 
-export const WalletType = new GraphQLObjectType<Wallet.Wallet>({
+export const WalletType = new GraphQLObjectType<Wallet.Wallet, Request>({
   name: 'WalletType',
   fields: {
     id: {
@@ -334,8 +340,8 @@ export const WalletType = new GraphQLObjectType<Wallet.Wallet>({
                           if (id) {
                             this.whereIn('id', id);
                           }
-                          if (typeof liquidity === 'string') {
-                            this.where('liquidity', liquidity);
+                          if (Array.isArray(liquidity) && liquidity.length > 0) {
+                            this.whereIn('liquidity', liquidity);
                           }
                         }),
                     ),
@@ -359,13 +365,33 @@ export const WalletType = new GraphQLObjectType<Wallet.Wallet>({
     },
     metric: {
       type: GraphQLNonNull(WalletMetricType),
-      resolve: async (wallet, args, { dataLoader }) => {
-        const stakedUSD = await dataLoader.walletMetric({ metric: 'stakingUSD' }).load(wallet.id);
-        const earnedUSD = await dataLoader.walletMetric({ metric: 'earnedUSD' }).load(wallet.id);
+      args: {
+        filter: {
+          type: new GraphQLInputObjectType({
+            name: 'WalletMetricFilterInputType',
+            fields: {
+              tokenAlias: {
+                type: TokenAliasFilterInputType,
+                description: 'Target token alias',
+              },
+            },
+          }),
+          defaultValue: {},
+        },
+      },
+      resolve: async (wallet, { filter }, { dataLoader }) => {
+        const walletMetric = await dataLoader.walletMetric().load(wallet.id);
+        const tokenMetric = await dataLoader
+          .walletTokenMetric({
+            tokenAlias: filter.tokenAlias,
+          })
+          .load(wallet.id);
 
         return {
-          stakedUSD,
-          earnedUSD,
+          stakedUSD: walletMetric?.data.stakingUSD ?? '0',
+          earnedUSD: walletMetric?.data.earnedUSD ?? '0',
+          balance: tokenMetric.balance,
+          usd: tokenMetric.usd,
         };
       },
     },
@@ -871,8 +897,8 @@ export const UserType = new GraphQLObjectType<User, Request>({
                           if (id) {
                             this.whereIn('id', id);
                           }
-                          if (typeof liquidity === 'string') {
-                            this.where('liquidity', liquidity);
+                          if (Array.isArray(liquidity) && liquidity.length > 0) {
+                            this.whereIn('liquidity', liquidity);
                           }
                         }),
                     ),

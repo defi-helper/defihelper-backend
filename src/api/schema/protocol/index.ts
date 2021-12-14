@@ -186,26 +186,24 @@ export const ContractType = new GraphQLObjectType<Contract, Request>({
     metric: {
       type: GraphQLNonNull(ContractMetricType),
       resolve: async (contract, args, { currentUser, dataLoader }) => {
+        const contractMetric = await dataLoader.contractMetric().load(contract.id);
         const metric = {
-          tvl: await dataLoader.contractMetric({ metric: 'tvl' }).load(contract.id),
-          aprYear: await dataLoader.contractMetric({ metric: 'aprYear' }).load(contract.id),
+          tvl: contractMetric?.data.tvl ?? '0',
+          aprYear: contractMetric?.data.aprYear ?? '0',
           myStaked: '0',
           myEarned: '0',
           myLastUpdatedAt: null,
         };
         if (!currentUser) return metric;
 
-        const { v: myStaked, date } = await dataLoader
-          .contractUserMetric({ metric: 'stakingUSD', userId: currentUser.id })
+        const userMetric = await dataLoader
+          .contractUserMetric({ userId: currentUser.id })
           .load(contract.id);
         return {
           ...metric,
-          myStaked,
-          myEarned: await dataLoader
-            .contractUserMetric({ metric: 'earnedUSD', userId: currentUser.id })
-            .load(contract.id)
-            .then(({ v }) => v),
-          myLastUpdatedAt: date,
+          myStaked: userMetric?.data.stakingUSD ?? '0',
+          myEarned: userMetric?.data.earnedUSD ?? '0',
+          myLastUpdatedAt: userMetric?.date ?? null,
         };
       },
     },

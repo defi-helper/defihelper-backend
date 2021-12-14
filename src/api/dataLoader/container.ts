@@ -14,6 +14,7 @@ import {
   userLastMetricLoader,
   walletLastMetricLoader,
   walletLoader,
+  walletTokenLastMetricLoader,
 } from './user';
 
 export class DataLoaderContainer extends Container<{}> {
@@ -27,7 +28,7 @@ export class DataLoaderContainer extends Container<{}> {
 
   readonly contract = singleton(contractLoader);
 
-  readonly contractMetric = singletonParametric(contractLastMetricLoader);
+  readonly contractMetric = singleton(contractLastMetricLoader);
 
   readonly contractUserMetric = singletonParametric(contractUserLastMetricLoader);
 
@@ -39,5 +40,7 @@ export class DataLoaderContainer extends Container<{}> {
 
   readonly wallet = singleton(walletLoader);
 
-  readonly walletMetric = singletonParametric(walletLastMetricLoader);
+  readonly walletMetric = singleton(walletLastMetricLoader);
+
+  readonly walletTokenMetric = singletonParametric(walletTokenLastMetricLoader);
 }
