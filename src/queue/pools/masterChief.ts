@@ -1,8 +1,6 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import { ethers } from 'ethers';
-import {Protocol} from "@models/Protocol/Entity";
-import {Blockchain} from "@models/types";
 
 export interface MasterChiefScannerParams {
   masterChefAddress: string;
@@ -10,7 +8,7 @@ export interface MasterChiefScannerParams {
   protocolDescription: string;
   adapterName: string;
   farmingAdapterName: string;
-  network: '1' | '56' | '137' | '43114';
+  network: '1' | '56' | '137' | '1285' | '43114';
   reservedPools: number[];
 }
 
@@ -106,12 +104,15 @@ export default async (process: Process) => {
         resolveSymbol(token1, provider),
       ]);
 
-      const contract = await container.model.contractTable().where({
-        protocol: protocol.id,
-        blockchain: 'ethereum',
-        network: network,
-        address: pool.lpToken.toLowerCase(),
-      }).first();
+      const contract = await container.model
+        .contractTable()
+        .where({
+          protocol: protocol.id,
+          blockchain: 'ethereum',
+          network,
+          address: pool.lpToken.toLowerCase(),
+        })
+        .first();
 
       if (!contract) {
         await container.model
@@ -129,7 +130,7 @@ export default async (process: Process) => {
             '',
             `${container.blockchain.ethereum.networks[
               network
-              ].walletExplorerURL.toString()}/${masterChefAddress}`,
+            ].walletExplorerURL.toString()}/${masterChefAddress}`,
             false,
             [],
           );
