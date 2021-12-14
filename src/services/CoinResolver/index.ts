@@ -1,10 +1,9 @@
 import container from '@container';
-import BN from 'bignumber.js';
 
 export type CoinResolverNamedChains = 'eth' | 'bsc' | 'avalanche' | 'polygon';
-export type CoinResolverNumberChains = '1' | '56' | '137' | '43114';
+export type CoinResolverNumberedChains = '1' | '56' | '137' | '43114';
 
-export interface CoinResolverNativeDetails {
+export interface CoinResolverNativeCoin {
   decimals: number;
   symbol: string;
   name: string;
@@ -17,7 +16,9 @@ export interface CoinResolverErc20Price {
 }
 
 export class CoinResolverService {
-  protected namedNetworkToNumber = (network: CoinResolverNamedChains): CoinResolverNumberChains => {
+  protected namedNetworkToNumber = (
+    network: CoinResolverNamedChains,
+  ): CoinResolverNumberedChains => {
     switch (network) {
       case 'eth':
         return '1';
@@ -51,7 +52,7 @@ export class CoinResolverService {
 
   public erc20Price = async (
     blockchain: 'ethereum',
-    network: 'eth' | 'bsc' | 'avalanche' | 'polygon',
+    network: CoinResolverNamedChains,
     address: string,
   ): Promise<CoinResolverErc20Price> => {
     const key = `${blockchain}:${network}:${address}:price`;
@@ -69,17 +70,16 @@ export class CoinResolverService {
       address,
     });
 
-    const usdPrice = new BN(result.usdPrice);
-    this.cacheSet(key, usdPrice.toString(10));
+    this.cacheSet(key, result.usdPrice.toString(10));
     return {
-      usd: usdPrice.toString(10),
+      usd: result.usdPrice.toString(10),
     };
   };
 
   public native = async (
     blockchain: 'ethereum',
-    network: 'eth' | 'bsc' | 'avalanche' | 'polygon',
-  ): Promise<CoinResolverNativeDetails> => {
+    network: CoinResolverNamedChains,
+  ): Promise<CoinResolverNativeCoin> => {
     const key = `${blockchain}:${network}:0x0:price`;
     let token;
 
