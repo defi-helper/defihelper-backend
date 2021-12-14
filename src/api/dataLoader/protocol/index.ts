@@ -41,7 +41,7 @@ class Cache {
           new Promise((resolve, reject) =>
             this.cache.set(
               `${this.prefix}:${key}`,
-              JSON.stringify(valuesMap[key] ?? '0'),
+              JSON.stringify(valuesMap[key] ?? null),
               'EX',
               this.ttl,
               (err, data) => (err ? reject(err) : resolve(data)),
@@ -109,64 +109,77 @@ export const protocolLastMetricLoader = ({ metric }: { metric: MetricContractFie
   });
 
 export const protocolUserLastMetricLoader = ({ userId }: { userId: string }) =>
-  new DataLoader<string, { stakingUSD: string; earnedUSD: string }>(async (protocolsId) => {
-    const cache = new Cache(`defihelper:dataLoader:protocolUserLastMetric:${userId}`, 1800);
-    const cachedMap = await cache.getMap(protocolsId);
+  new DataLoader<string, { stakingUSD: string; earnedUSD: string; minUpdatedAt: string | null }>(
+    async (protocolsId) => {
+      const cache = new Cache(`defihelper:dataLoader:protocolUserLastMetric:${userId}`, 1800);
+      const cachedMap = await cache.getMap(protocolsId);
 
-    const database = container.database();
-    const notCachedIds = protocolsId.filter((protocolId) => cachedMap[protocolId] === undefined);
-    const metrics =
-      notCachedIds.length > 0
-        ? await container
-            .database()
-            .column('protocol')
-            .sum('stakingUSD AS stakingUSD')
-            .sum('earnedUSD AS earnedUSD')
-            .from(
-              container.model
-                .metricWalletTable()
-                .distinctOn(`${metricWalletTableName}.contract`, `${metricWalletTableName}.wallet`)
-                .column(`${contractTableName}.protocol`)
-                .column(
-                  database.raw(
-                    `(${metricWalletTableName}.data->>'stakingUSD')::numeric AS "stakingUSD"`,
-                  ),
-                )
-                .column(
-                  database.raw(
-                    `(${metricWalletTableName}.data->>'earnedUSD')::numeric AS "earnedUSD"`,
-                  ),
-                )
-                .innerJoin(
-                  contractTableName,
-                  `${contractTableName}.id`,
-                  `${metricWalletTableName}.contract`,
-                )
-                .innerJoin(
-                  walletTableName,
-                  `${walletTableName}.id`,
-                  `${metricWalletTableName}.wallet`,
-                )
-                .whereIn(`${contractTableName}.protocol`, protocolsId)
-                .andWhere(`${walletTableName}.user`, userId)
-                .orderBy(`${metricWalletTableName}.contract`)
-                .orderBy(`${metricWalletTableName}.wallet`)
-                .orderBy(`${metricWalletTableName}.date`, 'DESC')
-                .as('metric'),
-            )
-            .groupBy('protocol')
-        : [];
-    const map = metrics.reduce(
-      (result, { protocol, stakingUSD, earnedUSD }) => ({
-        ...result,
-        [protocol]: { stakingUSD, earnedUSD },
-      }),
-      cachedMap,
-    );
-    await cache.setMap(notCachedIds, map);
+      const database = container.database();
+      const notCachedIds = protocolsId.filter((protocolId) => cachedMap[protocolId] === undefined);
+      const metrics =
+        notCachedIds.length > 0
+          ? await container
+              .database()
+              .column('protocol')
+              .sum('stakingUSD AS stakingUSD')
+              .sum('earnedUSD AS earnedUSD')
+              .min('date AS minUpdatedAt')
+              .from(
+                container.model
+                  .metricWalletTable()
+                  .distinctOn(
+                    `${metricWalletTableName}.contract`,
+                    `${metricWalletTableName}.wallet`,
+                  )
+                  .column(`${contractTableName}.protocol`)
+                  .column(
+                    database.raw(
+                      `(${metricWalletTableName}.data->>'stakingUSD')::numeric AS "stakingUSD"`,
+                    ),
+                  )
+                  .column(
+                    database.raw(
+                      `(${metricWalletTableName}.data->>'earnedUSD')::numeric AS "earnedUSD"`,
+                    ),
+                  )
+                  .column(`${metricWalletTableName}.date AS date`)
+                  .innerJoin(
+                    contractTableName,
+                    `${contractTableName}.id`,
+                    `${metricWalletTableName}.contract`,
+                  )
+                  .innerJoin(
+                    walletTableName,
+                    `${walletTableName}.id`,
+                    `${metricWalletTableName}.wallet`,
+                  )
+                  .whereIn(`${contractTableName}.protocol`, protocolsId)
+                  .andWhere(`${walletTableName}.user`, userId)
+                  .orderBy(`${metricWalletTableName}.contract`)
+                  .orderBy(`${metricWalletTableName}.wallet`)
+                  .orderBy(`${metricWalletTableName}.date`, 'DESC')
+                  .as('metric'),
+              )
+              .groupBy('protocol')
+          : [];
+      const map = metrics.reduce(
+        (result, { protocol, stakingUSD, earnedUSD, minUpdatedAt }) => ({
+          ...result,
+          [protocol]: {
+            stakingUSD: stakingUSD ?? '0',
+            earnedUSD: earnedUSD ?? '0',
+            minUpdatedAt: minUpdatedAt ? minUpdatedAt.toISOString() : null,
+          },
+        }),
+        cachedMap,
+      );
+      await cache.setMap(notCachedIds, map);
 
-    return protocolsId.map((id) => map[id] ?? { stakingUSD: '0', earnedUSD: '0' });
-  });
+      return protocolsId.map(
+        (id) => map[id] ?? { stakingUSD: '0', earnedUSD: '0', minUpdatedAt: null },
+      );
+    },
+  );
 
 export const protocolUserLastAPRLoader = ({
   userId,

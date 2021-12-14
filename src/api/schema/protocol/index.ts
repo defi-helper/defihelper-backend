@@ -1,4 +1,5 @@
 import container from '@container';
+import dayjs from 'dayjs';
 import { Request } from 'express';
 import {
   GraphQLBoolean,
@@ -658,6 +659,9 @@ export const ProtocolMetricType = new GraphQLObjectType({
     myEarned: {
       type: GraphQLNonNull(GraphQLString),
     },
+    myMinUpdatedAt: {
+      type: DateTimeType,
+    },
   },
 });
 
@@ -1039,6 +1043,7 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
             .load(protocol.id),
           myStaked: userMetric.stakingUSD,
           myEarned: userMetric.earnedUSD,
+          myMinUpdatedAt: userMetric.minUpdatedAt ? dayjs(userMetric.minUpdatedAt) : null,
         };
       },
     },
