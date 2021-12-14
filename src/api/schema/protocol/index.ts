@@ -20,7 +20,7 @@ import {
   ContractAutomate,
 } from '@models/Protocol/Entity';
 import { metricWalletTableName } from '@models/Metric/Entity';
-import { tableName as walletTableName } from '@models/Wallet/Entity';
+import { tableName as walletTableName, WalletType } from '@models/Wallet/Entity';
 import { AuthenticationError, ForbiddenError, UserInputError } from 'apollo-server-express';
 import { Blockchain } from '@models/types';
 import { Post } from '@models/Protocol/Social/Entity';
@@ -38,6 +38,7 @@ import {
   SortArgument,
   onlyAllowed,
   UuidType,
+  WalletTypeEnum,
 } from '../types';
 
 export const ContractMetricType = new GraphQLObjectType({
@@ -54,9 +55,6 @@ export const ContractMetricType = new GraphQLObjectType({
     },
     myEarned: {
       type: GraphQLNonNull(GraphQLString),
-    },
-    myLastUpdatedAt: {
-      type: DateTimeType,
     },
   },
 });
@@ -186,25 +184,46 @@ export const ContractType = new GraphQLObjectType<Contract, Request>({
     },
     metric: {
       type: GraphQLNonNull(ContractMetricType),
-      resolve: async (contract, args, { currentUser, dataLoader }) => {
+      args: {
+        filter: {
+          type: new GraphQLInputObjectType({
+            name: 'ContractMetricFilterInputType',
+            fields: {
+              wallet: {
+                type: new GraphQLInputObjectType({
+                  name: 'ContractMetricWalletFilterInputType',
+                  fields: {
+                    type: {
+                      type: GraphQLList(GraphQLNonNull(WalletTypeEnum)),
+                    },
+                  },
+                }),
+              },
+            },
+          }),
+          defaultValue: {},
+        },
+      },
+      resolve: async (contract, { filter }, { currentUser, dataLoader }) => {
         const contractMetric = await dataLoader.contractMetric().load(contract.id);
         const metric = {
           tvl: contractMetric?.data.tvl ?? '0',
           aprYear: contractMetric?.data.aprYear ?? '0',
           myStaked: '0',
           myEarned: '0',
-          myLastUpdatedAt: null,
         };
         if (!currentUser) return metric;
 
         const userMetric = await dataLoader
-          .contractUserMetric({ userId: currentUser.id })
+          .contractUserMetric({
+            userId: currentUser.id,
+            walletType: filter.wallet?.type ?? [WalletType.Contract, WalletType.Wallet],
+          })
           .load(contract.id);
         return {
           ...metric,
-          myStaked: userMetric?.data.stakingUSD ?? '0',
-          myEarned: userMetric?.data.earnedUSD ?? '0',
-          myLastUpdatedAt: userMetric?.date ?? null,
+          myStaked: userMetric.stakingUSD,
+          myEarned: userMetric.earnedUSD,
         };
       },
     },
@@ -1010,17 +1029,16 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
         };
         if (!currentUser) return metric;
 
+        const userMetric = await dataLoader
+          .protocolUserMetric({ userId: currentUser.id })
+          .load(protocol.id);
         return {
           ...metric,
           myAPY: await dataLoader
             .protocolUserAPRMetric({ metric: 'aprYear', userId: currentUser.id })
             .load(protocol.id),
-          myStaked: await dataLoader
-            .protocolUserMetric({ metric: 'stakingUSD', userId: currentUser.id })
-            .load(protocol.id),
-          myEarned: await dataLoader
-            .protocolUserMetric({ metric: 'earnedUSD', userId: currentUser.id })
-            .load(protocol.id),
+          myStaked: userMetric.stakingUSD,
+          myEarned: userMetric.earnedUSD,
         };
       },
     },

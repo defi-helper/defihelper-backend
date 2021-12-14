@@ -38,18 +38,11 @@ import {
   PaginationArgument,
   SortArgument,
   UuidType,
+  WalletTypeEnum,
 } from '../types';
 import * as locales from '../../../locales';
 import { UserBillingType, WalletBillingType } from '../billing';
 import { UserStoreType } from '../store';
-
-const WalletTypeEnum = new GraphQLEnumType({
-  name: 'WalletTypeEnum',
-  values: Object.values(Wallet.WalletType).reduce(
-    (res, type) => ({ ...res, [type]: { value: type } }),
-    {},
-  ),
-});
 
 const TokenAliasFilterInputType = new GraphQLInputObjectType({
   name: 'UserMetricsTokenAliasFilterInputType',

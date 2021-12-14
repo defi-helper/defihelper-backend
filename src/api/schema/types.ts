@@ -1,5 +1,6 @@
 import dayjs from 'dayjs';
 import { validate as isUuid } from 'uuid';
+import * as Wallet from '@models/Wallet/Entity';
 import {
   GraphQLError,
   GraphQLObjectType,
@@ -252,3 +253,11 @@ export function onlyAllowed<TSource, TArgs = { [argName: string]: any }>(
     return wrapped(source, args, context, info);
   };
 }
+
+export const WalletTypeEnum = new GraphQLEnumType({
+  name: 'WalletTypeEnum',
+  values: Object.values(Wallet.WalletType).reduce(
+    (res, type) => ({ ...res, [type]: { value: type } }),
+    {},
+  ),
+});
