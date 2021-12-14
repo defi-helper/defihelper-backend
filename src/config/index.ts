@@ -88,6 +88,14 @@ export default {
         consumers: array(process.env.AVALANCHE_CONSUMERS ?? '[]'),
         avgBlockTime: 1,
       },
+      // Avalanche Testnet
+      avalancheTestnet: {
+        node: array(process.env.AVALANCHE_TESTNET_NODE ?? '[]'),
+        historicalNode: array(process.env.AVALANCHE_TESTNET_NODE_HISTORICAL ?? '[]'),
+        inspectors: array(process.env.AVALANCHE_TESTNET_INSPECTORS ?? '[]'),
+        consumers: array(process.env.AVALANCHE__TESTNET_CONSUMERS ?? '[]'),
+        avgBlockTime: 1,
+      },
       // Local
       local: {
         node: array(process.env.ETH_LOCAL_NODE ?? '[]'),

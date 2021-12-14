@@ -197,6 +197,7 @@ export interface Config {
   polygon: NetworkConfig;
   moonriver: NetworkConfig;
   avalanche: NetworkConfig;
+  avalancheTestnet: NetworkConfig;
   local: NetworkConfig;
 }
 
@@ -278,6 +279,26 @@ export class BlockchainContainer extends Container<Config> {
       },
       moralisPriceFeed('moonriver'),
       this.parent.moonriver,
+    ),
+    '43113': networkFactory(
+      '43113',
+      'Avalanche Testnet',
+      new URL('https://testnet.snowtrace.io/tx'),
+      new URL('https://testnet.snowtrace.io/address'),
+      async (address: string) => {
+        const res = await axios.get(
+          `https://repo.sourcify.dev/contracts/full_match/43113/${address}/metadata.json`,
+        );
+        return res.data.output.abi;
+      },
+      coingeckoPriceFeedUSD('avalanche-2'),
+      {
+        decimals: 18,
+        symbol: 'AVAX',
+        name: 'Avalanche',
+      },
+      moralisPriceFeed('avalanche'),
+      this.parent.avalancheTestnet,
     ),
     '43114': networkFactory(
       '43114',
