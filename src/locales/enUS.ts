@@ -35,6 +35,8 @@ export default {
       'Wallet balance {{wallet}} in network {{network}} {{op}} {{value}}',
     'automate:condition:ethereumOptimalAutomateRun:name': 'Optimal Staking',
     'automate:condition:ethereumOptimalAutomateRun:description': 'Use our Autostaking feature',
+    'automate:action:ethereumOptimalAutomateRun:paramsDescription':
+      'Autostaking for action: {{id}}',
     'automate:condition:ethereumOptimalAutomateRun:paramsDescription':
       'Restake optimal run for {{id}}',
     'automate:condition:ethereumAvgGasPrice:name': 'GAS price variation',

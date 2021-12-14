@@ -102,7 +102,7 @@ export default async (process: Process) => {
     tokensBalances.map(async (tokenBalance) => {
       const tokenPrice = tokensPrices.find((t) => {
         return (
-          t && (t?.tokenAddress || '').toLowerCase() === tokenBalance.token_address.toLowerCase()
+          t && (t.tokenAddress || '').toLowerCase() === tokenBalance.token_address.toLowerCase()
         );
       });
 
@@ -214,8 +214,8 @@ export default async (process: Process) => {
     wallet,
     nativeTokenRecord,
     {
-      usd: nativeBalance.toString(10),
-      balance: nativeUSD.toString(10),
+      usd: nativeUSD.toString(10),
+      balance: nativeBalance.toString(),
     },
     new Date(),
   );

@@ -41,7 +41,7 @@ export default {
     'automate:condition:ethereumOptimalAutomateRun:name': 'Autostake',
     'automate:condition:ethereumOptimalAutomateRun:description':
       'Use autostake feature with our own math',
-    'automate:condition:ethereumOptimalAutomateRun:paramsDescription':
+    'automate:action:ethereumOptimalAutomateRun:paramsDescription':
       'Оптимальный вызов рестейк контракта для {{id}}',
     'automate:condition:ethereumAvgGasPrice:name': 'Average GAS price',
     'automate:condition:ethereumAvgGasPrice:description':
