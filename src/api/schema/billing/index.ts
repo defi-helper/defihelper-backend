@@ -27,6 +27,7 @@ import {
   SortArgument,
   UuidType,
 } from '../types';
+import BN from "bignumber.js";
 
 export const BillStatusEnum = new GraphQLEnumType({
   name: 'BillingBillStatusEnum',
@@ -313,14 +314,15 @@ export const WalletBillingType = new GraphQLObjectType<Wallet>({
           };
         }
 
-        const chainNativeUSD = await container.blockchain.ethereum
+        const chainNativeUSD = new BN(await container.blockchain.ethereum
           .byNetwork(wallet.network)
-          .nativeTokenPrice();
+          .nativeTokenPrice());
         return {
           balance,
           claim,
           netBalance: balance - claim,
-          lowFeeFunds: balance * Number(chainNativeUSD) - (1 + Number(chainNativeUSD) * 0.1) <= 0,
+          lowFeeFunds:
+            balance * chainNativeUSD.toNumber() - (1 + chainNativeUSD.toNumber() * 0.1) <= 0,
         };
       },
     },
