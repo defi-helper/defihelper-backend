@@ -19,6 +19,7 @@ import {
   walletContractLinkTableName,
   ContractAutomate,
 } from '@models/Protocol/Entity';
+import { metricWalletTableName } from '@models/Metric/Entity';
 import { tableName as walletTableName } from '@models/Wallet/Entity';
 import { AuthenticationError, ForbiddenError, UserInputError } from 'apollo-server-express';
 import { Blockchain } from '@models/types';
@@ -709,12 +710,12 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
         },
         sort: SortArgument(
           'ContractListSortInputType',
-          ['id', 'name', 'address', 'createdAt'],
+          ['id', 'name', 'address', 'createdAt', 'myStaked'],
           [{ column: 'name', order: 'asc' }],
         ),
         pagination: PaginationArgument('ContractListPaginationInputType'),
       },
-      resolve: async (protocol, { filter, sort, pagination }) => {
+      resolve: async (protocol, { filter, sort, pagination }, { currentUser }) => {
         const select = container.model.contractTable().where(function () {
           const { id, hidden, search } = filter;
           if (id) {
@@ -739,9 +740,35 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
             }
           }
         });
+        let listSelect = select.clone();
+        if (sort.find(({ column }: { column: string }) => column === 'myStaked') && currentUser) {
+          const database = container.database();
+          listSelect = listSelect
+            .column(`${contractTableName}.*`)
+            .column(database.raw(`COALESCE(metric."myStaked", '0') AS "myStaked"`))
+            .leftJoin(
+              container.model
+                .metricWalletTable()
+                .distinctOn(`${metricWalletTableName}.contract`)
+                .column(`${metricWalletTableName}.contract`)
+                .column(database.raw(`${metricWalletTableName}.data->>'stakingUSD' AS "myStaked"`))
+                .innerJoin(
+                  walletTableName,
+                  `${walletTableName}.id`,
+                  `${metricWalletTableName}.wallet`,
+                )
+                .where(`${walletTableName}.user`, currentUser.id)
+                .andWhere(database.raw(`${metricWalletTableName}.contract = contract`))
+                .orderBy(`${metricWalletTableName}.contract`)
+                .orderBy(`${metricWalletTableName}.date`, 'DESC')
+                .as('metric'),
+              `${contractTableName}.id`,
+              'metric.contract',
+            );
+        }
 
         return {
-          list: await select
+          list: await listSelect
             .clone()
             .orderBy(sort)
             .limit(pagination.limit)
