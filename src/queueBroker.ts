@@ -13,20 +13,6 @@ container.model
     ]);
     if (Number.isNaN(options.interval)) throw new Error(`Invalid interval`);
 
-    console.log(new Date());
-    console.log(
-      await container
-        .coinResolver()
-        .erc20Price('ethereum', '1', '0xdAC17F958D2ee523a2206206994597C13D831ec7'),
-    );
-    console.log(new Date());
-    console.log(
-      await container
-        .coinResolver()
-        .erc20Price('ethereum', '1', '0xdAC17F958D2ee523a2206206994597C13D831ec7'),
-    );
-    console.log(new Date());
-
     container.model
       .queueService()
       .createBroker({

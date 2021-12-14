@@ -1,6 +1,9 @@
 import container from '@container';
 import BN from 'bignumber.js';
 
+export type CoinResolverNamedChains = 'eth' | 'bsc' | 'avalanche' | 'polygon';
+export type CoinResolverNumberChains = '1' | '56' | '137' | '43114';
+
 export interface CoinResolverNativeDetails {
   decimals: number;
   symbol: string;
@@ -14,6 +17,21 @@ export interface CoinResolverErc20Price {
 }
 
 export class CoinResolverService {
+  protected namedNetworkToNumber = (network: CoinResolverNamedChains): CoinResolverNumberChains => {
+    switch (network) {
+      case 'eth':
+        return '1';
+      case 'bsc':
+        return '56';
+      case 'polygon':
+        return '137';
+      case 'avalanche':
+        return '43114';
+      default:
+        throw new Error(`unsupported network: ${network}`);
+    }
+  };
+
   protected cacheGet = async (tokenKey: string): Promise<string | null> => {
     const cache = container.cache();
     const key = `defihelper:token:${tokenKey}`;
@@ -33,10 +51,9 @@ export class CoinResolverService {
 
   public erc20Price = async (
     blockchain: 'ethereum',
-    network: string,
+    network: 'eth' | 'bsc' | 'avalanche' | 'polygon',
     address: string,
   ): Promise<CoinResolverErc20Price> => {
-    let chain: 'eth' | 'bsc' | 'avalanche' | 'polygon';
     const key = `${blockchain}:${network}:${address}:price`;
     const moralis = await container.moralis().getWeb3API();
 
@@ -47,25 +64,8 @@ export class CoinResolverService {
       };
     }
 
-    switch (network) {
-      case '1':
-        chain = 'eth';
-        break;
-      case '56':
-        chain = 'bsc';
-        break;
-      case '137':
-        chain = 'polygon';
-        break;
-      case '43114':
-        chain = 'avalanche';
-        break;
-      default:
-        throw new Error(`unsupported network: ${network}`);
-    }
-
     const result = await moralis.token.getTokenPrice({
-      chain,
+      chain: network,
       address,
     });
 
@@ -78,13 +78,13 @@ export class CoinResolverService {
 
   public native = async (
     blockchain: 'ethereum',
-    network: string,
+    network: 'eth' | 'bsc' | 'avalanche' | 'polygon',
   ): Promise<CoinResolverNativeDetails> => {
     const key = `${blockchain}:${network}:0x0:price`;
     let token;
 
     switch (network) {
-      case '1':
+      case 'eth':
         token = {
           decimals: 18,
           symbol: 'ETH',
@@ -92,7 +92,7 @@ export class CoinResolverService {
           logo: null,
         };
         break;
-      case '56':
+      case 'bsc':
         token = {
           decimals: 18,
           symbol: 'BSC',
@@ -100,7 +100,7 @@ export class CoinResolverService {
           logo: null,
         };
         break;
-      case '43114':
+      case 'avalanche':
         token = {
           decimals: 18,
           symbol: 'AVAX',
@@ -108,7 +108,7 @@ export class CoinResolverService {
           logo: null,
         };
         break;
-      case '137':
+      case 'polygon':
         token = {
           decimals: 18,
           symbol: 'MATIC',
@@ -123,7 +123,9 @@ export class CoinResolverService {
 
     let cachedPrice = await this.cacheGet(key);
     if (!cachedPrice) {
-      cachedPrice = await container.blockchain.ethereum.byNetwork(network).priceFeedUSD();
+      cachedPrice = await container.blockchain.ethereum
+        .byNetwork(this.namedNetworkToNumber(network))
+        .priceFeedUSD();
       this.cacheSet(key, cachedPrice);
     }
 
