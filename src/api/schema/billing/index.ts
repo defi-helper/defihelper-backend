@@ -326,7 +326,7 @@ export const WalletBillingType = new GraphQLObjectType<Wallet>({
         if (!chainNativeUSD) {
           chainNativeUSD = await container.blockchain.ethereum
             .byNetwork(wallet.network)
-            .priceFeedUSD();
+            .nativeTokenPrice();
           container.cache().setex(key, 3600, chainNativeUSD);
         }
 

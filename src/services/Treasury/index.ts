@@ -47,7 +47,7 @@ export class TreasuryService {
     if (balance === '0') return '0';
 
     const network = container.blockchain.ethereum.byNetwork(networkId);
-    const priceUSD = await network.priceFeedUSD();
+    const priceUSD = await network.nativeTokenPrice();
     const balanceUSD = new BN(balance).multipliedBy(priceUSD).toString(10);
     this.cache().set(key, balanceUSD, () => {
       this.cache().expire(key, this.ttl);
