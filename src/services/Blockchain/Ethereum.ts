@@ -8,6 +8,7 @@ import { abi as erc1167ABI } from '@defihelper/networks/abi/ERC1167.json';
 import { abi as governorBravoABI } from '@defihelper/networks/abi/GovernorBravo.json';
 import { abi as governanceTokenABI } from '@defihelper/networks/abi/GovernanceToken.json';
 import { abi as treasuryABI } from '@defihelper/networks/abi/Treasury.json';
+import container from '@container';
 import automateABI from './abi/ethereum/automate.json';
 import masterChefV1ABI from './abi/ethereum/masterChefV1ABI.json';
 import uniswapV2PairABI from './abi/ethereum/uniswapPair.json';
@@ -24,6 +25,23 @@ function providerRandomizerFactory(factories: Array<Factory<ethers.providers.Jso
 
     return factories[Math.floor(Math.random() * factories.length)]();
   };
+}
+
+function cacheGet(tokenKey: string): Promise<string | null> {
+  const cache = container.cache();
+  const key = `defihelper:token:${tokenKey}`;
+
+  return new Promise((resolve) =>
+    cache.get(key, (err, result) => {
+      if (err || !result) return resolve(null);
+      return resolve(result);
+    }),
+  );
+}
+
+function cacheSet(tokenKey: string, value: string): void {
+  const key = `defihelper:token:${tokenKey}`;
+  container.cache().setex(key, 3600, value);
 }
 
 function signersFactory(
@@ -79,6 +97,46 @@ function coingeckoPriceFeedUSD(coinId: string) {
   };
 }
 
+function moralisPriceFeed(network: string) {
+  return {
+    usd: async (address: string) => {
+      const key = `ethereum:${network}:${address}:price`;
+      const moralis = await container.moralis().getWeb3API();
+
+      let chain: 'eth' | 'bsc' | 'polygon' | 'avalanche';
+      switch (network) {
+        case '1':
+          chain = 'eth';
+          break;
+        case '56':
+          chain = 'bsc';
+          break;
+        case '137':
+          chain = 'polygon';
+          break;
+        case '43114':
+          chain = 'avalanche';
+          break;
+        default:
+          throw new Error(`unsupported network: ${network}`);
+      }
+
+      const cachedPrice = await cacheGet(key);
+      if (cachedPrice) {
+        return cachedPrice;
+      }
+
+      const result = await moralis.token.getTokenPrice({
+        chain,
+        address,
+      });
+
+      cacheSet(key, result.usdPrice.toString(10));
+      return result.usdPrice.toString(10);
+    },
+  };
+}
+
 export interface NetworkConfig {
   node: string[];
   historicalNode: string[];
@@ -87,13 +145,21 @@ export interface NetworkConfig {
   consumers: string[];
 }
 
+export interface NativeTokenDetails {
+  decimals: number;
+  symbol: string;
+  name: string;
+}
+
 function networkFactory(
   id: string,
   name: string,
   txExplorerURL: URL,
   walletExplorerURL: URL,
   getContractAbi: (address: string) => Promise<ethers.ContractInterface>,
-  priceFeedUSD: () => Promise<string>,
+  nativeTokenPrice: () => Promise<string>,
+  nativeTokenDetails: NativeTokenDetails,
+  tokenPriceResolver: { usd: (address: string) => Promise<string> },
   { node, historicalNode, avgBlockTime, inspectors, consumers }: NetworkConfig,
 ) {
   const provider = providerRandomizerFactory(node.map((host) => singleton(providerFactory(host))));
@@ -108,7 +174,9 @@ function networkFactory(
     txExplorerURL,
     walletExplorerURL,
     getContractAbi,
-    priceFeedUSD,
+    nativeTokenPrice,
+    tokenPriceResolver,
+    nativeTokenDetails,
     inspector: () => (inspectors.length > 0 ? new ethers.Wallet(inspectors[0], provider()) : null),
     consumers: () => signersFactory(consumers, provider()),
     dfhContracts: () => (isKey(dfhContracts, id) ? dfhContracts[id] : null),
@@ -136,6 +204,12 @@ export class BlockchainContainer extends Container<Config> {
       new URL('https://etherscan.io/address'),
       useEtherscanContractAbi('https://api.etherscan.io/api'),
       coingeckoPriceFeedUSD('ethereum'),
+      {
+        decimals: 18,
+        symbol: 'ETH',
+        name: 'Ethereum',
+      },
+      moralisPriceFeed('eth'),
       this.parent.eth,
     ),
     '3': networkFactory(
@@ -145,6 +219,12 @@ export class BlockchainContainer extends Container<Config> {
       new URL('https://ropsten.etherscan.io/address'),
       useEtherscanContractAbi('https://api-ropsten.etherscan.io/api'),
       coingeckoPriceFeedUSD('ethereum'),
+      {
+        decimals: 18,
+        symbol: 'ETH',
+        name: 'Ethereum',
+      },
+      moralisPriceFeed('eth'),
       this.parent.ethRopsten,
     ),
     '56': networkFactory(
@@ -154,6 +234,12 @@ export class BlockchainContainer extends Container<Config> {
       new URL('https://bscscan.com/address'),
       useEtherscanContractAbi('https://api.bscscan.com/api'),
       coingeckoPriceFeedUSD('binancecoin'),
+      {
+        decimals: 18,
+        symbol: 'BSC',
+        name: 'Binance Smart Chain',
+      },
+      moralisPriceFeed('bsc'),
       this.parent.bsc,
     ),
     '137': networkFactory(
@@ -163,6 +249,12 @@ export class BlockchainContainer extends Container<Config> {
       new URL('https://polygonscan.com/address'),
       useEtherscanContractAbi('https://api.polygonscan.com/api'),
       coingeckoPriceFeedUSD('matic-network'),
+      {
+        decimals: 18,
+        symbol: 'MATIC',
+        name: 'Polygon',
+      },
+      moralisPriceFeed('polygon'),
       this.parent.polygon,
     ),
     '1285': networkFactory(
@@ -172,6 +264,12 @@ export class BlockchainContainer extends Container<Config> {
       new URL('https://moonriver.moonscan.io/address'),
       useEtherscanContractAbi('https://api-moonriver.moonscan.io/api'),
       coingeckoPriceFeedUSD('moonriver'),
+      {
+        decimals: 18,
+        symbol: 'MOVR',
+        name: 'Moonriver',
+      },
+      moralisPriceFeed('moonriver'),
       this.parent.moonriver,
     ),
     '43114': networkFactory(
@@ -186,6 +284,12 @@ export class BlockchainContainer extends Container<Config> {
         return res.data.output.abi;
       },
       coingeckoPriceFeedUSD('avalanche-2'),
+      {
+        decimals: 18,
+        symbol: 'AVAX',
+        name: 'Avalanche',
+      },
+      moralisPriceFeed('avalanche'),
       this.parent.avalanche,
     ),
     '31337': networkFactory(
@@ -195,6 +299,12 @@ export class BlockchainContainer extends Container<Config> {
       new URL('https://etherscan.io/address'),
       useEtherscanContractAbi('https://api.etherscan.io/api'),
       coingeckoPriceFeedUSD('ethereum'),
+      {
+        decimals: 18,
+        symbol: 'ETH',
+        name: 'Ethereum',
+      },
+      moralisPriceFeed('eth'),
       this.parent.local,
     ),
   } as const;

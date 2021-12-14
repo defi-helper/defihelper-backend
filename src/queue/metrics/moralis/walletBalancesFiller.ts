@@ -2,24 +2,9 @@ import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import BN from 'bignumber.js';
 import dayjs from 'dayjs';
-import { CoinResolverErc20Price } from '@services/CoinResolver';
 
 export interface Params {
   id: string;
-}
-
-export interface MoralisTokenPrice {
-  nativePrice?: {
-    value: string;
-    decimals: number;
-    name: string;
-    symbol: string;
-  };
-  usdPrice: number;
-  tokenAddress: string;
-  exchangeAddress?: string;
-  exchangeName?: string;
-  symbol: unknown;
 }
 
 export default async (process: Process) => {
@@ -67,21 +52,20 @@ export default async (process: Process) => {
       .error(new Error(`${e.code}: ${e.error}`));
   }
 
-  const tokensPrices = await tokensBalances.reduce<Promise<(CoinResolverErc20Price | null)[]>>(
-    async (result, token) => {
-      return [
-        ...(await result),
-        await new Promise((resolve) => {
-          container
-            .coinResolver()
-            .erc20Price('ethereum', chain, token.token_address)
-            .then((r) => resolve(r))
-            .catch(() => resolve(null));
-        }),
-      ];
-    },
-    Promise.resolve([]),
-  );
+  const tokensPrices = await tokensBalances.reduce<
+    Promise<({ usd: string; address: string } | null)[]>
+  >(async (result, token) => {
+    return [
+      ...(await result),
+      await new Promise((resolve) => {
+        container.blockchain.ethereum
+          .byNetwork(wallet.network)
+          .tokenPriceResolver.usd(token.token_address)
+          .then((r) => resolve({ usd: r, address: token.token_address }))
+          .catch(() => resolve(null));
+      }),
+    ];
+  }, Promise.resolve([]));
 
   const existingTokensRecords = await container.model
     .tokenTable()
@@ -95,9 +79,7 @@ export default async (process: Process) => {
   await Promise.all(
     tokensBalances.map(async (tokenBalance) => {
       const tokenPrice = tokensPrices.find((t) => {
-        return (
-          t && (t.tokenAddress || '').toLowerCase() === tokenBalance.token_address.toLowerCase()
-        );
+        return t && (t.address || '').toLowerCase() === tokenBalance.token_address.toLowerCase();
       });
 
       if (!tokenPrice) {
@@ -148,7 +130,10 @@ export default async (process: Process) => {
   );
 
   let nativeBalance;
-  const nativeToken = await container.coinResolver().native('ethereum', chain);
+  const nativeTokenPrice = await container.blockchain.ethereum
+    .byNetwork(wallet.network)
+    .nativeTokenPrice();
+  const { nativeTokenDetails } = container.blockchain.ethereum.byNetwork(wallet.network);
   try {
     nativeBalance = new BN(
       (
@@ -157,7 +142,7 @@ export default async (process: Process) => {
           chain,
         })
       ).balance,
-    ).div(`1e${nativeToken.decimals}`);
+    ).div(`1e${nativeTokenDetails.decimals}`);
   } catch (e) {
     if (e.code === 141) {
       return process.info(e.error).later(dayjs().add(3, 'minutes').toDate());
@@ -165,7 +150,7 @@ export default async (process: Process) => {
     return process.info(`No native balance: ${e.code}, ${e.error}`).done();
   }
 
-  const nativeUSD = nativeBalance.multipliedBy(nativeToken.priceUSD);
+  const nativeUSD = nativeBalance.multipliedBy(nativeTokenPrice);
   let nativeTokenRecord = await container.model
     .tokenTable()
     .where('address', '0x0000000000000000000000000000000000000000')
@@ -176,13 +161,13 @@ export default async (process: Process) => {
   if (!nativeTokenRecord) {
     let nativeTokenAlias = await container.model
       .tokenAliasTable()
-      .where('name', 'ilike', nativeToken.name)
+      .where('name', 'ilike', nativeTokenDetails.name)
       .first();
 
     if (!nativeTokenAlias) {
       nativeTokenAlias = await container.model
         .tokenAliasService()
-        .create(nativeToken.name, nativeToken.symbol, false, null);
+        .create(nativeTokenDetails.name, nativeTokenDetails.symbol, false, null);
     }
 
     nativeTokenRecord = await container.model
@@ -192,9 +177,9 @@ export default async (process: Process) => {
         wallet.blockchain,
         wallet.network,
         '0x0000000000000000000000000000000000000000',
-        nativeToken.name,
-        nativeToken.symbol,
-        nativeToken.decimals,
+        nativeTokenDetails.name,
+        nativeTokenDetails.symbol,
+        nativeTokenDetails.decimals,
       );
   }
 

@@ -42,7 +42,7 @@ export default async (params: Params) => {
 
   const network = container.blockchain.ethereum.byNetwork(wallet.network);
   const provider = network.provider();
-  const gasPriceUSD = await network.priceFeedUSD();
+  const gasPriceUSD = await network.nativeTokenPrice();
   const signer = network.consumers()[0];
   if (!signer) {
     throw new Error('Consumer not found');
