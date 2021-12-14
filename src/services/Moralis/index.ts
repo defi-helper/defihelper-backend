@@ -1,7 +1,6 @@
 import Moralis from 'moralis/node';
 import axios from 'axios';
 import buildUrl from 'build-url';
-import container from '@container';
 
 export interface MoralisRestAPIRequestResponse {
   code: number;
@@ -130,44 +129,6 @@ export class MoralisService {
   getRestAPI() {
     return new MoralisRestApi(this.config.moralisSecret as string);
   }
-
-  public chainNativeToken = async (
-    chain: 'eth' | 'bsc' | 'avalanche' | 'polygon',
-  ): Promise<MoralisRestAPITypeChainNativeToken> => {
-    switch (chain) {
-      case 'eth':
-        return {
-          decimals: 18,
-          symbol: 'ETH',
-          name: 'Ethereum',
-          priceUSD: await container.blockchain.ethereum.byNetwork('1').priceFeedUSD(),
-        };
-      case 'bsc':
-        return {
-          decimals: 18,
-          symbol: 'BSC',
-          name: 'Binance Smart Chain',
-          priceUSD: await container.blockchain.ethereum.byNetwork('56').priceFeedUSD(),
-        };
-      case 'avalanche':
-        return {
-          decimals: 18,
-          symbol: 'AVAX',
-          name: 'Avalanche',
-          priceUSD: await container.blockchain.ethereum.byNetwork('43114').priceFeedUSD(),
-        };
-      case 'polygon':
-        return {
-          decimals: 18,
-          symbol: 'MATIC',
-          name: 'Polygon',
-          priceUSD: await container.blockchain.ethereum.byNetwork('137').priceFeedUSD(),
-        };
-
-      default:
-        throw new Error('unknown chain');
-    }
-  };
 
   async getWeb3API() {
     await this.init();

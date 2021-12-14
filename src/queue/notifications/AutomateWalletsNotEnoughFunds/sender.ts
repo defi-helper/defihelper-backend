@@ -46,7 +46,7 @@ export default async (process: Process) => {
     }
 
     const chainNativeUSD = new BN(
-      await container.blockchain.ethereum.byNetwork(chain).priceFeedUSD(),
+      await container.blockchain.ethereum.byNetwork(chain).nativeTokenPrice(),
     );
     chainsNativePriceMap[chain] = chainNativeUSD.toNumber();
 
