@@ -741,30 +741,38 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
           }
         });
         let listSelect = select.clone();
-        if (sort.find(({ column }: { column: string }) => column === 'myStaked') && currentUser) {
+        if (sort.find(({ column }: { column: string }) => column === 'myStaked')) {
           const database = container.database();
-          listSelect = listSelect
-            .column(`${contractTableName}.*`)
-            .column(database.raw(`COALESCE(metric."myStaked", '0') AS "myStaked"`))
-            .leftJoin(
-              container.model
-                .metricWalletTable()
-                .distinctOn(`${metricWalletTableName}.contract`)
-                .column(`${metricWalletTableName}.contract`)
-                .column(database.raw(`${metricWalletTableName}.data->>'stakingUSD' AS "myStaked"`))
-                .innerJoin(
-                  walletTableName,
-                  `${walletTableName}.id`,
-                  `${metricWalletTableName}.wallet`,
-                )
-                .where(`${walletTableName}.user`, currentUser.id)
-                .andWhere(database.raw(`${metricWalletTableName}.contract = contract`))
-                .orderBy(`${metricWalletTableName}.contract`)
-                .orderBy(`${metricWalletTableName}.date`, 'DESC')
-                .as('metric'),
-              `${contractTableName}.id`,
-              'metric.contract',
-            );
+          if (currentUser) {
+            listSelect = listSelect
+              .column(`${contractTableName}.*`)
+              .column(database.raw(`COALESCE(metric."myStaked", '0') AS "myStaked"`))
+              .leftJoin(
+                container.model
+                  .metricWalletTable()
+                  .distinctOn(`${metricWalletTableName}.contract`)
+                  .column(`${metricWalletTableName}.contract`)
+                  .column(
+                    database.raw(`${metricWalletTableName}.data->>'stakingUSD' AS "myStaked"`),
+                  )
+                  .innerJoin(
+                    walletTableName,
+                    `${walletTableName}.id`,
+                    `${metricWalletTableName}.wallet`,
+                  )
+                  .where(`${walletTableName}.user`, currentUser.id)
+                  .andWhere(database.raw(`${metricWalletTableName}.contract = contract`))
+                  .orderBy(`${metricWalletTableName}.contract`)
+                  .orderBy(`${metricWalletTableName}.date`, 'DESC')
+                  .as('metric'),
+                `${contractTableName}.id`,
+                'metric.contract',
+              );
+          } else {
+            listSelect = listSelect
+              .column(`${contractTableName}.*`)
+              .column(database.raw(`'0' AS "myStaked"`));
+          }
         }
 
         return {
