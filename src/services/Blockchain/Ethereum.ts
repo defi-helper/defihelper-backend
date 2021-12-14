@@ -81,19 +81,26 @@ function useEtherscanContractAbi(host: string) {
 
 function coingeckoPriceFeedUSD(coinId: string) {
   return async () => {
-    const {
-      data: {
-        [coinId]: { usd },
-      },
-    } = await axios.get(
-      `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd`,
-      {
-        headers: {
-          'Content-Type': 'application/json',
+    const key = `ethereum:native:${coinId}:price`;
+    const chainNativeUSD = await cacheGet(key);
+    if (!chainNativeUSD) {
+      const {
+        data: {
+          [coinId]: { usd },
         },
-      },
-    );
-    return usd;
+      } = await axios.get(
+        `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+      container.cache().setex(key, 3600, usd);
+      return usd;
+    }
+
+    return chainNativeUSD;
   };
 }
 

@@ -173,7 +173,12 @@ export default async (process: Process) => {
     if (!nativeTokenAlias) {
       nativeTokenAlias = await container.model
         .tokenAliasService()
-        .create(nativeTokenDetails.name, nativeTokenDetails.symbol, TokenAliasLiquidity.Trash, null);
+        .create(
+          nativeTokenDetails.name,
+          nativeTokenDetails.symbol,
+          TokenAliasLiquidity.Trash,
+          null,
+        );
     }
 
     nativeTokenRecord = await container.model
