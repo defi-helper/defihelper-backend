@@ -39,19 +39,6 @@ export default async (process: Process) => {
     .andWhere(`${transferTableName}.blockchain`, database.raw(`${walletTableName}.blockchain`))
     .groupBy(`${walletTableName}.id`);
 
-  const chainsNativePriceMap: { [chain: string]: number } = {};
-  const chainNativePriceUSD = async (chain: string): Promise<number> => {
-    if (chainsNativePriceMap[chain]) {
-      return chainsNativePriceMap[chain];
-    }
-
-    const chainNativeUSD = new BN(
-      await container.blockchain.ethereum.byNetwork(chain).nativeTokenPrice(),
-    );
-    chainsNativePriceMap[chain] = chainNativeUSD.toNumber();
-
-    return chainNativeUSD.toNumber();
-  };
   const notify = triggers.some(async (t) => {
     const walletFunds = walletsFunds.find((w) => w.id === t.walletId);
 
@@ -59,8 +46,11 @@ export default async (process: Process) => {
       throw new Error('wallet funds must be found here');
     }
 
-    const chainNativePrice = await chainNativePriceUSD(t.walletNetwork);
-    return walletFunds.funds * chainNativePrice - (1 + chainNativePrice * 0.1) <= 0;
+    const chainNativeUSD = new BN(
+      await container.blockchain.ethereum.byNetwork(t.walletNetwork).nativeTokenPrice(),
+    ).toNumber();
+
+    return walletFunds.funds * chainNativeUSD - (1 + chainNativeUSD * 0.1) <= 0;
   });
 
   if (!notify) {
