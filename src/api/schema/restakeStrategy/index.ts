@@ -1,5 +1,6 @@
 import container from '@container';
 import axios from 'axios';
+import BN from 'bignumber.js';
 import { Request } from 'express';
 import {
   GraphQLFieldConfig,
@@ -7,7 +8,9 @@ import {
   GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
+  GraphQLString,
 } from 'graphql';
+import { BlockchainEnum } from '../types';
 
 function range(start: number, end: number) {
   return Array.from(new Array(end).keys()).slice(start);
@@ -95,6 +98,12 @@ export const RestakeStrategyType = new GraphQLObjectType({
 export const RestakeStrategyQuery: GraphQLFieldConfig<any, Request> = {
   type: GraphQLNonNull(RestakeStrategyType),
   args: {
+    blockchain: {
+      type: GraphQLNonNull(BlockchainEnum),
+    },
+    network: {
+      type: GraphQLNonNull(GraphQLString),
+    },
     balance: {
       type: GraphQLNonNull(GraphQLFloat),
     },
@@ -102,10 +111,17 @@ export const RestakeStrategyQuery: GraphQLFieldConfig<any, Request> = {
       type: GraphQLNonNull(GraphQLFloat),
     },
   },
-  resolve: async (root, { balance, apy }) => {
+  resolve: async (root, { blockchain, network: networkId, balance, apy }) => {
     const apd = apy / 365;
-    const fee = 3;
     const seq = 365;
+    let fee = 3;
+    if (blockchain === 'ethereum') {
+      const network = container.blockchain.ethereum.byNetwork(networkId);
+      const avgGasPriceUSD = new BN(await network.getAvgGasPrice())
+        .div(`1e${network.nativeTokenDetails.decimals}`)
+        .multipliedBy(await network.nativeTokenPrice());
+      fee = avgGasPriceUSD.multipliedBy(750000).toNumber();
+    }
 
     const holdPoints = range(1, seq + 1).reduce(
       (prev: Point[], period) => {
