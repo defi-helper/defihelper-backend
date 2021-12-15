@@ -14,6 +14,8 @@ export default {
       'Your portfolio: total stacked ${{totalStackedUSD}}, total earned ${{totalEarnedUSD}}',
     'Attention, one of yours automates may be paused due to insufficient funds':
       'Attention, one of yours automates may be paused due to insufficient funds',
+    "DeFiHelper's public beta now available. Get your APY boost right now on https://app.defihelper.io!":
+      "DeFiHelper's public beta now available. Get your APY boost right now on https://app.defihelper.io!",
     'Total Net Worth ${{totalNetWorth}}, Total unclaimed ${{totalEarnedUSD}}':
       'Total Net Worth ${{totalNetWorth}}, Total unclaimed ${{totalEarnedUSD}}',
     'automate:trigger:contractEvent:name': 'Contract event',
