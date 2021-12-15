@@ -45,7 +45,7 @@
     "typescript": "^4.2.3"
   },
   "dependencies": {
-    "@defihelper/ethers-multicall": "^0.3.1",
+    "@defihelper/ethers-multicall": "^0.3.2",
     "@defihelper/networks": "^1.0.1",
     "@waves/marshall": "^0.14.0",
     "@waves/ts-lib-crypto": "^1.4.4-beta.1",
