@@ -99,10 +99,12 @@ export const RestakeStrategyQuery: GraphQLFieldConfig<any, Request> = {
   type: GraphQLNonNull(RestakeStrategyType),
   args: {
     blockchain: {
-      type: GraphQLNonNull(BlockchainEnum),
+      type: BlockchainEnum,
+      defaultValue: 'ethereum',
     },
     network: {
-      type: GraphQLNonNull(GraphQLString),
+      type: GraphQLString,
+      defaultValue: '1',
     },
     balance: {
       type: GraphQLNonNull(GraphQLFloat),
