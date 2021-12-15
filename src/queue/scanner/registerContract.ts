@@ -48,8 +48,8 @@ export default async (process: Process) => {
       .registerContract(
         contract.network,
         contract.address,
-        contract.name,
         servedAbi.value.value,
+        contract.name,
         deployBlockNumber,
       );
 

@@ -1,5 +1,4 @@
 import axios, { AxiosInstance } from 'axios';
-import axiosRetry from 'axios-retry';
 
 export interface ScannerParams {
   host: string;
@@ -56,12 +55,6 @@ export class ScannerService {
     this.client = axios.create({
       baseURL: scannerParams.host,
     });
-
-    axiosRetry(this.client, {
-      retries: 10,
-      retryCondition: () => true,
-      retryDelay: axiosRetry.exponentialDelay,
-    });
   }
 
   async currentBlock(network: string): Promise<number> {
@@ -101,17 +94,27 @@ export class ScannerService {
   async registerContract(
     network: string,
     address: string,
-    abi: Object,
+    abi: object,
     name?: string,
     startHeight?: number,
   ): Promise<Contract> {
-    const contract = await this.client.post<Contract>(`/api/contract`, {
-      name: name ?? address.toLowerCase(),
-      network,
-      address: address.toLowerCase(),
-      startHeight: startHeight || (await this.currentBlock(network)) - 10,
-      abi: JSON.stringify(abi),
-    });
+    const contract = await this.client
+      .post<Contract>(`/api/contract`, {
+        name: name ?? address.toLowerCase(),
+        network,
+        address: address.toLowerCase(),
+        startHeight: startHeight || (await this.currentBlock(network)) - 10,
+        abi: JSON.stringify(abi),
+      })
+      .catch((e) => {
+        if (e.response) {
+          throw new Error(
+            `Register contract in scanner failed: ${e.response.status} ${e.response.data}`,
+          );
+        } else {
+          throw new Error(`Undefined error for register contract in scanner: ${e.message}`);
+        }
+      });
 
     return contract.data;
   }
@@ -139,13 +142,20 @@ export class ScannerService {
       throw new Error('Contract has not found');
     }
 
-    const eventListener = await this.client.post<EventListener>(
-      `/api/contract/${contractId}/event-listener`,
-      {
+    const eventListener = await this.client
+      .post<EventListener>(`/api/contract/${contractId}/event-listener`, {
         name: event,
         syncHeight: syncHeight || (await this.currentBlock(contract.network)) - 10,
-      },
-    );
+      })
+      .catch((e) => {
+        if (e.response) {
+          throw new Error(
+            `Register event listener in scanner failed: ${e.response.status} ${e.response.data}`,
+          );
+        } else {
+          throw new Error(`Undefined error for register event listener in scanner: ${e.message}`);
+        }
+      });
 
     return eventListener.data;
   }
@@ -166,18 +176,35 @@ export class ScannerService {
       listener = await this.registerListener(contract.id, event);
     }
 
-    return (
-      await this.client.post<CallBack>(
-        `/api/contract/${contract.id}/event-listener/${listener.id}/call-back`,
-        {
-          callBackUrl,
-        },
-      )
-    ).data;
+    const callbackResponse = await this.client
+      .post<CallBack>(`/api/contract/${contract.id}/event-listener/${listener.id}/call-back`, {
+        callBackUrl,
+      })
+      .catch((e) => {
+        if (e.response) {
+          throw new Error(
+            `Register callback in scanner failed: ${e.response.status} ${e.response.data}`,
+          );
+        } else {
+          throw new Error(`Undefined error for register callback in scanner: ${e.message}`);
+        }
+      });
+
+    return callbackResponse.data;
   }
 
   async deleteCallback(callbackId: string) {
-    await this.client.delete<string>(`/api/contract/0/event-listener/0/call-back/${callbackId}`);
+    await this.client
+      .delete<string>(`/api/contract/0/event-listener/0/call-back/${callbackId}`)
+      .catch((e) => {
+        if (e.response) {
+          throw new Error(
+            `Delete callback in scanner failed: ${e.response.status} ${e.response.data}`,
+          );
+        } else {
+          throw new Error(`Undefined error for delete callback in scanner: ${e.message}`);
+        }
+      });
   }
 
   async getContractsAddressByUserAddress(networkId: string, address: string): Promise<string[]> {
