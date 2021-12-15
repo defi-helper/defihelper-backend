@@ -49,12 +49,15 @@ export default async (process: Process) => {
         return;
       }
 
-      const contract = await container.model.contractTable().where({
-        protocol: protocol.id,
-        blockchain: 'waves',
-        network: 'main',
-        address: pool.pool,
-      }).first();
+      const contract = await container.model
+        .contractTable()
+        .where({
+          protocol: protocol.id,
+          blockchain: 'waves',
+          network: 'main',
+          address: pool.pool,
+        })
+        .first();
 
       if (!contract) {
         await container.model
@@ -67,7 +70,7 @@ export default async (process: Process) => {
             null,
             stakingAdapterName,
             '',
-            [],
+            { adapters: [] },
             `Staking ${token.name}`,
             '',
             `https://swop.fi/info/${pool.pool}`,

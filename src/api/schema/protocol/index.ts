@@ -294,6 +294,10 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
               description: 'Usable automates',
               defaultValue: [],
             },
+            autorestakeAdapter: {
+              type: GraphQLString,
+              description: 'Usable autorestake contract adapter',
+            },
             name: {
               type: GraphQLNonNull(GraphQLString),
               description: 'Name',
@@ -338,6 +342,7 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
         deployBlockNumber,
         adapter,
         automates,
+        autorestakeAdapter,
         layout,
         name,
         description,
@@ -345,23 +350,24 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
         hidden,
         eventsToSubscribe,
       } = input;
-      const created = await container.model
-        .contractService()
-        .create(
-          protocol,
-          blockchain,
-          network,
-          address,
-          deployBlockNumber,
-          adapter,
-          layout,
-          automates,
-          name,
-          description,
-          link,
-          hidden,
-          eventsToSubscribe,
-        );
+      const created = await container.model.contractService().create(
+        protocol,
+        blockchain,
+        network,
+        address,
+        deployBlockNumber,
+        adapter,
+        layout,
+        {
+          adapters: automates ?? [],
+          autorestakeAdapter,
+        },
+        name,
+        description,
+        link,
+        hidden,
+        eventsToSubscribe,
+      );
 
       return created;
     },
@@ -406,6 +412,11 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
             automates: {
               type: GraphQLList(GraphQLNonNull(GraphQLString)),
               description: 'Usable automates',
+              defaultValue: [],
+            },
+            autorestakeAdapter: {
+              type: GraphQLString,
+              description: 'Usable autorestake contract adapter',
             },
             name: {
               type: GraphQLString,
@@ -446,6 +457,7 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
       adapter,
       layout,
       automates,
+      autorestakeAdapter,
       name,
       description,
       link,
@@ -460,7 +472,13 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
         typeof deployBlockNumber === 'string' ? deployBlockNumber : contract.deployBlockNumber,
       adapter: typeof adapter === 'string' ? adapter : contract.adapter,
       layout: typeof layout === 'string' ? layout : contract.layout,
-      automate: Array.isArray(automates) ? { adapters: automates } : contract.automate,
+      automate: {
+        adapters: Array.isArray(automates) ? automates : contract.automate.adapters,
+        autorestakeAdapter:
+          typeof autorestakeAdapter === 'string'
+            ? autorestakeAdapter
+            : contract.automate.autorestakeAdapter,
+      },
       name: typeof name === 'string' ? name : contract.name,
       description: typeof description === 'string' ? description : contract.description,
       link: typeof link === 'string' ? link : contract.link,

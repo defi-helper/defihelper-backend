@@ -133,7 +133,10 @@ export class ContractService {
     deployBlockNumber: string | null,
     adapter: string,
     layout: string,
-    automateAdapters: string[],
+    automate: {
+      adapters: string[];
+      autorestakeAdapter?: string;
+    },
     name: string,
     description: string = '',
     link: string | null = null,
@@ -150,7 +153,8 @@ export class ContractService {
       adapter,
       layout,
       automate: {
-        adapters: automateAdapters,
+        adapters: automate.adapters,
+        autorestakeAdapter: automate.autorestakeAdapter,
       },
       name,
       description,

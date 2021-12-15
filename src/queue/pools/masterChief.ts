@@ -115,25 +115,25 @@ export default async (process: Process) => {
         .first();
 
       if (!contract) {
-        await container.model
-          .contractService()
-          .create(
-            protocol,
-            'ethereum',
-            network,
-            pool.lpToken.toLowerCase(),
-            null,
-            farmingAdapterName,
-            '',
-            [],
-            `${protocolName} ${symbol0}/${symbol1} LP`,
-            '',
-            `${container.blockchain.ethereum.networks[
-              network
-            ].walletExplorerURL.toString()}/${masterChefAddress}`,
-            false,
-            [],
-          );
+        await container.model.contractService().create(
+          protocol,
+          'ethereum',
+          network,
+          pool.lpToken.toLowerCase(),
+          null,
+          farmingAdapterName,
+          '',
+          {
+            adapters: [],
+          },
+          `${protocolName} ${symbol0}/${symbol1} LP`,
+          '',
+          `${container.blockchain.ethereum.networks[
+            network
+          ].walletExplorerURL.toString()}/${masterChefAddress}`,
+          false,
+          [],
+        );
       }
     }),
   );

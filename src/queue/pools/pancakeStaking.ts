@@ -104,7 +104,7 @@ export default async (process: Process) => {
           null,
           stakingAdapterName,
           '',
-          [],
+          { adapters: [] },
           `Staking ${stakedSymbol} for ${rewardSymbol}`,
           '',
           `${container.blockchain.ethereum.networks['56'].walletExplorerURL.toString()}/${address}`,
