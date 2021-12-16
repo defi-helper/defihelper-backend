@@ -28,11 +28,8 @@ function providerRandomizerFactory(factories: Array<Factory<ethers.providers.Jso
 }
 
 function cacheGet(tokenKey: string): Promise<string | null> {
-  const cache = container.cache();
-  const key = `defihelper:token:${tokenKey}`;
-
   return new Promise((resolve) =>
-    cache.get(key, (err, result) => {
+    container.cache().get(`defihelper:token:${tokenKey}`, (err, result) => {
       if (err || !result) return resolve(null);
       return resolve(result);
     }),
@@ -40,8 +37,7 @@ function cacheGet(tokenKey: string): Promise<string | null> {
 }
 
 function cacheSet(tokenKey: string, value: string): void {
-  const key = `defihelper:token:${tokenKey}`;
-  container.cache().setex(key, 3600, value);
+  container.cache().setex(`defihelper:token:${tokenKey}`, 3600, value);
 }
 
 function signersFactory(
@@ -96,7 +92,7 @@ function coingeckoPriceFeedUSD(coinId: string) {
           },
         },
       );
-      container.cache().setex(key, 3600, usd);
+      cacheSet(key, usd);
       return usd;
     }
 
