@@ -23,7 +23,8 @@ export default async (params: Params) => {
   if (!contract) throw new Error('Contract not found');
   if (
     contract.verification !== ContractVerificationStatus.Confirmed ||
-    contract.contract === null
+    contract.contract === null ||
+    contract.archivedAt === null
   ) {
     return false;
   }
