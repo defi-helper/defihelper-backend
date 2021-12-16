@@ -994,6 +994,10 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
     rejectReason: {
       type: GraphQLNonNull(GraphQLString),
     },
+    archivedAt: {
+      type: DateTimeType,
+      description: 'Date at archived contract',
+    },
   },
 });
 
@@ -1020,6 +1024,9 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
           address: {
             type: GraphQLList(GraphQLNonNull(GraphQLString)),
           },
+          archived: {
+            type: GraphQLBoolean,
+          },
         },
       }),
       defaultValue: {},
@@ -1041,7 +1048,7 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
         `${Automate.contractTableName}.wallet`,
       )
       .where(function () {
-        const { wallet, user, protocol, contract, address } = filter;
+        const { wallet, user, protocol, contract, address, archived } = filter;
         if (typeof user === 'string') {
           this.andWhere(`${walletTableName}.user`, user);
         }
@@ -1056,6 +1063,10 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
         }
         if (Array.isArray(address) && address.length > 0) {
           this.whereIn(`${Automate.contractTableName}.address`, address);
+        }
+        if (typeof archived === 'boolean') {
+          if (archived) this.whereNotNull(`${Automate.contractTableName}.archivedAt`);
+          else this.whereNull(`${Automate.contractTableName}.archivedAt`);
         }
       });
 
@@ -1202,7 +1213,10 @@ export const ContractDeleteMutation: GraphQLFieldConfig<any, Request> = {
     if (!wallet) throw new UserInputError('Wallet not found');
     if (wallet.user !== currentUser.id) throw new UserInputError('Foreign wallet');
 
-    await container.model.automateService().deleteContract(contract);
+    await container.model.automateService().updateContract({
+      ...contract,
+      archivedAt: new Date(),
+    });
 
     return true;
   }),
