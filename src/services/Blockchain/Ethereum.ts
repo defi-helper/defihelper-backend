@@ -28,11 +28,8 @@ function providerRandomizerFactory(factories: Array<Factory<ethers.providers.Jso
 }
 
 function cacheGet(tokenKey: string): Promise<string | null> {
-  const cache = container.cache();
-  const key = `defihelper:token:${tokenKey}`;
-
   return new Promise((resolve) =>
-    cache.get(key, (err, result) => {
+    container.cache().get(`defihelper:token:${tokenKey}`, (err, result) => {
       if (err || !result) return resolve(null);
       return resolve(result);
     }),
@@ -40,8 +37,7 @@ function cacheGet(tokenKey: string): Promise<string | null> {
 }
 
 function cacheSet(tokenKey: string, value: string): void {
-  const key = `defihelper:token:${tokenKey}`;
-  container.cache().setex(key, 3600, value);
+  container.cache().setex(`defihelper:token:${tokenKey}`, 3600, value);
 }
 
 function signersFactory(
@@ -96,7 +92,7 @@ function coingeckoPriceFeedUSD(coinId: string) {
           },
         },
       );
-      container.cache().setex(key, 3600, usd);
+      cacheSet(key, usd);
       return usd;
     }
 
@@ -144,6 +140,10 @@ function moralisPriceFeed(network: string) {
   };
 }
 
+function avgGasPriceFeedManual(value: string) {
+  return async () => value;
+}
+
 export interface NetworkConfig {
   node: string[];
   historicalNode: string[];
@@ -164,6 +164,7 @@ function networkFactory(
   txExplorerURL: URL,
   walletExplorerURL: URL,
   getContractAbi: (address: string) => Promise<ethers.ContractInterface>,
+  getAvgGasPrice: () => Promise<string>,
   nativeTokenPrice: () => Promise<string>,
   nativeTokenDetails: NativeTokenDetails,
   tokenPriceResolver: { usd: (address: string) => Promise<string> },
@@ -181,6 +182,7 @@ function networkFactory(
     txExplorerURL,
     walletExplorerURL,
     getContractAbi,
+    getAvgGasPrice,
     nativeTokenPrice,
     tokenPriceResolver,
     nativeTokenDetails,
@@ -211,6 +213,7 @@ export class BlockchainContainer extends Container<Config> {
       new URL('https://etherscan.io/tx'),
       new URL('https://etherscan.io/address'),
       useEtherscanContractAbi('https://api.etherscan.io/api'),
+      avgGasPriceFeedManual('130000000000'),
       coingeckoPriceFeedUSD('ethereum'),
       {
         decimals: 18,
@@ -227,6 +230,7 @@ export class BlockchainContainer extends Container<Config> {
       new URL('https://ropsten.etherscan.io/address'),
       useEtherscanContractAbi('https://api-ropsten.etherscan.io/api'),
       coingeckoPriceFeedUSD('ethereum'),
+      avgGasPriceFeedManual('2000000000'),
       {
         decimals: 18,
         symbol: 'ETH',
@@ -242,6 +246,7 @@ export class BlockchainContainer extends Container<Config> {
       new URL('https://bscscan.com/address'),
       useEtherscanContractAbi('https://api.bscscan.com/api'),
       coingeckoPriceFeedUSD('binancecoin'),
+      avgGasPriceFeedManual('7000000000'),
       {
         decimals: 18,
         symbol: 'BSC',
@@ -257,6 +262,7 @@ export class BlockchainContainer extends Container<Config> {
       new URL('https://polygonscan.com/address'),
       useEtherscanContractAbi('https://api.polygonscan.com/api'),
       coingeckoPriceFeedUSD('matic-network'),
+      avgGasPriceFeedManual('30000000000'),
       {
         decimals: 18,
         symbol: 'MATIC',
@@ -271,6 +277,7 @@ export class BlockchainContainer extends Container<Config> {
       new URL('https://moonriver.moonscan.io/tx'),
       new URL('https://moonriver.moonscan.io/address'),
       useEtherscanContractAbi('https://api-moonriver.moonscan.io/api'),
+      avgGasPriceFeedManual('3000000000'),
       coingeckoPriceFeedUSD('moonriver'),
       {
         decimals: 18,
@@ -291,6 +298,7 @@ export class BlockchainContainer extends Container<Config> {
         );
         return res.data.output.abi;
       },
+      avgGasPriceFeedManual('25000000000'),
       coingeckoPriceFeedUSD('avalanche-2'),
       {
         decimals: 18,
@@ -311,6 +319,7 @@ export class BlockchainContainer extends Container<Config> {
         );
         return res.data.output.abi;
       },
+      avgGasPriceFeedManual('25000000000'),
       coingeckoPriceFeedUSD('avalanche-2'),
       {
         decimals: 18,
@@ -326,6 +335,7 @@ export class BlockchainContainer extends Container<Config> {
       new URL('https://etherscan.io/tx'),
       new URL('https://etherscan.io/address'),
       useEtherscanContractAbi('https://api.etherscan.io/api'),
+      avgGasPriceFeedManual('1000000000'),
       coingeckoPriceFeedUSD('ethereum'),
       {
         decimals: 18,

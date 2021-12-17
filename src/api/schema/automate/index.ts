@@ -1,5 +1,6 @@
 import * as Automate from '@models/Automate/Entity';
 import { AuthenticationError, UserInputError } from 'apollo-server-express';
+import BN from 'bignumber.js';
 import { Request } from 'express';
 import { Role } from '@models/User/Entity';
 import container from '@container';
@@ -17,6 +18,7 @@ import {
   GraphQLList,
   GraphQLFieldConfigMap,
 } from 'graphql';
+import { apyBoost } from '@services/RestakeStrategy';
 import {
   DateTimeType,
   onlyAllowed,
@@ -925,6 +927,21 @@ export const ContractVerificationStatusEnum = new GraphQLEnumType({
   ),
 });
 
+export const ContractMetricType = new GraphQLObjectType({
+  name: 'AutomateContractMetricType',
+  fields: {
+    staked: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    earned: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    apyBoost: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+  },
+});
+
 export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
   name: 'AutomateContractType',
   fields: {
@@ -994,6 +1011,60 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
     rejectReason: {
       type: GraphQLNonNull(GraphQLString),
     },
+    metric: {
+      type: GraphQLNonNull(ContractMetricType),
+      resolve: async (contract, args, { dataLoader }) => {
+        const def = {
+          staked: '0',
+          earned: '0',
+          apyBoost: '0',
+        };
+        if (
+          !contract.contract ||
+          contract.verification !== Automate.ContractVerificationStatus.Confirmed
+        )
+          return def;
+
+        const staking = await dataLoader.contract().load(contract.contract);
+        if (!staking) return def;
+        const contractMetric = await dataLoader.contractMetric().load(staking.id);
+        const ownerWallet = await dataLoader.wallet().load(contract.wallet);
+        if (!ownerWallet) return def;
+        const wallet = await container.model
+          .walletTable()
+          .where({
+            user: ownerWallet.user,
+            type: WalletTypeEnum.Contract,
+            address:
+              ownerWallet.blockchain === 'ethereum'
+                ? contract.address.toLowerCase()
+                : contract.address,
+          })
+          .first();
+        if (!wallet) return def;
+
+        const walletMetric = await dataLoader.walletMetric().load(wallet.id);
+        if (!walletMetric) return def;
+
+        const totalBalance = new BN(walletMetric.data.stakingUSD)
+          .plus(walletMetric.data.earnedUSD)
+          .toNumber();
+        return {
+          staked: walletMetric.data.stakingUSD,
+          earned: walletMetric.data.earnedUSD,
+          apyBoost: await apyBoost(
+            staking.blockchain,
+            staking.network,
+            totalBalance > 0 ? totalBalance : 10000,
+            new BN(contractMetric?.data.aprYear ?? '0').toNumber(),
+          ),
+        };
+      },
+    },
+    archivedAt: {
+      type: DateTimeType,
+      description: 'Date at archived contract',
+    },
   },
 });
 
@@ -1020,6 +1091,9 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
           address: {
             type: GraphQLList(GraphQLNonNull(GraphQLString)),
           },
+          archived: {
+            type: GraphQLBoolean,
+          },
         },
       }),
       defaultValue: {},
@@ -1041,7 +1115,7 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
         `${Automate.contractTableName}.wallet`,
       )
       .where(function () {
-        const { wallet, user, protocol, contract, address } = filter;
+        const { wallet, user, protocol, contract, address, archived } = filter;
         if (typeof user === 'string') {
           this.andWhere(`${walletTableName}.user`, user);
         }
@@ -1056,6 +1130,10 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
         }
         if (Array.isArray(address) && address.length > 0) {
           this.whereIn(`${Automate.contractTableName}.address`, address);
+        }
+        if (typeof archived === 'boolean') {
+          if (archived) this.whereNotNull(`${Automate.contractTableName}.archivedAt`);
+          else this.whereNull(`${Automate.contractTableName}.archivedAt`);
         }
       });
 
@@ -1202,7 +1280,10 @@ export const ContractDeleteMutation: GraphQLFieldConfig<any, Request> = {
     if (!wallet) throw new UserInputError('Wallet not found');
     if (wallet.user !== currentUser.id) throw new UserInputError('Foreign wallet');
 
-    await container.model.automateService().deleteContract(contract);
+    await container.model.automateService().updateContract({
+      ...contract,
+      archivedAt: new Date(),
+    });
 
     return true;
   }),

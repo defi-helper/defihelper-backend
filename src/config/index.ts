@@ -78,7 +78,7 @@ export default {
         historicalNode: array(process.env.MOONRIVER_NODE_HISTORICAL ?? '[]'),
         inspectors: array(process.env.MOONRIVER_INSPECTORS ?? '[]'),
         consumers: array(process.env.MOONRIVER_CONSUMERS ?? '[]'),
-        avgBlockTime: 1,
+        avgBlockTime: 13,
       },
       // Avalanche
       avalanche: {

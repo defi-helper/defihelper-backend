@@ -19,6 +19,9 @@ export default async (params: Params) => {
   if (contract.verification !== ContractVerificationStatus.Confirmed) {
     throw new Error('Contract not verified');
   }
+  if (contract.archivedAt !== null) {
+    throw new Error('Contract on archive');
+  }
 
   const wallet = await container.model.walletTable().where('id', contract.wallet).first();
   if (!wallet) throw new Error('Wallet not found');

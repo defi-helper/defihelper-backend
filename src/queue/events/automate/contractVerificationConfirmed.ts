@@ -39,7 +39,7 @@ export default async (process: Process) => {
       wallet.blockchain,
       wallet.network,
       WalletType.Contract,
-      contract.address,
+      targetContract.blockchain === 'ethereum' ? contract.address.toLowerCase() : contract.address,
       '',
       `Automate contract ${contract.address.slice(0, 5)}...`,
     );
