@@ -43,6 +43,7 @@ import {
   ContractWalletLinkMutation,
   ContractWalletUnlinkMutation,
   ProtocolFavoriteMutation,
+  ProtocolResolveContractsMutation,
 } from './schema/protocol';
 import {
   ProposalCreateMutation,
@@ -131,6 +132,7 @@ export function route({ express, server }: { express: Express; server: Server })
           userUpdate: UserUpdateMutation,
           protocolCreate: ProtocolCreateMutation,
           protocolUpdate: ProtocolUpdateMutation,
+          protocolResolveContracts: ProtocolResolveContractsMutation,
           protocolDelete: ProtocolDeleteMutation,
           protocolFavorite: ProtocolFavoriteMutation,
           contractCreate: ContractCreateMutation,
