@@ -1468,6 +1468,10 @@ export const ProtocolResolveContractsMutation: GraphQLFieldConfig<any, Request> 
               type: GraphQLNonNull(GraphQLString),
               description: 'Blockchain network id',
             },
+            events: {
+              type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString))),
+              description: 'Blockchain network id',
+            },
           },
         }),
       ),
@@ -1479,12 +1483,13 @@ export const ProtocolResolveContractsMutation: GraphQLFieldConfig<any, Request> 
     const protocol = await container.model.protocolTable().where('id', id).first();
     if (!protocol) throw new UserInputError('Protocol not found');
 
-    const { blockchain, network } = input;
+    const { blockchain, network, events } = input;
 
     await container.model.queueService().push('protocolContractsResolver', {
       protocolId: protocol.id,
       protocolBlockchain: blockchain,
       protocolNetwork: network,
+      events,
     });
 
     return true;
