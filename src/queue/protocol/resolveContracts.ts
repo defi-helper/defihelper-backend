@@ -7,24 +7,83 @@ export interface Params {
   protocolNetwork: string;
 }
 
+export interface Pool {
+  poolIndex: number;
+  name: string;
+  address: string;
+  deployBlockNumber: number;
+  blockchain: 'ethereum' | 'waves';
+  network: string;
+  layout: 'stacking';
+  adapter: string;
+  description: string;
+  automate: {
+    adapters: string[];
+    autorestakeAdapter?: string | undefined;
+  };
+  link: string;
+}
+
 export default async (process: Process) => {
   const { protocolId, protocolBlockchain, protocolNetwork } = process.task.params as Params;
 
   const protocol = await container.model.protocolTable().where('id', protocolId).first();
   if (!protocol) throw new Error('Protocol not found');
 
-  const protocolAdapters = await container.blockchainAdapter.loadAdapter(protocol.adapter);
-  const protocolDefaultResolver = protocolAdapters.default;
+  const protocolAdapters: any = await container.blockchainAdapter.loadAdapter(protocol.adapter);
 
-  if (typeof protocolDefaultResolver !== 'function') {
+  if (
+    !protocolAdapters.automates ||
+    !protocolAdapters.automates.contractsResolver ||
+    !protocolAdapters.automates.contractsResolver.default
+  ) {
     throw new Error('Adapter have no pools resolver, u should implement it first');
   }
 
+  const protocolDefaultResolver = protocolAdapters.automates.contractsResolver.default;
 
   const blockchain = container.blockchain[protocolBlockchain];
   const network = blockchain.byNetwork(protocolNetwork);
 
-  const pools = protocolDefaultResolver(network.provider());
+  const pools: Pool[] = await protocolDefaultResolver(network.provider());
 
-  // return process.done();
+  const existingPools = await container.model.contractTable().where({
+    protocol: protocolId,
+    blockchain: protocolBlockchain,
+    network: protocolNetwork,
+  });
+
+  await Promise.all(
+    pools.map((pool) => {
+      if (
+        existingPools.some(
+          (p) =>
+            p.address === pool.address &&
+            p.network === pool.network &&
+            p.blockchain === pool.blockchain,
+        )
+      ) {
+        return null;
+      }
+
+      return container.model
+        .contractService()
+        .create(
+          protocol,
+          protocolBlockchain,
+          protocolNetwork,
+          pool.address,
+          pool.deployBlockNumber.toString(10),
+          pool.adapter,
+          pool.layout,
+          pool.automate,
+          pool.name,
+          pool.description,
+          pool.link,
+          true,
+        );
+    }),
+  );
+
+  return process.done();
 };
