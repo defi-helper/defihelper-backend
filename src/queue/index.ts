@@ -53,8 +53,7 @@ export * as swopfiLPFarmingPoolScanner from './pools/swopfiLPFarming';
 export * as logBilling from './log/billingLogger';
 
 /* protocol */
-export * as protocolResolveContractsBroker from './protocol/resolveContracts/broker';
-export * as protocolResolveContractsResolver from './protocol/resolveContracts/resolver';
+export * as protocolContractsResolver from './protocol/resolveContracts';
 
 /* public beta */
 export * as publicBetaNotificationAndRunUp from './publicBetaNotificationAndRunUp';
