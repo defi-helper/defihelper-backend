@@ -1,18 +1,18 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
+import { Blockchain } from '@models/types';
 
 export interface Params {
   protocolId: string;
-  protocolBlockchain: 'ethereum' | 'waves';
+  protocolBlockchain: Blockchain;
   protocolNetwork: string;
 }
 
 export interface Pool {
-  poolIndex: number;
   name: string;
   address: string;
   deployBlockNumber: number;
-  blockchain: 'ethereum' | 'waves';
+  blockchain: Blockchain;
   network: string;
   layout: 'stacking';
   adapter: string;
@@ -30,6 +30,7 @@ export default async (process: Process) => {
   const protocol = await container.model.protocolTable().where('id', protocolId).first();
   if (!protocol) throw new Error('Protocol not found');
 
+  // todo introduce type
   const protocolAdapters: any = await container.blockchainAdapter.loadAdapter(protocol.adapter);
 
   if (
@@ -58,7 +59,7 @@ export default async (process: Process) => {
       if (
         existingPools.some(
           (p) =>
-            p.address === pool.address &&
+            p.address.toLowerCase() === pool.address.toLowerCase() &&
             p.network === pool.network &&
             p.blockchain === pool.blockchain,
         )
@@ -72,7 +73,7 @@ export default async (process: Process) => {
           protocol,
           protocolBlockchain,
           protocolNetwork,
-          pool.address,
+          pool.address.toLowerCase(),
           pool.deployBlockNumber.toString(10),
           pool.adapter,
           pool.layout,
