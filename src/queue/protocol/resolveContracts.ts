@@ -6,6 +6,7 @@ export interface Params {
   protocolId: string;
   protocolBlockchain: Blockchain;
   protocolNetwork: string;
+  events: string[];
 }
 
 export interface Pool {
@@ -25,7 +26,7 @@ export interface Pool {
 }
 
 export default async (process: Process) => {
-  const { protocolId, protocolBlockchain, protocolNetwork } = process.task.params as Params;
+  const { protocolId, protocolBlockchain, protocolNetwork, events } = process.task.params as Params;
 
   const protocol = await container.model.protocolTable().where('id', protocolId).first();
   if (!protocol) throw new Error('Protocol not found');
@@ -82,6 +83,7 @@ export default async (process: Process) => {
           pool.description,
           pool.link,
           true,
+          events,
         );
     }),
   );
