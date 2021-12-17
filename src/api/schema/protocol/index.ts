@@ -20,9 +20,11 @@ import {
   walletContractLinkTableName,
   ContractAutomate,
 } from '@models/Protocol/Entity';
+import { apyBoost } from '@services/RestakeStrategy';
 import { metricWalletTableName } from '@models/Metric/Entity';
 import { tableName as walletTableName, WalletType } from '@models/Wallet/Entity';
 import { AuthenticationError, ForbiddenError, UserInputError } from 'apollo-server-express';
+import BN from 'bignumber.js';
 import { Blockchain } from '@models/types';
 import { Post } from '@models/Protocol/Social/Entity';
 import { PostProvider } from '@services/SocialStats';
@@ -55,6 +57,9 @@ export const ContractMetricType = new GraphQLObjectType({
       type: GraphQLNonNull(GraphQLString),
     },
     myEarned: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    myAPYBoost: {
       type: GraphQLNonNull(GraphQLString),
     },
   },
@@ -212,6 +217,7 @@ export const ContractType = new GraphQLObjectType<Contract, Request>({
           aprYear: contractMetric?.data.aprYear ?? '0',
           myStaked: '0',
           myEarned: '0',
+          myAPYBoost: '0',
         };
         if (!currentUser) return metric;
 
@@ -221,10 +227,17 @@ export const ContractType = new GraphQLObjectType<Contract, Request>({
             walletType: filter.wallet?.type ?? [WalletType.Contract, WalletType.Wallet],
           })
           .load(contract.id);
+        const totalBalance = new BN(userMetric.stakingUSD).plus(userMetric.earnedUSD).toNumber();
         return {
           ...metric,
           myStaked: userMetric.stakingUSD,
           myEarned: userMetric.earnedUSD,
+          myAPYBoost: await apyBoost(
+            contract.blockchain,
+            contract.network,
+            totalBalance > 0 ? totalBalance : 10000,
+            new BN(contractMetric?.data.aprYear ?? '0').toNumber(),
+          ),
         };
       },
     },
@@ -677,6 +690,9 @@ export const ProtocolMetricType = new GraphQLObjectType({
     myEarned: {
       type: GraphQLNonNull(GraphQLString),
     },
+    myAPYBoost: {
+      type: GraphQLNonNull(GraphQLString),
+    },
     myMinUpdatedAt: {
       type: DateTimeType,
     },
@@ -1048,19 +1064,28 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
           myAPY: '0',
           myStaked: '0',
           myEarned: '0',
+          myAPYBoost: '0',
         };
         if (!currentUser) return metric;
 
         const userMetric = await dataLoader
           .protocolUserMetric({ userId: currentUser.id })
           .load(protocol.id);
+        const userApy = await dataLoader
+          .protocolUserAPRMetric({ metric: 'aprYear', userId: currentUser.id })
+          .load(protocol.id);
+        const totalBalance = new BN(userMetric.stakingUSD).plus(userMetric.earnedUSD).toNumber();
         return {
           ...metric,
-          myAPY: await dataLoader
-            .protocolUserAPRMetric({ metric: 'aprYear', userId: currentUser.id })
-            .load(protocol.id),
+          myAPY: userApy,
           myStaked: userMetric.stakingUSD,
           myEarned: userMetric.earnedUSD,
+          myAPYBoost: await apyBoost(
+            'ethereum',
+            '43114',
+            totalBalance > 0 ? totalBalance : 10000,
+            new BN(userApy).toNumber(),
+          ),
           myMinUpdatedAt: userMetric.minUpdatedAt ? dayjs(userMetric.minUpdatedAt) : null,
         };
       },

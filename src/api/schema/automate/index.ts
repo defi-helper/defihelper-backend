@@ -1,5 +1,6 @@
 import * as Automate from '@models/Automate/Entity';
 import { AuthenticationError, UserInputError } from 'apollo-server-express';
+import BN from 'bignumber.js';
 import { Request } from 'express';
 import { Role } from '@models/User/Entity';
 import container from '@container';
@@ -17,6 +18,7 @@ import {
   GraphQLList,
   GraphQLFieldConfigMap,
 } from 'graphql';
+import { apyBoost } from '@services/RestakeStrategy';
 import {
   DateTimeType,
   onlyAllowed,
@@ -925,6 +927,21 @@ export const ContractVerificationStatusEnum = new GraphQLEnumType({
   ),
 });
 
+export const ContractMetricType = new GraphQLObjectType({
+  name: 'AutomateContractMetricType',
+  fields: {
+    staked: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    earned: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    apyBoost: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+  },
+});
+
 export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
   name: 'AutomateContractType',
   fields: {
@@ -993,6 +1010,56 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
     },
     rejectReason: {
       type: GraphQLNonNull(GraphQLString),
+    },
+    metric: {
+      type: GraphQLNonNull(ContractMetricType),
+      resolve: async (contract, args, { dataLoader }) => {
+        const def = {
+          staked: '0',
+          earned: '0',
+          apyBoost: '0',
+        };
+        if (
+          !contract.contract ||
+          contract.verification !== Automate.ContractVerificationStatus.Confirmed
+        )
+          return def;
+
+        const staking = await dataLoader.contract().load(contract.contract);
+        if (!staking) return def;
+        const contractMetric = await dataLoader.contractMetric().load(staking.id);
+        const ownerWallet = await dataLoader.wallet().load(contract.wallet);
+        if (!ownerWallet) return def;
+        const wallet = await container.model
+          .walletTable()
+          .where({
+            user: ownerWallet.user,
+            type: WalletTypeEnum.Contract,
+            address:
+              ownerWallet.blockchain === 'ethereum'
+                ? contract.address.toLowerCase()
+                : contract.address,
+          })
+          .first();
+        if (!wallet) return def;
+
+        const walletMetric = await dataLoader.walletMetric().load(wallet.id);
+        if (!walletMetric) return def;
+
+        const totalBalance = new BN(walletMetric.data.stakingUSD)
+          .plus(walletMetric.data.earnedUSD)
+          .toNumber();
+        return {
+          staked: walletMetric.data.stakingUSD,
+          earned: walletMetric.data.earnedUSD,
+          apyBoost: await apyBoost(
+            staking.blockchain,
+            staking.network,
+            totalBalance > 0 ? totalBalance : 10000,
+            new BN(contractMetric?.data.aprYear ?? '0').toNumber(),
+          ),
+        };
+      },
     },
     archivedAt: {
       type: DateTimeType,
