@@ -52,6 +52,9 @@ export * as automateTriggerByTime from './automate/trigger/byTime';
 export * as swopfiLPFarmingPoolScanner from './pools/swopfiLPFarming';
 export * as logBilling from './log/billingLogger';
 
+/* protocol */
+export * as protocolContractsResolver from './protocol/resolveContracts';
+
 /* public beta */
 export * as publicBetaNotificationAndRunUp from './publicBetaNotificationAndRunUp';
 export * as publicBetaBenefits from './publicBetaBenefits';

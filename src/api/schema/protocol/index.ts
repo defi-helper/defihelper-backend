@@ -1449,6 +1449,48 @@ export const ProtocolDeleteMutation: GraphQLFieldConfig<any, Request> = {
   }),
 };
 
+export const ProtocolResolveContractsMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLBoolean),
+  args: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+    },
+    input: {
+      type: GraphQLNonNull(
+        new GraphQLInputObjectType({
+          name: 'ProtocolResolveContractsInputType',
+          fields: {
+            blockchain: {
+              type: GraphQLNonNull(BlockchainEnum),
+              description: 'Blockchain type',
+            },
+            network: {
+              type: GraphQLNonNull(GraphQLString),
+              description: 'Blockchain network id',
+            },
+          },
+        }),
+      ),
+    },
+  },
+  resolve: onlyAllowed('protocol.update', async (root, { id, input }, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const protocol = await container.model.protocolTable().where('id', id).first();
+    if (!protocol) throw new UserInputError('Protocol not found');
+
+    const { blockchain, network } = input;
+
+    await container.model.queueService().push('protocolContractsResolver', {
+      protocolId: protocol.id,
+      protocolBlockchain: blockchain,
+      protocolNetwork: network,
+    });
+
+    return true;
+  }),
+};
+
 export const ProtocolFavoriteMutation: GraphQLFieldConfig<any, Request> = {
   type: GraphQLNonNull(GraphQLBoolean),
   args: {

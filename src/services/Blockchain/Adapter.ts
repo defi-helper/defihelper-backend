@@ -4,6 +4,7 @@ import { BigNumber } from 'bignumber.js';
 import { ethers } from 'ethers';
 import ethersMulticall from '@defihelper/ethers-multicall';
 import vm from 'vm';
+import { Blockchain } from '@models/types';
 
 export interface MetricMap {
   [k: string]: string;
@@ -59,11 +60,32 @@ export interface WavesAutomateAdapter {
   }>;
 }
 
+export interface ContractResolverContract {
+  name: string;
+  address: string;
+  deployBlockNumber: number;
+  blockchain: Blockchain;
+  network: string;
+  layout: 'stacking';
+  adapter: string;
+  description: string;
+  automate: {
+    adapters: string[];
+    autorestakeAdapter?: string | undefined;
+  };
+  link: string;
+}
+
 export interface ProtocolAdapter {
   [k: string]:
     | ContractAdapter
     | {
-        [k: string]: EthereumAutomateAdapter | WavesAutomateAdapter;
+        [k: string]:
+          | EthereumAutomateAdapter
+          | WavesAutomateAdapter
+          | {
+              default: Promise<ContractResolverContract[]>;
+            };
       };
 }
 
