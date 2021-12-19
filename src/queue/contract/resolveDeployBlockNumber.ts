@@ -6,7 +6,6 @@ import { parse } from 'node-html-parser';
 import faker from 'faker';
 
 const axiosFakeHeaders = {
-  'Host': 'etherscan.io',
   'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
   'Accept-Language': 'en-CA,en-US;q=0.7,en;q=0.3',
   'Connection': 'keep-alive',
@@ -33,30 +32,21 @@ const getEthereumContractCreationBlock = async ({
         'User-Agent': faker.internet.userAgent(),
       },
     });
+
     const root = parse(res.data);
-    const contractCreatorNode = root
-      .querySelectorAll('div')
-      .find((div) => div.text === '\nContractCreator:');
-    if (!contractCreatorNode) {
+    const contractCreatorWrapper = root.querySelector('#ContentPlaceHolder1_trContract');
+
+    const transactionNode = contractCreatorWrapper.querySelectorAll('a').find((e) => {
+      const href = e.getAttribute('href');
+      return href && href.includes('tx/');
+    });
+
+    if (!transactionNode) {
       throw new Error('Not contract creator node');
     }
 
-    const txHrefNode = contractCreatorNode.parentNode.querySelectorAll('a').find((a) => {
-      const href = a.getAttribute('href');
-      return href && href.indexOf('/tx') > -1;
-    });
-    if (!txHrefNode) {
-      throw new Error('Not creator tx');
-    }
-
-    const txHref = txHrefNode.getAttribute('href');
-    if (!txHref) {
-      throw new Error('Not creator href');
-    }
-
-    const txHash = txHref.replace('/tx/', '');
     const provider = await container.blockchain.ethereum.byNetwork(network).provider();
-    const txReceipt = await provider.getTransactionReceipt(txHash);
+    const txReceipt = await provider.getTransactionReceipt(transactionNode.text);
 
     return txReceipt.blockNumber;
   } catch {
