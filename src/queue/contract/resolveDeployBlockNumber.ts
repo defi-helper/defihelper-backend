@@ -49,7 +49,7 @@ const getEthereumContractCreationBlock = async ({
     const txReceipt = await provider.getTransactionReceipt(transactionNode.text);
 
     return txReceipt.blockNumber;
-  } catch (e) {
+  } catch {
     const provider = await container.blockchain.ethereum.byNetwork(network).provider();
     const latestBlock = await provider.getBlockNumber();
     const { avgBlockTime } = container.blockchain.ethereum.byNetwork(network);
