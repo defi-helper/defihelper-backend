@@ -75,7 +75,7 @@ export default async (process: Process) => {
           protocolBlockchain,
           protocolNetwork,
           pool.address.toLowerCase(),
-          pool.deployBlockNumber.toString(10),
+          null,
           pool.adapter,
           pool.layout,
           pool.automate,
