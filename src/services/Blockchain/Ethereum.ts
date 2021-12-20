@@ -47,17 +47,74 @@ function signersFactory(
   return consumersPrivateKeys.map((privateKey) => new ethers.Wallet(privateKey, provider));
 }
 
-export interface EtherscanContractAbiResponse {
-  status: string;
-  message: string;
-  result: string;
+interface AvgGasPriceResolver {
+  (): Promise<string>;
 }
 
-function useEtherscanContractAbi(host: string) {
+interface NativePriceFeedUSD {
+  (): Promise<string>;
+}
+
+interface TokenPriceFeedUSD {
+  (address: string): Promise<string>;
+}
+
+interface ContractABIResolver {
+  (address: string): Promise<ethers.ContractInterface>;
+}
+
+function networkFactory({
+  id,
+  name,
+  txExplorerURL,
+  walletExplorerURL,
+  getContractAbi,
+  getAvgGasPrice,
+  nativeTokenPrice,
+  nativeTokenDetails,
+  tokenPriceResolver,
+  network: { node, historicalNode, avgBlockTime, inspectors, consumers },
+}: {
+  id: string;
+  name: string;
+  txExplorerURL: URL;
+  walletExplorerURL: URL;
+  getContractAbi: ContractABIResolver;
+  getAvgGasPrice: AvgGasPriceResolver;
+  nativeTokenPrice: NativePriceFeedUSD;
+  nativeTokenDetails: NativeTokenDetails;
+  tokenPriceResolver: { usd: TokenPriceFeedUSD };
+  network: NetworkConfig;
+}) {
+  const provider = providerRandomizerFactory(node.map((host) => singleton(providerFactory(host))));
+
+  return {
+    name,
+    provider,
+    providerHistorical: providerRandomizerFactory(
+      historicalNode.map((host) => singleton(providerFactory(host))),
+    ),
+    avgBlockTime,
+    txExplorerURL,
+    walletExplorerURL,
+    getContractAbi,
+    getAvgGasPrice,
+    nativeTokenPrice,
+    tokenPriceResolver,
+    nativeTokenDetails,
+    inspector: () => (inspectors.length > 0 ? new ethers.Wallet(inspectors[0], provider()) : null),
+    consumers: () => signersFactory(consumers, provider()),
+    dfhContracts: () => (isKey(dfhContracts, id) ? dfhContracts[id] : null),
+  };
+}
+
+function useEtherscanContractAbi(host: string): ContractABIResolver {
   return async (address: string) => {
-    const res = await axios.get<EtherscanContractAbiResponse>(
-      `${host}?module=contract&action=getabi&address=${address}`,
-    );
+    const res = await axios.get<{
+      status: string;
+      message: string;
+      result: string;
+    }>(`${host}?module=contract&action=getabi&address=${address}`);
     const { status, result } = res.data;
     if (status === '0') {
       if (result === 'Max rate limit reached, please use API Key for higher rate limit') {
@@ -75,7 +132,7 @@ function useEtherscanContractAbi(host: string) {
   };
 }
 
-function coingeckoPriceFeedUSD(coinId: string) {
+function coingeckoPriceFeedUSD(coinId: string): NativePriceFeedUSD {
   return async () => {
     const key = `ethereum:native:${coinId}:price`;
     const chainNativeUSD = await cacheGet(key);
@@ -100,7 +157,7 @@ function coingeckoPriceFeedUSD(coinId: string) {
   };
 }
 
-function moralisPriceFeed(network: string) {
+function moralisPriceFeed(network: string): { usd: TokenPriceFeedUSD } {
   return {
     usd: async (address: string) => {
       const key = `ethereum:${network}:${address}:price`;
@@ -140,7 +197,7 @@ function moralisPriceFeed(network: string) {
   };
 }
 
-function avgGasPriceFeedManual(value: string) {
+function avgGasPriceFeedManual(value: string): AvgGasPriceResolver {
   return async () => value;
 }
 
@@ -158,40 +215,6 @@ export interface NativeTokenDetails {
   name: string;
 }
 
-function networkFactory(
-  id: string,
-  name: string,
-  txExplorerURL: URL,
-  walletExplorerURL: URL,
-  getContractAbi: (address: string) => Promise<ethers.ContractInterface>,
-  getAvgGasPrice: () => Promise<string>,
-  nativeTokenPrice: () => Promise<string>,
-  nativeTokenDetails: NativeTokenDetails,
-  tokenPriceResolver: { usd: (address: string) => Promise<string> },
-  { node, historicalNode, avgBlockTime, inspectors, consumers }: NetworkConfig,
-) {
-  const provider = providerRandomizerFactory(node.map((host) => singleton(providerFactory(host))));
-
-  return {
-    name,
-    provider,
-    providerHistorical: providerRandomizerFactory(
-      historicalNode.map((host) => singleton(providerFactory(host))),
-    ),
-    avgBlockTime,
-    txExplorerURL,
-    walletExplorerURL,
-    getContractAbi,
-    getAvgGasPrice,
-    nativeTokenPrice,
-    tokenPriceResolver,
-    nativeTokenDetails,
-    inspector: () => (inspectors.length > 0 ? new ethers.Wallet(inspectors[0], provider()) : null),
-    consumers: () => signersFactory(consumers, provider()),
-    dfhContracts: () => (isKey(dfhContracts, id) ? dfhContracts[id] : null),
-  };
-}
-
 export interface Config {
   eth: NetworkConfig;
   ethRopsten: NetworkConfig;
@@ -207,144 +230,144 @@ export type Networks = keyof BlockchainContainer['networks'];
 
 export class BlockchainContainer extends Container<Config> {
   readonly networks = {
-    '1': networkFactory(
-      '1',
-      'Ethereum',
-      new URL('https://etherscan.io/tx'),
-      new URL('https://etherscan.io/address'),
-      useEtherscanContractAbi('https://api.etherscan.io/api'),
-      avgGasPriceFeedManual('130000000000'),
-      coingeckoPriceFeedUSD('ethereum'),
-      {
+    '1': networkFactory({
+      id: '1',
+      name: 'Ethereum',
+      txExplorerURL: new URL('https://etherscan.io/tx'),
+      walletExplorerURL: new URL('https://etherscan.io/address'),
+      getContractAbi: useEtherscanContractAbi('https://api.etherscan.io/api'),
+      getAvgGasPrice: avgGasPriceFeedManual('130000000000'),
+      nativeTokenPrice: coingeckoPriceFeedUSD('ethereum'),
+      nativeTokenDetails: {
         decimals: 18,
         symbol: 'ETH',
         name: 'Ethereum',
       },
-      moralisPriceFeed('eth'),
-      this.parent.eth,
-    ),
-    '3': networkFactory(
-      '3',
-      'Ethereum Ropsten',
-      new URL('https://ropsten.etherscan.io/tx'),
-      new URL('https://ropsten.etherscan.io/address'),
-      useEtherscanContractAbi('https://api-ropsten.etherscan.io/api'),
-      coingeckoPriceFeedUSD('ethereum'),
-      avgGasPriceFeedManual('2000000000'),
-      {
+      tokenPriceResolver: moralisPriceFeed('eth'),
+      network: this.parent.eth,
+    }),
+    '3': networkFactory({
+      id: '3',
+      name: 'Ethereum Ropsten',
+      txExplorerURL: new URL('https://ropsten.etherscan.io/tx'),
+      walletExplorerURL: new URL('https://ropsten.etherscan.io/address'),
+      getContractAbi: useEtherscanContractAbi('https://api-ropsten.etherscan.io/api'),
+      getAvgGasPrice: avgGasPriceFeedManual('2000000000'),
+      nativeTokenPrice: coingeckoPriceFeedUSD('ethereum'),
+      nativeTokenDetails: {
         decimals: 18,
         symbol: 'ETH',
         name: 'Ethereum',
       },
-      moralisPriceFeed('eth'),
-      this.parent.ethRopsten,
-    ),
-    '56': networkFactory(
-      '56',
-      'Binance Smart Chain',
-      new URL('https://bscscan.com/tx'),
-      new URL('https://bscscan.com/address'),
-      useEtherscanContractAbi('https://api.bscscan.com/api'),
-      coingeckoPriceFeedUSD('binancecoin'),
-      avgGasPriceFeedManual('7000000000'),
-      {
+      tokenPriceResolver: moralisPriceFeed('eth'),
+      network: this.parent.ethRopsten,
+    }),
+    '56': networkFactory({
+      id: '56',
+      name: 'Binance Smart Chain',
+      txExplorerURL: new URL('https://bscscan.com/tx'),
+      walletExplorerURL: new URL('https://bscscan.com/address'),
+      getContractAbi: useEtherscanContractAbi('https://api.bscscan.com/api'),
+      getAvgGasPrice: avgGasPriceFeedManual('7000000000'),
+      nativeTokenPrice: coingeckoPriceFeedUSD('binancecoin'),
+      nativeTokenDetails: {
         decimals: 18,
         symbol: 'BSC',
         name: 'Binance Smart Chain',
       },
-      moralisPriceFeed('bsc'),
-      this.parent.bsc,
-    ),
-    '137': networkFactory(
-      '137',
-      'Polygon',
-      new URL('https://polygonscan.com/tx'),
-      new URL('https://polygonscan.com/address'),
-      useEtherscanContractAbi('https://api.polygonscan.com/api'),
-      coingeckoPriceFeedUSD('matic-network'),
-      avgGasPriceFeedManual('30000000000'),
-      {
+      tokenPriceResolver: moralisPriceFeed('bsc'),
+      network: this.parent.bsc,
+    }),
+    '137': networkFactory({
+      id: '137',
+      name: 'Polygon',
+      txExplorerURL: new URL('https://polygonscan.com/tx'),
+      walletExplorerURL: new URL('https://polygonscan.com/address'),
+      getContractAbi: useEtherscanContractAbi('https://api.polygonscan.com/api'),
+      getAvgGasPrice: avgGasPriceFeedManual('30000000000'),
+      nativeTokenPrice: coingeckoPriceFeedUSD('matic-network'),
+      nativeTokenDetails: {
         decimals: 18,
         symbol: 'MATIC',
         name: 'Polygon',
       },
-      moralisPriceFeed('polygon'),
-      this.parent.polygon,
-    ),
-    '1285': networkFactory(
-      '1285',
-      'Moonriver',
-      new URL('https://moonriver.moonscan.io/tx'),
-      new URL('https://moonriver.moonscan.io/address'),
-      useEtherscanContractAbi('https://api-moonriver.moonscan.io/api'),
-      avgGasPriceFeedManual('3000000000'),
-      coingeckoPriceFeedUSD('moonriver'),
-      {
+      tokenPriceResolver: moralisPriceFeed('polygon'),
+      network: this.parent.polygon,
+    }),
+    '1285': networkFactory({
+      id: '1285',
+      name: 'Moonriver',
+      txExplorerURL: new URL('https://moonriver.moonscan.io/tx'),
+      walletExplorerURL: new URL('https://moonriver.moonscan.io/address'),
+      getContractAbi: useEtherscanContractAbi('https://api-moonriver.moonscan.io/api'),
+      getAvgGasPrice: avgGasPriceFeedManual('3000000000'),
+      nativeTokenPrice: coingeckoPriceFeedUSD('moonriver'),
+      nativeTokenDetails: {
         decimals: 18,
         symbol: 'MOVR',
         name: 'Moonriver',
       },
-      moralisPriceFeed('moonriver'),
-      this.parent.moonriver,
-    ),
-    '43113': networkFactory(
-      '43113',
-      'Avalanche Testnet',
-      new URL('https://testnet.snowtrace.io/tx'),
-      new URL('https://testnet.snowtrace.io/address'),
-      async (address: string) => {
+      tokenPriceResolver: moralisPriceFeed('moonriver'),
+      network: this.parent.moonriver,
+    }),
+    '43113': networkFactory({
+      id: '43113',
+      name: 'Avalanche Testnet',
+      txExplorerURL: new URL('https://testnet.snowtrace.io/tx'),
+      walletExplorerURL: new URL('https://testnet.snowtrace.io/address'),
+      getContractAbi: async (address: string) => {
         const res = await axios.get(
           `https://repo.sourcify.dev/contracts/full_match/43113/${address}/metadata.json`,
         );
         return res.data.output.abi;
       },
-      avgGasPriceFeedManual('25000000000'),
-      coingeckoPriceFeedUSD('avalanche-2'),
-      {
+      getAvgGasPrice: avgGasPriceFeedManual('25000000000'),
+      nativeTokenPrice: coingeckoPriceFeedUSD('avalanche-2'),
+      nativeTokenDetails: {
         decimals: 18,
         symbol: 'AVAX',
         name: 'Avalanche',
       },
-      moralisPriceFeed('avalanche'),
-      this.parent.avalancheTestnet,
-    ),
-    '43114': networkFactory(
-      '43114',
-      'Avalanche',
-      new URL('https://snowtrace.io/tx'),
-      new URL('https://snowtrace.io/address'),
-      async (address: string) => {
+      tokenPriceResolver: moralisPriceFeed('avalanche'),
+      network: this.parent.avalancheTestnet,
+    }),
+    '43114': networkFactory({
+      id: '43114',
+      name: 'Avalanche',
+      txExplorerURL: new URL('https://snowtrace.io/tx'),
+      walletExplorerURL: new URL('https://snowtrace.io/address'),
+      getContractAbi: async (address: string) => {
         const res = await axios.get(
           `https://repo.sourcify.dev/contracts/full_match/43114/${address}/metadata.json`,
         );
         return res.data.output.abi;
       },
-      avgGasPriceFeedManual('25000000000'),
-      coingeckoPriceFeedUSD('avalanche-2'),
-      {
+      getAvgGasPrice: avgGasPriceFeedManual('25000000000'),
+      nativeTokenPrice: coingeckoPriceFeedUSD('avalanche-2'),
+      nativeTokenDetails: {
         decimals: 18,
         symbol: 'AVAX',
         name: 'Avalanche',
       },
-      moralisPriceFeed('avalanche'),
-      this.parent.avalanche,
-    ),
-    '31337': networkFactory(
-      '31337',
-      'Localhost',
-      new URL('https://etherscan.io/tx'),
-      new URL('https://etherscan.io/address'),
-      useEtherscanContractAbi('https://api.etherscan.io/api'),
-      avgGasPriceFeedManual('1000000000'),
-      coingeckoPriceFeedUSD('ethereum'),
-      {
+      tokenPriceResolver: moralisPriceFeed('avalanche'),
+      network: this.parent.avalanche,
+    }),
+    '31337': networkFactory({
+      id: '31337',
+      name: 'Localhost',
+      txExplorerURL: new URL('https://etherscan.io/tx'),
+      walletExplorerURL: new URL('https://etherscan.io/address'),
+      getContractAbi: useEtherscanContractAbi('https://api.etherscan.io/api'),
+      getAvgGasPrice: avgGasPriceFeedManual('1000000000'),
+      nativeTokenPrice: coingeckoPriceFeedUSD('ethereum'),
+      nativeTokenDetails: {
         decimals: 18,
         symbol: 'ETH',
         name: 'Ethereum',
       },
-      moralisPriceFeed('eth'),
-      this.parent.local,
-    ),
+      tokenPriceResolver: moralisPriceFeed('eth'),
+      network: this.parent.local,
+    }),
   } as const;
 
   readonly isNetwork = (network: string | number): network is Networks => {
