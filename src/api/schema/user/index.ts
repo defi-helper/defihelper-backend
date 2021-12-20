@@ -1052,7 +1052,7 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
       const sid = container.model.sessionService().generate(user);
       return { user, sid };
     }
-    const user = currentUser ?? (await container.model.userService().create(Role.Candidate));
+    const user = currentUser ?? (await container.model.userService().create(Role.User));
     await container.model
       .walletService()
       .create(
@@ -1137,7 +1137,7 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
       const sid = container.model.sessionService().generate(user);
       return { user, sid };
     }
-    const user = currentUser ?? (await container.model.userService().create(Role.Candidate));
+    const user = currentUser ?? (await container.model.userService().create(Role.User));
     await container.model
       .walletService()
       .create(user, 'waves', network, Wallet.WalletType.Wallet, recoveredAddress, publicKey, '');
