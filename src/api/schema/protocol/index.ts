@@ -219,7 +219,15 @@ export const ContractType = new GraphQLObjectType<Contract, Request>({
           myEarned: '0',
           myAPYBoost: '0',
         };
-        if (!currentUser) return metric;
+        if (!currentUser) {
+          metric.myAPYBoost = await apyBoost(
+            contract.blockchain,
+            contract.network,
+            10000,
+            new BN(contractMetric?.data.aprYear ?? '0').toNumber(),
+          );
+          return metric;
+        }
 
         const userMetric = await dataLoader
           .contractUserMetric({

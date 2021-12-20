@@ -139,7 +139,7 @@ export async function apyBoost(
 ) {
   const optimalPoints = await optimalRestake(blockchain, network, balance, apy);
   const lastPoint = optimalPoints[optimalPoints.length - 1];
-  if (!lastPoint) return 0;
+  if (!lastPoint) return '0';
 
   return new BN(lastPoint.v).minus(balance).div(balance).toString(10);
 }
