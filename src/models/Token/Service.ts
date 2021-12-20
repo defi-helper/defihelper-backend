@@ -5,6 +5,7 @@ import {
   TokenTable,
   TokenAliasTable,
   TokenAliasLiquidity,
+  TokenCreatedBy,
 } from '@models/Token/Entity';
 import { Blockchain } from '@models/types';
 import { v4 as uuid } from 'uuid';
@@ -88,6 +89,7 @@ export class TokenService {
     name: string,
     symbol: string,
     decimals: number,
+    createdBy: TokenCreatedBy,
   ) {
     const created = {
       id: uuid(),
@@ -98,6 +100,7 @@ export class TokenService {
       name,
       symbol,
       decimals,
+      createdBy,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

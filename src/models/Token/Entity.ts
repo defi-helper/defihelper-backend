@@ -5,6 +5,7 @@ export enum TokenAliasLiquidity {
   Stable = 'stable',
   Unstable = 'unstable',
   Trash = 'trash',
+  Unknown = 'unknown',
 }
 
 export interface TokenAlias {
@@ -24,6 +25,12 @@ export const tokenAliasTableFactory = createTableFactory<TokenAlias>(tokenAliasT
 
 export type TokenAliasTable = ReturnType<ReturnType<typeof tokenAliasTableFactory>>;
 
+export enum TokenCreatedBy {
+  Manualy = 'manualy',
+  Scanner = 'scanner',
+  Adapter = 'adapter',
+}
+
 export interface Token {
   id: string;
   alias: string | null;
@@ -33,6 +40,7 @@ export interface Token {
   name: string;
   symbol: string;
   decimals: number;
+  createdBy: TokenCreatedBy;
   updatedAt: Date;
   createdAt: Date;
 }

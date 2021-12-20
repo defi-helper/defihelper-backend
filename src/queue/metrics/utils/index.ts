@@ -1,5 +1,6 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
+import { TokenCreatedBy } from '@models/Token/Entity';
 import dayjs from 'dayjs';
 import { ethers } from 'ethers';
 
@@ -97,7 +98,6 @@ export async function walletMetrics(process: Process) {
     await metricService.createWallet(contract, wallet, walletAdapterData.metrics, date);
   }
 
-  const queue = container.model.queueService();
   if (
     typeof walletAdapterData.tokens === 'object' &&
     Object.keys(walletAdapterData.tokens).length > 0
@@ -120,21 +120,19 @@ export async function walletMetrics(process: Process) {
         if (!token) {
           token = await container.model
             .tokenService()
-            .create(null, contract.blockchain, contract.network, address, '', '', 0);
+            .create(
+              null,
+              contract.blockchain,
+              contract.network,
+              address,
+              '',
+              '',
+              0,
+              TokenCreatedBy.Adapter,
+            );
         }
 
         await metricService.createToken(contract, wallet, token, metric, date);
-        await queue.push(
-          'tokenCreate',
-          {
-            blockchain: wallet.blockchain,
-            network: wallet.network,
-            address: tokenAddress,
-          },
-          {
-            collisionSign: `tokenCreate-${wallet.blockchain}:${wallet.network}:${tokenAddress}`,
-          },
-        );
       }),
     );
   }

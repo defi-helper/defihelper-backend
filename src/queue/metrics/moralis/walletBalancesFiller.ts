@@ -1,6 +1,6 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
-import { TokenAliasLiquidity } from '@models/Token/Entity';
+import { TokenAliasLiquidity, TokenCreatedBy } from '@models/Token/Entity';
 import BN from 'bignumber.js';
 import dayjs from 'dayjs';
 
@@ -116,6 +116,7 @@ export default async (process: Process) => {
             tokenBalance.name,
             tokenBalance.symbol,
             new BN(tokenBalance.decimals).toNumber(),
+            TokenCreatedBy.Scanner,
           );
       }
 
@@ -191,6 +192,7 @@ export default async (process: Process) => {
         nativeTokenDetails.name,
         nativeTokenDetails.symbol,
         nativeTokenDetails.decimals,
+        TokenCreatedBy.Scanner,
       );
   }
 
