@@ -2,7 +2,6 @@ import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import { ProductCode } from '@models/Store/Entity';
 import { UserNotificationType } from '@models/UserNotification/Entity';
-import { WalletType } from '@models/Wallet/Entity';
 
 export interface Params {
   id: string;
@@ -12,21 +11,6 @@ export default async (process: Process) => {
   const { id } = process.task.params as Params;
   const user = await container.model.userTable().where('id', id).first();
   if (!user) throw new Error('User not found');
-
-  // Collect assets data
-  const wallets = await container.model
-    .walletTable()
-    .where('type', WalletType.Wallet)
-    .andWhere('blockchain', 'ethereum')
-    .andWhere('user', user.id);
-
-  await Promise.all(
-    wallets.map((wallet) =>
-      container.model.queueService().push('metricsMoralisWalletBalancesFiller', {
-        id: wallet.id,
-      }),
-    ),
-  );
 
   // Free notifications
   const notificationProduct = await container.model

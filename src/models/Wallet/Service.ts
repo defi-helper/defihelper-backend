@@ -10,15 +10,13 @@ export class WalletService {
   constructor(readonly table: Factory<Table>) {}
 
   public readonly onCreated = new Emitter<Wallet>(async (wallet) => {
-    if (wallet.blockchain !== 'ethereum') {
+    if (wallet.type !== WalletType.Wallet) {
       return;
     }
 
-    if (wallet.type === WalletType.Wallet) {
-      await container.model.queueService().push('findWalletContracts', {
-        walletId: wallet.id,
-      });
-    }
+    await container.model.queueService().push('findWalletContracts', {
+      walletId: wallet.id,
+    });
   });
 
   async create(
