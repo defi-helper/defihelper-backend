@@ -14,8 +14,8 @@ export class WalletService {
       return;
     }
 
-    await container.model.queueService().push('findWalletContracts', {
-      walletId: wallet.id,
+    await container.model.queueService().push('eventsWalletCreated', {
+      id: wallet.id,
     });
   });
 
