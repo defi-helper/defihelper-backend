@@ -1,5 +1,7 @@
+import container from '@container';
 import { v4 as uuid } from 'uuid';
 import { Blockchain } from '@models/types';
+import { Emitter } from '@services/Event';
 import { Protocol, Contract } from '@models/Protocol/Entity';
 import { Factory } from '@services/Container';
 import { Wallet } from '@models/Wallet/Entity';
@@ -9,11 +11,23 @@ import {
   MetricContractTable,
   MetricMap,
   MetricProtocolTable,
+  MetricWallet,
   MetricWalletTable,
   MetricWalletTokenTable,
 } from './Entity';
 
 export class MetricContractService {
+  public readonly onWalletCreated = new Emitter<MetricWallet>(async (metric) => {
+    container.cache().publish(
+      'defihelper:channel:onWalletMetricUpdated',
+      JSON.stringify({
+        id: metric.id,
+        wallet: metric.wallet,
+        contract: metric.contract,
+      }),
+    );
+  });
+
   constructor(
     readonly metricBlockchainTable: Factory<MetricBlockchainTable>,
     readonly metricProtocolTable: Factory<MetricProtocolTable>,
@@ -76,6 +90,7 @@ export class MetricContractService {
       createdAt: new Date(),
     };
     await this.metricWalletTable().insert(created);
+    this.onWalletCreated.emit(created);
 
     return created;
   }

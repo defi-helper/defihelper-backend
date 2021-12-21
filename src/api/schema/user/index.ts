@@ -9,7 +9,9 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from 'graphql';
+import { withFilter } from 'graphql-subscriptions';
 import container from '@container';
+import asyncify from 'callback-to-async-iterator';
 import { utils } from 'ethers';
 import { Request } from 'express';
 import { Locale } from '@services/I18n/container';
@@ -1279,4 +1281,68 @@ export const UserUpdateMutation: GraphQLFieldConfig<any, Request> = {
 
     return updated;
   }),
+};
+
+export const WalletMetricUpdatedEvent = new GraphQLObjectType({
+  name: 'WalletMetricUpdatedEvent',
+  fields: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+    },
+    wallet: {
+      type: GraphQLNonNull(WalletType),
+      resolve: ({ wallet }) => {
+        return container.model.walletTable().where('id', wallet).first();
+      },
+    },
+    contract: {
+      type: GraphQLNonNull(ContractType),
+      resolve: ({ contract }) => {
+        return container.model.contractTable().where('id', contract).first();
+      },
+    },
+  },
+});
+
+export const OnWalletMetricUpdated: GraphQLFieldConfig<
+  { id: string; wallet: string; contract: string },
+  Request
+> = {
+  type: GraphQLNonNull(WalletMetricUpdatedEvent),
+  args: {
+    filter: {
+      type: new GraphQLInputObjectType({
+        name: 'OnWalletMetricUpdatedFilterInputType',
+        fields: {
+          contract: {
+            type: GraphQLList(GraphQLNonNull(UuidType)),
+          },
+          wallet: {
+            type: GraphQLList(GraphQLNonNull(UuidType)),
+          },
+        },
+      }),
+      defaultValue: {},
+    },
+  },
+  subscribe: withFilter(
+    () =>
+      asyncify((callback) =>
+        Promise.resolve(
+          container.cacheSubscriber('defihelper:channel:onWalletMetricUpdated').onJSON(callback),
+        ),
+      ),
+    ({ wallet, contract }, { filter }) => {
+      let result = true;
+      if (typeof filter.wallet === 'string') {
+        result = result && filter.wallet.includes(wallet);
+      }
+      if (typeof filter.contract === 'string') {
+        result = result && filter.contract.includes(contract);
+      }
+
+      return result;
+    },
+  ),
+  resolve: (event) => event,
 };

@@ -18,6 +18,19 @@ export function redisConnectFactory(config: ConnectFactoryConfig) {
     });
 }
 
+export function redisSubscriberFactory(connectFactory: Factory<redis.RedisClient>) {
+  return (channel: string) => {
+    const subscriber = connectFactory().duplicate();
+    subscriber.subscribe(channel);
+
+    return {
+      subscriber,
+      onJSON: (callback: <T = any>(msg: T) => any) =>
+        subscriber.on('message', (_, message) => callback(JSON.parse(message))),
+    };
+  };
+}
+
 export function redisLockFactory(cache: Factory<RedisClient>) {
   return () => ({
     lock(key: string) {

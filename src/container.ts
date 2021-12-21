@@ -1,4 +1,4 @@
-import { Container, singleton } from '@services/Container';
+import { Container, singleton, singletonParametric } from '@services/Container';
 import { SocialStatsGateway } from '@services/SocialStats';
 import { TreasuryService } from '@services/Treasury';
 import { pgConnectFactory } from '@services/Database';
@@ -6,7 +6,7 @@ import { consoleFactory } from '@services/Log';
 import * as Blockchain from '@services/Blockchain';
 import { I18nContainer } from '@services/I18n/container';
 import { ModelContainer } from '@models/container';
-import { redisConnectFactory, redisLockFactory } from '@services/Cache';
+import { redisConnectFactory, redisLockFactory, redisSubscriberFactory } from '@services/Cache';
 import { ACLContainer } from '@services/ACL/container';
 import { TemplateContainer } from '@services/Template/container';
 import { emailServiceFactory } from '@services/Email';
@@ -21,6 +21,8 @@ class AppContainer extends Container<typeof config> {
   readonly database = singleton(pgConnectFactory(this.parent.database));
 
   readonly cache = singleton(redisConnectFactory(this.parent.cache));
+
+  readonly cacheSubscriber = singletonParametric(redisSubscriberFactory(this.cache));
 
   readonly semafor = singleton(redisLockFactory(this.cache));
 
