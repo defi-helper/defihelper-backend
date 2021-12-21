@@ -1,9 +1,20 @@
 import { Blockchain } from '@models/types';
 import { v4 as uuid } from 'uuid';
 import { Factory } from '@services/Container';
+import { Emitter } from '@services/Event';
+import container from '@container';
 import { Bill, BillStatus, BillTable, Transfer, TransferTable } from './Entity';
 
 export class BillingService {
+  public readonly onTransferCreated = new Emitter<Transfer>(async (transfer) => {
+    container.cache().publish(
+      'defihelper:channel:onBillingTransferCreated',
+      JSON.stringify({
+        id: transfer.id,
+      }),
+    );
+  });
+
   constructor(
     readonly billTable: Factory<BillTable>,
     readonly transferTable: Factory<TransferTable>,
@@ -29,6 +40,7 @@ export class BillingService {
       createdAt,
     };
     await this.transferTable().insert(created);
+    this.onTransferCreated.emit(created);
 
     return created;
   }

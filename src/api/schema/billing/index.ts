@@ -1,6 +1,9 @@
 import container from '@container';
+import asyncify from 'callback-to-async-iterator';
+import { Request } from 'express';
 import { User } from '@models/User/Entity';
 import { Wallet, tableName as walletTableName } from '@models/Wallet/Entity';
+import { withFilter } from 'graphql-subscriptions';
 import {
   Bill,
   BillStatus,
@@ -17,6 +20,7 @@ import {
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
+  GraphQLFieldConfig,
 } from 'graphql';
 import BN from 'bignumber.js';
 import {
@@ -505,3 +509,55 @@ export const UserBillingType = new GraphQLObjectType<User>({
     },
   },
 });
+
+export const OnTransferCreated: GraphQLFieldConfig<{ id: string }, Request> = {
+  type: GraphQLNonNull(TransferType),
+  args: {
+    filter: {
+      type: new GraphQLInputObjectType({
+        name: 'OnTransferCreatedFilterInputType',
+        fields: {
+          wallet: {
+            type: GraphQLList(GraphQLNonNull(UuidType)),
+          },
+        },
+      }),
+      defaultValue: {},
+    },
+  },
+  subscribe: withFilter(
+    () =>
+      asyncify((callback) =>
+        Promise.resolve(
+          container.cacheSubscriber('defihelper:channel:onBillingTransferCreated').onJSON(callback),
+        ),
+      ),
+    async ({ id }, { filter }) => {
+      const transfer = await container.model.billingTransferTable().where('id', id).first();
+      if (!transfer) return false;
+
+      let result = true;
+      if (typeof filter.wallet === 'string') {
+        const wallet = await container.model
+          .walletTable()
+          .where({
+            blockchain: transfer.blockchain,
+            network: transfer.network,
+            address:
+              transfer.blockchain === 'ethereum'
+                ? transfer.account.toLowerCase()
+                : transfer.account,
+          })
+          .first();
+        if (!wallet) return false;
+
+        result = result && filter.wallet.includes(wallet.address);
+      }
+
+      return result;
+    },
+  ),
+  resolve: ({ id }) => {
+    return container.model.billingTransferTable().where('id', id).first();
+  },
+};

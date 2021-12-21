@@ -1,84 +1,22 @@
+import container from '@container';
 import { Express, Request } from 'express';
 import { Server } from 'http';
 import { ApolloServer } from 'apollo-server-express';
 import { json } from 'body-parser';
 import { GraphQLNonNull, GraphQLObjectType, GraphQLSchema, GraphQLString } from 'graphql';
-import {
-  UserContactEmailConfirmMutation,
-  UserContactCreateMutation,
-  UserContactDeleteMutation,
-  UserContactListQuery,
-  UserContactQuery,
-  UserEventSubscriptionQuery,
-  UserEventSubscriptionListQuery,
-  UserEventSubscriptionCreateMutation,
-  UserEventSubscriptionDeleteMutation,
-  UserContactUpdateMutation,
-} from '@api/schema/notification';
-import container from '@container';
-import {
-  UserNotificationToggleMutation,
-  UserNotificationListQuery,
-} from '@api/schema/userNotification';
-import {
-  AddWalletMutation,
-  AuthEthereumMutation,
-  AuthWavesMutation,
-  UserListQuery,
-  UserType,
-  UserUpdateMutation,
-  WalletDeleteMutation,
-  WalletUpdateMutation,
-} from './schema/user';
-import * as middlewares from './middlewares';
-import {
-  ProtocolCreateMutation,
-  ProtocolDeleteMutation,
-  ProtocolListQuery,
-  ProtocolQuery,
-  ProtocolUpdateMutation,
-  ContractCreateMutation,
-  ContractUpdateMutation,
-  ContractDeleteMutation,
-  ContractWalletLinkMutation,
-  ContractWalletUnlinkMutation,
-  ProtocolFavoriteMutation,
-  ProtocolResolveContractsMutation,
-} from './schema/protocol';
-import {
-  ProposalCreateMutation,
-  ProposalDeleteMutation,
-  ProposalListQuery,
-  ProposalQuery,
-  ProposalUpdateMutation,
-  UnvoteMutation,
-  VoteMutation,
-} from './schema/proposal';
-import {
-  TokenAliasCreateMutation,
-  TokenAliasDeleteMutation,
-  TokenAliasListQuery,
-  TokenAliasQuery,
-  TokenAliasUpdateMutation,
-  TokenListQuery,
-  TokenUpdateMutation,
-} from './schema/token';
-import {
-  ProductCreateMutation,
-  ProductDeleteMutation,
-  ProductListQuery,
-  ProductUpdateMutation,
-} from './schema/store';
-import {
-  GovProposalListQuery,
-  GovProposalQuery,
-  GovReceiptQuery,
-  GovTokenQuery,
-  GovVotesQuery,
-} from './schema/governance';
-import * as Automate from './schema/automate';
-import { RestakeStrategyQuery } from './schema/restakeStrategy';
-import { TreasuryQuery } from './schema/treasury';
+import * as middlewares from '@api/middlewares';
+import * as notificationSchemas from '@api/schema/notification';
+import * as userNotificationSchemas from '@api/schema/userNotification';
+import * as billingSchemas from '@api/schema/billing';
+import * as userSchemas from '@api/schema/user';
+import * as protocolSchemas from '@api/schema/protocol';
+import * as proposalSchemas from '@api/schema/proposal';
+import * as tokenSchemas from '@api/schema/token';
+import * as storeSchemas from '@api/schema/store';
+import * as governanceSchemas from '@api/schema/governance';
+import * as Automate from '@api/schema/automate';
+import * as restakeStrategySchemas from '@api/schema/restakeStrategy';
+import * as treasurySchemas from '@api/schema/treasury';
 
 export function route({ express, server }: { express: Express; server: Server }) {
   const apollo = new ApolloServer({
@@ -91,74 +29,74 @@ export function route({ express, server }: { express: Express; server: Server })
             resolve: () => 'pong',
           },
           me: {
-            type: UserType,
+            type: userSchemas.UserType,
             resolve: (root, args, { currentUser }) => currentUser,
           },
-          users: UserListQuery,
-          protocol: ProtocolQuery,
-          protocols: ProtocolListQuery,
-          proposal: ProposalQuery,
-          proposals: ProposalListQuery,
-          userContact: UserContactQuery,
-          userContacts: UserContactListQuery,
-          userNotifications: UserNotificationListQuery,
-          userEventSubscription: UserEventSubscriptionQuery,
-          userEventSubscriptions: UserEventSubscriptionListQuery,
-          tokens: TokenListQuery,
-          tokenAlias: TokenAliasQuery,
-          tokensAlias: TokenAliasListQuery,
-          products: ProductListQuery,
-          govProposal: GovProposalQuery,
-          govProposals: GovProposalListQuery,
-          govReceipt: GovReceiptQuery,
-          govVotes: GovVotesQuery,
+          users: userSchemas.UserListQuery,
+          protocol: protocolSchemas.ProtocolQuery,
+          protocols: protocolSchemas.ProtocolListQuery,
+          proposal: proposalSchemas.ProposalQuery,
+          proposals: proposalSchemas.ProposalListQuery,
+          userContact: notificationSchemas.UserContactQuery,
+          userContacts: notificationSchemas.UserContactListQuery,
+          userNotifications: userNotificationSchemas.UserNotificationListQuery,
+          userEventSubscription: notificationSchemas.UserEventSubscriptionQuery,
+          userEventSubscriptions: notificationSchemas.UserEventSubscriptionListQuery,
+          tokens: tokenSchemas.TokenListQuery,
+          tokenAlias: tokenSchemas.TokenAliasQuery,
+          tokensAlias: tokenSchemas.TokenAliasListQuery,
+          products: storeSchemas.ProductListQuery,
+          govProposal: governanceSchemas.GovProposalQuery,
+          govProposals: governanceSchemas.GovProposalListQuery,
+          govReceipt: governanceSchemas.GovReceiptQuery,
+          govVotes: governanceSchemas.GovVotesQuery,
           automateDescription: Automate.DescriptionQuery,
           automateTrigger: Automate.TriggerQuery,
           automateTriggers: Automate.TriggerListQuery,
           automateContracts: Automate.ContractListQuery,
-          govToken: GovTokenQuery,
-          restakeStrategy: RestakeStrategyQuery,
-          treasury: TreasuryQuery,
+          govToken: governanceSchemas.GovTokenQuery,
+          restakeStrategy: restakeStrategySchemas.RestakeStrategyQuery,
+          treasury: treasurySchemas.TreasuryQuery,
         },
       }),
       mutation: new GraphQLObjectType({
         name: 'Mutation',
         fields: {
-          authEth: AuthEthereumMutation,
-          authWaves: AuthWavesMutation,
-          addWallet: AddWalletMutation,
-          walletUpdate: WalletUpdateMutation,
-          walletDelete: WalletDeleteMutation,
-          userUpdate: UserUpdateMutation,
-          protocolCreate: ProtocolCreateMutation,
-          protocolUpdate: ProtocolUpdateMutation,
-          protocolResolveContracts: ProtocolResolveContractsMutation,
-          protocolDelete: ProtocolDeleteMutation,
-          protocolFavorite: ProtocolFavoriteMutation,
-          contractCreate: ContractCreateMutation,
-          contractUpdate: ContractUpdateMutation,
-          contractDelete: ContractDeleteMutation,
-          userNotificationToggle: UserNotificationToggleMutation,
-          contractWalletLink: ContractWalletLinkMutation,
-          contractWalletUnlink: ContractWalletUnlinkMutation,
-          tokenUpdate: TokenUpdateMutation,
-          tokenAliasCreate: TokenAliasCreateMutation,
-          tokenAliasUpdate: TokenAliasUpdateMutation,
-          tokenAliasDelete: TokenAliasDeleteMutation,
-          proposalCreate: ProposalCreateMutation,
-          proposalUpdate: ProposalUpdateMutation,
-          proposalDelete: ProposalDeleteMutation,
-          vote: VoteMutation,
-          unvote: UnvoteMutation,
-          userContactCreate: UserContactCreateMutation,
-          userContactUpdate: UserContactUpdateMutation,
-          userContactEmailConfirm: UserContactEmailConfirmMutation,
-          userContactDelete: UserContactDeleteMutation,
-          userEventSubscriptionCreate: UserEventSubscriptionCreateMutation,
-          userEventSubscriptionDelete: UserEventSubscriptionDeleteMutation,
-          productCreate: ProductCreateMutation,
-          productUpdate: ProductUpdateMutation,
-          productDelete: ProductDeleteMutation,
+          authEth: userSchemas.AuthEthereumMutation,
+          authWaves: userSchemas.AuthWavesMutation,
+          addWallet: userSchemas.AddWalletMutation,
+          walletUpdate: userSchemas.WalletUpdateMutation,
+          walletDelete: userSchemas.WalletDeleteMutation,
+          userUpdate: userSchemas.UserUpdateMutation,
+          protocolCreate: protocolSchemas.ProtocolCreateMutation,
+          protocolUpdate: protocolSchemas.ProtocolUpdateMutation,
+          protocolResolveContracts: protocolSchemas.ProtocolResolveContractsMutation,
+          protocolDelete: protocolSchemas.ProtocolDeleteMutation,
+          protocolFavorite: protocolSchemas.ProtocolFavoriteMutation,
+          contractCreate: protocolSchemas.ContractCreateMutation,
+          contractUpdate: protocolSchemas.ContractUpdateMutation,
+          contractDelete: protocolSchemas.ContractDeleteMutation,
+          contractWalletLink: protocolSchemas.ContractWalletLinkMutation,
+          contractWalletUnlink: protocolSchemas.ContractWalletUnlinkMutation,
+          userNotificationToggle: userNotificationSchemas.UserNotificationToggleMutation,
+          tokenUpdate: tokenSchemas.TokenUpdateMutation,
+          tokenAliasCreate: tokenSchemas.TokenAliasCreateMutation,
+          tokenAliasUpdate: tokenSchemas.TokenAliasUpdateMutation,
+          tokenAliasDelete: tokenSchemas.TokenAliasDeleteMutation,
+          proposalCreate: proposalSchemas.ProposalCreateMutation,
+          proposalUpdate: proposalSchemas.ProposalUpdateMutation,
+          proposalDelete: proposalSchemas.ProposalDeleteMutation,
+          vote: proposalSchemas.VoteMutation,
+          unvote: proposalSchemas.UnvoteMutation,
+          userContactCreate: notificationSchemas.UserContactCreateMutation,
+          userContactUpdate: notificationSchemas.UserContactUpdateMutation,
+          userContactEmailConfirm: notificationSchemas.UserContactEmailConfirmMutation,
+          userContactDelete: notificationSchemas.UserContactDeleteMutation,
+          userEventSubscriptionCreate: notificationSchemas.UserEventSubscriptionCreateMutation,
+          userEventSubscriptionDelete: notificationSchemas.UserEventSubscriptionDeleteMutation,
+          productCreate: storeSchemas.ProductCreateMutation,
+          productUpdate: storeSchemas.ProductUpdateMutation,
+          productDelete: storeSchemas.ProductDeleteMutation,
           automateTriggerCreate: Automate.TriggerCreateMutation,
           automateTriggerUpdate: Automate.TriggerUpdateMutation,
           automateTriggerDelete: Automate.TriggerDeleteMutation,
@@ -171,6 +109,13 @@ export function route({ express, server }: { express: Express; server: Server })
           automateContractCreate: Automate.ContractCreateMutation,
           automateContractUpdate: Automate.ContractUpdateMutation,
           automateContractDelete: Automate.ContractDeleteMutation,
+        },
+      }),
+      subscription: new GraphQLObjectType<any, Request>({
+        name: 'Subscription',
+        fields: {
+          onWalletMetricUpdated: userSchemas.OnWalletMetricUpdated,
+          onBillingTransferCreated: billingSchemas.OnTransferCreated,
         },
       }),
     }),

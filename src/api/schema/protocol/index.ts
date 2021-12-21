@@ -1231,11 +1231,11 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
           });
         this.whereIn('id', contractSelect);
       }
-      if (currentUser && typeof favorite === 'boolean') {
+      if (typeof favorite === 'boolean') {
         const favoriteSelect = container.model
           .protocolUserFavoriteTable()
           .column('protocol')
-          .where('user', currentUser.id);
+          .where('user', currentUser ? currentUser.id : '');
         if (favorite === true) {
           this.whereIn('id', favoriteSelect);
         } else {

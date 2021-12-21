@@ -59,6 +59,8 @@ export default async (process: Process) => {
       trigger,
       e instanceof Error ? e : new Error(`${e}`),
     );
+
+    return process.info(`crashed, retry #${trigger.retries}`).done();
   }
 
   await automateService.resetTriggerRetries(trigger);
