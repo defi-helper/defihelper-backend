@@ -35,7 +35,7 @@ export default {
       'Checks the native (eth,bnb,avax and etc.) token balance',
     'automate:condition:ethereumBalance:paramsDescription':
       'Wallet balance {{wallet}} in network {{network}} {{op}} {{value}}',
-    'automate:condition:ethereumOptimalAutomateRun:name': 'Optimal Staking',
+    'automate:condition:ethereumOptimalAutomateRun:name': 'Optimised Staking',
     'automate:condition:ethereumOptimalAutomateRun:description': 'Use our Autostaking feature',
     'automate:action:ethereumOptimalAutomateRun:paramsDescription':
       'Autostaking for action: {{id}}',
