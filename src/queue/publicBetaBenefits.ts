@@ -14,7 +14,7 @@ export default async (process: Process) => {
     .storeProductTable()
     .where({
       code: ProductCode.Notification,
-      amount: 100,
+      amount: 1000,
     })
     .first();
 
@@ -28,7 +28,7 @@ export default async (process: Process) => {
         .storeService()
         .availableNotifications(user);
 
-      if (availableNotifications >= 100) {
+      if (availableNotifications >= 1000) {
         return null;
       }
 
