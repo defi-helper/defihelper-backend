@@ -27,13 +27,13 @@ export class GraphQLParseError extends GraphQLError {
   }
 }
 
-export const PaginationType = new GraphQLObjectType({
+export const PaginationType = new GraphQLObjectType<{ count: { count: number } | undefined }>({
   name: 'Pagination',
   fields: {
     count: {
       type: GraphQLNonNull(GraphQLInt),
       description: 'Count of list elements',
-      resolve: ({ count: { count } }) => parseInt(count.toString(), 10),
+      resolve: ({ count: row }) => (row ? parseInt(row.count.toString(), 10) : 0),
     },
   },
 });
