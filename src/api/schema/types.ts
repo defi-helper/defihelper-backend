@@ -18,7 +18,6 @@ import {
 } from 'graphql';
 import container from '@container';
 import { Request } from 'express';
-import { QueryBuilder } from 'knex';
 import { ForbiddenError } from 'apollo-server-express';
 
 export class GraphQLParseError extends GraphQLError {
@@ -215,32 +214,6 @@ export const MetricChartType = new GraphQLObjectType({
     },
   },
 });
-
-export const metricsChartSelector = (
-  avgGroupSelector: QueryBuilder,
-  group: string,
-  metric: string,
-) => {
-  const database = container.database();
-
-  return container
-    .database()
-    .column('date')
-    .max({ max: 'value' })
-    .min({ min: 'value' })
-    .count({ count: 'value' })
-    .avg({ avg: 'value' })
-    .sum({ sum: 'value' })
-    .from(
-      avgGroupSelector
-        .column(database.raw(`DATE_TRUNC('${group}', "date") AS "date"`))
-        .column(database.raw(`AVG((data->>'${metric}')::numeric) AS "value"`))
-        .andWhere(database.raw(`data->>'${metric}' IS NOT NULL`))
-        .groupBy(database.raw(`DATE_TRUNC('${group}', "date")`))
-        .as('avgGroupSelector'),
-    )
-    .groupBy('date');
-};
 
 export function onlyAllowed<TSource, TArgs = { [argName: string]: any }>(
   flag: string,

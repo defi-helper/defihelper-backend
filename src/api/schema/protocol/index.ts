@@ -21,7 +21,11 @@ import {
   ContractAutomate,
 } from '@models/Protocol/Entity';
 import { apyBoost } from '@services/RestakeStrategy';
-import { metricWalletTableName } from '@models/Metric/Entity';
+import {
+  metricContractTableName,
+  metricProtocolTableName,
+  metricWalletTableName,
+} from '@models/Metric/Entity';
 import { tableName as walletTableName, WalletType } from '@models/Wallet/Entity';
 import { AuthenticationError, ForbiddenError, UserInputError } from 'apollo-server-express';
 import BN from 'bignumber.js';
@@ -35,7 +39,6 @@ import {
   MetricChartType,
   MetricColumnType,
   MetricGroupEnum,
-  metricsChartSelector,
   PaginateList,
   PaginationArgument,
   SortArgument,
@@ -170,19 +173,36 @@ export const ContractType = new GraphQLObjectType<Contract, Request>({
         pagination: PaginationArgument('ContractMetricChartPaginationInputType'),
       },
       resolve: async (contract, { metric, group, filter, sort, pagination }) => {
-        return metricsChartSelector(
-          container.model.metricContractTable().where(function () {
-            this.where('contract', contract.id);
+        const database = container.database();
+        const select = container.model
+          .metricContractTable()
+          .distinctOn('date')
+          .column(database.raw(`(${metricContractTableName}.data->>'${metric}')::numeric AS value`))
+          .column(database.raw(`DATE_TRUNC('${group}', ${metricContractTableName}.date) AS "date"`))
+          .where(function () {
+            this.where(`${metricContractTableName}.contract`, contract.id).andWhere(
+              database.raw(`${metricContractTableName}.data->>'${metric}' IS NOT NULL`),
+            );
             if (filter.dateAfter) {
-              this.andWhere('date', '>=', filter.dateAfter.toDate());
+              this.andWhere(`${metricContractTableName}.date`, '>=', filter.dateAfter.toDate());
             }
             if (filter.dateBefore) {
-              this.andWhere('date', '<', filter.dateBefore.toDate());
+              this.andWhere(`${metricContractTableName}.date`, '<', filter.dateBefore.toDate());
             }
-          }),
-          group,
-          metric,
-        )
+          })
+          .orderBy('date')
+          .orderBy(`${metricContractTableName}.date`, 'DESC');
+
+        return container
+          .database()
+          .column('date')
+          .max({ max: 'value' })
+          .min({ min: 'value' })
+          .count({ count: 'value' })
+          .avg({ avg: 'value' })
+          .sum({ sum: 'value' })
+          .from(select.as('metric'))
+          .groupBy('date')
           .orderBy(sort)
           .limit(pagination.limit)
           .offset(pagination.offset);
@@ -887,19 +907,36 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
         pagination: PaginationArgument('ProtocolMetricChartPaginationInputType'),
       },
       resolve: async (protocol, { metric, group, filter, sort, pagination }) => {
-        return metricsChartSelector(
-          container.model.metricProtocolTable().where(function () {
-            this.where('protocol', protocol.id);
+        const database = container.database();
+        const select = container.model
+          .metricProtocolTable()
+          .distinctOn('date')
+          .column(database.raw(`(${metricProtocolTableName}.data->>'${metric}')::numeric AS value`))
+          .column(database.raw(`DATE_TRUNC('${group}', ${metricProtocolTableName}.date) AS "date"`))
+          .where(function () {
+            this.where(`${metricProtocolTableName}.protocol`, protocol.id).andWhere(
+              database.raw(`${metricProtocolTableName}.data->>'${metric}' IS NOT NULL`),
+            );
             if (filter.dateAfter) {
-              this.andWhere('date', '>=', filter.dateAfter.toDate());
+              this.andWhere(`${metricProtocolTableName}.date`, '>=', filter.dateAfter.toDate());
             }
             if (filter.dateBefore) {
-              this.andWhere('date', '<', filter.dateBefore.toDate());
+              this.andWhere(`${metricProtocolTableName}.date`, '<', filter.dateBefore.toDate());
             }
-          }),
-          group,
-          metric,
-        )
+          })
+          .orderBy('date')
+          .orderBy(`${metricProtocolTableName}.date`, 'DESC');
+
+        return container
+          .database()
+          .column('date')
+          .max({ max: 'value' })
+          .min({ min: 'value' })
+          .count({ count: 'value' })
+          .avg({ avg: 'value' })
+          .sum({ sum: 'value' })
+          .from(select.as('metric'))
+          .groupBy('date')
           .orderBy(sort)
           .limit(pagination.limit)
           .offset(pagination.offset);
@@ -943,36 +980,49 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
         pagination: PaginationArgument('ProtocolMetricChartContractsPaginationInputType'),
       },
       resolve: async (protocol, { metric, group, filter, sort, pagination }) => {
-        const contractSelect = container.model
-          .contractTable()
-          .columns('id')
+        const database = container.database();
+        const select = container.model
+          .metricContractTable()
+          .distinctOn(`${metricContractTableName}.contract`, 'date')
+          .column(database.raw(`(${metricContractTableName}.data->>'${metric}')::numeric AS value`))
+          .column(database.raw(`DATE_TRUNC('${group}', ${metricContractTableName}.date) AS "date"`))
+          .innerJoin(
+            contractTableName,
+            `${contractTableName}.id`,
+            `${metricContractTableName}.contract`,
+          )
           .where(function () {
-            this.where('protocol', protocol.id);
+            this.where(`${contractTableName}.protocol`, protocol.id).andWhere(
+              database.raw(`${metricContractTableName}.data->>'${metric}' IS NOT NULL`),
+            );
             if (filter.blockchain) {
               const { protocol: blockchain, network } = filter.blockchain;
-              this.andWhere('blockchain', blockchain);
+              this.andWhere(`${contractTableName}.blockchain`, blockchain);
               if (network !== undefined) {
-                this.andWhere('network', network);
+                this.andWhere(`${contractTableName}.network`, network);
               }
             }
-          });
+            if (filter.dateAfter) {
+              this.andWhere(`${metricContractTableName}.date`, '>=', filter.dateAfter.toDate());
+            }
+            if (filter.dateBefore) {
+              this.andWhere(`${metricContractTableName}.date`, '<', filter.dateBefore.toDate());
+            }
+          })
+          .orderBy(`${metricContractTableName}.contract`)
+          .orderBy('date')
+          .orderBy(`${metricContractTableName}.date`, 'DESC');
 
-        return metricsChartSelector(
-          container.model
-            .metricContractTable()
-            .where(function () {
-              this.whereIn('contract', contractSelect);
-              if (filter.dateAfter) {
-                this.andWhere('date', '>=', filter.dateAfter.toDate());
-              }
-              if (filter.dateBefore) {
-                this.andWhere('date', '<', filter.dateBefore.toDate());
-              }
-            })
-            .groupBy('contract'),
-          group,
-          metric,
-        )
+        return container
+          .database()
+          .column('date')
+          .max({ max: 'value' })
+          .min({ min: 'value' })
+          .count({ count: 'value' })
+          .avg({ avg: 'value' })
+          .sum({ sum: 'value' })
+          .from(select.as('metric'))
+          .groupBy('date')
           .orderBy(sort)
           .limit(pagination.limit)
           .offset(pagination.offset);
@@ -1020,42 +1070,58 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
         pagination: PaginationArgument('ProtocolMetricChartUsersPaginationInputType'),
       },
       resolve: async (protocol, { metric, group, filter, sort, pagination }) => {
-        const contractSelect = container.model
-          .contractTable()
-          .columns('id')
+        const database = container.database();
+        const select = container.model
+          .metricWalletTable()
+          .distinctOn(
+            `${metricWalletTableName}.contract`,
+            `${metricWalletTableName}.wallet`,
+            'date',
+          )
+          .column(database.raw(`(${metricWalletTableName}.data->>'${metric}')::numeric AS value`))
+          .column(database.raw(`DATE_TRUNC('${group}', ${metricWalletTableName}.date) AS "date"`))
+          .innerJoin(
+            contractTableName,
+            `${contractTableName}.id`,
+            `${metricWalletTableName}.contract`,
+          )
+          .innerJoin(walletTableName, `${walletTableName}.id`, `${metricWalletTableName}.wallet`)
           .where(function () {
-            this.where('protocol', protocol.id);
+            this.where(`${contractTableName}.protocol`, protocol.id).andWhere(
+              database.raw(`${metricWalletTableName}.data->>'${metric}' IS NOT NULL`),
+            );
+            if (Array.isArray(filter.user) && filter.user.length > 0) {
+              this.whereIn(`${walletTableName}.user`, filter.user);
+            }
             if (filter.blockchain) {
               const { protocol: blockchain, network } = filter.blockchain;
-              this.andWhere('blockchain', blockchain);
+              this.andWhere(`${contractTableName}.blockchain`, blockchain);
               if (network !== undefined) {
-                this.andWhere('network', network);
+                this.andWhere(`${contractTableName}.network`, network);
               }
             }
-          });
+            if (filter.dateAfter) {
+              this.andWhere(`${metricWalletTableName}.date`, '>=', filter.dateAfter.toDate());
+            }
+            if (filter.dateBefore) {
+              this.andWhere(`${metricWalletTableName}.date`, '<', filter.dateBefore.toDate());
+            }
+          })
+          .orderBy(`${metricWalletTableName}.contract`)
+          .orderBy(`${metricWalletTableName}.wallet`)
+          .orderBy('date')
+          .orderBy(`${metricWalletTableName}.date`, 'DESC');
 
-        return metricsChartSelector(
-          container.model
-            .metricWalletTable()
-            .where(function () {
-              this.whereIn('contract', contractSelect);
-              if (Array.isArray(filter.user) && filter.user.length > 0) {
-                this.whereIn(
-                  'wallet',
-                  container.model.walletTable().columns('id').whereIn('user', filter.user),
-                );
-              }
-              if (filter.dateAfter) {
-                this.andWhere('date', '>=', filter.dateAfter.toDate());
-              }
-              if (filter.dateBefore) {
-                this.andWhere('date', '<', filter.dateBefore.toDate());
-              }
-            })
-            .groupBy('contract'),
-          group,
-          metric,
-        )
+        return container
+          .database()
+          .column('date')
+          .max({ max: 'value' })
+          .min({ min: 'value' })
+          .count({ count: 'value' })
+          .avg({ avg: 'value' })
+          .sum({ sum: 'value' })
+          .from(select.as('metric'))
+          .groupBy('date')
           .orderBy(sort)
           .limit(pagination.limit)
           .offset(pagination.offset);
