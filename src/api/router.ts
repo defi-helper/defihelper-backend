@@ -115,6 +115,7 @@ export function route({ express, server }: { express: Express; server: Server })
         name: 'Subscription',
         fields: {
           onWalletMetricUpdated: userSchemas.OnWalletMetricUpdated,
+          onTokenMetricUpdated: userSchemas.OnTokenMetricUpdated,
           onBillingTransferCreated: billingSchemas.OnTransferCreated,
         },
       }),

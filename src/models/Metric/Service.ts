@@ -13,6 +13,7 @@ import {
   MetricProtocolTable,
   MetricWallet,
   MetricWalletTable,
+  MetricWalletToken,
   MetricWalletTokenTable,
 } from './Entity';
 
@@ -24,6 +25,18 @@ export class MetricContractService {
         id: metric.id,
         wallet: metric.wallet,
         contract: metric.contract,
+      }),
+    );
+  });
+
+  public readonly onTokenCreated = new Emitter<MetricWalletToken>(async (metric) => {
+    container.cache().publish(
+      'defihelper:channel:onTokenMetricUpdated',
+      JSON.stringify({
+        id: metric.id,
+        wallet: metric.wallet,
+        contract: metric.contract,
+        token: metric.token,
       }),
     );
   });
@@ -118,6 +131,7 @@ export class MetricContractService {
       createdAt: new Date(),
     };
     await this.metricWalletTokenTable().insert(created);
+    this.onTokenCreated.emit(created);
 
     return created;
   }

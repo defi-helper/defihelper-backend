@@ -1440,3 +1440,81 @@ export const OnWalletMetricUpdated: GraphQLFieldConfig<
   ),
   resolve: (event) => event,
 };
+
+export const TokenMetricUpdatedEvent = new GraphQLObjectType({
+  name: 'TokenMetricUpdatedEvent',
+  fields: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+    },
+    wallet: {
+      type: GraphQLNonNull(WalletType),
+      resolve: ({ wallet }) => {
+        return container.model.walletTable().where('id', wallet).first();
+      },
+    },
+    contract: {
+      type: ContractType,
+      resolve: ({ contract }) => {
+        return contract ? container.model.contractTable().where('id', contract).first() : null;
+      },
+    },
+    token: {
+      type: GraphQLNonNull(WalletType),
+      resolve: ({ token }) => {
+        return container.model.tokenTable().where('id', token).first();
+      },
+    },
+  },
+});
+
+export const OnTokenMetricUpdated: GraphQLFieldConfig<
+  { id: string; wallet: string; contract: string | null; token: string },
+  Request
+> = {
+  type: GraphQLNonNull(TokenMetricUpdatedEvent),
+  args: {
+    filter: {
+      type: new GraphQLInputObjectType({
+        name: 'OnTokenMetricUpdatedFilterInputType',
+        fields: {
+          token: {
+            type: GraphQLList(GraphQLNonNull(UuidType)),
+          },
+          contract: {
+            type: GraphQLList(GraphQLNonNull(UuidType)),
+          },
+          wallet: {
+            type: GraphQLList(GraphQLNonNull(UuidType)),
+          },
+        },
+      }),
+      defaultValue: {},
+    },
+  },
+  subscribe: withFilter(
+    () =>
+      asyncify((callback) =>
+        Promise.resolve(
+          container.cacheSubscriber('defihelper:channel:onTokenMetricUpdated').onJSON(callback),
+        ),
+      ),
+    ({ wallet, contract, token }, { filter }) => {
+      let result = true;
+      if (Array.isArray(filter.wallet)) {
+        result = result && filter.wallet.includes(wallet);
+      }
+      if (Array.isArray(filter.contract)) {
+        result = result && filter.contract.includes(contract);
+      } else {
+        result = result && contract === null;
+      }
+      if (Array.isArray(filter.token)) {
+        result = result && filter.token.includes(token);
+      }
+
+      return result;
+    },
+  ),
+  resolve: (event) => event,
+};
