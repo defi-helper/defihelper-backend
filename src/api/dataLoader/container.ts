@@ -12,6 +12,7 @@ import {
   userBlockchainLoader,
   userLastAPRLoader,
   userLastMetricLoader,
+  userTokenLastMetricLoader,
   walletLastMetricLoader,
   walletLoader,
   walletTokenLastMetricLoader,
@@ -37,6 +38,8 @@ export class DataLoaderContainer extends Container<{}> {
   readonly userMetric = singletonParametric(userLastMetricLoader);
 
   readonly userAPRMetric = singletonParametric(userLastAPRLoader);
+
+  readonly userTokenMetric = singletonParametric(userTokenLastMetricLoader);
 
   readonly wallet = singleton(walletLoader);
 

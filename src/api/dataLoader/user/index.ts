@@ -135,6 +135,63 @@ export const userLastAPRLoader = ({ metric }: { metric: MetricContractAPRField }
     });
   });
 
+export const userTokenLastMetricLoader = ({
+  contract,
+  tokenAlias,
+}: {
+  contract?: { id?: string[] } | null;
+  tokenAlias?: { liquidity?: TokenAliasLiquidity[] };
+}) =>
+  new DataLoader(async (usersId: ReadonlyArray<string>) => {
+    const database = container.database();
+    let select = container.model
+      .metricWalletTokenTable()
+      .distinctOn(`${metricWalletTokenTableName}.wallet`, `${metricWalletTokenTableName}.token`)
+      .column(`${walletTableName}.user`)
+      .column(database.raw(`(${metricWalletTokenTableName}.data->>'usd')::numeric AS v`))
+      .innerJoin(walletTableName, `${walletTableName}.id`, `${metricWalletTokenTableName}.wallet`)
+      .where(function () {
+        this.whereIn(`${walletTableName}.user`, usersId).andWhere(
+          database.raw(`${metricWalletTokenTableName}.data->>'usd' IS NOT NULL`),
+        );
+        if (typeof contract === 'object') {
+          if (contract !== null) {
+            if (Array.isArray(contract.id)) {
+              this.whereIn(`${metricWalletTokenTableName}.contract`, contract.id);
+            }
+          } else {
+            this.whereNull(`${metricWalletTokenTableName}.contract`);
+          }
+        }
+      })
+      .orderBy(`${metricWalletTokenTableName}.wallet`)
+      .orderBy(`${metricWalletTokenTableName}.token`)
+      .orderBy(`${metricWalletTokenTableName}.date`, 'DESC');
+    if (typeof tokenAlias === 'object') {
+      select = select
+        .clone()
+        .innerJoin(tokenTableName, `${tokenTableName}.id`, `${metricWalletTokenTableName}.token`)
+        .innerJoin(tokenAliasTableName, `${tokenAliasTableName}.id`, `${tokenTableName}.alias`)
+        .where(function () {
+          if (Array.isArray(tokenAlias.liquidity)) {
+            this.whereIn(`${tokenAliasTableName}.liquidity`, tokenAlias.liquidity);
+          }
+        });
+    }
+
+    const map = new Map(
+      await container
+        .database()
+        .column('user')
+        .sum('v AS v')
+        .from(select.clone().as('metric'))
+        .groupBy('user')
+        .then((rows) => rows.map(({ user, v }) => [user, v])),
+    );
+
+    return usersId.map((id) => map.get(id) ?? '0');
+  });
+
 export const walletLoader = () =>
   new DataLoader<string, Wallet | null>(async (walletsId) => {
     const map = new Map(
@@ -165,6 +222,7 @@ export const walletLastMetricLoader = () =>
 
 export const walletTokenLastMetricLoader = (filter: {
   tokenAlias?: { id?: string[]; liquidity?: TokenAliasLiquidity[] };
+  contract?: string[];
 }) =>
   new DataLoader<string, { wallet: string; balance: string; usd: string }>(
     async (walletsId: ReadonlyArray<string>) => {
@@ -201,6 +259,11 @@ export const walletTokenLastMetricLoader = (filter: {
               )
               .where(function () {
                 this.whereIn(`${metricWalletTokenTableName}.wallet`, walletsId);
+                if (Array.isArray(filter.contract)) {
+                  this.whereIn(`${metricWalletTokenTableName}.contract`, filter.contract);
+                } else {
+                  this.whereNull(`${metricWalletTokenTableName}.contract`);
+                }
                 if (filter.tokenAlias) {
                   if (Array.isArray(filter.tokenAlias.id)) {
                     this.whereIn(`${tokenAliasTableName}.id`, filter.tokenAlias.id);
