@@ -1448,6 +1448,42 @@ export const UserUpdateMutation: GraphQLFieldConfig<any, Request> = {
   }),
 };
 
+export const WalletMetricScanMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLBoolean),
+  args: {
+    wallet: {
+      type: GraphQLNonNull(UuidType),
+      description: 'Wallet id',
+    },
+    contract: {
+      type: GraphQLNonNull(UuidType),
+      description: 'Contract id',
+    },
+  },
+  resolve: async (root, { wallet: walletId, contract: contractId }, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const wallet = await container.model.walletTable().where('id', walletId).first();
+    if (!wallet) throw new UserInputError('Wallet not found');
+    if (wallet.user !== currentUser.id) throw new UserInputError('Foreign wallet');
+
+    const contract = await container.model.contractTable().where('id', contractId).first();
+    if (!contract) throw new UserInputError('Contract not found');
+
+    const link = await container.model
+      .walletContractLinkTable()
+      .where({ wallet: wallet.id, contract: contract.id })
+      .first();
+    if (!link) throw new UserInputError('Wallet not linked to contract');
+    await container.model.queueService().push('metricsWalletCurrent', {
+      contract: contract.id,
+      wallet: wallet.id,
+    });
+
+    return true;
+  },
+};
+
 export const WalletMetricUpdatedEvent = new GraphQLObjectType({
   name: 'WalletMetricUpdatedEvent',
   fields: {

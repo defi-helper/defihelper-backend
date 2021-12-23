@@ -68,6 +68,7 @@ export function route({ express, server }: { express: Express; server: Server })
           walletUpdate: userSchemas.WalletUpdateMutation,
           walletDelete: userSchemas.WalletDeleteMutation,
           userUpdate: userSchemas.UserUpdateMutation,
+          walletMetricScan: userSchemas.WalletMetricScanMutation,
           protocolCreate: protocolSchemas.ProtocolCreateMutation,
           protocolUpdate: protocolSchemas.ProtocolUpdateMutation,
           protocolResolveContracts: protocolSchemas.ProtocolResolveContractsMutation,
