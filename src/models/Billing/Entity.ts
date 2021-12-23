@@ -9,7 +9,9 @@ export interface Transfer {
   amount: number;
   tx: string;
   bill: string | null;
+  confirmed: boolean;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 export const transferTableName = 'billing_transfer';
