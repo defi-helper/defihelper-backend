@@ -1,7 +1,7 @@
 import { Process } from '@models/Queue/Entity';
 import container from '@container';
 import { userContactTableName } from '@models/Notification/Entity';
-import { Role, tableName as userTableName } from '@models/User/Entity';
+import { tableName as userTableName } from '@models/User/Entity';
 import dayjs from 'dayjs';
 import { userNotificationTableName, UserNotificationType } from '@models/UserNotification/Entity';
 
@@ -15,8 +15,7 @@ export default async (process: Process) => {
       `${userTableName}.id`,
       `${userNotificationTableName}.user`,
     )
-    .where(`${userNotificationTableName}.type`, UserNotificationType.PortfolioMetrics)
-    .andWhereNot(`${userTableName}.role`, Role.Candidate);
+    .where(`${userNotificationTableName}.type`, UserNotificationType.PortfolioMetrics);
 
   const lag = 86400 / users.length; // seconds in day
   await users.reduce<Promise<dayjs.Dayjs>>(async (prev, user) => {

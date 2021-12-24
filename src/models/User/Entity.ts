@@ -2,7 +2,6 @@ import { tableFactory as createTableFactory } from '@services/Database';
 import { Locale } from '@services/I18n/container';
 
 export enum Role {
-  Candidate = 'candidate',
   User = 'user',
   Admin = 'admin',
 }

@@ -657,9 +657,6 @@ export const UserBlockchainType = new GraphQLObjectType<{
 export const RoleType = new GraphQLEnumType({
   name: 'UserRoleEnum',
   values: {
-    [Role.Candidate]: {
-      description: 'Candidate',
-    },
     [Role.User]: {
       description: 'User',
     },
