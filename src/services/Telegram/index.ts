@@ -1,19 +1,35 @@
 import * as Mustache from 'mustache';
 import TelegramBot from 'node-telegram-bot-api';
 import container from '@container';
+import { Factory } from '@services/Container';
 import { ContactStatus } from '@models/Notification/Entity';
 import { Templates } from './templates';
 
 export type TelegramTemplate = keyof typeof Templates;
 
-export class TelegramService {
+export interface ITelegramService {
+  startHandler(): void;
+
+  send(template: TelegramTemplate, data: Object, chatId: number): Promise<void>;
+}
+
+class NullService implements ITelegramService {
+  // eslint-disable-next-line
+  startHandler() {}
+
+  // eslint-disable-next-line
+  async send() {}
+}
+
+export class TelegramService implements ITelegramService {
   protected bot: TelegramBot;
 
   constructor(token: string) {
-    this.bot = new TelegramBot(token, { polling: !!token });
+    this.bot = new TelegramBot(token);
   }
 
   startHandler() {
+    this.bot.startPolling({ polling: true });
     this.bot.on('error', async (error) => {
       container.logger().error(`Error in TG. Message: Error: ${error.message}`);
     });
@@ -65,6 +81,6 @@ export class TelegramService {
   }
 }
 
-export function telegramServiceFactory(token: string) {
-  return () => new TelegramService(token);
+export function telegramServiceFactory(token: string): Factory<ITelegramService> {
+  return () => (token ? new TelegramService(token) : new NullService());
 }
