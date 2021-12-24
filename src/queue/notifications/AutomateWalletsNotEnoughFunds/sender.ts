@@ -43,7 +43,7 @@ export default async (process: Process) => {
     const walletFunds = walletsFunds.find((w) => w.id === t.walletId);
 
     if (!walletFunds) {
-      throw new Error('wallet funds must be found here');
+      return false;
     }
 
     const chainNativeUSD = new BN(

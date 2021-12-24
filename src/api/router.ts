@@ -17,6 +17,7 @@ import * as governanceSchemas from '@api/schema/governance';
 import * as Automate from '@api/schema/automate';
 import * as restakeStrategySchemas from '@api/schema/restakeStrategy';
 import * as treasurySchemas from '@api/schema/treasury';
+import Jimp from 'jimp';
 
 export function route({ express, server }: { express: Express; server: Server }) {
   const apollo = new ApolloServer({
@@ -173,5 +174,60 @@ export function route({ express, server }: { express: Express; server: Server })
     await container.model.queueService().push('automateTriggerRun', { id: req.params.triggerId });
 
     return res.sendStatus(200);
+  });
+  express.route('/protocol/contract/opengraph-preview/:protocolId').get(async (req, res) => {
+    const { protocolId } = req.params;
+    const protocol = await container.model.protocolTable().where('id', protocolId).first();
+
+    const apyWithoutDFH = 'APY 197%';
+    const apyWithDFH = 'APY 432%';
+
+    if (!protocol) {
+      return res.send('protocol not found');
+    }
+
+    const [templateInstance, withoutDfhFont, withDfhBoostedFont, newProtocolNameFont] =
+      await Promise.all([
+        Jimp.read(`${__dirname}/../assets/opengraph-template.png`),
+        Jimp.loadFont(
+          `${__dirname}/../assets/font-without-dfh-apy/basiersquare-regular-webfont.ttf.fnt`,
+        ),
+        Jimp.loadFont(
+          `${__dirname}/../assets/font-dfh-boosted-apy/basiersquare-regular-webfont.ttf.fnt`,
+        ),
+        Jimp.loadFont(
+          `${__dirname}/../assets/font-new-protocol-name/basiersquaremono-regular-webfont.ttf.fnt`,
+        ),
+      ]);
+
+    // protocols's apy
+    await templateInstance.print(
+      withoutDfhFont,
+      150,
+      templateInstance.getHeight() - 170,
+      apyWithoutDFH,
+    );
+
+    // boosted apy
+    await templateInstance.print(
+      withDfhBoostedFont,
+      templateInstance.getWidth() - (125 + Jimp.measureText(withDfhBoostedFont, apyWithDFH)),
+      templateInstance.getHeight() - 170,
+      apyWithDFH,
+    );
+
+    // protocol name
+    await templateInstance.print(
+      newProtocolNameFont,
+      templateInstance.getWidth() - (125 + Jimp.measureText(newProtocolNameFont, protocol.name)),
+      templateInstance.getHeight() - 317,
+      protocol.name,
+    );
+
+    return res
+      .writeHead(200, {
+        'Content-Type': 'image/png',
+      })
+      .end(await templateInstance.getBufferAsync(Jimp.MIME_PNG));
   });
 }
