@@ -173,7 +173,7 @@ export const userTokenLastMetricLoader = ({
         .innerJoin(tokenTableName, `${tokenTableName}.id`, `${metricWalletTokenTableName}.token`)
         .innerJoin(tokenAliasTableName, `${tokenAliasTableName}.id`, `${tokenTableName}.alias`)
         .where(function () {
-          if (Array.isArray(tokenAlias.liquidity)) {
+          if (Array.isArray(tokenAlias.liquidity) && tokenAlias.liquidity.length > 0) {
             this.whereIn(`${tokenAliasTableName}.liquidity`, tokenAlias.liquidity);
           }
         });
