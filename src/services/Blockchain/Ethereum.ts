@@ -243,7 +243,7 @@ export class BlockchainContainer extends Container<Config> {
         symbol: 'ETH',
         name: 'Ethereum',
       },
-      tokenPriceResolver: moralisPriceFeed('eth'),
+      tokenPriceResolver: moralisPriceFeed('1'),
       network: this.parent.eth,
     }),
     '3': networkFactory({
@@ -259,7 +259,7 @@ export class BlockchainContainer extends Container<Config> {
         symbol: 'ETH',
         name: 'Ethereum',
       },
-      tokenPriceResolver: moralisPriceFeed('eth'),
+      tokenPriceResolver: moralisPriceFeed('1'),
       network: this.parent.ethRopsten,
     }),
     '56': networkFactory({
@@ -275,7 +275,7 @@ export class BlockchainContainer extends Container<Config> {
         symbol: 'BSC',
         name: 'Binance Smart Chain',
       },
-      tokenPriceResolver: moralisPriceFeed('bsc'),
+      tokenPriceResolver: moralisPriceFeed('56'),
       network: this.parent.bsc,
     }),
     '137': networkFactory({
@@ -291,7 +291,7 @@ export class BlockchainContainer extends Container<Config> {
         symbol: 'MATIC',
         name: 'Polygon',
       },
-      tokenPriceResolver: moralisPriceFeed('polygon'),
+      tokenPriceResolver: moralisPriceFeed('137'),
       network: this.parent.polygon,
     }),
     '1285': networkFactory({
@@ -307,7 +307,7 @@ export class BlockchainContainer extends Container<Config> {
         symbol: 'MOVR',
         name: 'Moonriver',
       },
-      tokenPriceResolver: moralisPriceFeed('moonriver'),
+      tokenPriceResolver: moralisPriceFeed('1285'),
       network: this.parent.moonriver,
     }),
     '43113': networkFactory({
@@ -328,7 +328,7 @@ export class BlockchainContainer extends Container<Config> {
         symbol: 'AVAX',
         name: 'Avalanche',
       },
-      tokenPriceResolver: moralisPriceFeed('avalanche'),
+      tokenPriceResolver: moralisPriceFeed('43113'),
       network: this.parent.avalancheTestnet,
     }),
     '43114': networkFactory({
@@ -349,7 +349,7 @@ export class BlockchainContainer extends Container<Config> {
         symbol: 'AVAX',
         name: 'Avalanche',
       },
-      tokenPriceResolver: moralisPriceFeed('avalanche'),
+      tokenPriceResolver: moralisPriceFeed('43113'),
       network: this.parent.avalanche,
     }),
     '31337': networkFactory({
@@ -365,7 +365,7 @@ export class BlockchainContainer extends Container<Config> {
         symbol: 'ETH',
         name: 'Ethereum',
       },
-      tokenPriceResolver: moralisPriceFeed('eth'),
+      tokenPriceResolver: moralisPriceFeed('1'),
       network: this.parent.local,
     }),
   } as const;
