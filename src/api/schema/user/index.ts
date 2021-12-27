@@ -349,10 +349,12 @@ export const WalletType = new GraphQLObjectType<Wallet.Wallet, Request>({
             this.where(`${metricWalletTokenTableName}.wallet`, wallet.id).andWhere(
               database.raw(`${metricWalletTokenTableName}.data->>'${metric}' IS NOT NULL`),
             );
-            if (filter.contract) {
-              this.whereIn(`${metricWalletTokenTableName}.contract`, filter.contract);
-            } else {
-              this.whereNull(`${metricWalletTokenTableName}.contract`);
+            if (Array.isArray(filter.contract)) {
+              if (filter.contract.length > 0) {
+                this.whereIn(`${metricWalletTokenTableName}.contract`, filter.contract);
+              } else {
+                this.whereNull(`${metricWalletTokenTableName}.contract`);
+              }
             }
             if (filter.dateAfter) {
               this.andWhere(`${metricWalletTokenTableName}.date`, '>=', filter.dateAfter.toDate());
@@ -432,7 +434,7 @@ export const WalletType = new GraphQLObjectType<Wallet.Wallet, Request>({
         const tokenMetric = await dataLoader
           .walletTokenMetric({
             tokenAlias: filter.tokenAlias,
-            contract: filter.contract,
+            contract: filter.contract ?? [],
           })
           .load(wallet.id);
 
@@ -593,10 +595,12 @@ export const UserBlockchainType = new GraphQLObjectType<{
               .andWhere(
                 database.raw(`${metricWalletTokenTableName}.data->>'${metric}' IS NOT NULL`),
               );
-            if (filter.contract) {
-              this.whereIn(`${metricWalletTokenTableName}.contract`, filter.contract);
-            } else {
-              this.whereNull(`${metricWalletTokenTableName}.contract`);
+            if (Array.isArray(filter.contract)) {
+              if (filter.contract.length > 0) {
+                this.whereIn(`${metricWalletTokenTableName}.contract`, filter.contract);
+              } else {
+                this.whereNull(`${metricWalletTokenTableName}.contract`);
+              }
             }
             if (filter.dateAfter) {
               this.andWhere(`${metricWalletTokenTableName}.date`, '>=', filter.dateAfter.toDate());
@@ -1015,10 +1019,12 @@ export const UserType = new GraphQLObjectType<User, Request>({
             if (Array.isArray(filter.wallet) && filter.wallet.length > 0) {
               this.whereIn(`${metricWalletTokenTableName}.wallet`, filter.wallet);
             }
-            if (filter.contract) {
-              this.whereIn(`${metricWalletTokenTableName}.contract`, filter.contract);
-            } else {
-              this.whereNull(`${metricWalletTokenTableName}.contract`);
+            if (Array.isArray(filter.contract)) {
+              if (filter.contract.length > 0) {
+                this.whereIn(`${metricWalletTokenTableName}.contract`, filter.contract);
+              } else {
+                this.whereNull(`${metricWalletTokenTableName}.contract`);
+              }
             }
             if (filter.dateAfter) {
               this.andWhere(`${metricWalletTokenTableName}.date`, '>=', filter.dateAfter.toDate());

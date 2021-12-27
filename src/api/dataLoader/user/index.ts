@@ -260,9 +260,11 @@ export const walletTokenLastMetricLoader = (filter: {
               .where(function () {
                 this.whereIn(`${metricWalletTokenTableName}.wallet`, walletsId);
                 if (Array.isArray(filter.contract)) {
-                  this.whereIn(`${metricWalletTokenTableName}.contract`, filter.contract);
-                } else {
-                  this.whereNull(`${metricWalletTokenTableName}.contract`);
+                  if (filter.contract.length > 0) {
+                    this.whereIn(`${metricWalletTokenTableName}.contract`, filter.contract);
+                  } else {
+                    this.whereNull(`${metricWalletTokenTableName}.contract`);
+                  }
                 }
                 if (filter.tokenAlias) {
                   if (Array.isArray(filter.tokenAlias.id)) {
