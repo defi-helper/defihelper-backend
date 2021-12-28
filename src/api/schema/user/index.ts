@@ -200,6 +200,51 @@ export const WalletType = new GraphQLObjectType<Wallet.Wallet, Request>({
         return row.count;
       },
     },
+    tokenAliases: {
+      type: GraphQLNonNull(
+        PaginateList('WalletTokenAliasListType', GraphQLNonNull(TokenAliasType)),
+      ),
+      args: {
+        filter: {
+          type: new GraphQLInputObjectType({
+            name: 'WalletTokenAliasListFilterInputType',
+            fields: {
+              liquidity: {
+                type: GraphQLList(GraphQLNonNull(TokenAliasLiquidityEnum)),
+                description: 'Liquidity token',
+              },
+            },
+          }),
+          defaultValue: {},
+        },
+        pagination: PaginationArgument('WalletTokenAliasListPaginationInputType'),
+      },
+      resolve: async (wallet, { filter, pagination }) => {
+        const select = container.model
+          .metricWalletTokenTable()
+          .column(`${tokenAliasTableName}.*`)
+          .innerJoin(tokenTableName, `${tokenTableName}.id`, `${metricWalletTokenTableName}.token`)
+          .innerJoin(tokenAliasTableName, `${tokenAliasTableName}.id`, `${tokenTableName}.alias`)
+          .where(function () {
+            this.where(`${metricWalletTokenTableName}.wallet`, wallet.id);
+            if (Array.isArray(filter.liquidity) && filter.liquidity.length > 0) {
+              this.whereIn(`${tokenAliasTableName}.liquidity`, filter.liquidity);
+            }
+          })
+          .groupBy(`${tokenAliasTableName}.id`);
+
+        return {
+          list: await select
+            .clone()
+            .orderBy('createdAt', 'desc')
+            .limit(pagination.limit)
+            .offset(pagination.offset),
+          pagination: {
+            count: await select.clone().countDistinct(`${tokenAliasTableName}.id`).first(),
+          },
+        };
+      },
+    },
     metricChart: {
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(MetricChartType))),
       args: {
