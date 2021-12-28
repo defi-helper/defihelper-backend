@@ -814,6 +814,9 @@ export const UserType = new GraphQLObjectType<User, Request>({
           type: new GraphQLInputObjectType({
             name: 'WalletListFilterInputType',
             fields: {
+              id: {
+                type: UuidType,
+              },
               blockchain: {
                 type: BlockchainFilterInputType,
               },
@@ -837,7 +840,10 @@ export const UserType = new GraphQLObjectType<User, Request>({
       resolve: async (user, { filter, sort, pagination }) => {
         const select = container.model.walletTable().where(function () {
           this.where('user', user.id);
-          const { blockchain, type, search } = filter;
+          const { id, blockchain, type, search } = filter;
+          if (id) {
+            this.andWhere('id', id);
+          }
           if (blockchain) {
             const { protocol, network } = blockchain;
             this.andWhere('blockchain', protocol);
