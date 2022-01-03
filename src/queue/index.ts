@@ -26,6 +26,10 @@ export * as metricsWalletCurrent from './metrics/walletCurrent';
 export * as metricsWalletBlock from './metrics/walletBlock';
 export * as metricsMoralisWalletBalancesFiller from './metrics/moralis/walletBalancesFiller';
 export * as metricsMoralisWalletBalancesBroker from './metrics/moralis/walletBalancesBroker';
+
+export * as metricsDeBankWalletBalancesFiller from './metrics/debank/walletBalancesFiller';
+export * as metricsDeBankWalletBalancesBroker from './metrics/debank/walletBalancesBroker';
+
 export * as findWalletContracts from './wallet/findContracts';
 export * as sendEmail from './email/send';
 export * as sendTelegram from './telegram/send';
