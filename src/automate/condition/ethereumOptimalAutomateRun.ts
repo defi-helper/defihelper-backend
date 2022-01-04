@@ -24,7 +24,7 @@ export default async (params: Params) => {
   if (
     contract.verification !== ContractVerificationStatus.Confirmed ||
     contract.contract === null ||
-    contract.archivedAt === null
+    contract.archivedAt !== null
   ) {
     return false;
   }

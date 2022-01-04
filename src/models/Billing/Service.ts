@@ -15,6 +15,15 @@ export class BillingService {
     );
   });
 
+  public readonly onTransferUpdated = new Emitter<Transfer>(async (transfer) => {
+    container.cache().publish(
+      'defihelper:channel:onBillingTransferUpdated',
+      JSON.stringify({
+        id: transfer.id,
+      }),
+    );
+  });
+
   constructor(
     readonly billTable: Factory<BillTable>,
     readonly transferTable: Factory<TransferTable>,
@@ -26,6 +35,7 @@ export class BillingService {
     account: string,
     amount: number,
     tx: string,
+    confirmed: boolean,
     createdAt: Date,
     bill: Bill | null = null,
   ) {
@@ -36,13 +46,29 @@ export class BillingService {
       account,
       amount,
       tx,
+      confirmed,
       bill: bill?.id || null,
       createdAt,
+      updatedAt: createdAt,
     };
     await this.transferTable().insert(created);
     this.onTransferCreated.emit(created);
 
     return created;
+  }
+
+  async transferConfirm(transfer: Transfer, amount: number, createdAt: Date) {
+    const updated: Transfer = {
+      ...transfer,
+      amount,
+      confirmed: true,
+      createdAt,
+      updatedAt: new Date(),
+    };
+    await this.transferTable().update(updated).where('id', updated.id);
+    this.onTransferUpdated.emit(updated);
+
+    return updated;
   }
 
   async claim(
@@ -99,6 +125,7 @@ export class BillingService {
       bill.account,
       -(gasFee + protocolFee),
       tx,
+      true,
       updatedAt,
       updated,
     );

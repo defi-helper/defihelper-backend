@@ -54,10 +54,6 @@ export * as logBilling from './log/billingLogger';
 /* protocol */
 export * as protocolContractsResolver from './protocol/resolveContracts';
 
-/* public beta */
-export * as publicBetaNotificationAndRunUp from './publicBetaNotificationAndRunUp';
-export * as publicBetaBenefits from './publicBetaBenefits';
-
 /* regular notifications */
 export * as notificationPortfolioMetricsNotify from './notifications/PortfolioMetrics/sender';
 export * as notificationPortfolioMetricsBroker from './notifications/PortfolioMetrics/broker';

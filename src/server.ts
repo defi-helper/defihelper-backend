@@ -15,6 +15,5 @@ container.model
     const { port } = container.parent.api;
     server.listen(port, () => container.logger().info(`Listen ${port}`));
 
-    const telegramService = container.telegram();
-    telegramService.startHandler();
+    container.telegram().startHandler();
   });

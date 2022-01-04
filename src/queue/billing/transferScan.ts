@@ -18,19 +18,27 @@ async function registerTransfer(
 ) {
   const duplicates = await container.model
     .billingTransferTable()
-    .column('tx')
-    .where(function () {
-      this.where({ blockchain, network }).whereIn(
-        'tx',
-        events.map(({ transactionHash }) => transactionHash),
-      );
-    });
-  const duplicatesTx = duplicates.map(({ tx }) => tx);
+    .where({ blockchain, network })
+    .whereIn(
+      'tx',
+      events.map(({ transactionHash }) => transactionHash),
+    );
   const billingService = container.model.billingService();
   return Promise.all(
     events.map(async ({ getBlock, transactionHash, args }) => {
-      if (args === undefined || duplicatesTx.includes(transactionHash)) return null;
+      if (args === undefined) return null;
+
       const { timestamp } = await getBlock();
+      const duplicate = duplicates.find(({ tx }) => transactionHash === tx);
+      if (duplicate) {
+        if (duplicate.confirmed) return null;
+
+        return billingService.transferConfirm(
+          duplicate,
+          new BN(args.amount.toString()).div(ethFeeDecimals).multipliedBy(k).toNumber(),
+          dayjs.unix(timestamp).toDate(),
+        );
+      }
 
       return billingService.transfer(
         blockchain,
@@ -38,6 +46,7 @@ async function registerTransfer(
         args.recipient.toLowerCase(),
         new BN(args.amount.toString()).div(ethFeeDecimals).multipliedBy(k).toNumber(),
         transactionHash,
+        true,
         dayjs.unix(timestamp).toDate(),
       );
     }),

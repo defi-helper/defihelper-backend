@@ -1,6 +1,7 @@
 import container from '@container';
 import asyncify from 'callback-to-async-iterator';
 import { Request } from 'express';
+import { AuthenticationError, UserInputError } from 'apollo-server-express';
 import { User } from '@models/User/Entity';
 import { Wallet, tableName as walletTableName } from '@models/Wallet/Entity';
 import { withFilter } from 'graphql-subscriptions';
@@ -144,6 +145,10 @@ export const TransferType = new GraphQLObjectType<Transfer>({
         return bill ? container.model.billingBillTable().where('id', bill).first() : null;
       },
     },
+    confirmed: {
+      type: GraphQLNonNull(GraphQLBoolean),
+      description: 'Is transfer confirmed',
+    },
     createdAt: {
       type: GraphQLNonNull(DateTimeType),
       description: 'Date of created',
@@ -156,6 +161,9 @@ export const BalanceType = new GraphQLObjectType({
   fields: {
     lowFeeFunds: {
       type: GraphQLNonNull(GraphQLBoolean),
+    },
+    pending: {
+      type: GraphQLNonNull(GraphQLFloat),
     },
     balance: {
       type: GraphQLNonNull(GraphQLFloat),
@@ -187,6 +195,9 @@ export const WalletBillingType = new GraphQLObjectType<Wallet>({
               claim: {
                 type: GraphQLBoolean,
               },
+              confirmed: {
+                type: GraphQLBoolean,
+              },
             },
           }),
           defaultValue: {},
@@ -214,6 +225,9 @@ export const WalletBillingType = new GraphQLObjectType<Wallet>({
             } else {
               this.whereNull('bill');
             }
+          }
+          if (typeof filter.confirmed === 'boolean') {
+            this.where('confirmed', filter.confirmed);
           }
         });
 
@@ -357,6 +371,9 @@ export const UserBillingType = new GraphQLObjectType<User>({
               wallet: {
                 type: GraphQLList(GraphQLNonNull(UuidType)),
               },
+              confirmed: {
+                type: GraphQLBoolean,
+              },
             },
           }),
           defaultValue: {},
@@ -397,6 +414,9 @@ export const UserBillingType = new GraphQLObjectType<User>({
             }
             if (Array.isArray(filter.wallet) && filter.wallet.length > 0) {
               this.whereIn(`${walletTableName}.id`, filter.wallet);
+            }
+            if (typeof filter.confirmed === 'boolean') {
+              this.where(`${transferTableName}.confirmed`, filter.confirmed);
             }
           });
 
@@ -475,7 +495,7 @@ export const UserBillingType = new GraphQLObjectType<User>({
     balance: {
       type: GraphQLNonNull(BalanceType),
       resolve: async (user) => {
-        const [transferSum, billSum] = await Promise.all([
+        const [transferUnconfirmedSum, transferConfirmedSum, billSum] = await Promise.all([
           container.model
             .billingTransferTable()
             .sum('amount')
@@ -485,6 +505,18 @@ export const UserBillingType = new GraphQLObjectType<User>({
                 .andOn(`${walletTableName}.address`, '=', `${transferTableName}.account`);
             })
             .where(`${walletTableName}.user`, user.id)
+            .where(`${transferTableName}.confirmed`, false)
+            .first(),
+          container.model
+            .billingTransferTable()
+            .sum('amount')
+            .innerJoin(walletTableName, function () {
+              this.on(`${walletTableName}.blockchain`, '=', `${transferTableName}.blockchain`)
+                .andOn(`${walletTableName}.network`, '=', `${transferTableName}.network`)
+                .andOn(`${walletTableName}.address`, '=', `${transferTableName}.account`);
+            })
+            .where(`${walletTableName}.user`, user.id)
+            .where(`${transferTableName}.confirmed`, true)
             .first(),
           container.model
             .billingBillTable()
@@ -497,10 +529,12 @@ export const UserBillingType = new GraphQLObjectType<User>({
             .where(`${walletTableName}.user`, user.id)
             .first(),
         ]);
-        const balance = transferSum?.sum || 0;
+        const pending = transferUnconfirmedSum?.sum || 0;
+        const balance = transferConfirmedSum?.sum || 0;
         const claim = billSum?.sum || 0;
 
         return {
+          pending,
           balance,
           claim,
           netBalance: balance - claim,
@@ -509,6 +543,70 @@ export const UserBillingType = new GraphQLObjectType<User>({
     },
   },
 });
+
+export const AddTransferMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(TransferType),
+  args: {
+    input: {
+      type: GraphQLNonNull(
+        new GraphQLInputObjectType({
+          name: 'BillingTransferCreateInputType',
+          fields: {
+            blockchain: {
+              type: GraphQLNonNull(BlockchainEnum),
+            },
+            network: {
+              type: GraphQLNonNull(GraphQLString),
+            },
+            account: {
+              type: GraphQLNonNull(GraphQLString),
+            },
+            amount: {
+              type: GraphQLNonNull(GraphQLString),
+            },
+            tx: {
+              type: GraphQLNonNull(GraphQLString),
+            },
+          },
+        }),
+      ),
+    },
+  },
+  resolve: async (root, { input }, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const { blockchain, network, account, amount, tx } = input;
+    const duplicate = await container.model
+      .billingTransferTable()
+      .where({
+        blockchain,
+        network,
+        account: blockchain === 'ethereum' ? account.toLowerCase() : account,
+      })
+      .first();
+    if (duplicate) {
+      return duplicate;
+    }
+
+    const amountFloat = Number(amount);
+    if (Number.isNaN(amountFloat)) throw new UserInputError('Invalid amount');
+
+    const updated = await container.model
+      .billingService()
+      .transfer(
+        blockchain,
+        network,
+        blockchain === 'ethereum' ? account.toLowerCase() : account,
+        amountFloat,
+        tx,
+        false,
+        new Date(),
+        null,
+      );
+
+    return updated;
+  },
+};
 
 export const OnTransferCreated: GraphQLFieldConfig<{ id: string }, Request> = {
   type: GraphQLNonNull(TransferType),
@@ -530,6 +628,58 @@ export const OnTransferCreated: GraphQLFieldConfig<{ id: string }, Request> = {
       asyncify((callback) =>
         Promise.resolve(
           container.cacheSubscriber('defihelper:channel:onBillingTransferCreated').onJSON(callback),
+        ),
+      ),
+    async ({ id }, { filter }) => {
+      const transfer = await container.model.billingTransferTable().where('id', id).first();
+      if (!transfer) return false;
+
+      let result = true;
+      if (typeof filter.wallet === 'string') {
+        const wallet = await container.model
+          .walletTable()
+          .where({
+            blockchain: transfer.blockchain,
+            network: transfer.network,
+            address:
+              transfer.blockchain === 'ethereum'
+                ? transfer.account.toLowerCase()
+                : transfer.account,
+          })
+          .first();
+        if (!wallet) return false;
+
+        result = result && filter.wallet.includes(wallet.address);
+      }
+
+      return result;
+    },
+  ),
+  resolve: ({ id }) => {
+    return container.model.billingTransferTable().where('id', id).first();
+  },
+};
+
+export const OnTransferUpdated: GraphQLFieldConfig<{ id: string }, Request> = {
+  type: GraphQLNonNull(TransferType),
+  args: {
+    filter: {
+      type: new GraphQLInputObjectType({
+        name: 'OnTransferUpdatedFilterInputType',
+        fields: {
+          wallet: {
+            type: GraphQLList(GraphQLNonNull(UuidType)),
+          },
+        },
+      }),
+      defaultValue: {},
+    },
+  },
+  subscribe: withFilter(
+    () =>
+      asyncify((callback) =>
+        Promise.resolve(
+          container.cacheSubscriber('defihelper:channel:onBillingTransferUpdated').onJSON(callback),
         ),
       ),
     async ({ id }, { filter }) => {
