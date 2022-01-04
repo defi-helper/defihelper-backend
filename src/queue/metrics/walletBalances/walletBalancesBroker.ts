@@ -7,19 +7,21 @@ export default async (process: Process) => {
   const wallets = await container.model
     .walletTable()
     .where('type', WalletType.Wallet)
-    .andWhere('blockchain', 'ethereum')
-    .andWhere('network', '1285');
+    .andWhere('blockchain', 'ethereum');
 
   const lag = 86400 / wallets.length;
   await wallets.reduce<Promise<dayjs.Dayjs>>(async (prev, wallet) => {
     const startAt = await prev;
+
     await container.model.queueService().push(
-      'metricsDeBankWalletBalancesFiller',
+      'metricsWalletBalancesFillSelector',
       {
         id: wallet.id,
+        network: wallet.network,
       },
       { startAt: startAt.toDate() },
     );
+
     return startAt.clone().add(lag, 'seconds');
   }, Promise.resolve(dayjs()));
 

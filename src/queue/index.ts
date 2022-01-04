@@ -24,12 +24,6 @@ export * as metricsContractBlock from './metrics/contractBlock';
 export * as metricsContractScannerDate from './metrics/contractScannerDate';
 export * as metricsWalletCurrent from './metrics/walletCurrent';
 export * as metricsWalletBlock from './metrics/walletBlock';
-export * as metricsMoralisWalletBalancesFiller from './metrics/moralis/walletBalancesFiller';
-export * as metricsMoralisWalletBalancesBroker from './metrics/moralis/walletBalancesBroker';
-
-export * as metricsDeBankWalletBalancesFiller from './metrics/debank/walletBalancesFiller';
-export * as metricsDeBankWalletBalancesBroker from './metrics/debank/walletBalancesBroker';
-
 export * as findWalletContracts from './wallet/findContracts';
 export * as sendEmail from './email/send';
 export * as sendTelegram from './telegram/send';
@@ -54,6 +48,13 @@ export * as automateTriggerRun from './automate/run';
 export * as automateTriggerByTime from './automate/trigger/byTime';
 export * as swopfiLPFarmingPoolScanner from './pools/swopfiLPFarming';
 export * as logBilling from './log/billingLogger';
+
+/* metrics */
+export * as metricsWalletBalancesDeBankFiller from './metrics/walletBalances/walletBalancesDeBankFiller';
+export * as metricsWalletBalancesMoralisFiller from './metrics/walletBalances/walletBalancesMoralisFiller';
+
+export * as metricsWalletBalancesFillSelector from './metrics/walletBalances/walletBalancesFillSelector';
+export * as metricsWalletBalancesBroker from './metrics/walletBalances/walletBalancesBroker';
 
 /* protocol */
 export * as protocolContractsResolver from './protocol/resolveContracts';

@@ -216,12 +216,12 @@ function debankPriceFeed(network: string): { usd: TokenPriceFeedUSD } {
         return cachedPrice;
       }
 
-      const debankApiResponse = (
+      const { price } = (
         await axios.get(`https://openapi.debank.com/v1/token?chain_id=${chain}&id=${address}`)
-      ).data as { price: number };
+      ).data;
 
-      cacheSet(key, debankApiResponse.price.toString(10));
-      return debankApiResponse.price.toString(10);
+      cacheSet(key, price.toString(10));
+      return price.toString(10);
     },
   };
 }
