@@ -218,7 +218,7 @@ export function route({ express, server }: { express: Express; server: Server })
     // boosted apy
     await templateInstance.print(withDfhBoostedFont, 117, 390, apyWithDFH);
 
-    // protocol name
+    // total apy
     await templateInstance.print(totalApyFont, 117, 670, apyTotal);
 
     // protocol logo
