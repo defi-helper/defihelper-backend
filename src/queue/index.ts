@@ -53,6 +53,7 @@ export * as logBilling from './log/billingLogger';
 export * as metricsWalletBalancesDeBankFiller from './metrics/walletBalances/walletBalancesDeBankFiller';
 export * as metricsWalletBalancesMoralisFiller from './metrics/walletBalances/walletBalancesMoralisFiller';
 
+export * as metricsWalletBalancesFillSelector from './metrics/walletBalances/walletBalancesFillSelector';
 export * as metricsWalletBalancesBroker from './metrics/walletBalances/walletBalancesBroker';
 
 /* protocol */
