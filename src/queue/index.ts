@@ -50,11 +50,10 @@ export * as swopfiLPFarmingPoolScanner from './pools/swopfiLPFarming';
 export * as logBilling from './log/billingLogger';
 
 /* metrics */
-export * as metricsMoralisWalletBalancesFiller from './metrics/moralis/walletBalancesFiller';
-export * as metricsMoralisWalletBalancesBroker from './metrics/moralis/walletBalancesBroker';
+export * as metricsWalletBalancesDeBankFiller from './metrics/walletBalances/walletBalancesDeBankFiller';
+export * as metricsWalletBalancesMoralisFiller from './metrics/walletBalances/walletBalancesMoralisFiller';
 
-export * as metricsDeBankWalletBalancesFiller from './metrics/debank/walletBalancesFiller';
-export * as metricsDeBankWalletBalancesBroker from './metrics/debank/walletBalancesBroker';
+export * as metricsWalletBalancesBroker from './metrics/walletBalances/walletBalancesBroker';
 
 /* protocol */
 export * as protocolContractsResolver from './protocol/resolveContracts';

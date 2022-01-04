@@ -8,18 +8,33 @@ export default async (process: Process) => {
     .walletTable()
     .where('type', WalletType.Wallet)
     .andWhere('blockchain', 'ethereum')
-    .andWhere('network', '1285');
+    .andWhereNot('network', '1285');
 
   const lag = 86400 / wallets.length;
   await wallets.reduce<Promise<dayjs.Dayjs>>(async (prev, wallet) => {
     const startAt = await prev;
-    await container.model.queueService().push(
-      'metricsDeBankWalletBalancesFiller',
-      {
-        id: wallet.id,
-      },
-      { startAt: startAt.toDate() },
-    );
+
+    switch (wallet.network) {
+      case '1285':
+        await container.model.queueService().push(
+          'metricsWalletBalancesDeBankFiller',
+          {
+            id: wallet.id,
+          },
+          { startAt: startAt.toDate() },
+        );
+        break;
+
+      default:
+        await container.model.queueService().push(
+          'metricsWalletBalancesMoralisFiller',
+          {
+            id: wallet.id,
+          },
+          { startAt: startAt.toDate() },
+        );
+    }
+
     return startAt.clone().add(lag, 'seconds');
   }, Promise.resolve(dayjs()));
 
