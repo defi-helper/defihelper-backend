@@ -29,10 +29,7 @@ export default async (process: Process) => {
           throw new Error(`Condition "${condition.id}": ${e instanceof Error ? e.stack : e}`);
         }
       }, Promise.resolve(true));
-
-      if (conditionsCheck === false) {
-        throw new Error('conditions check failed');
-      }
+      if (conditionsCheck === false) return process.done();
     }
 
     const actions = await automateService
