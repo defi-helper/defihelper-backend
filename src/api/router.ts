@@ -178,53 +178,60 @@ export function route({ express, server }: { express: Express; server: Server })
 
     return res.sendStatus(200);
   });
-  express.route('/protocol/contract/opengraph-preview/:protocolId').get(async (req, res) => {
+  express.route('/protocol/opengraph-preview/:protocolId').get(async (req, res) => {
     const { protocolId } = req.params;
     const protocol = await container.model.protocolTable().where('id', protocolId).first();
 
     const apyWithoutDFH = 'APY 197%';
-    const apyWithDFH = 'APY 432%';
+    const apyWithDFH = 'APY +432%';
+    const apyTotal = '678%';
 
     if (!protocol) {
       return res.send('protocol not found');
     }
 
-    const [templateInstance, withoutDfhFont, withDfhBoostedFont, newProtocolNameFont] =
-      await Promise.all([
-        Jimp.read(`${__dirname}/../assets/opengraph-template.png`),
-        Jimp.loadFont(
-          `${__dirname}/../assets/font-without-dfh-apy/basiersquare-regular-webfont.ttf.fnt`,
-        ),
-        Jimp.loadFont(
-          `${__dirname}/../assets/font-dfh-boosted-apy/basiersquare-regular-webfont.ttf.fnt`,
-        ),
-        Jimp.loadFont(
-          `${__dirname}/../assets/font-new-protocol-name/basiersquaremono-regular-webfont.ttf.fnt`,
-        ),
-      ]);
+    if (!protocol.icon) {
+      return res.send('protocol have no picture');
+    }
+
+    const maxLogoWidth = 450;
+    const maxLogoHeight = 450;
+
+    const [
+      templateInstance,
+      protocolLogoInstance,
+      withoutDfhFont,
+      withDfhBoostedFont,
+      totalApyFont,
+    ] = await Promise.all([
+      Jimp.read(`${__dirname}/../assets/opengraph-template.png`),
+      Jimp.read(protocol.icon),
+      Jimp.loadFont(`${__dirname}/../assets/font-without-dfh/FCK4eZkmzDMwvOVkx7MoTdys.ttf.fnt`),
+
+      Jimp.loadFont(`${__dirname}/../assets/font-with-dfh/KDHm2vWUrEv1xTEC3ilBxVL2.ttf.fnt`),
+      Jimp.loadFont(`${__dirname}/../assets/font-total-apy/QHPbZ5kKUxcehQ40MdnPZLK9.ttf.fnt`),
+    ]);
 
     // protocols's apy
-    await templateInstance.print(
-      withoutDfhFont,
-      150,
-      templateInstance.getHeight() - 170,
-      apyWithoutDFH,
-    );
+    await templateInstance.print(withoutDfhFont, 117, 160, apyWithoutDFH);
 
     // boosted apy
-    await templateInstance.print(
-      withDfhBoostedFont,
-      templateInstance.getWidth() - (125 + Jimp.measureText(withDfhBoostedFont, apyWithDFH)),
-      templateInstance.getHeight() - 170,
-      apyWithDFH,
-    );
+    await templateInstance.print(withDfhBoostedFont, 117, 390, apyWithDFH);
 
     // protocol name
-    await templateInstance.print(
-      newProtocolNameFont,
-      templateInstance.getWidth() - (125 + Jimp.measureText(newProtocolNameFont, protocol.name)),
-      templateInstance.getHeight() - 317,
-      protocol.name,
+    await templateInstance.print(totalApyFont, 117, 670, apyTotal);
+
+    // protocol logo
+    protocolLogoInstance.resize(maxLogoWidth, Jimp.AUTO);
+    if (protocolLogoInstance.getHeight() > maxLogoHeight) {
+      protocolLogoInstance.resize(Jimp.AUTO, maxLogoHeight);
+    }
+
+    const actualLogoWidth = protocolLogoInstance.getWidth();
+    await templateInstance.composite(
+      protocolLogoInstance,
+      templateInstance.getWidth() - actualLogoWidth / 2 - 415,
+      templateInstance.getHeight() / 2 - protocolLogoInstance.getHeight() / 2,
     );
 
     return res
