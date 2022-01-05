@@ -3,6 +3,6 @@ import { tableName as walletTableName, WalletSuspenseReason } from '@models/Wall
 
 export default async (schema: SchemaBuilder) => {
   await schema.alterTable(walletTableName, (table) => {
-    table.enum('suspendReason', [WalletSuspenseReason.LowFunds]).nullable();
+    table.enum('suspendReason', [WalletSuspenseReason.LowFunds]).index().nullable();
   });
 };
