@@ -25,6 +25,7 @@ export interface Protocol {
   hidden: boolean;
   updatedAt: Date;
   createdAt: Date;
+  previewPicture: string | null;
 }
 
 export const protocolTableName = 'protocol';

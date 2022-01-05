@@ -18,6 +18,18 @@ import * as Automate from '@api/schema/automate';
 import * as restakeStrategySchemas from '@api/schema/restakeStrategy';
 import * as treasurySchemas from '@api/schema/treasury';
 import Jimp from 'jimp';
+import { metricContractTableName } from '@models/Metric/Entity';
+import { contractTableName } from '@models/Protocol/Entity';
+import { apyBoost } from '@services/RestakeStrategy';
+import BN from 'bignumber.js';
+import { Blockchain } from '@models/types';
+
+interface AprMetric {
+  contract: string;
+  apr: number;
+  blockchain: Blockchain;
+  network: string;
+}
 
 export function route({ express, server }: { express: Express; server: Server }) {
   const apollo = new ApolloServer({
@@ -182,20 +194,60 @@ export function route({ express, server }: { express: Express; server: Server })
     const { protocolId } = req.params;
     const protocol = await container.model.protocolTable().where('id', protocolId).first();
 
-    const apyWithoutDFH = 'APY 197%';
-    const apyWithDFH = 'APY +432%';
-    const apyTotal = '678%';
-
     if (!protocol) {
-      return res.send('protocol not found');
+      return res.status(503).send('protocol not found');
     }
 
-    if (!protocol.icon) {
-      return res.send('protocol have no picture');
+    if (!protocol.previewPicture) {
+      return res.status(503).send('protocol have no picture');
     }
 
     const maxLogoWidth = 450;
     const maxLogoHeight = 450;
+
+    const database = container.database();
+    const aprMetrics: AprMetric[] = await container.model
+      .metricContractTable()
+      .distinctOn(`${metricContractTableName}.contract`)
+      .column(`${contractTableName}.blockchain`)
+      .column(`${contractTableName}.network`)
+      .column(`${metricContractTableName}.contract`)
+      .column(database.raw(`(${metricContractTableName}.data->>'aprYear')::numeric AS apr`))
+      .innerJoin(
+        contractTableName,
+        `${contractTableName}.id`,
+        `${metricContractTableName}.contract`,
+      )
+      .where(`${contractTableName}.protocol`, protocol.id)
+      .andWhere(database.raw(`${metricContractTableName}.data->>'aprYear' IS NOT NULL`))
+      .orderBy(`${metricContractTableName}.contract`)
+      .orderBy(`${metricContractTableName}.date`, 'DESC');
+
+    const calculatedApyList = await Promise.all(
+      aprMetrics.map(async (apr) => {
+        const boost = await apyBoost(
+          apr.blockchain,
+          apr.network,
+          10000,
+          new BN(apr.apr).toNumber(),
+        );
+
+        const actualBoost = new BN(boost).minus(apr.apr).toNumber();
+
+        return {
+          initial: new BN(apr.apr).toNumber(),
+          boosted: actualBoost > 0 ? actualBoost : 0,
+        };
+      }),
+    );
+
+    const avgInitialApy =
+      calculatedApyList.reduce((prev, curr) => new BN(prev).plus(curr.initial).toNumber(), 0) /
+      calculatedApyList.length;
+
+    const avgBoostedApy =
+      calculatedApyList.reduce((prev, curr) => new BN(prev).plus(curr.boosted).toNumber(), 0) /
+      calculatedApyList.length;
 
     const [
       templateInstance,
@@ -205,21 +257,37 @@ export function route({ express, server }: { express: Express; server: Server })
       totalApyFont,
     ] = await Promise.all([
       Jimp.read(`${__dirname}/../assets/opengraph-template.png`),
-      Jimp.read(protocol.icon),
+      Jimp.read(protocol.previewPicture),
       Jimp.loadFont(`${__dirname}/../assets/font-without-dfh/FCK4eZkmzDMwvOVkx7MoTdys.ttf.fnt`),
-
       Jimp.loadFont(`${__dirname}/../assets/font-with-dfh/KDHm2vWUrEv1xTEC3ilBxVL2.ttf.fnt`),
       Jimp.loadFont(`${__dirname}/../assets/font-total-apy/QHPbZ5kKUxcehQ40MdnPZLK9.ttf.fnt`),
     ]);
 
     // protocols's apy
-    await templateInstance.print(withoutDfhFont, 117, 160, apyWithoutDFH);
+    await templateInstance.print(
+      withoutDfhFont,
+      117,
+      175,
+      `APY ${avgInitialApy > 10000 ? '>10000' : avgInitialApy.toFixed()}%`,
+    );
 
     // boosted apy
-    await templateInstance.print(withDfhBoostedFont, 117, 390, apyWithDFH);
+    await templateInstance.print(
+      withDfhBoostedFont,
+      117,
+      380,
+      `APY ${avgBoostedApy > 10000 ? '>10000' : avgBoostedApy.toFixed()}%`,
+    );
 
     // total apy
-    await templateInstance.print(totalApyFont, 117, 670, apyTotal);
+    await templateInstance.print(
+      totalApyFont,
+      117,
+      660,
+      `${
+        avgBoostedApy + avgInitialApy > 20000 ? '>20000' : (avgBoostedApy + avgInitialApy).toFixed()
+      }%`,
+    );
 
     // protocol logo
     protocolLogoInstance.resize(maxLogoWidth, Jimp.AUTO);
