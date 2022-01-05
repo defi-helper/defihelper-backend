@@ -6,6 +6,10 @@ export enum WalletType {
   Contract = 'contract',
 }
 
+export enum WalletSuspenseReason {
+  LowFunds = 'lowFunds',
+}
+
 export interface Wallet {
   id: string;
   user: string;
@@ -15,6 +19,7 @@ export interface Wallet {
   address: string;
   publicKey: string;
   name: string;
+  suspendReason: WalletSuspenseReason | null;
   updatedAt: Date;
   createdAt: Date;
 }

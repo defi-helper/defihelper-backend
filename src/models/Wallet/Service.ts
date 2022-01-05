@@ -4,7 +4,7 @@ import { User } from '@models/User/Entity';
 import { Blockchain } from '@models/types';
 import { Emitter } from '@services/Event';
 import container from '@container';
-import { Wallet, Table, WalletType } from './Entity';
+import { Wallet, Table, WalletType, WalletSuspenseReason } from './Entity';
 
 export class WalletService {
   constructor(readonly table: Factory<Table>) {}
@@ -37,6 +37,7 @@ export class WalletService {
       address: blockchain === 'ethereum' ? address.toLowerCase() : address,
       publicKey,
       name,
+      suspendReason: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -56,6 +57,17 @@ export class WalletService {
     await this.table().where({ id: wallet.id }).update(updated);
 
     return updated;
+  }
+
+  async suspense(
+    walletId: string,
+    reason: WalletSuspenseReason | null,
+  ): Promise<WalletSuspenseReason | null> {
+    await this.table().where({ id: walletId }).update({
+      suspendReason: reason,
+    });
+
+    return reason;
   }
 
   async delete(wallet: Wallet) {

@@ -1,6 +1,7 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
-import { getActionHandler, getConditionHandler } from '@models/Automate/Entity';
+import { getActionHandler, getConditionHandler, triggerTableName } from '@models/Automate/Entity';
+import { tableName as walletTableName } from '@models/Wallet/Entity';
 
 export interface Params {
   id: string;
@@ -10,9 +11,14 @@ export default async (process: Process) => {
   const { id } = process.task.params as Params;
 
   const automateService = container.model.automateService();
-  const trigger = await automateService.triggerTable().where('id', id).first();
+  const trigger = await automateService
+    .triggerTable()
+    .innerJoin(walletTableName, `${walletTableName}.id`, `${triggerTableName}.wallet`)
+    .where('id', id)
+    .andWhere('active', true)
+    .whereNull(`${walletTableName}.suspendReason`)
+    .first();
   if (!trigger) throw new Error('Trigger not found');
-  if (!trigger.active) return process.done();
 
   try {
     const conditions = await automateService
@@ -29,6 +35,7 @@ export default async (process: Process) => {
           throw new Error(`Condition "${condition.id}": ${e instanceof Error ? e.stack : e}`);
         }
       }, Promise.resolve(true));
+
       if (conditionsCheck === false) return process.done();
     }
 
