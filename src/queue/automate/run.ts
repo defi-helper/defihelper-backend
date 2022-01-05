@@ -36,9 +36,7 @@ export default async (process: Process) => {
         }
       }, Promise.resolve(true));
 
-      if (conditionsCheck === false) {
-        throw new Error('conditions check failed');
-      }
+      if (conditionsCheck === false) return process.done();
     }
 
     const actions = await automateService
