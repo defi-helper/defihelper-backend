@@ -15,7 +15,7 @@ export interface Pool {
   deployBlockNumber: number;
   blockchain: Blockchain;
   network: string;
-  layout: 'stacking';
+  layout: 'staking';
   adapter: string;
   description: string;
   automate: {

@@ -12,13 +12,16 @@ export default async (process: Process) => {
   const lag = 86400 / wallets.length;
   await wallets.reduce<Promise<dayjs.Dayjs>>(async (prev, wallet) => {
     const startAt = await prev;
+
     await container.model.queueService().push(
-      'metricsMoralisWalletBalancesFiller',
+      'metricsWalletBalancesFillSelector',
       {
         id: wallet.id,
+        network: wallet.network,
       },
       { startAt: startAt.toDate() },
     );
+
     return startAt.clone().add(lag, 'seconds');
   }, Promise.resolve(dayjs()));
 

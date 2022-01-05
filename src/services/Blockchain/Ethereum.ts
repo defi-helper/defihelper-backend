@@ -197,6 +197,35 @@ function moralisPriceFeed(network: string): { usd: TokenPriceFeedUSD } {
   };
 }
 
+function debankPriceFeed(network: string): { usd: TokenPriceFeedUSD } {
+  return {
+    usd: async (address: string) => {
+      const key = `ethereum:${network}:${address}:price`;
+
+      let chain: 'movr';
+      switch (network) {
+        case '1285':
+          chain = 'movr';
+          break;
+        default:
+          throw new Error(`unsupported network: ${network}`);
+      }
+
+      const cachedPrice = await cacheGet(key);
+      if (cachedPrice) {
+        return cachedPrice;
+      }
+
+      const { price } = (
+        await axios.get(`https://openapi.debank.com/v1/token?chain_id=${chain}&id=${address}`)
+      ).data;
+
+      cacheSet(key, price.toString(10));
+      return price.toString(10);
+    },
+  };
+}
+
 function avgGasPriceFeedManual(value: string): AvgGasPriceResolver {
   return async () => value;
 }
@@ -307,7 +336,7 @@ export class BlockchainContainer extends Container<Config> {
         symbol: 'MOVR',
         name: 'Moonriver',
       },
-      tokenPriceResolver: moralisPriceFeed('1285'),
+      tokenPriceResolver: debankPriceFeed('1285'),
       network: this.parent.moonriver,
     }),
     '43113': networkFactory({

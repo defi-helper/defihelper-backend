@@ -37,7 +37,7 @@ export default async (process: Process) => {
     queue.push('metricsProtocolLinksListingBroker', {}),
     queue.push('metricsProtocolLinksPostBroker', {}),
     queue.push('metricsContractScannerBroker', {}),
-    queue.push('metricsMoralisWalletBalancesBroker', {}),
+    queue.push('metricsWalletBalancesBroker', {}),
     queue.push('notificationPortfolioMetricsBroker', {}),
     queue.push('notificationAutomateWalletsNotEnoughFundsBroker', {}),
   ]);
