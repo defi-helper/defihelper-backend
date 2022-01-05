@@ -16,7 +16,7 @@ export default async (process: Process) => {
     .innerJoin(walletTableName, `${walletTableName}.id`, `${triggerTableName}.wallet`)
     .where('id', id)
     .andWhere('active', true)
-    .andWhere(`${walletTableName}.isLowBalance`, false)
+    .andWhere(`${walletTableName}.suspendReason`, null)
     .first();
   if (!trigger) throw new Error('Trigger not found');
 

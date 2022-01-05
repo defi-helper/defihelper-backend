@@ -1,8 +1,13 @@
 import { Process } from '@models/Queue/Entity';
 import container from '@container';
 import { transferTableName } from '@models/Billing/Entity';
-import { tableName as walletTableName, WalletType } from '@models/Wallet/Entity';
+import {
+  tableName as walletTableName,
+  WalletSuspenseReason,
+  WalletType,
+} from '@models/Wallet/Entity';
 import BN from 'bignumber.js';
+import { triggerTableName } from '@models/Automate/Entity';
 
 export default async (process: Process) => {
   const database = container.database();
@@ -12,8 +17,9 @@ export default async (process: Process) => {
     .column(`${walletTableName}.id as walletId`)
     .column(`${walletTableName}.user as userId`)
     .column(`${walletTableName}.network as walletNetwork`)
-    .column(database.raw('coalesce(sum(amount), 0) as funds'))
+    .column(database.raw('greatest(0, sum(amount)) as funds'))
     .innerJoin(walletTableName, `${walletTableName}.address`, `${transferTableName}.account`)
+    .innerJoin(triggerTableName, `${triggerTableName}.wallet`, `${walletTableName}.id`)
     .andWhere(`${transferTableName}.network`, database.raw(`${walletTableName}.network`))
     .andWhere(`${transferTableName}.blockchain`, database.raw(`${walletTableName}.blockchain`))
     .andWhere(`${walletTableName}.type`, WalletType.Wallet)
@@ -25,11 +31,11 @@ export default async (process: Process) => {
         await container.blockchain.ethereum.byNetwork(v.walletNetwork).nativeTokenPrice(),
       ).toNumber();
 
-      if (v.funds * chainNativeUSD - (1 + chainNativeUSD * 0.1) > 0) {
-        return container.model.walletService().lowFunds(v.walletId, false);
+      if (v.funds * chainNativeUSD > 3) {
+        return container.model.walletService().suspense(v.walletId, null);
       }
 
-      return container.model.walletService().lowFunds(v.walletId, true);
+      return container.model.walletService().suspense(v.walletId, WalletSuspenseReason.LowFunds);
     }),
   );
 

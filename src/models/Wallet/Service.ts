@@ -4,7 +4,7 @@ import { User } from '@models/User/Entity';
 import { Blockchain } from '@models/types';
 import { Emitter } from '@services/Event';
 import container from '@container';
-import { Wallet, Table, WalletType } from './Entity';
+import { Wallet, Table, WalletType, WalletSuspenseReason } from './Entity';
 
 export class WalletService {
   constructor(readonly table: Factory<Table>) {}
@@ -59,12 +59,15 @@ export class WalletService {
     return updated;
   }
 
-  async lowFunds(walletId: string, state: boolean): Promise<boolean> {
+  async suspense(
+    walletId: string,
+    reason: WalletSuspenseReason | null,
+  ): Promise<WalletSuspenseReason | null> {
     await this.table().where({ id: walletId }).update({
-      isLowBalance: state,
+      suspendReason: reason,
     });
 
-    return state;
+    return reason;
   }
 
   async delete(wallet: Wallet) {
