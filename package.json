@@ -66,6 +66,7 @@
     "faker": "^5.5.3",
     "graphql": "^15.5.0",
     "graphql-subscriptions": "^1.2.1",
+    "jimp": "^0.16.1",
     "knex": "^0.21.0",
     "module-alias": "^2.2.2",
     "moralis": "^0.0.143",

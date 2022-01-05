@@ -79,7 +79,7 @@ export default async (process: Process) => {
   if (!protocol) {
     protocol = await container.model
       .protocolService()
-      .create(adapterName, protocolName, protocolDescription, null, null, {}, false);
+      .create(adapterName, protocolName, protocolDescription, null, null, null, {}, false);
   }
 
   const res = await axios.get<string>(

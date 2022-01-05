@@ -1432,7 +1432,7 @@ export const ProtocolCreateMutation: GraphQLFieldConfig<any, Request> = {
     const { adapter, name, description, icon, link, links, hidden } = input;
     const created = await container.model
       .protocolService()
-      .create(adapter, name, description, icon, link, links, hidden);
+      .create(adapter, name, description, icon, null, link, links, hidden);
 
     return created;
   }),
