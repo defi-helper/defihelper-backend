@@ -15,6 +15,7 @@ export interface Wallet {
   address: string;
   publicKey: string;
   name: string;
+  isLowBalance: boolean;
   updatedAt: Date;
   createdAt: Date;
 }

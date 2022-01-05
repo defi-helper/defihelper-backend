@@ -49,6 +49,9 @@ export * as automateTriggerByTime from './automate/trigger/byTime';
 export * as swopfiLPFarmingPoolScanner from './pools/swopfiLPFarming';
 export * as logBilling from './log/billingLogger';
 
+/* billing */
+export * as emptyWalletsBroker from './billing/emptyWalletsBroker';
+
 /* metrics */
 export * as metricsWalletBalancesDeBankFiller from './metrics/walletBalances/walletBalancesDeBankFiller';
 export * as metricsWalletBalancesMoralisFiller from './metrics/walletBalances/walletBalancesMoralisFiller';

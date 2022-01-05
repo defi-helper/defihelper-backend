@@ -37,6 +37,7 @@ export class WalletService {
       address: blockchain === 'ethereum' ? address.toLowerCase() : address,
       publicKey,
       name,
+      isLowBalance: false,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -56,6 +57,14 @@ export class WalletService {
     await this.table().where({ id: wallet.id }).update(updated);
 
     return updated;
+  }
+
+  async lowFunds(walletId: string, state: boolean): Promise<boolean> {
+    await this.table().where({ id: walletId }).update({
+      isLowBalance: state,
+    });
+
+    return state;
   }
 
   async delete(wallet: Wallet) {
