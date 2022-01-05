@@ -37,7 +37,7 @@ export class WalletService {
       address: blockchain === 'ethereum' ? address.toLowerCase() : address,
       publicKey,
       name,
-      isLowBalance: false,
+      suspendReason: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
