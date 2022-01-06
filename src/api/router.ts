@@ -291,7 +291,7 @@ export function route({ express, server }: { express: Express; server: Server })
       }%`,
     );
 
-    // protocol name
+    // protocol's name
     await templateInstance.print(protocolNameFont, 117, 114, protocol.name);
 
     // protocol logo
