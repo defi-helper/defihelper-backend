@@ -237,13 +237,17 @@ export function route({ express, server }: { express: Express; server: Server })
       }),
     );
 
-    const avgInitialApy =
-      calculatedApyList.reduce((prev, curr) => new BN(prev).plus(curr.initial).toNumber(), 0) /
-      calculatedApyList.length;
+    const avgInitialApy = Math.round(
+      (calculatedApyList.reduce((prev, curr) => new BN(prev).plus(curr.initial).toNumber(), 0) /
+        calculatedApyList.length) *
+        100,
+    );
 
-    const avgBoostedApy =
-      calculatedApyList.reduce((prev, curr) => new BN(prev).plus(curr.boosted).toNumber(), 0) /
-      calculatedApyList.length;
+    const avgBoostedApy = Math.round(
+      (calculatedApyList.reduce((prev, curr) => new BN(prev).plus(curr.boosted).toNumber(), 0) /
+        calculatedApyList.length) *
+        100,
+    );
 
     const [
       templateInstance,
@@ -251,15 +255,17 @@ export function route({ express, server }: { express: Express; server: Server })
       withoutDfhFont,
       withDfhBoostedFont,
       totalApyFont,
+      protocolNameFont,
     ] = await Promise.all([
       Jimp.read(`${__dirname}/../assets/opengraph-template.png`),
       protocol.previewPicture ? Jimp.read(protocol.previewPicture) : null,
       Jimp.loadFont(`${__dirname}/../assets/font-without-dfh/FCK4eZkmzDMwvOVkx7MoTdys.ttf.fnt`),
       Jimp.loadFont(`${__dirname}/../assets/font-with-dfh/KDHm2vWUrEv1xTEC3ilBxVL2.ttf.fnt`),
       Jimp.loadFont(`${__dirname}/../assets/font-total-apy/QHPbZ5kKUxcehQ40MdnPZLK9.ttf.fnt`),
+      Jimp.loadFont(`${__dirname}/../assets/font-protocol-name/kkMJaED6sIZbo4N0PfpUSPXk.ttf.fnt`),
     ]);
 
-    // protocols's apy
+    // protocol's apy
     await templateInstance.print(
       withoutDfhFont,
       117,
@@ -281,9 +287,12 @@ export function route({ express, server }: { express: Express; server: Server })
       117,
       660,
       `${
-        avgBoostedApy + avgInitialApy > 20000 ? '>20000' : (avgBoostedApy + avgInitialApy).toFixed()
+        avgBoostedApy + avgInitialApy > 10000 ? '>10000' : (avgBoostedApy + avgInitialApy).toFixed()
       }%`,
     );
+
+    // protocol's name
+    await templateInstance.print(protocolNameFont, 117, 114, protocol.name);
 
     // protocol logo
     if (protocolLogoInstance) {
