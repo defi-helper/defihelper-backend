@@ -18,6 +18,9 @@ export default async (process: Process) => {
     container.model.queueService().push('findWalletContracts', {
       walletId: wallet.id,
     }),
+    container.model.queueService().push('findWalletContracts', {
+      walletId: wallet.id,
+    }),
     container.model.queueService().push('metricsWalletBalancesFillSelector', {
       id: wallet.id,
       network: wallet.network,

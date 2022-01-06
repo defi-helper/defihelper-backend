@@ -24,13 +24,11 @@ export * as metricsContractBlock from './metrics/contractBlock';
 export * as metricsContractScannerDate from './metrics/contractScannerDate';
 export * as metricsWalletCurrent from './metrics/walletCurrent';
 export * as metricsWalletBlock from './metrics/walletBlock';
-export * as findWalletContracts from './wallet/findContracts';
 export * as sendEmail from './email/send';
 export * as sendTelegram from './telegram/send';
 export * as subscribeToEventFromScanner from './scanner/subscribeToEvent';
 export * as registerContractInScanner from './scanner/registerContract';
 export * as sendEventsNotifications from './notifications/webHook';
-export * as linkContractsFromEvents from './wallet/linkContractsFromEvents';
 export * as notificationSend from './notifications/send';
 export * as contractResolveDeployBlockNumber from './contract/resolveDeployBlockNumber';
 export * as contractResolveAbi from './contract/resolveAbi';
@@ -74,3 +72,8 @@ export * as eventsContractCreated from './events/contractCreated';
 export * as eventsUserCreated from './events/userCreated';
 export * as eventsWalletCreated from './events/walletCreated';
 export * as eventsAutomateContractVerificationConfirmed from './events/automate/contractVerificationConfirmed';
+
+/* wallets */
+export * as findWalletContracts from './wallet/findContracts';
+export * as findWalletAppliedNetworks from './wallet/findAppliedNetworks';
+export * as linkContractsFromEvents from './wallet/linkContractsFromEvents';
