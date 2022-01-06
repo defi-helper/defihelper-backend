@@ -265,7 +265,7 @@ export function route({ express, server }: { express: Express; server: Server })
       Jimp.loadFont(`${__dirname}/../assets/font-protocol-name/kkMJaED6sIZbo4N0PfpUSPXk.ttf.fnt`),
     ]);
 
-    // protocolss apy
+    // protocol's apy
     await templateInstance.print(
       withoutDfhFont,
       117,
