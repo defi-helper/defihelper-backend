@@ -237,13 +237,17 @@ export function route({ express, server }: { express: Express; server: Server })
       }),
     );
 
-    const avgInitialApy =
-      calculatedApyList.reduce((prev, curr) => new BN(prev).plus(curr.initial).toNumber(), 0) /
-      calculatedApyList.length;
+    const avgInitialApy = Math.round(
+      (calculatedApyList.reduce((prev, curr) => new BN(prev).plus(curr.initial).toNumber(), 0) /
+        calculatedApyList.length) *
+        100,
+    );
 
-    const avgBoostedApy =
-      calculatedApyList.reduce((prev, curr) => new BN(prev).plus(curr.boosted).toNumber(), 0) /
-      calculatedApyList.length;
+    const avgBoostedApy = Math.round(
+      (calculatedApyList.reduce((prev, curr) => new BN(prev).plus(curr.boosted).toNumber(), 0) /
+        calculatedApyList.length) *
+        100,
+    );
 
     const [
       templateInstance,
@@ -281,7 +285,7 @@ export function route({ express, server }: { express: Express; server: Server })
       117,
       660,
       `${
-        avgBoostedApy + avgInitialApy > 20000 ? '>20000' : (avgBoostedApy + avgInitialApy).toFixed()
+        avgBoostedApy + avgInitialApy > 10000 ? '>10000' : (avgBoostedApy + avgInitialApy).toFixed()
       }%`,
     );
 
