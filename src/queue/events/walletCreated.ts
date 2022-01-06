@@ -15,6 +15,9 @@ export default async (process: Process) => {
   }
 
   await Promise.all([
+    container.model.queueService().push('findWalletAppliedNetworks', {
+      walletId: wallet.id,
+    }),
     container.model.queueService().push('findWalletContracts', {
       walletId: wallet.id,
     }),
