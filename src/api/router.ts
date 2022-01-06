@@ -198,10 +198,6 @@ export function route({ express, server }: { express: Express; server: Server })
       return res.status(503).send('protocol not found');
     }
 
-    if (!protocol.previewPicture) {
-      return res.status(503).send('protocol have no picture');
-    }
-
     const maxLogoWidth = 450;
     const maxLogoHeight = 450;
 
@@ -257,7 +253,7 @@ export function route({ express, server }: { express: Express; server: Server })
       totalApyFont,
     ] = await Promise.all([
       Jimp.read(`${__dirname}/../assets/opengraph-template.png`),
-      Jimp.read(protocol.previewPicture),
+      protocol.previewPicture ? Jimp.read(protocol.previewPicture) : null,
       Jimp.loadFont(`${__dirname}/../assets/font-without-dfh/FCK4eZkmzDMwvOVkx7MoTdys.ttf.fnt`),
       Jimp.loadFont(`${__dirname}/../assets/font-with-dfh/KDHm2vWUrEv1xTEC3ilBxVL2.ttf.fnt`),
       Jimp.loadFont(`${__dirname}/../assets/font-total-apy/QHPbZ5kKUxcehQ40MdnPZLK9.ttf.fnt`),
@@ -290,17 +286,19 @@ export function route({ express, server }: { express: Express; server: Server })
     );
 
     // protocol logo
-    protocolLogoInstance.resize(maxLogoWidth, Jimp.AUTO);
-    if (protocolLogoInstance.getHeight() > maxLogoHeight) {
-      protocolLogoInstance.resize(Jimp.AUTO, maxLogoHeight);
-    }
+    if (protocolLogoInstance) {
+      protocolLogoInstance.resize(maxLogoWidth, Jimp.AUTO);
+      if (protocolLogoInstance.getHeight() > maxLogoHeight) {
+        protocolLogoInstance.resize(Jimp.AUTO, maxLogoHeight);
+      }
 
-    const actualLogoWidth = protocolLogoInstance.getWidth();
-    await templateInstance.composite(
-      protocolLogoInstance,
-      templateInstance.getWidth() - actualLogoWidth / 2 - 415,
-      templateInstance.getHeight() / 2 - protocolLogoInstance.getHeight() / 2,
-    );
+      const actualLogoWidth = protocolLogoInstance.getWidth();
+      await templateInstance.composite(
+        protocolLogoInstance,
+        templateInstance.getWidth() - actualLogoWidth / 2 - 415,
+        templateInstance.getHeight() / 2 - protocolLogoInstance.getHeight() / 2,
+      );
+    }
 
     return res
       .writeHead(200, {
