@@ -255,15 +255,17 @@ export function route({ express, server }: { express: Express; server: Server })
       withoutDfhFont,
       withDfhBoostedFont,
       totalApyFont,
+      protocolNameFont,
     ] = await Promise.all([
       Jimp.read(`${__dirname}/../assets/opengraph-template.png`),
       protocol.previewPicture ? Jimp.read(protocol.previewPicture) : null,
       Jimp.loadFont(`${__dirname}/../assets/font-without-dfh/FCK4eZkmzDMwvOVkx7MoTdys.ttf.fnt`),
       Jimp.loadFont(`${__dirname}/../assets/font-with-dfh/KDHm2vWUrEv1xTEC3ilBxVL2.ttf.fnt`),
       Jimp.loadFont(`${__dirname}/../assets/font-total-apy/QHPbZ5kKUxcehQ40MdnPZLK9.ttf.fnt`),
+      Jimp.loadFont(`${__dirname}/../assets/font-protocol-name/kkMJaED6sIZbo4N0PfpUSPXk.ttf.fnt`),
     ]);
 
-    // protocols's apy
+    // protocolss apy
     await templateInstance.print(
       withoutDfhFont,
       117,
@@ -288,6 +290,9 @@ export function route({ express, server }: { express: Express; server: Server })
         avgBoostedApy + avgInitialApy > 10000 ? '>10000' : (avgBoostedApy + avgInitialApy).toFixed()
       }%`,
     );
+
+    // protocol name
+    await templateInstance.print(protocolNameFont, 117, 114, protocol.name);
 
     // protocol logo
     if (protocolLogoInstance) {
