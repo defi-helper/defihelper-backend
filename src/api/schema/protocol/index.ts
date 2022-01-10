@@ -814,7 +814,7 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
                 this.andWhere('network', network);
               }
             }
-            if (hidden !== undefined) {
+            if (typeof hidden === 'boolean') {
               this.andWhere('hidden', hidden);
             }
             if (search !== undefined && search !== '') {
