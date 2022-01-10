@@ -77,3 +77,4 @@ export * as eventsAutomateContractVerificationConfirmed from './events/automate/
 export * as findWalletContracts from './wallet/findContracts';
 export * as findWalletAppliedNetworks from './wallet/findAppliedNetworks';
 export * as linkContractsFromEvents from './wallet/linkContractsFromEvents';
+export * as regularFindUnknownAppliedNetworks from './wallet/regularFindUnknownAppliedNetworks';
