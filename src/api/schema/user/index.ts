@@ -1115,6 +1115,7 @@ export const UserType = new GraphQLObjectType<User, Request>({
           .metricWalletTokenTable()
           .distinctOn(
             `${metricWalletTokenTableName}.wallet`,
+            `${metricWalletTokenTableName}.contract`,
             `${metricWalletTokenTableName}.token`,
             'date',
           )
@@ -1158,6 +1159,7 @@ export const UserType = new GraphQLObjectType<User, Request>({
             }
           })
           .orderBy(`${metricWalletTokenTableName}.wallet`)
+          .orderBy(`${metricWalletTokenTableName}.contract`)
           .orderBy(`${metricWalletTokenTableName}.token`)
           .orderBy('date')
           .orderBy(`${metricWalletTokenTableName}.date`, 'DESC');

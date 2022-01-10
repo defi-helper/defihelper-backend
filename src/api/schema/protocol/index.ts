@@ -1327,7 +1327,7 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
             .where(`${walletTableName}.user`, linked),
         );
       }
-      if (hidden !== undefined) {
+      if (typeof hidden === 'boolean') {
         this.andWhere('hidden', hidden);
       }
       if (search !== undefined && search !== '') {
