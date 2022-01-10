@@ -25,7 +25,12 @@ import { AuthenticationError, UserInputError } from 'apollo-server-express';
 import { TokenAliasLiquidityEnum, TokenAliasType } from '@api/schema/token';
 import { tableName as walletTableName } from '@models/Wallet/Entity';
 import { metricWalletTableName, metricWalletTokenTableName } from '@models/Metric/Entity';
-import { TokenAliasLiquidity, tokenAliasTableName, tokenTableName } from '@models/Token/Entity';
+import {
+  TokenAlias,
+  TokenAliasLiquidity,
+  tokenAliasTableName,
+  tokenTableName,
+} from '@models/Token/Entity';
 import { ContractType } from '../protocol';
 import {
   BlockchainEnum,
@@ -54,6 +59,73 @@ const TokenAliasFilterInputType = new GraphQLInputObjectType({
     liquidity: {
       type: GraphQLList(GraphQLNonNull(TokenAliasLiquidityEnum)),
       description: 'Liquidity token',
+    },
+  },
+});
+
+export const WalletTokenAliasMetricType = new GraphQLObjectType({
+  name: 'WalletTokenAliasMetricType',
+  fields: {
+    balance: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    usd: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+  },
+});
+
+export const WalletTokenAliasType = new GraphQLObjectType<
+  { wallet: Wallet.Wallet; tokenAlias: TokenAlias },
+  Request
+>({
+  name: 'WalletTokenAliasType',
+  fields: {
+    tokenAlias: {
+      type: GraphQLNonNull(TokenAliasType),
+    },
+    metric: {
+      type: GraphQLNonNull(WalletTokenAliasMetricType),
+      resolve: async ({ wallet, tokenAlias }) => {
+        const database = container.database();
+        const metric = await container
+          .database()
+          .sum({ balance: 'balance', usd: 'usd' })
+          .from(
+            container.model
+              .metricWalletTokenTable()
+              .distinctOn(
+                `${metricWalletTokenTableName}.contract`,
+                `${metricWalletTokenTableName}.token`,
+              )
+              .columns([
+                database.raw(`(${metricWalletTokenTableName}.data->>'usd')::numeric AS usd`),
+                database.raw(
+                  `(${metricWalletTokenTableName}.data->>'balance')::numeric AS balance`,
+                ),
+              ])
+              .innerJoin(
+                tokenTableName,
+                `${tokenTableName}.id`,
+                `${metricWalletTokenTableName}.token`,
+              )
+              .whereRaw(
+                `(${metricWalletTokenTableName}.data->>'usd' IS NOT NULL OR ${metricWalletTokenTableName}.data->>'balance' IS NOT NULL)`,
+              )
+              .andWhere(`${tokenTableName}.alias`, tokenAlias.id)
+              .andWhere(`${metricWalletTokenTableName}.wallet`, wallet.id)
+              .orderBy(`${metricWalletTokenTableName}.contract`)
+              .orderBy(`${metricWalletTokenTableName}.token`)
+              .orderBy(`${metricWalletTokenTableName}.date`, 'DESC')
+              .as('metric'),
+          )
+          .first();
+
+        return {
+          balance: metric?.balance ?? '0',
+          usd: metric?.usd ?? '0',
+        };
+      },
     },
   },
 });
@@ -202,7 +274,7 @@ export const WalletType = new GraphQLObjectType<Wallet.Wallet, Request>({
     },
     tokenAliases: {
       type: GraphQLNonNull(
-        PaginateList('WalletTokenAliasListType', GraphQLNonNull(TokenAliasType)),
+        PaginateList('WalletTokenAliasListType', GraphQLNonNull(WalletTokenAliasType)),
       ),
       args: {
         filter: {
@@ -238,7 +310,8 @@ export const WalletType = new GraphQLObjectType<Wallet.Wallet, Request>({
             .clone()
             .orderBy('createdAt', 'desc')
             .limit(pagination.limit)
-            .offset(pagination.offset),
+            .offset(pagination.offset)
+            .then((rows) => rows.map((tokenAlias) => ({ tokenAlias, wallet }))),
           pagination: {
             count: await select.clone().countDistinct(`${tokenAliasTableName}.id`).first(),
           },
