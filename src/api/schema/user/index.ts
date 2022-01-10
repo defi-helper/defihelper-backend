@@ -72,6 +72,9 @@ export const WalletTokenAliasMetricType = new GraphQLObjectType({
     usd: {
       type: GraphQLNonNull(GraphQLString),
     },
+    portfolioPercent: {
+      type: GraphQLNonNull(GraphQLString),
+    },
   },
 });
 
@@ -124,6 +127,7 @@ export const WalletTokenAliasType = new GraphQLObjectType<
         return {
           balance: metric?.balance ?? '0',
           usd: metric?.usd ?? '0',
+          portfolioPercent: '0',
         };
       },
     },
