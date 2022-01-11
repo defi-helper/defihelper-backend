@@ -31,6 +31,7 @@ import {
   tokenAliasTableName,
   tokenTableName,
 } from '@models/Token/Entity';
+import { contractTableName as protocolContractTableName } from '@models/Protocol/Entity';
 import { ContractType } from '../protocol';
 import {
   BlockchainEnum,
@@ -847,6 +848,10 @@ export const UserType = new GraphQLObjectType<User, Request>({
                 type: GraphQLList(GraphQLNonNull(TokenAliasLiquidityEnum)),
                 description: 'Liquidity token',
               },
+              protocol: {
+                type: UuidType,
+                description: 'Only tokens touched by protocol',
+              },
             },
           }),
           defaultValue: {},
@@ -864,13 +869,22 @@ export const UserType = new GraphQLObjectType<User, Request>({
             `${walletTableName}.id`,
             `${metricWalletTokenTableName}.wallet`,
           )
-          .where(function () {
-            this.where(`${walletTableName}.user`, user.id);
-            if (Array.isArray(filter.liquidity) && filter.liquidity.length > 0) {
-              this.whereIn(`${tokenAliasTableName}.liquidity`, filter.liquidity);
-            }
-          })
+          .where(`${walletTableName}.user`, user.id)
           .groupBy(`${tokenAliasTableName}.id`);
+
+        if (Array.isArray(filter.liquidity) && filter.liquidity.length > 0) {
+          select.whereIn(`${tokenAliasTableName}.liquidity`, filter.liquidity);
+        }
+
+        if (filter.protocol) {
+          select
+            .innerJoin(
+              protocolContractTableName,
+              `${protocolContractTableName}.id`,
+              `${metricWalletTokenTableName}.contract`,
+            )
+            .andWhere(`${protocolContractTableName}.protocol`, filter.protocol);
+        }
 
         return {
           list: await select
