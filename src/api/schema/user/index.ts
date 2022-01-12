@@ -859,7 +859,7 @@ export const UserType = new GraphQLObjectType<User, Request>({
         pagination: PaginationArgument('UserTokenAliasListPaginationInputType'),
       },
       resolve: async (user, { filter, pagination }) => {
-        const select = container.model
+        let select = container.model
           .metricWalletTokenTable()
           .column(`${tokenAliasTableName}.*`)
           .innerJoin(tokenTableName, `${tokenTableName}.id`, `${metricWalletTokenTableName}.token`)
@@ -873,11 +873,11 @@ export const UserType = new GraphQLObjectType<User, Request>({
           .groupBy(`${tokenAliasTableName}.id`);
 
         if (Array.isArray(filter.liquidity) && filter.liquidity.length > 0) {
-          select.whereIn(`${tokenAliasTableName}.liquidity`, filter.liquidity);
+          select = select.whereIn(`${tokenAliasTableName}.liquidity`, filter.liquidity);
         }
 
         if (filter.protocol) {
-          select
+          select = select
             .innerJoin(
               protocolContractTableName,
               `${protocolContractTableName}.id`,
