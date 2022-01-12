@@ -3,7 +3,10 @@ import container from '@container';
 import dayjs from 'dayjs';
 
 export default async (process: Process) => {
-  const wallets = await container.model.walletTable();
+  const wallets = await container.model
+    .walletTable()
+    .where('blockchain', 'ethereum')
+    .distinctOn('address');
 
   const lag = 86400 / wallets.length; // seconds in day
   await wallets.reduce<Promise<dayjs.Dayjs>>(async (prev, wallet) => {

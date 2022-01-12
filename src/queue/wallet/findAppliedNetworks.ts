@@ -47,7 +47,7 @@ export default async (process: Process) => {
             return '137';
 
           case 'avax':
-            return '43113';
+            return '43114';
 
           case 'movr':
             return '1285';
@@ -61,7 +61,7 @@ export default async (process: Process) => {
           (w) => w.network === network && w.blockchain === 'ethereum',
         );
 
-        if (existing || existing === null) {
+        if (existing || network === null) {
           return;
         }
 
@@ -70,7 +70,7 @@ export default async (process: Process) => {
           .create(
             walletOwner,
             inheritWallet.blockchain,
-            network as string,
+            network,
             Wallet.WalletType.Wallet,
             inheritWallet.address,
             inheritWallet.publicKey,
