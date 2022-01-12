@@ -33,6 +33,10 @@ export class SocialStatsGateway {
     try {
       res = await this.client.get<{ followers: number }>(`/api/v1/follower/${provider}/${channel}`);
     } catch (e) {
+      if (!e.response) {
+        throw e;
+      }
+
       throw new Error(`[${e.response.status}]: ${e.response.data}`);
     }
 
@@ -44,6 +48,10 @@ export class SocialStatsGateway {
     try {
       res = await this.client.get<{ watchers: number }>(`/api/v1/coin/${provider}/${id}`);
     } catch (e) {
+      if (!e.response) {
+        throw e;
+      }
+
       throw new Error(`[${e.response.status}]: ${e.response.data}`);
     }
 
@@ -62,6 +70,10 @@ export class SocialStatsGateway {
         }>
       >(`/api/v1/post/${provider}/${id}`);
     } catch (e) {
+      if (!e.response) {
+        throw e;
+      }
+
       throw new Error(`[${e.response.status}]: ${e.response.data}`);
     }
 
