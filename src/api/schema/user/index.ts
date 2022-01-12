@@ -31,6 +31,7 @@ import {
   tokenAliasTableName,
   tokenTableName,
 } from '@models/Token/Entity';
+import { contractTableName as protocolContractTableName } from '@models/Protocol/Entity';
 import { ContractType } from '../protocol';
 import {
   BlockchainEnum,
@@ -70,6 +71,9 @@ export const WalletTokenAliasMetricType = new GraphQLObjectType({
       type: GraphQLNonNull(GraphQLString),
     },
     usd: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    portfolioPercent: {
       type: GraphQLNonNull(GraphQLString),
     },
   },
@@ -124,6 +128,7 @@ export const WalletTokenAliasType = new GraphQLObjectType<
         return {
           balance: metric?.balance ?? '0',
           usd: metric?.usd ?? '0',
+          portfolioPercent: '0',
         };
       },
     },
@@ -843,6 +848,10 @@ export const UserType = new GraphQLObjectType<User, Request>({
                 type: GraphQLList(GraphQLNonNull(TokenAliasLiquidityEnum)),
                 description: 'Liquidity token',
               },
+              protocol: {
+                type: UuidType,
+                description: 'Only tokens touched by protocol',
+              },
             },
           }),
           defaultValue: {},
@@ -850,7 +859,7 @@ export const UserType = new GraphQLObjectType<User, Request>({
         pagination: PaginationArgument('UserTokenAliasListPaginationInputType'),
       },
       resolve: async (user, { filter, pagination }) => {
-        const select = container.model
+        let select = container.model
           .metricWalletTokenTable()
           .column(`${tokenAliasTableName}.*`)
           .innerJoin(tokenTableName, `${tokenTableName}.id`, `${metricWalletTokenTableName}.token`)
@@ -860,13 +869,22 @@ export const UserType = new GraphQLObjectType<User, Request>({
             `${walletTableName}.id`,
             `${metricWalletTokenTableName}.wallet`,
           )
-          .where(function () {
-            this.where(`${walletTableName}.user`, user.id);
-            if (Array.isArray(filter.liquidity) && filter.liquidity.length > 0) {
-              this.whereIn(`${tokenAliasTableName}.liquidity`, filter.liquidity);
-            }
-          })
+          .where(`${walletTableName}.user`, user.id)
           .groupBy(`${tokenAliasTableName}.id`);
+
+        if (Array.isArray(filter.liquidity) && filter.liquidity.length > 0) {
+          select = select.whereIn(`${tokenAliasTableName}.liquidity`, filter.liquidity);
+        }
+
+        if (filter.protocol) {
+          select = select
+            .innerJoin(
+              protocolContractTableName,
+              `${protocolContractTableName}.id`,
+              `${metricWalletTokenTableName}.contract`,
+            )
+            .andWhere(`${protocolContractTableName}.protocol`, filter.protocol);
+        }
 
         return {
           list: await select
