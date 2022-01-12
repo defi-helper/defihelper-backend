@@ -127,6 +127,7 @@ export default {
   },
   adapters: {
     host: process.env.ADAPTERS_HOST ?? 'localhost',
+    auth: process.env.ADAPTERS_CACHE_AUTH ?? '',
   },
   restakeOptimal: {
     host: process.env.RESTAKE_OPTIMAL_HOST ?? 'localhost',

@@ -47,7 +47,9 @@ export default async (process: Process) => {
   const blockchain = container.blockchain[protocolBlockchain];
   const network = blockchain.byNetwork(protocolNetwork);
 
-  const pools: Pool[] = await protocolDefaultResolver(network.provider());
+  const pools: Pool[] = await protocolDefaultResolver(network.provider(), {
+    cacheAuth: container.parent.adapters.auth,
+  });
 
   const existingPools = await container.model.contractTable().where({
     protocol: protocolId,
