@@ -28,28 +28,42 @@ export class SocialStatsGateway {
   }
 
   async social(provider: SocialProvider, channel: string) {
-    const res = await this.client.get<{ followers: number }>(
-      `/api/v1/follower/${provider}/${channel}`,
-    );
+    let res;
+
+    try {
+      res = await this.client.get<{ followers: number }>(`/api/v1/follower/${provider}/${channel}`);
+    } catch (e) {
+      throw new Error(`[${e.response.status}]: ${e.response.data}`);
+    }
 
     return res.data;
   }
 
   async coin(provider: CoinProvider, id: string) {
-    const res = await this.client.get<{ watchers: number }>(`/api/v1/coin/${provider}/${id}`);
+    let res;
+    try {
+      res = await this.client.get<{ watchers: number }>(`/api/v1/coin/${provider}/${id}`);
+    } catch (e) {
+      throw new Error(`[${e.response.status}]: ${e.response.data}`);
+    }
 
     return res.data;
   }
 
   async post(provider: PostProvider, id: string) {
-    const res = await this.client.get<
-      Array<{
-        title: string;
-        text: string;
-        link: string;
-        createdAt: number;
-      }>
-    >(`/api/v1/post/${provider}/${id}`);
+    let res;
+    try {
+      res = await this.client.get<
+        Array<{
+          title: string;
+          text: string;
+          link: string;
+          createdAt: number;
+        }>
+      >(`/api/v1/post/${provider}/${id}`);
+    } catch (e) {
+      throw new Error(`[${e.response.status}]: ${e.response.data}`);
+    }
 
     return res.data;
   }
