@@ -1027,7 +1027,6 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
 
         const staking = await dataLoader.contract().load(contract.contract);
         if (!staking) return def;
-        const contractMetric = await dataLoader.contractMetric().load(staking.id);
         const ownerWallet = await dataLoader.wallet().load(contract.wallet);
         if (!ownerWallet) return def;
         const wallet = await container.model
@@ -1056,7 +1055,7 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
             staking.blockchain,
             staking.network,
             totalBalance > 0 ? totalBalance : 10000,
-            new BN(contractMetric?.data.aprYear ?? '0').toNumber(),
+            new BN(staking.metric.aprYear ?? '0').toNumber(),
           ),
         };
       },
