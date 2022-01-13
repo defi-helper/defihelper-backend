@@ -2,11 +2,14 @@ import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import { SocialProvider } from '@services/SocialStats';
 
+interface LinkPair {
+  value: string;
+  id: string;
+}
+
 const matchers = {
-  [SocialProvider.Telegram]: (
-    links: { value: string; id: string }[],
-  ): { value: string; id: string }[] => {
-    return links.reduce<{ value: string; id: string }[]>((result, link) => {
+  [SocialProvider.Telegram]: (links: LinkPair[]): LinkPair[] => {
+    return links.reduce<LinkPair[]>((result, link) => {
       const match = link.value.match(/^https?:\/\/t\.me\/([^/]+)/i);
       if (match === null) return result;
 
