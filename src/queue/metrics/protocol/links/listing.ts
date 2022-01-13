@@ -15,21 +15,19 @@ export default async (process: Process) => {
   if (!protocol) throw new Error('Protocol not found');
 
   const socialStatsGateway = container.socialStats();
-  const socialStats = await Promise.all(
+  await Promise.all(
     ids.map(async (id) => {
       const { watchers } = await socialStatsGateway.coin(provider, id);
 
-      return watchers;
+      return container.model.metricService().createProtocol(
+        protocol,
+        {
+          [`${provider}Watchers`]: watchers.toString(),
+          entityIdentifier: id,
+        },
+        new Date(),
+      );
     }),
-  );
-  const watchersSum = socialStats.reduce((sum, watchers) => sum + watchers, 0);
-
-  await container.model.metricService().createProtocol(
-    protocol,
-    {
-      [`${provider}Watchers`]: watchersSum.toString(),
-    },
-    new Date(),
   );
 
   return process.done();

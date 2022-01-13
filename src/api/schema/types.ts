@@ -197,6 +197,12 @@ export const MetricChartType = new GraphQLObjectType({
     date: {
       type: GraphQLNonNull(DateTimeType),
     },
+    entityIdentifier: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    provider: {
+      type: GraphQLNonNull(GraphQLString),
+    },
     min: {
       type: GraphQLNonNull(GraphQLString),
     },

@@ -910,33 +910,40 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
         const database = container.database();
         const select = container.model
           .metricProtocolTable()
-          .distinctOn('date')
+          .distinctOn('provider', 'entityIdentifier', 'date')
           .column(database.raw(`(${metricProtocolTableName}.data->>'${metric}')::numeric AS value`))
+          .column(database.raw(`'${metric}' AS provider`))
+          .column(
+            database.raw(
+              `${metricProtocolTableName}.data->>'entityIdentifier' AS "entityIdentifier"`,
+            ),
+          )
           .column(database.raw(`DATE_TRUNC('${group}', ${metricProtocolTableName}.date) AS "date"`))
           .where(function () {
             this.where(`${metricProtocolTableName}.protocol`, protocol.id).andWhere(
               database.raw(`${metricProtocolTableName}.data->>'${metric}' IS NOT NULL`),
             );
+
             if (filter.dateAfter) {
               this.andWhere(`${metricProtocolTableName}.date`, '>=', filter.dateAfter.toDate());
             }
             if (filter.dateBefore) {
               this.andWhere(`${metricProtocolTableName}.date`, '<', filter.dateBefore.toDate());
             }
-          })
-          .orderBy('date')
-          .orderBy(`${metricProtocolTableName}.date`, 'DESC');
+          });
 
         return container
           .database()
           .column('date')
+          .column('provider')
+          .column('entityIdentifier')
           .max({ max: 'value' })
           .min({ min: 'value' })
           .count({ count: 'value' })
           .avg({ avg: 'value' })
           .sum({ sum: 'value' })
           .from(select.as('metric'))
-          .groupBy('date')
+          .groupBy('provider', 'entityIdentifier', 'date')
           .orderBy(sort)
           .limit(pagination.limit)
           .offset(pagination.offset);

@@ -12,6 +12,12 @@ interface Metric {
   createdAt: Date;
 }
 
+export enum MetricProtocolProvider {
+  CoinGeckoWatchers = 'coingeckoWatchers',
+  CoinMarketCapWatchers = 'coinmarketcapWatchers',
+  TelegramFollowers = 'telegramFollowers',
+}
+
 export interface MetricBlockchain extends Metric {
   blockchain: Blockchain;
   network: string;
