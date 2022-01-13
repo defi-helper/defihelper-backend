@@ -5,7 +5,7 @@ import { SocialProvider } from '@services/SocialStats';
 export interface Params {
   provider: SocialProvider;
   protocol: string;
-  ids: string[];
+  ids: { value: string; id: string }[];
 }
 
 export default async (process: Process) => {
@@ -16,14 +16,14 @@ export default async (process: Process) => {
 
   const socialStatsGateway = container.socialStats();
   await Promise.all(
-    ids.map(async (id) => {
-      const { followers } = await socialStatsGateway.social(provider, id);
+    ids.map(async (link) => {
+      const { followers } = await socialStatsGateway.social(provider, link.value);
 
       await container.model.metricService().createProtocol(
         protocol,
         {
           [`${provider}Followers`]: followers.toString(),
-          entityIdentifier: id,
+          entityIdentifier: link.id,
         },
         new Date(),
       );

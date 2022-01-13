@@ -23,7 +23,7 @@ export default {
     host: process.env.SCANNER_HOST ?? 'https://scanner-local.defihelper.io',
   },
   socilaStats: {
-    host: process.env.SOCIAL_STATS_HOST ?? 'https://social-stats.defihelper.io',
+    host: 'https://stats.defihelper.io',
   },
   database: {
     host: process.env.DATABASE_HOST ?? 'localhost',

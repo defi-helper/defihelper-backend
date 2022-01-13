@@ -22,6 +22,7 @@ export class SocialStatsGateway {
   protected client: AxiosInstance;
 
   constructor({ host }: Options) {
+    console.log(host);
     this.client = axios.create({
       baseURL: host,
     });
