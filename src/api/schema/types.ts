@@ -198,7 +198,7 @@ export const MetricChartType = new GraphQLObjectType({
       type: GraphQLNonNull(DateTimeType),
     },
     entityIdentifier: {
-      type: GraphQLNonNull(GraphQLString),
+      type: GraphQLNonNull(UuidType),
     },
     provider: {
       type: GraphQLNonNull(GraphQLString),
