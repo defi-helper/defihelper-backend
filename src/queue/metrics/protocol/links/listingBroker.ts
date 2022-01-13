@@ -2,21 +2,22 @@ import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import { CoinProvider } from '@services/SocialStats';
 
+interface LinkPair {
+  value: string;
+  id: string;
+}
+
 const matchers = {
-  [CoinProvider.CoinGecko]: (
-    links: { value: string; id: string }[],
-  ): { value: string; id: string }[] => {
-    return links.reduce<{ value: string; id: string }[]>((result, link) => {
+  [CoinProvider.CoinGecko]: (links: LinkPair[]): LinkPair[] => {
+    return links.reduce<LinkPair[]>((result, link) => {
       const match = link.value.match(/^https:\/\/(?:www\.)?coingecko.com\/.*\/([^/]+)\/?$/i);
       if (match === null) return result;
 
       return [...result, { value: match[1], id: link.id }];
     }, []);
   },
-  [CoinProvider.CoinMarketCap]: (
-    links: { value: string; id: string }[],
-  ): { value: string; id: string }[] => {
-    return links.reduce<{ value: string; id: string }[]>((result, link) => {
+  [CoinProvider.CoinMarketCap]: (links: LinkPair[]): LinkPair[] => {
+    return links.reduce<LinkPair[]>((result, link) => {
       const match = link.value.match(/^https:\/\/(?:www\.)?coinmarketcap.com\/.*\/([^/]+)\/?$/i);
       if (match === null) return result;
 
