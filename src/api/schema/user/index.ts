@@ -48,7 +48,7 @@ import {
   WalletTypeEnum,
 } from '../types';
 import * as locales from '../../../locales';
-import { UserBillingType, WalletBillingType } from '../billing';
+import { TransferType, UserBillingType, WalletBillingType } from '../billing';
 import { UserStoreType } from '../store';
 
 const TokenAliasFilterInputType = new GraphQLInputObjectType({
@@ -1651,6 +1651,19 @@ export const WalletMetricUpdatedEvent = new GraphQLObjectType({
     },
   },
 });
+
+export const OnWalletCreated: GraphQLFieldConfig<{ id: string }, Request> = {
+  type: GraphQLNonNull(TransferType),
+  subscribe: () =>
+    asyncify((callback) =>
+      Promise.resolve(
+        container.cacheSubscriber('defihelper:channel:onWalletCreated').onJSON(callback),
+      ),
+    ),
+  resolve: ({ id }) => {
+    return container.model.walletTable().where('id', id).first();
+  },
+};
 
 export const OnWalletMetricUpdated: GraphQLFieldConfig<
   { id: string; wallet: string; contract: string },
