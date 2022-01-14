@@ -39,7 +39,19 @@ export async function contractMetrics(process: Process) {
     typeof contractAdapterData.metrics === 'object' &&
     Object.keys(contractAdapterData.metrics).length > 0
   ) {
-    await metricService.createContract(contract, contractAdapterData.metrics, date);
+    await Promise.all([
+      metricService.createContract(contract, contractAdapterData.metrics, date),
+      container.model.contractService().update({
+        ...contract,
+        metric: {
+          tvl: contractAdapterData.metrics.tvl ?? '0',
+          aprDay: contractAdapterData.metrics.aprDay ?? '0',
+          aprWeek: contractAdapterData.metrics.aprWeek ?? '0',
+          aprMonth: contractAdapterData.metrics.aprMonth ?? '0',
+          aprYear: contractAdapterData.metrics.aprYear ?? '0',
+        },
+      }),
+    ]);
   }
 
   return process.done();

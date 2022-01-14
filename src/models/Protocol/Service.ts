@@ -145,7 +145,7 @@ export class ContractService {
     hidden: boolean = false,
     eventsToSubscribe?: string[],
   ) {
-    const created = {
+    const created: Contract = {
       id: uuid(),
       protocol: protocol.id,
       blockchain,
@@ -162,6 +162,7 @@ export class ContractService {
       description,
       link,
       hidden,
+      metric: {},
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -175,7 +176,7 @@ export class ContractService {
   }
 
   async update(contract: Contract) {
-    const updated = {
+    const updated: Contract = {
       ...contract,
       address:
         contract.blockchain === 'ethereum' ? contract.address.toLowerCase() : contract.address,

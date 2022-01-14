@@ -2,21 +2,26 @@ import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import { CoinProvider } from '@services/SocialStats';
 
+interface LinkPair {
+  value: string;
+  id: string;
+}
+
 const matchers = {
-  [CoinProvider.CoinGecko]: (links: string[]): string[] => {
-    return links.reduce<string[]>((result, link) => {
-      const match = link.match(/^https:\/\/(?:www\.)?coingecko.com\/.*\/([^/]+)\/?$/i);
+  [CoinProvider.CoinGecko]: (links: LinkPair[]): LinkPair[] => {
+    return links.reduce<LinkPair[]>((result, link) => {
+      const match = link.value.match(/^https:\/\/(?:www\.)?coingecko.com\/.*\/([^/]+)\/?$/i);
       if (match === null) return result;
 
-      return [...result, match[1]];
+      return [...result, { value: match[1], id: link.id }];
     }, []);
   },
-  [CoinProvider.CoinMarketCap]: (links: string[]): string[] => {
-    return links.reduce<string[]>((result, link) => {
-      const match = link.match(/^https:\/\/(?:www\.)?coinmarketcap.com\/.*\/([^/]+)\/?$/i);
+  [CoinProvider.CoinMarketCap]: (links: LinkPair[]): LinkPair[] => {
+    return links.reduce<LinkPair[]>((result, link) => {
+      const match = link.value.match(/^https:\/\/(?:www\.)?coinmarketcap.com\/.*\/([^/]+)\/?$/i);
       if (match === null) return result;
 
-      return [...result, match[1]];
+      return [...result, { value: match[1], id: link.id }];
     }, []);
   },
 };
@@ -26,7 +31,10 @@ export default async (process: Process) => {
   const queue = container.model.queueService();
   await Promise.all(
     protocols.map(async (protocol) => {
-      const links = protocol.links.listing?.map(({ value }) => value) ?? [];
+      const links =
+        protocol.links.listing?.map(({ value, id }) => {
+          return { value, id };
+        }) ?? [];
 
       return Promise.all(
         Object.entries(matchers).map(([provider, matcher]) => {

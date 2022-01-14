@@ -15,7 +15,7 @@ export default (schema: SchemaBuilder) => {
     table.dateTime('updatedAt').notNullable();
     table.dateTime('createdAt').notNullable();
     table.primary(['id'], `${contractTableName}_pkey`);
-    table.unique(['blockchain', 'network', 'address']);
+    table.index(['blockchain', 'network', 'address']);
     table
       .foreign('protocol')
       .references(`${protocolTableName}.id`)
