@@ -48,7 +48,7 @@ import {
   WalletTypeEnum,
 } from '../types';
 import * as locales from '../../../locales';
-import { TransferType, UserBillingType, WalletBillingType } from '../billing';
+import { UserBillingType, WalletBillingType } from '../billing';
 import { UserStoreType } from '../store';
 
 const TokenAliasFilterInputType = new GraphQLInputObjectType({
@@ -1653,7 +1653,7 @@ export const WalletMetricUpdatedEvent = new GraphQLObjectType({
 });
 
 export const OnWalletCreated: GraphQLFieldConfig<{ id: string }, Request> = {
-  type: GraphQLNonNull(TransferType),
+  type: GraphQLNonNull(WalletType),
   subscribe: () =>
     asyncify((callback) =>
       Promise.resolve(
