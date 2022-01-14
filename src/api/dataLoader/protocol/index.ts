@@ -72,31 +72,37 @@ export const protocolLastMetricLoader = ({ metric }: { metric: MetricContractFie
 
     const database = container.database();
     const notCachedIds = protocolsId.filter((protocolId) => cachedMap[protocolId] === undefined);
+    let subselect;
+    if (metric === 'uniqueWalletsCount') {
+      subselect = container.model
+        .metricContractTable()
+        .distinctOn(`${metricContractTableName}.contract`)
+        .column(`${contractTableName}.protocol`)
+        .column(database.raw(`(${metricContractTableName}.data->>'${metric}')::numeric AS v`))
+        .innerJoin(
+          contractTableName,
+          `${contractTableName}.id`,
+          `${metricContractTableName}.contract`,
+        )
+        .whereIn(`${contractTableName}.protocol`, notCachedIds)
+        .andWhere(database.raw(`${metricContractTableName}.data->>'${metric}' IS NOT NULL`))
+        .orderBy(`${metricContractTableName}.contract`)
+        .orderBy(`${metricContractTableName}.date`, 'DESC');
+    } else {
+      subselect = container.model
+        .contractTable()
+        .column(`${contractTableName}.protocol`)
+        .column(database.raw(`(${contractTableName}.metric->>'${metric}')::numeric AS v`))
+        .whereIn(`${contractTableName}.protocol`, notCachedIds)
+        .andWhere(database.raw(`${contractTableName}.metric->>'${metric}' IS NOT NULL`));
+    }
     const metrics =
       notCachedIds.length > 0
         ? await container
             .database()
             .column('protocol')
             .sum('v AS v')
-            .from(
-              container.model
-                .metricContractTable()
-                .distinctOn(`${metricContractTableName}.contract`)
-                .column(`${contractTableName}.protocol`)
-                .column(
-                  database.raw(`(${metricContractTableName}.data->>'${metric}')::numeric AS v`),
-                )
-                .innerJoin(
-                  contractTableName,
-                  `${contractTableName}.id`,
-                  `${metricContractTableName}.contract`,
-                )
-                .whereIn(`${contractTableName}.protocol`, notCachedIds)
-                .andWhere(database.raw(`${metricContractTableName}.data->>'${metric}' IS NOT NULL`))
-                .orderBy(`${metricContractTableName}.contract`)
-                .orderBy(`${metricContractTableName}.date`, 'DESC')
-                .as('metric'),
-            )
+            .from(subselect.as('metric'))
             .groupBy('protocol')
         : [];
     const map = metrics.reduce(
@@ -200,23 +206,15 @@ export const protocolUserLastAPRLoader = ({
     const aprMetrics =
       notCachedIds.length > 0
         ? await container.model
-            .metricContractTable()
-            .distinctOn(`${metricContractTableName}.contract`)
-            .column(`${metricContractTableName}.contract`)
+            .contractTable()
+            .column(`${contractTableName}.id`)
             .column(`${contractTableName}.protocol`)
-            .column(database.raw(`(${metricContractTableName}.data->>'${metric}')::numeric AS apr`))
-            .innerJoin(
-              contractTableName,
-              `${contractTableName}.id`,
-              `${metricContractTableName}.contract`,
-            )
+            .column(database.raw(`(${contractTableName}.metric->>'${metric}')::numeric AS apr`))
             .whereIn(`${contractTableName}.protocol`, protocolsId)
-            .andWhere(database.raw(`${metricContractTableName}.data->>'${metric}' IS NOT NULL`))
-            .orderBy(`${metricContractTableName}.contract`)
-            .orderBy(`${metricContractTableName}.date`, 'DESC')
+            .andWhere(database.raw(`${contractTableName}.metric->>'${metric}' IS NOT NULL`))
         : [];
     const aprMap = aprMetrics.reduce(
-      (map, { protocol, contract, apr }) => ({
+      (map, { protocol, id: contract, apr }) => ({
         ...map,
         [protocol]: {
           ...(map[protocol] ?? {}),

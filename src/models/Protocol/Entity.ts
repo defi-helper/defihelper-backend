@@ -56,6 +56,14 @@ export interface ContractAutomate {
   adapters: string[];
 }
 
+export interface ContractMetric {
+  tvl?: string;
+  aprDay?: string;
+  aprWeek?: string;
+  aprMonth?: string;
+  aprYear?: string;
+}
+
 export interface Contract {
   id: string;
   protocol: string;
@@ -70,6 +78,7 @@ export interface Contract {
   description: string;
   link: string | null;
   hidden: boolean;
+  metric: ContractMetric;
   updatedAt: Date;
   createdAt: Date;
 }

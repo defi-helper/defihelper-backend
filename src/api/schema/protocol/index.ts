@@ -231,10 +231,9 @@ export const ContractType = new GraphQLObjectType<Contract, Request>({
         },
       },
       resolve: async (contract, { filter }, { currentUser, dataLoader }) => {
-        const contractMetric = await dataLoader.contractMetric().load(contract.id);
         const metric = {
-          tvl: contractMetric?.data.tvl ?? '0',
-          aprYear: contractMetric?.data.aprYear ?? '0',
+          tvl: contract.metric.tvl ?? '0',
+          aprYear: contract.metric.aprYear ?? '0',
           myStaked: '0',
           myEarned: '0',
           myAPYBoost: '0',
@@ -244,7 +243,7 @@ export const ContractType = new GraphQLObjectType<Contract, Request>({
             contract.blockchain,
             contract.network,
             10000,
-            new BN(contractMetric?.data.aprYear ?? '0').toNumber(),
+            new BN(contract.metric.aprYear ?? '0').toNumber(),
           );
           return metric;
         }
@@ -264,7 +263,7 @@ export const ContractType = new GraphQLObjectType<Contract, Request>({
             contract.blockchain,
             contract.network,
             totalBalance > 0 ? totalBalance : 10000,
-            new BN(contractMetric?.data.aprYear ?? '0').toNumber(),
+            new BN(contract.metric.aprYear ?? '0').toNumber(),
           ),
         };
       },
@@ -795,42 +794,45 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
         },
         sort: SortArgument(
           'ContractListSortInputType',
-          ['id', 'name', 'address', 'createdAt', 'myStaked'],
+          ['id', 'name', 'address', 'createdAt', 'tvl', 'aprYear', 'myStaked'],
           [{ column: 'name', order: 'asc' }],
         ),
         pagination: PaginationArgument('ContractListPaginationInputType'),
       },
       resolve: async (protocol, { filter, sort, pagination }, { currentUser }) => {
-        const select = container.model.contractTable().where(function () {
-          const { id, hidden, search } = filter;
-          if (id) {
-            this.where('id', id);
-          } else {
-            this.where('protocol', protocol.id);
-            if (filter.blockchain !== undefined) {
-              const { protocol: blockchain, network } = filter.blockchain;
-              this.andWhere('blockchain', blockchain);
-              if (network !== undefined) {
-                this.andWhere('network', network);
+        const select = container.model
+          .contractTable()
+          .column(`${contractTableName}.*`)
+          .where(function () {
+            const { id, hidden, search } = filter;
+            if (id) {
+              this.where('id', id);
+            } else {
+              this.where('protocol', protocol.id);
+              if (filter.blockchain !== undefined) {
+                const { protocol: blockchain, network } = filter.blockchain;
+                this.andWhere('blockchain', blockchain);
+                if (network !== undefined) {
+                  this.andWhere('network', network);
+                }
+              }
+              if (typeof hidden === 'boolean') {
+                this.andWhere('hidden', hidden);
+              }
+              if (search !== undefined && search !== '') {
+                this.andWhere(function () {
+                  this.where('name', 'iLike', `%${search}%`);
+                  this.orWhere('address', 'iLike', `%${search}%`);
+                });
               }
             }
-            if (typeof hidden === 'boolean') {
-              this.andWhere('hidden', hidden);
-            }
-            if (search !== undefined && search !== '') {
-              this.andWhere(function () {
-                this.where('name', 'iLike', `%${search}%`);
-                this.orWhere('address', 'iLike', `%${search}%`);
-              });
-            }
-          }
-        });
+          });
         let listSelect = select.clone();
-        if (sort.find(({ column }: { column: string }) => column === 'myStaked')) {
-          const database = container.database();
+        const sortColumns = sort.map(({ column }: { column: string }) => column);
+        const database = container.database();
+        if (sortColumns.includes('myStaked')) {
           if (currentUser) {
             listSelect = listSelect
-              .column(`${contractTableName}.*`)
               .column(database.raw(`COALESCE(metric."myStaked", '0') AS "myStaked"`))
               .leftJoin(
                 container.model
@@ -859,6 +861,18 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
               .column(database.raw(`'0' AS "myStaked"`));
           }
         }
+        if (sortColumns.includes('tvl')) {
+          listSelect = listSelect.column(
+            database.raw(`(COALESCE(${contractTableName}.metric->>'tvl', '0'))::numeric AS "tvl"`),
+          );
+        }
+        if (sortColumns.includes('aprYear')) {
+          listSelect = listSelect.column(
+            database.raw(
+              `(COALESCE(${contractTableName}.metric->>'aprYear', '0'))::numeric AS "aprYear"`,
+            ),
+          );
+        }
 
         return {
           list: await listSelect
@@ -867,7 +881,7 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
             .limit(pagination.limit)
             .offset(pagination.offset),
           pagination: {
-            count: await select.clone().count().first(),
+            count: await select.clone().clearSelect().count().first(),
           },
         };
       },
