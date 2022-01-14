@@ -53,8 +53,6 @@ export default async (process: Process) => {
 
   const existingPools = await container.model.contractTable().where({
     protocol: protocolId,
-    blockchain: protocolBlockchain,
-    network: protocolNetwork,
   });
 
   await Promise.all(

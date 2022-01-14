@@ -5,7 +5,7 @@ import { CoinProvider } from '@services/SocialStats';
 export interface Params {
   provider: CoinProvider;
   protocol: string;
-  ids: string[];
+  ids: { value: string; id: string }[];
 }
 
 export default async (process: Process) => {
@@ -15,21 +15,19 @@ export default async (process: Process) => {
   if (!protocol) throw new Error('Protocol not found');
 
   const socialStatsGateway = container.socialStats();
-  const socialStats = await Promise.all(
-    ids.map(async (id) => {
-      const { watchers } = await socialStatsGateway.coin(provider, id);
+  await Promise.all(
+    ids.map(async (link) => {
+      const { watchers } = await socialStatsGateway.coin(provider, link.value);
 
-      return watchers;
+      return container.model.metricService().createProtocol(
+        protocol,
+        {
+          [`${provider}Watchers`]: watchers.toString(),
+          entityIdentifier: link.id,
+        },
+        new Date(),
+      );
     }),
-  );
-  const watchersSum = socialStats.reduce((sum, watchers) => sum + watchers, 0);
-
-  await container.model.metricService().createProtocol(
-    protocol,
-    {
-      [`${provider}Watchers`]: watchersSum.toString(),
-    },
-    new Date(),
   );
 
   return process.done();
