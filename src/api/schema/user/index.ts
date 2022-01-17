@@ -1675,9 +1675,12 @@ export const OnWalletCreated: GraphQLFieldConfig<{ id: string }, Request> = {
         ),
       ),
     async ({ id }, { filter }) => {
-      const wallet = await container.model.walletTable().where({ id }).first();
+      if (!filter.user) {
+        return false;
+      }
 
-      return !(!wallet || !(filter.user || []).includes(wallet.user));
+      const wallet = await container.model.walletTable().where({ id }).first();
+      return !(!wallet || !filter.user.includes(wallet.user));
     },
   ),
   resolve: ({ id }) => {
