@@ -28,6 +28,19 @@ export class WalletService {
     ]);
   });
 
+  public readonly onChangeOwner = new Emitter<{ prev: Wallet; current: Wallet }>(
+    async ({ prev, current }) => {
+      if (prev.user === current.user) return;
+
+      await Promise.all([
+        container.model.queueService().push('eventsWalletChangeOwner', {
+          id: current.id,
+          prevOwner: prev.user,
+        }),
+      ]);
+    },
+  );
+
   async create(
     user: User,
     blockchain: Blockchain,
@@ -81,5 +94,17 @@ export class WalletService {
 
   async delete(wallet: Wallet) {
     await this.table().where({ id: wallet.id }).delete();
+  }
+
+  async changeOwner(wallet: Wallet, user: User) {
+    if (wallet.user === user.id) return wallet;
+
+    const updated = await this.update({
+      ...wallet,
+      user: user.id,
+    });
+    this.onChangeOwner.emit({ prev: wallet, current: updated });
+
+    return updated;
   }
 }

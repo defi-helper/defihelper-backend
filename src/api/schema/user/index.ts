@@ -1335,13 +1335,18 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
               type: GraphQLNonNull(GraphQLString),
               description: 'Signed message',
             },
+            merge: {
+              type: GraphQLBoolean,
+              description: 'Merged target account to current account',
+              defaultValue: false,
+            },
           },
         }),
       ),
     },
   },
   resolve: async (root, { input }, { currentUser }) => {
-    const { network, address, message, signature } = input;
+    const { network, address, message, signature, merge } = input;
     if (typeof message !== 'string' || message.length < 5) return null;
 
     const hash = utils.hashMessage(message);
@@ -1362,6 +1367,14 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
     if (duplicate) {
       const user = await container.model.userTable().where('id', duplicate.user).first();
       if (!user) return null;
+
+      if (merge) {
+        if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+        await container.model.walletService().changeOwner(duplicate, currentUser);
+
+        const sid = container.model.sessionService().generate(currentUser);
+        return { user: currentUser, sid };
+      }
 
       const sid = container.model.sessionService().generate(user);
       return { user, sid };

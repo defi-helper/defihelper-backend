@@ -71,6 +71,7 @@ export * as notificationAutomateWalletsNotEnoughFundsBroker from './notification
 export * as eventsContractCreated from './events/contractCreated';
 export * as eventsUserCreated from './events/userCreated';
 export * as eventsWalletCreated from './events/walletCreated';
+export * as eventsWalletChangeOwner from './events/walletChangeOwner';
 export * as eventsAutomateContractVerificationConfirmed from './events/automate/contractVerificationConfirmed';
 
 /* wallets */
