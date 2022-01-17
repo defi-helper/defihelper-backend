@@ -1654,12 +1654,32 @@ export const WalletMetricUpdatedEvent = new GraphQLObjectType({
 
 export const OnWalletCreated: GraphQLFieldConfig<{ id: string }, Request> = {
   type: GraphQLNonNull(WalletType),
-  subscribe: () =>
-    asyncify((callback) =>
-      Promise.resolve(
-        container.cacheSubscriber('defihelper:channel:onWalletCreated').onJSON(callback),
+  args: {
+    filter: {
+      type: new GraphQLInputObjectType({
+        name: 'OnWalletCreatedFilterInputType',
+        fields: {
+          user: {
+            type: GraphQLNonNull(UuidType),
+          },
+        },
+      }),
+      defaultValue: {},
+    },
+  },
+  subscribe: withFilter(
+    () =>
+      asyncify((callback) =>
+        Promise.resolve(
+          container.cacheSubscriber('defihelper:channel:onWalletCreated').onJSON(callback),
+        ),
       ),
-    ),
+    async ({ id }, { filter }) => {
+      const wallet = await container.model.walletTable().where({ id }).first();
+
+      return !(!wallet || wallet.user !== filter.user);
+    },
+  ),
   resolve: ({ id }) => {
     return container.model.walletTable().where('id', id).first();
   },
