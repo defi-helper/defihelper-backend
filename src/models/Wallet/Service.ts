@@ -14,9 +14,18 @@ export class WalletService {
       return;
     }
 
-    await container.model.queueService().push('eventsWalletCreated', {
-      id: wallet.id,
-    });
+    await Promise.all([
+      container.model.queueService().push('eventsWalletCreated', {
+        id: wallet.id,
+      }),
+
+      container.cache().publish(
+        'defihelper:channel:onWalletCreated',
+        JSON.stringify({
+          id: wallet.id,
+        }),
+      ),
+    ]);
   });
 
   async create(

@@ -25,12 +25,6 @@ export default async (process: Process) => {
       id: wallet.id,
       network: wallet.network,
     }),
-    container.cache().publish(
-      'defihelper:channel:onWalletCreated',
-      JSON.stringify({
-        id: wallet.id,
-      }),
-    ),
   ]);
 
   return process.done();
