@@ -1681,6 +1681,9 @@ export const OnWalletMetricUpdated: GraphQLFieldConfig<
           wallet: {
             type: GraphQLList(GraphQLNonNull(UuidType)),
           },
+          user: {
+            type: GraphQLList(GraphQLNonNull(UuidType)),
+          },
         },
       }),
       defaultValue: {},
@@ -1693,13 +1696,19 @@ export const OnWalletMetricUpdated: GraphQLFieldConfig<
           container.cacheSubscriber('defihelper:channel:onWalletMetricUpdated').onJSON(callback),
         ),
       ),
-    ({ wallet, contract }, { filter }) => {
+    async ({ wallet: walletId, contract }, { filter }) => {
       let result = true;
-      if (typeof filter.wallet === 'string') {
-        result = result && filter.wallet.includes(wallet);
+      if (Array.isArray(filter.wallet) && filter.wallet.length > 0) {
+        result = result && filter.wallet.includes(walletId);
       }
-      if (typeof filter.contract === 'string') {
+      if (Array.isArray(filter.contract) && filter.contract.length > 0) {
         result = result && filter.contract.includes(contract);
+      }
+      if (Array.isArray(filter.user) && filter.user.length > 0) {
+        const wallet = await container.model.walletTable().where('id', walletId).first();
+        if (!wallet) return false;
+
+        result = result && filter.user.includes(wallet.user);
       }
 
       return result;
@@ -1754,6 +1763,9 @@ export const OnTokenMetricUpdated: GraphQLFieldConfig<
           wallet: {
             type: GraphQLList(GraphQLNonNull(UuidType)),
           },
+          user: {
+            type: GraphQLList(GraphQLNonNull(UuidType)),
+          },
         },
       }),
       defaultValue: {},
@@ -1766,18 +1778,26 @@ export const OnTokenMetricUpdated: GraphQLFieldConfig<
           container.cacheSubscriber('defihelper:channel:onTokenMetricUpdated').onJSON(callback),
         ),
       ),
-    ({ wallet, contract, token }, { filter }) => {
+    async ({ wallet: walletId, contract, token }, { filter }) => {
       let result = true;
-      if (Array.isArray(filter.wallet)) {
-        result = result && filter.wallet.includes(wallet);
+      if (Array.isArray(filter.wallet) && filter.wallet.length > 0) {
+        result = result && filter.wallet.includes(walletId);
       }
       if (Array.isArray(filter.contract)) {
-        result = result && filter.contract.includes(contract);
-      } else {
-        result = result && contract === null;
+        if (filter.contract.length > 0) {
+          result = result && filter.contract.includes(contract);
+        } else {
+          result = result && contract === null;
+        }
       }
-      if (Array.isArray(filter.token)) {
+      if (Array.isArray(filter.token) && filter.token.length > 0) {
         result = result && filter.token.includes(token);
+      }
+      if (Array.isArray(filter.user) && filter.user.length > 0) {
+        const wallet = await container.model.walletTable().where('id', walletId).first();
+        if (!wallet) return false;
+
+        result = result && filter.user.includes(wallet.user);
       }
 
       return result;

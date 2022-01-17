@@ -618,6 +618,9 @@ export const OnTransferCreated: GraphQLFieldConfig<{ id: string }, Request> = {
           wallet: {
             type: GraphQLList(GraphQLNonNull(UuidType)),
           },
+          user: {
+            type: GraphQLList(GraphQLNonNull(UuidType)),
+          },
         },
       }),
       defaultValue: {},
@@ -633,23 +636,23 @@ export const OnTransferCreated: GraphQLFieldConfig<{ id: string }, Request> = {
     async ({ id }, { filter }) => {
       const transfer = await container.model.billingTransferTable().where('id', id).first();
       if (!transfer) return false;
+      const wallet = await container.model
+        .walletTable()
+        .where({
+          blockchain: transfer.blockchain,
+          network: transfer.network,
+          address:
+            transfer.blockchain === 'ethereum' ? transfer.account.toLowerCase() : transfer.account,
+        })
+        .first();
+      if (!wallet) return false;
 
       let result = true;
-      if (typeof filter.wallet === 'string') {
-        const wallet = await container.model
-          .walletTable()
-          .where({
-            blockchain: transfer.blockchain,
-            network: transfer.network,
-            address:
-              transfer.blockchain === 'ethereum'
-                ? transfer.account.toLowerCase()
-                : transfer.account,
-          })
-          .first();
-        if (!wallet) return false;
-
-        result = result && filter.wallet.includes(wallet.address);
+      if (Array.isArray(filter.wallet) && filter.wallet.length > 0) {
+        result = result && filter.wallet.includes(wallet.id);
+      }
+      if (Array.isArray(filter.user) && filter.user.length > 0) {
+        result = result && filter.user.includes(wallet.user);
       }
 
       return result;
@@ -670,6 +673,9 @@ export const OnTransferUpdated: GraphQLFieldConfig<{ id: string }, Request> = {
           wallet: {
             type: GraphQLList(GraphQLNonNull(UuidType)),
           },
+          user: {
+            type: GraphQLList(GraphQLNonNull(UuidType)),
+          },
         },
       }),
       defaultValue: {},
@@ -685,23 +691,23 @@ export const OnTransferUpdated: GraphQLFieldConfig<{ id: string }, Request> = {
     async ({ id }, { filter }) => {
       const transfer = await container.model.billingTransferTable().where('id', id).first();
       if (!transfer) return false;
+      const wallet = await container.model
+        .walletTable()
+        .where({
+          blockchain: transfer.blockchain,
+          network: transfer.network,
+          address:
+            transfer.blockchain === 'ethereum' ? transfer.account.toLowerCase() : transfer.account,
+        })
+        .first();
+      if (!wallet) return false;
 
       let result = true;
-      if (typeof filter.wallet === 'string') {
-        const wallet = await container.model
-          .walletTable()
-          .where({
-            blockchain: transfer.blockchain,
-            network: transfer.network,
-            address:
-              transfer.blockchain === 'ethereum'
-                ? transfer.account.toLowerCase()
-                : transfer.account,
-          })
-          .first();
-        if (!wallet) return false;
-
-        result = result && filter.wallet.includes(wallet.address);
+      if (Array.isArray(filter.wallet) && filter.wallet.length > 0) {
+        result = result && filter.wallet.includes(wallet.id);
+      }
+      if (Array.isArray(filter.user) && filter.user.length > 0) {
+        result = result && filter.user.includes(wallet.user);
       }
 
       return result;
