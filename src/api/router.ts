@@ -129,6 +129,7 @@ export function route({ express, server }: { express: Express; server: Server })
       subscription: new GraphQLObjectType<any, Request>({
         name: 'Subscription',
         fields: {
+          onWalletCreated: userSchemas.OnWalletCreated,
           onWalletMetricUpdated: userSchemas.OnWalletMetricUpdated,
           onTokenMetricUpdated: userSchemas.OnTokenMetricUpdated,
           onBillingTransferCreated: billingSchemas.OnTransferCreated,
