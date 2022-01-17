@@ -1660,7 +1660,7 @@ export const OnWalletCreated: GraphQLFieldConfig<{ id: string }, Request> = {
         name: 'OnWalletCreatedFilterInputType',
         fields: {
           user: {
-            type: GraphQLNonNull(UuidType),
+            type: GraphQLNonNull(GraphQLList(GraphQLNonNull(UuidType))),
           },
         },
       }),
@@ -1677,7 +1677,7 @@ export const OnWalletCreated: GraphQLFieldConfig<{ id: string }, Request> = {
     async ({ id }, { filter }) => {
       const wallet = await container.model.walletTable().where({ id }).first();
 
-      return !(!wallet || wallet.user !== filter.user);
+      return !(!wallet || !filter.user.includes(wallet.user));
     },
   ),
   resolve: ({ id }) => {
