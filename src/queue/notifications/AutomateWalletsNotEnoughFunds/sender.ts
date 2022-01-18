@@ -39,7 +39,7 @@ export default async (process: Process) => {
     .andWhere(`${transferTableName}.blockchain`, database.raw(`${walletTableName}.blockchain`))
     .groupBy(`${walletTableName}.id`);
 
-  const notify = triggers.some(async (t) => {
+  const notifyBy = triggers.find(async (t) => {
     const walletFunds = walletsFunds.find((w) => w.id === t.walletId);
 
     if (!walletFunds) {
@@ -53,7 +53,7 @@ export default async (process: Process) => {
     return walletFunds.funds * chainNativeUSD - (1 + chainNativeUSD * 0.1) <= 0;
   });
 
-  if (!notify) {
+  if (!notifyBy) {
     return process.done();
   }
 
@@ -82,6 +82,9 @@ export default async (process: Process) => {
             chatId: contact.params.chatId,
             locale: user.locale,
             template: 'automateNotEnoughFunds',
+            params: {
+              debugInfo: notifyBy.id.substring(0, 8),
+            },
           });
 
         default:
