@@ -117,9 +117,14 @@ export class ContractService {
       return null;
     }
 
-    return container.model
-      .queueService()
-      .push('metricsWalletHistory', { contract: link.contract, wallet: link.wallet });
+    return Promise.all([
+      container.model
+        .queueService()
+        .push('metricsWalletHistory', { contract: link.contract, wallet: link.wallet }),
+      container.model
+        .queueService()
+        .push('metricsWalletCurrent', { contract: link.contract, wallet: link.wallet }),
+    ]);
   });
 
   constructor(
