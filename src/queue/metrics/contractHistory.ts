@@ -42,10 +42,14 @@ export default async (process: Process) => {
   const queue = container.model.queueService();
   let blockNumber = new BN(startBlockNumber);
   while (blockNumber.lt(currentBlockNumber)) {
-    queue.push('metricsContractBlock', {
-      contract: contract.id,
-      blockNumber: blockNumber.toFixed(0),
-    });
+    queue.push(
+      'metricsContractBlock',
+      {
+        contract: contract.id,
+        blockNumber: blockNumber.toFixed(0),
+      },
+      { topic: 'metricHistory' },
+    );
 
     blockNumber = new BN(blockNumber).plus(step);
   }

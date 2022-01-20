@@ -6,9 +6,7 @@ export default async (process: Process) => {
   const contracts = await container.model.contractTable();
   await Promise.all(
     contracts.map((contract) =>
-      queue.push('metricsContractCurrent', {
-        contract: contract.id,
-      }),
+      queue.push('metricsContractCurrent', { contract: contract.id }, { topic: 'metricCurrent' }),
     ),
   );
 

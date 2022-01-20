@@ -8,6 +8,10 @@ function int(value: string): number {
   return parseInt(value, 10);
 }
 
+function bool(value: string): boolean {
+  return Boolean(value);
+}
+
 function array(value: string): string[] {
   return JSON.parse(value);
 }
@@ -31,6 +35,19 @@ export default {
     user: process.env.DATABASE_USER ?? '',
     password: process.env.DATABASE_PASSWORD ?? '',
     database: process.env.DATABASE_NAME ?? '',
+  },
+  rabbitmq: {
+    host: process.env.RABBITMQ_HOST ?? 'amqp://localhost:5672',
+    options: {
+      prefetch: int(process.env.RABBITMQ_PREFETCH ?? '1'),
+      replyPattern: bool(process.env.RABBITMQ_REPLY ?? ''),
+      scheduledPublish: bool(process.env.RABBITMQ_SCHEDULED_PUBLISH ?? ''),
+    },
+    queues: [
+      { name: 'tasks_default', topic: 'tasks.*.default' },
+      { name: 'tasks_metricHistory', topic: 'tasks.*.metricHistory' },
+      { name: 'tasks_metricCurrent', topic: 'tasks.*.metricCurrent' },
+    ],
   },
   cache: {
     host: process.env.CACHE_HOST ?? '127.0.0.1',

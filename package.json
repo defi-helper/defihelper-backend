@@ -12,13 +12,15 @@
     "build-dev": "tsc -p ./ && npm run copyTemplates",
     "watch": "tsc-watch -p ./ --pretty --onSuccess './scripts/watch-success.sh'",
     "start": "node --inspect=0.0.0.0:9229 ./dist/server.js",
-    "queue": "node ./dist/queueBroker.js",
+    "queue-consume": "node ./dist/queueConsume.js",
+    "queue-deferred": "node ./dist/queueDeferred.js",
     "schedule": "node ./dist/queueSchedule.js",
     "seed": "node ./dist/cli.js seed",
     "billing": "node ./dist/cli.js billing",
     "prepare": "husky install"
   },
   "devDependencies": {
+    "@types/amqplib": "^0.8.2",
     "@types/callback-to-async-iterator": "^1.1.4",
     "@types/command-line-args": "^5.0.0",
     "@types/express": "^4.17.11",
@@ -50,6 +52,7 @@
     "@defihelper/networks": "^1.0.1",
     "@waves/marshall": "^0.14.0",
     "@waves/ts-lib-crypto": "^1.4.4-beta.1",
+    "amqplib": "^0.8.0",
     "apollo-server-express": "^2.22.2",
     "axios": "^0.21.1",
     "axios-retry": "^3.1.9",
@@ -75,6 +78,7 @@
     "node-telegram-bot-api": "^0.53.0",
     "nodemailer": "^6.6.2",
     "pg": "^8.5.1",
+    "rabbit-queue": "^5.4.1",
     "redis": "^3.1.2",
     "uuid": "^8.3.2"
   },

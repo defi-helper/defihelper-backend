@@ -13,12 +13,15 @@ import { emailServiceFactory } from '@services/Email';
 import { telegramServiceFactory } from '@services/Telegram';
 import { scannerServiceFactory } from '@services/Scanner';
 import { moralisServiceFactory } from '@services/Moralis';
+import { rabbitmqFactory } from '@services/Rabbitmq';
 import config from './config';
 
 class AppContainer extends Container<typeof config> {
   readonly logger = singleton(consoleFactory());
 
   readonly database = singleton(pgConnectFactory(this.parent.database));
+
+  readonly rabbitmq = singleton(rabbitmqFactory(this.parent.rabbitmq));
 
   readonly cache = singleton(redisConnectFactory(this.parent.cache));
 

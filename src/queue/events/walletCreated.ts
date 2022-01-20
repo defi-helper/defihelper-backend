@@ -15,16 +15,24 @@ export default async (process: Process) => {
   }
 
   await Promise.all([
-    container.model.queueService().push('findWalletAppliedNetworks', {
-      walletId: wallet.id,
-    }),
+    container.model.queueService().push(
+      'findWalletAppliedNetworks',
+      {
+        walletId: wallet.id,
+      },
+      { topic: 'metricCurrent' },
+    ),
     container.model.queueService().push('findWalletContracts', {
       walletId: wallet.id,
     }),
-    container.model.queueService().push('metricsWalletBalancesFillSelector', {
-      id: wallet.id,
-      network: wallet.network,
-    }),
+    container.model.queueService().push(
+      'metricsWalletBalancesFillSelector',
+      {
+        id: wallet.id,
+        network: wallet.network,
+      },
+      { topic: 'metricCurrent' },
+    ),
   ]);
 
   return process.done();

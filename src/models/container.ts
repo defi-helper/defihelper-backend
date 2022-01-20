@@ -22,7 +22,8 @@ export class ModelContainer extends Container<typeof AppContainer> {
   readonly queueTable = Models.Queue.Entity.tableFactory(this.parent.database);
 
   readonly queueService = singleton(
-    () => new Models.Queue.Service.QueueService(this.queueTable, this.logService),
+    () =>
+      new Models.Queue.Service.QueueService(this.queueTable, this.parent.rabbitmq, this.logService),
   );
 
   readonly userTable = Models.User.Entity.tableFactory(this.parent.database);
