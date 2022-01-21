@@ -16,19 +16,24 @@ export interface Config {
   queues?: QueueConfig[];
 }
 
-export function rabbitmqFactory({ host, options, queues }: Config) {
-  return () => {
-    const connect = new Rabbit(host, options);
-    queues?.forEach((queue) =>
+export function queuesInit(connect: Rabbit, queues: QueueConfig[]) {
+  return Promise.all(
+    queues.map((queue) =>
       connect
         .createQueue(queue.name, { durable: false })
         .then(() => connect.bindToTopic(queue.name, queue.topic)),
-    );
-    connect
-      .on('log', () => {})
-      .on('disconnected', () => {
-        throw new Error('Rabbit disconnected');
-      });
+    ),
+  );
+}
+
+export function rabbitmqFactory({ host, options, queues }: Config) {
+  return () => {
+    const connect = new Rabbit(host, options);
+    connect.on('connected', () => queuesInit(connect, queues ?? []));
+    connect.on('disconnected', () => {
+      setTimeout(() => connect.reconnect(), 5000);
+    });
+    connect.on('log', () => {});
 
     return connect;
   };

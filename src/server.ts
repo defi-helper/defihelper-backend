@@ -15,10 +15,5 @@ container.model
     const { port } = container.parent.api;
     server.listen(port, () => container.logger().info(`Listen ${port}`));
 
-    container.rabbitmq().on('disconnected', () => {
-      server.close();
-      process.exit(1);
-    });
-
     container.telegram().startHandler();
   });

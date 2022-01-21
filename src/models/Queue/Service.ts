@@ -64,30 +64,53 @@ export class QueueService {
     }
 
     if (!dayjs(task.startAt).isAfter(new Date())) {
-      task.status = TaskStatus.Process;
-      this.rabbitmq().publishTopic(`tasks.${task.handler}.${task.topic}`, task, {
-        priority: task.priority,
+      await this.queueTable().insert({
+        ...task,
+        status: TaskStatus.Process,
       });
+      return this.rabbitmq()
+        .publishTopic(`tasks.${task.handler}.${task.topic}`, task, {
+          priority: task.priority,
+        })
+        .catch(() =>
+          this.queueTable()
+            .update({
+              ...task,
+              status: TaskStatus.Pending,
+            })
+            .where('id', task.id),
+        );
     }
 
-    await this.queueTable().insert(task);
+    return this.queueTable().insert(task);
   }
 
-  async deferred(limit: number) {
-    const candidates = await this.queueTable()
+  async getCandidates(limit: number) {
+    return this.queueTable()
       .where('status', TaskStatus.Pending)
       .andWhere('startAt', '<=', new Date())
       .orderBy('startAt', 'asc')
       .orderBy('priority', 'desc')
       .limit(limit);
+  }
+
+  async lock({ id }: Task) {
+    const lock = await this.queueTable().update({ status: TaskStatus.Process }).where({
+      id,
+      status: TaskStatus.Pending,
+    });
+    if (lock === 0) return false;
+
+    return true;
+  }
+
+  async deferred(limit: number) {
+    const candidates = await this.getCandidates(limit);
 
     await Promise.all(
       candidates.map(async (task) => {
-        const lock = await this.queueTable().update({ status: TaskStatus.Process }).where({
-          id: task.id,
-          status: TaskStatus.Pending,
-        });
-        if (lock === 0) return;
+        const isLocked = await this.lock(task);
+        if (!isLocked) return;
 
         await this.rabbitmq().publishTopic(`tasks.${task.handler}.${task.topic}`, task, {
           priority: task.priority,
@@ -96,16 +119,15 @@ export class QueueService {
     );
   }
 
-  async consumer(msg: any, ack: (error?: any, reply?: any) => any) {
-    const task: Task = JSON.parse(msg.content.toString());
+  async handle(task: Task) {
     const process = new Process(task);
     try {
       const { task: result } = await Handlers[task.handler].default(process);
-      await this.queueTable().update(result).where('id', task.id);
+      return await this.queueTable().update(result).where('id', task.id);
     } catch (e) {
       const error = e instanceof Error ? e : new Error(`${e}`);
 
-      await Promise.all([
+      return Promise.all([
         task.scanner
           ? this.queueTable()
               .update(process.later(dayjs().add(10, 'seconds').toDate()).task)
@@ -113,14 +135,18 @@ export class QueueService {
           : this.queueTable().update(process.error(error).task).where('id', task.id),
         this.logService().create(`queue:${task.handler}`, `${task.id} ${error.stack ?? error}`),
       ]);
-    } finally {
-      ack();
     }
+  }
+
+  async consumer(msg: any, ack: (error?: any, reply?: any) => any) {
+    const task: Task = JSON.parse(msg.content.toString());
+    await this.handle(task);
+    ack();
   }
 
   consume({ queue }: ConsumerOptions) {
     this.rabbitmq().createQueue(
-      queue ?? 'tasks_other',
+      queue ?? 'tasks_default',
       { durable: false },
       this.consumer.bind(this),
     );
