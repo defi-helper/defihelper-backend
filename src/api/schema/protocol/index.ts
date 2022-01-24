@@ -53,6 +53,15 @@ export const ContractMetricType = new GraphQLObjectType({
     tvl: {
       type: GraphQLNonNull(GraphQLString),
     },
+    aprDay: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    aprWeek: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    aprMonth: {
+      type: GraphQLNonNull(GraphQLString),
+    },
     aprYear: {
       type: GraphQLNonNull(GraphQLString),
     },
@@ -233,6 +242,9 @@ export const ContractType = new GraphQLObjectType<Contract, Request>({
       resolve: async (contract, { filter }, { currentUser, dataLoader }) => {
         const metric = {
           tvl: contract.metric.tvl ?? '0',
+          aprDay: contract.metric.aprDay ?? '0',
+          aprWeek: contract.metric.aprWeek ?? '0',
+          aprMonth: contract.metric.aprMonth ?? '0',
           aprYear: contract.metric.aprYear ?? '0',
           myStaked: '0',
           myEarned: '0',

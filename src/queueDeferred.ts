@@ -11,6 +11,9 @@ container.model
       { name: 'limit', alias: 'l', type: Number, defaultValue: 10 },
     ]);
 
+    container.rabbitmq().on('disconnected', () => {
+      throw new Error('Rabbit disconnected');
+    });
     setInterval(() => {
       container.model.queueService().deferred(options.limit);
     }, options.interval * 1000);
