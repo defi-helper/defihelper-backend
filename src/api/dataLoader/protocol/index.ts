@@ -7,7 +7,7 @@ import {
   MetricContractAPRField,
   MetricContract,
 } from '@models/Metric/Entity';
-import { tableName as walletTableName, WalletType } from '@models/Wallet/Entity';
+import { walletTableName, WalletType } from '@models/Wallet/Entity';
 import BN from 'bignumber.js';
 import DataLoader from 'dataloader';
 

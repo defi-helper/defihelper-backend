@@ -27,7 +27,7 @@ export function rabbitmqFactory({ host, options, queues }: Config) {
     connect
       .on('log', () => {})
       .on('disconnected', () => {
-        throw new Error('Rabbit disconnected');
+        // throw new Error('Rabbit disconnected');
       });
 
     return connect;

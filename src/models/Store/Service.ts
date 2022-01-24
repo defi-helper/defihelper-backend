@@ -2,7 +2,7 @@ import { Blockchain } from '@models/types';
 import { v4 as uuid } from 'uuid';
 import { Factory } from '@services/Container';
 import { User } from '@models/User/Entity';
-import { tableName as walletTableName } from '@models/Wallet/Entity';
+import { walletTableName } from '@models/Wallet/Entity';
 import {
   userContactTableName,
   NotificationTable,

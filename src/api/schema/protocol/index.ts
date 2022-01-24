@@ -26,7 +26,7 @@ import {
   metricProtocolTableName,
   metricWalletTableName,
 } from '@models/Metric/Entity';
-import { tableName as walletTableName, WalletType } from '@models/Wallet/Entity';
+import { walletTableName, WalletType } from '@models/Wallet/Entity';
 import { AuthenticationError, ForbiddenError, UserInputError } from 'apollo-server-express';
 import BN from 'bignumber.js';
 import { Blockchain } from '@models/types';

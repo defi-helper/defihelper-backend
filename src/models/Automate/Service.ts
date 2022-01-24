@@ -4,7 +4,7 @@ import { Emitter } from '@services/Event';
 import { Factory } from '@services/Container';
 import { v4 as uuid } from 'uuid';
 import { Protocol, Contract as ProtocolContract } from '@models/Protocol/Entity';
-import { Wallet, Table as WalletTable } from '@models/Wallet/Entity';
+import { Wallet, WalletTable } from '@models/Wallet/Entity';
 import { ScannerService } from '@services/Scanner';
 import {
   Action,

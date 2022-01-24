@@ -4,7 +4,7 @@ import BN from 'bignumber.js';
 import { Request } from 'express';
 import { Role } from '@models/User/Entity';
 import container from '@container';
-import { WalletType as WalletTypeEnum, tableName as walletTableName } from '@models/Wallet/Entity';
+import { WalletType as WalletTypeEnum, walletTableName } from '@models/Wallet/Entity';
 import {
   GraphQLBoolean,
   GraphQLFieldConfig,

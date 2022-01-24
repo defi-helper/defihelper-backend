@@ -1,4 +1,4 @@
-import { tableName as walletTableName } from '@models/Wallet/Entity';
+import { walletTableName } from '@models/Wallet/Entity';
 import { SchemaBuilder } from 'knex';
 
 export default async (schema: SchemaBuilder) => {

@@ -240,3 +240,11 @@ export const WalletTypeEnum = new GraphQLEnumType({
     {},
   ),
 });
+
+export const WalletExchangeTypeEnum = new GraphQLEnumType({
+  name: 'WalletExchangeTypeEnum',
+  values: Object.values(Wallet.WalletExchangeType).reduce(
+    (res, type) => ({ ...res, [type]: { value: type } }),
+    {},
+  ),
+});

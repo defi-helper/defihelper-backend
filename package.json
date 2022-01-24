@@ -50,6 +50,7 @@
   "dependencies": {
     "@defihelper/ethers-multicall": "^0.3.2",
     "@defihelper/networks": "^1.0.1",
+    "@types/crypto-js": "^4.1.0",
     "@waves/marshall": "^0.14.0",
     "@waves/ts-lib-crypto": "^1.4.4-beta.1",
     "amqplib": "^0.8.0",
@@ -61,6 +62,7 @@
     "build-url": "^6.0.1",
     "callback-to-async-iterator": "^1.1.1",
     "command-line-args": "^5.1.1",
+    "crypto-js": "^4.1.1",
     "dataloader": "^2.0.0",
     "dayjs": "^1.10.4",
     "dotenv": "^8.2.0",

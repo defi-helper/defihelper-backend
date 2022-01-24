@@ -14,6 +14,7 @@ import { telegramServiceFactory } from '@services/Telegram';
 import { scannerServiceFactory } from '@services/Scanner';
 import { moralisServiceFactory } from '@services/Moralis';
 import { rabbitmqFactory } from '@services/Rabbitmq';
+import { cryptographyServiceFactory } from '@services/Cryptography';
 import config from './config';
 
 class AppContainer extends Container<typeof config> {
@@ -36,6 +37,8 @@ class AppContainer extends Container<typeof config> {
   readonly moralis = singleton(moralisServiceFactory(this.parent.moralis));
 
   readonly scanner = singleton(scannerServiceFactory(this.parent.scanner));
+
+  readonly cryptography = singleton(cryptographyServiceFactory(this.parent.cryptography.key));
 
   readonly socialStats = singleton(() => new SocialStatsGateway(this.parent.socilaStats));
 

@@ -8,7 +8,7 @@ import {
   purchaseTableName,
 } from '@models/Store/Entity';
 import { User } from '@models/User/Entity';
-import { tableName as walletTableName } from '@models/Wallet/Entity';
+import { walletTableName } from '@models/Wallet/Entity';
 import {
   GraphQLBoolean,
   GraphQLEnumType,

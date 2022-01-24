@@ -1,7 +1,7 @@
 import { Process } from '@models/Queue/Entity';
 import container from '@container';
 import { triggerTableName } from '@models/Automate/Entity';
-import { tableName as walletTableName } from '@models/Wallet/Entity';
+import { walletTableName } from '@models/Wallet/Entity';
 import { transferTableName } from '@models/Billing/Entity';
 import { ContactBroker, ContactStatus } from '@models/Notification/Entity';
 import BN from 'bignumber.js';

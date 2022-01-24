@@ -9,7 +9,7 @@ import {
   metricWalletTokenTableName,
 } from '@models/Metric/Entity';
 import { walletContractLinkTableName } from '@models/Protocol/Entity';
-import { Wallet, tableName as walletTableName } from '@models/Wallet/Entity';
+import { Wallet, walletTableName } from '@models/Wallet/Entity';
 import DataLoader from 'dataloader';
 import { TokenAliasLiquidity, tokenAliasTableName, tokenTableName } from '@models/Token/Entity';
 

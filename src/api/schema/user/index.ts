@@ -23,7 +23,7 @@ import * as WavesCrypto from '@waves/ts-lib-crypto';
 import * as WavesMarshall from '@waves/marshall';
 import { AuthenticationError, UserInputError } from 'apollo-server-express';
 import { TokenAliasLiquidityEnum, TokenAliasType } from '@api/schema/token';
-import { tableName as walletTableName } from '@models/Wallet/Entity';
+import { walletExchangeTableName, walletTableName } from '@models/Wallet/Entity';
 import { metricWalletTableName, metricWalletTokenTableName } from '@models/Metric/Entity';
 import {
   TokenAlias,
@@ -45,6 +45,7 @@ import {
   PaginationArgument,
   SortArgument,
   UuidType,
+  WalletExchangeTypeEnum,
   WalletTypeEnum,
 } from '../types';
 import * as locales from '../../../locales';
@@ -583,6 +584,43 @@ export const WalletType = new GraphQLObjectType<Wallet.Wallet, Request>({
   },
 });
 
+export const WalletExchangeType = new GraphQLObjectType<Wallet.WalletExchange, Request>({
+  name: 'WalletExchangeType',
+  fields: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+      description: 'Identifier',
+    },
+    type: {
+      type: GraphQLNonNull(WalletExchangeTypeEnum),
+      description: 'Exchange type',
+    },
+
+    account: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Account',
+      resolve: (wallet) => {
+        // console.log(
+        //   container
+        //     .cryptography()
+        //     .encrypt(
+        //       '{"apiKey":"avT55DccZMENH54MIoXesamrkDFp6s9nCRBijkQLj7CPMsq9639N2jJYjEbEg3Fu"}',
+        //     ),
+        // );
+        // return '';
+
+        const payload = container.cryptography().decryptJson(wallet.payload);
+
+        if (!payload?.apiKey) {
+          return '';
+        }
+
+        return `${payload.apiKey.slice(0, 10)}...${payload.apiKey.slice(-4)}`;
+      },
+    },
+  },
+});
+
 export const UserBlockchainType = new GraphQLObjectType<{
   blockchain: Blockchain;
   network: string;
@@ -956,6 +994,31 @@ export const UserType = new GraphQLObjectType<User, Request>({
             .orderBy(sort)
             .limit(pagination.limit)
             .offset(pagination.offset),
+          pagination: {
+            count: await select.clone().count().first(),
+          },
+        };
+      },
+    },
+    exchanges: {
+      type: GraphQLNonNull(
+        PaginateList('WalletExchangeListType', GraphQLNonNull(WalletExchangeType)),
+      ),
+      args: {
+        pagination: PaginationArgument('WalletExchangeListPaginationInputType'),
+      },
+      resolve: async (user, { pagination }) => {
+        const select = container.model
+          .walletTable()
+          .innerJoin(
+            walletExchangeTableName,
+            `${walletExchangeTableName}.id`,
+            `${walletTableName}.id`,
+          )
+          .where('user', user.id);
+
+        return {
+          list: await select.clone().limit(pagination.limit).offset(pagination.offset),
           pagination: {
             count: await select.clone().count().first(),
           },

@@ -3,7 +3,7 @@ import container from '@container';
 import { tableName as userTableName } from '@models/User/Entity';
 import dayjs from 'dayjs';
 import { userNotificationTableName, UserNotificationType } from '@models/UserNotification/Entity';
-import { tableName as walletTableName } from '@models/Wallet/Entity';
+import { walletTableName } from '@models/Wallet/Entity';
 import { triggerTableName } from '@models/Automate/Entity';
 
 export default async (process: Process) => {

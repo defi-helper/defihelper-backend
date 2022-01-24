@@ -6,6 +6,10 @@ export enum WalletType {
   Contract = 'contract',
 }
 
+export enum WalletExchangeType {
+  Binance = 'binance',
+}
+
 export enum WalletSuspenseReason {
   LowFunds = 'lowFunds',
 }
@@ -13,19 +17,39 @@ export enum WalletSuspenseReason {
 export interface Wallet {
   id: string;
   user: string;
-  blockchain: Blockchain;
-  network: string;
   type: WalletType;
-  address: string;
-  publicKey: string;
   name: string;
   suspendReason: WalletSuspenseReason | null;
+  blockchain: Blockchain;
+  network: string;
+  address: string;
+  publicKey: string;
   updatedAt: Date;
   createdAt: Date;
 }
 
-export const tableName = 'wallet';
+export interface WalletBlockchain {
+  id: string;
+  blockchain: Blockchain;
+  network: string;
+  address: string;
+  publicKey: string;
+}
 
-export const tableFactory = createTableFactory<Wallet>(tableName);
+export interface WalletExchange {
+  id: string;
+  type: WalletExchangeType;
+  payload: string; // decoded json
+}
 
-export type Table = ReturnType<ReturnType<typeof tableFactory>>;
+export const walletTableName = 'wallet';
+export const walletBlockchainTableName = 'wallet_blockchain';
+export const walletExchangeTableName = 'wallet_exchange';
+
+export const walletTableFactory = createTableFactory<Wallet>(walletTableName);
+export const walletBlockchainTableFactory = createTableFactory<Wallet>(walletBlockchainTableName);
+export const walletExchangeTableFactory = createTableFactory<Wallet>(walletExchangeTableName);
+
+export type WalletTable = ReturnType<ReturnType<typeof walletTableFactory>>;
+export type WalletBlockchainTable = ReturnType<ReturnType<typeof walletBlockchainTableFactory>>;
+export type WalletExchangeTable = ReturnType<ReturnType<typeof walletExchangeTableFactory>>;

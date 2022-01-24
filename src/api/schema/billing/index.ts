@@ -3,7 +3,7 @@ import asyncify from 'callback-to-async-iterator';
 import { Request } from 'express';
 import { AuthenticationError, UserInputError } from 'apollo-server-express';
 import { User } from '@models/User/Entity';
-import { Wallet, tableName as walletTableName } from '@models/Wallet/Entity';
+import { Wallet, walletTableName } from '@models/Wallet/Entity';
 import { withFilter } from 'graphql-subscriptions';
 import {
   Bill,

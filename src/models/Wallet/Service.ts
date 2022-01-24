@@ -4,10 +4,10 @@ import { User } from '@models/User/Entity';
 import { Blockchain } from '@models/types';
 import { Emitter } from '@services/Event';
 import container from '@container';
-import { Wallet, Table, WalletType, WalletSuspenseReason } from './Entity';
+import { Wallet, WalletTable, WalletType, WalletSuspenseReason } from './Entity';
 
 export class WalletService {
-  constructor(readonly table: Factory<Table>) {}
+  constructor(readonly table: Factory<WalletTable>) {}
 
   public readonly onCreated = new Emitter<Wallet>(async (wallet) => {
     if (wallet.type !== WalletType.Wallet) {

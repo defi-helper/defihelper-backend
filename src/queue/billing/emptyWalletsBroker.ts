@@ -1,11 +1,7 @@
 import { Process } from '@models/Queue/Entity';
 import container from '@container';
 import { transferTableName } from '@models/Billing/Entity';
-import {
-  tableName as walletTableName,
-  WalletSuspenseReason,
-  WalletType,
-} from '@models/Wallet/Entity';
+import { walletTableName, WalletSuspenseReason, WalletType } from '@models/Wallet/Entity';
 import BN from 'bignumber.js';
 import { triggerTableName } from '@models/Automate/Entity';
 

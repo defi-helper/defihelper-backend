@@ -5,7 +5,7 @@ import {
   EthereumAutomateTransaction,
   transactionTableName,
 } from '@models/Automate/Entity';
-import { tableName as walletTableName } from '@models/Wallet/Entity';
+import { walletTableName } from '@models/Wallet/Entity';
 import { EthereumAutomateAdapter } from '@services/Blockchain/Adapter';
 import { Wallet } from 'ethers';
 
