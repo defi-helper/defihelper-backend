@@ -1001,14 +1001,9 @@ export const UserType = new GraphQLObjectType<User, Request>({
       },
     },
     exchanges: {
-      type: GraphQLNonNull(
-        PaginateList('WalletExchangeListType', GraphQLNonNull(WalletExchangeType)),
-      ),
-      args: {
-        pagination: PaginationArgument('WalletExchangeListPaginationInputType'),
-      },
-      resolve: async (user, { pagination }) => {
-        const select = container.model
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(WalletExchangeType))),
+      resolve: async (user) => {
+        const select = await container.model
           .walletTable()
           .innerJoin(
             walletExchangeTableName,
@@ -1017,12 +1012,7 @@ export const UserType = new GraphQLObjectType<User, Request>({
           )
           .where('user', user.id);
 
-        return {
-          list: await select.clone().limit(pagination.limit).offset(pagination.offset),
-          pagination: {
-            count: await select.clone().count().first(),
-          },
-        };
+        return select;
       },
     },
     blockchains: {
