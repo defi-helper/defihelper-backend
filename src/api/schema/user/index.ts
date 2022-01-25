@@ -15,15 +15,19 @@ import asyncify from 'callback-to-async-iterator';
 import { utils } from 'ethers';
 import { Request } from 'express';
 import { Locale } from '@services/I18n/container';
-import { User, Role } from '@models/User/Entity';
+import { Role, User } from '@models/User/Entity';
 import * as Wallet from '@models/Wallet/Entity';
+import {
+  walletExchangeTableName,
+  walletTableName,
+  WalletExchangeType as WalletExchangeModelType,
+} from '@models/Wallet/Entity';
 import { Blockchain } from '@models/types';
 import BN from 'bignumber.js';
 import * as WavesCrypto from '@waves/ts-lib-crypto';
 import * as WavesMarshall from '@waves/marshall';
 import { AuthenticationError, UserInputError } from 'apollo-server-express';
 import { TokenAliasLiquidityEnum, TokenAliasType } from '@api/schema/token';
-import { walletExchangeTableName, walletTableName } from '@models/Wallet/Entity';
 import { metricWalletTableName, metricWalletTokenTableName } from '@models/Metric/Entity';
 import {
   TokenAlias,
@@ -1534,11 +1538,15 @@ export const IntegrationDisconnectMutation: GraphQLFieldConfig<any, Request> = {
       type: GraphQLNonNull(UuidType),
     },
   },
-  resolve: onlyAllowed('integration.disconnect', async (root, _, { currentUser }) => {
+  resolve: onlyAllowed('integration.disconnect', async (root, { id }, { currentUser }) => {
     if (!currentUser) {
       throw new AuthenticationError('UNAUTHENTICATED');
     }
 
+    const wallet = await container.model.walletTable().where({ id, user: currentUser.id }).first();
+    if (!wallet) throw new UserInputError('Wallet not found');
+
+    await container.model.walletService().disconnectExchange(wallet);
     return true;
   }),
 };
@@ -1565,16 +1573,16 @@ export const IntegrationBinanceConnectMutation: GraphQLFieldConfig<any, Request>
       ),
     },
   },
-  resolve: onlyAllowed('integration.connect', async (root, _, { currentUser }) => {
+  resolve: onlyAllowed('integration.connect', async (root, { input }, { currentUser }) => {
     if (!currentUser) {
       throw new AuthenticationError('UNAUTHENTICATED');
     }
 
-    return {
-      id: 'a4b23ba2-0a32-41b2-a160-60a0274a830b',
-      type: 'binance',
-      account: 'avT55DccZMENH54MIoXesamrkDFp6s9nCRBijkQLj7CPMsq9639N2jJYjEbEg3Fu',
-    };
+    const connectedOne = await container.model
+      .walletService()
+      .connectExchange(currentUser, WalletExchangeModelType.Binance, input);
+
+    return connectedOne;
   }),
 };
 

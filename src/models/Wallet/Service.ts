@@ -142,12 +142,13 @@ export class WalletService {
     type: WalletExchangeType,
     payload: { apiKey: string; apiSecret: string },
   ): Promise<WalletExchange> {
+    // todo не уверен что оно верно выбирает
     const existingExchangeConnection = await this.walletExchangeTable()
       .column(`${walletExchangeTableName}.*`)
       .innerJoin(walletTableName, `${walletTableName}.id`, `${walletExchangeTableName}.id`)
       .where({
         user: user.id,
-        type,
+        [`${walletExchangeTableName}.type`]: type,
       })
       .first();
     if (existingExchangeConnection) {
