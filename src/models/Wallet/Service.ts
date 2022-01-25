@@ -6,20 +6,24 @@ import { Emitter } from '@services/Event';
 import container from '@container';
 import {
   Wallet,
-  WalletTable,
-  WalletType,
-  WalletSuspenseReason,
-  WalletExchangeTable,
+  WalletBlockchainTable,
   WalletExchange,
-  WalletExchangeType,
-  walletTableName,
+  WalletExchangeTable,
   walletExchangeTableName,
+  WalletExchangeType,
+  WalletSource,
+  WalletSuspenseReason,
+  WalletTable,
+  walletTableName,
+  WalletType,
+  WalletValues,
 } from './Entity';
 
 export class WalletService {
   constructor(
     readonly walletTable: Factory<WalletTable>,
     readonly walletExchangeTable: Factory<WalletExchangeTable>,
+    readonly walletBlockchainTable: Factory<WalletBlockchainTable>,
   ) {}
 
   public readonly onCreated = new Emitter<Wallet>(async (wallet) => {
@@ -54,6 +58,56 @@ export class WalletService {
     },
   );
 
+  async createWallet<T extends WalletSource>(
+    user: User,
+    type: WalletType,
+    source: T,
+    name: string,
+    values: WalletValues<T>,
+  ): Promise<{
+    parent: Wallet;
+    child: WalletValues<T> & { id: string };
+  }> {
+    const rootWalletObject = {
+      id: uuid(),
+      user: user.id,
+      type,
+      name,
+      suspendReason: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    const rootWalletLinkedSource = {
+      ...values,
+      id: uuid(),
+    };
+
+    if (!Object.values(WalletSource).includes(source)) {
+      throw new Error('everything is broken');
+    }
+
+    await this.walletTable().insert(rootWalletObject);
+    switch (source) {
+      case WalletSource.Blockchain:
+        await this.walletBlockchainTable().insert(rootWalletLinkedSource);
+        break;
+      case WalletSource.Exchange:
+        await this.walletExchangeTable().insert(rootWalletLinkedSource);
+        break;
+      default:
+    }
+
+    // todo fix event
+    // this.onCreated.emit(rootWalletObject);
+
+    return {
+      // fixme тут в реальности не wallet, добавил каст чтобы сбилдить проект
+      parent: rootWalletObject as Wallet,
+      child: rootWalletLinkedSource,
+    };
+  }
+
+  /* @deprecated use createWallet instead */
   async create(
     user: User,
     blockchain: Blockchain,
@@ -89,6 +143,7 @@ export class WalletService {
     payload: { apiKey: string; apiSecret: string },
   ): Promise<WalletExchange> {
     const existingExchangeConnection = await this.walletExchangeTable()
+      .column(`${walletExchangeTableName}.*`)
       .innerJoin(walletTableName, `${walletTableName}.id`, `${walletExchangeTableName}.id`)
       .where({
         user: user.id,
@@ -99,33 +154,16 @@ export class WalletService {
       return existingExchangeConnection;
     }
 
-    // await this.create(); // create wallet
-
-    const created = {
-      id: '1', // wallet.id,
-      payload: container.cryptography().encryptJson(payload),
-      type,
-    };
-    await this.walletExchangeTable().insert(created);
-    return created;
+    return (
+      await this.createWallet(user, WalletType.Wallet, WalletSource.Exchange, '', {
+        payload: container.cryptography().encryptJson(payload),
+        type,
+      })
+    ).child;
   }
 
-  async disconnectExchange(user: User, type: WalletExchangeType): Promise<WalletExchange> {
-    const existingExchangeConnection = await this.walletExchangeTable()
-      // pk -> pk-fk, wallet.id -> walletExchange.id, its correct condition
-      // .where('id', wallet.id)
-      .first();
-    if (existingExchangeConnection) {
-      return existingExchangeConnection;
-    }
-
-    const created = {
-      id: '1', // wallet.id,
-      payload: container.cryptography().encryptJson({}),
-      type,
-    };
-    await this.walletExchangeTable().insert(created);
-    return created;
+  async disconnectExchange(entity: WalletExchange | Wallet): Promise<void> {
+    await this.walletTable().where({ id: entity.id }).delete();
   }
 
   async update(wallet: Wallet): Promise<Wallet> {

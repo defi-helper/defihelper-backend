@@ -1,9 +1,20 @@
 import { tableFactory as createTableFactory } from '@services/Database';
-import { Blockchain } from '@models/types';
+import { Blockchain as BlockchainType } from '@models/types';
 
 export enum WalletType {
   Wallet = 'wallet',
   Contract = 'contract',
+}
+
+export type WalletValues<T extends WalletSource> = T extends WalletSource.Blockchain
+  ? Omit<WalletBlockchain, 'id'>
+  : T extends WalletSource.Exchange
+  ? Omit<WalletExchange, 'id'>
+  : never;
+
+export enum WalletSource {
+  Blockchain = 'blockchain',
+  Exchange = 'exchange',
 }
 
 export enum WalletExchangeType {
@@ -20,7 +31,7 @@ export interface Wallet {
   type: WalletType;
   name: string;
   suspendReason: WalletSuspenseReason | null;
-  blockchain: Blockchain;
+  blockchain: BlockchainType;
   network: string;
   address: string;
   publicKey: string;
@@ -30,7 +41,7 @@ export interface Wallet {
 
 export interface WalletBlockchain {
   id: string;
-  blockchain: Blockchain;
+  blockchain: BlockchainType;
   network: string;
   address: string;
   publicKey: string;
