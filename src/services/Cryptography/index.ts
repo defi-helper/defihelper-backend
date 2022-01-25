@@ -13,6 +13,10 @@ export class Cryptography {
     return CryptoJSAes.decrypt(encrypted, this.key).toString(CryptoJSEncoding.Utf8);
   }
 
+  encryptJson(rawJson: Record<string, any>): string {
+    return this.encrypt(JSON.stringify(rawJson));
+  }
+
   decryptJson(encryptedJson: string): Record<string, any> {
     try {
       return JSON.parse(this.decrypt(encryptedJson));

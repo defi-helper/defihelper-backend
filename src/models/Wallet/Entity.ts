@@ -47,8 +47,10 @@ export const walletBlockchainTableName = 'wallet_blockchain';
 export const walletExchangeTableName = 'wallet_exchange';
 
 export const walletTableFactory = createTableFactory<Wallet>(walletTableName);
-export const walletBlockchainTableFactory = createTableFactory<Wallet>(walletBlockchainTableName);
-export const walletExchangeTableFactory = createTableFactory<Wallet>(walletExchangeTableName);
+export const walletBlockchainTableFactory =
+  createTableFactory<WalletBlockchain>(walletBlockchainTableName);
+export const walletExchangeTableFactory =
+  createTableFactory<WalletExchange>(walletExchangeTableName);
 
 export type WalletTable = ReturnType<ReturnType<typeof walletTableFactory>>;
 export type WalletBlockchainTable = ReturnType<ReturnType<typeof walletBlockchainTableFactory>>;

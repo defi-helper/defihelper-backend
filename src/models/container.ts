@@ -50,16 +50,15 @@ export class ModelContainer extends Container<typeof AppContainer> {
   readonly walletTable = Models.Wallet.Entity.walletTableFactory(this.parent.database);
 
   readonly walletService = singleton(
-    () => new Models.Wallet.Service.WalletService(this.walletTable),
+    () => new Models.Wallet.Service.WalletService(this.walletTable, this.walletExchangeTable),
   );
 
   readonly walletBlockchainTable = Models.Wallet.Entity.walletBlockchainTableFactory(
     this.parent.database,
   );
 
-  readonly walletBlockchainService = singleton(
-    // todo ->
-    () => new Models.Wallet.Service.WalletService(this.walletBlockchainTable),
+  readonly walletExchangeTable = Models.Wallet.Entity.walletExchangeTableFactory(
+    this.parent.database,
   );
 
   readonly protocolTable = Models.Protocol.Entity.protocolTableFactory(this.parent.database);

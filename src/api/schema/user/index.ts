@@ -1527,6 +1527,62 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
   },
 };
 
+export const IntegrationDisconnectMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLBoolean),
+  args: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+    },
+  },
+  resolve: onlyAllowed('integration.disconnect', async (root, _, { currentUser }) => {
+    if (!currentUser) {
+      throw new AuthenticationError('UNAUTHENTICATED');
+    }
+
+    return true;
+  }),
+};
+
+export const IntegrationBinanceConnectMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(WalletExchangeType),
+  args: {
+    input: {
+      type: GraphQLNonNull(
+        new GraphQLInputObjectType({
+          name: 'IntegrationBinanceConnectInputType',
+          fields: {
+            type: {
+              type: GraphQLNonNull(WalletExchangeTypeEnum),
+              description: 'Type',
+            },
+
+            apiKey: {
+              type: GraphQLNonNull(GraphQLString),
+              description: 'Api key',
+            },
+
+            apiSecret: {
+              type: GraphQLNonNull(GraphQLString),
+              description: 'Api secret',
+            },
+          },
+        }),
+      ),
+    },
+  },
+  resolve: onlyAllowed('integration.connect', async (root, { input }, { currentUser }) => {
+    if (!currentUser) {
+      throw new AuthenticationError('UNAUTHENTICATED');
+    }
+
+    return {
+      id: 'a4b23ba2-0a32-41b2-a160-60a0274a830b',
+      type: input.type,
+      account: 'avT55DccZMENH54MIoXesamrkDFp6s9nCRBijkQLj7CPMsq9639N2jJYjEbEg3Fu',
+    };
+  }),
+};
+
 export const AddWalletMutation: GraphQLFieldConfig<any, Request> = {
   type: AuthType,
   args: {

@@ -4,10 +4,23 @@ import { User } from '@models/User/Entity';
 import { Blockchain } from '@models/types';
 import { Emitter } from '@services/Event';
 import container from '@container';
-import { Wallet, WalletTable, WalletType, WalletSuspenseReason } from './Entity';
+import {
+  Wallet,
+  WalletTable,
+  WalletType,
+  WalletSuspenseReason,
+  WalletExchangeTable,
+  WalletExchange,
+  WalletExchangeType,
+  walletTableName,
+  walletExchangeTableName,
+} from './Entity';
 
 export class WalletService {
-  constructor(readonly table: Factory<WalletTable>) {}
+  constructor(
+    readonly walletTable: Factory<WalletTable>,
+    readonly walletExchangeTable: Factory<WalletExchangeTable>,
+  ) {}
 
   public readonly onCreated = new Emitter<Wallet>(async (wallet) => {
     if (wallet.type !== WalletType.Wallet) {
@@ -63,10 +76,55 @@ export class WalletService {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    await this.table().insert(created);
+    await this.walletTable().insert(created);
 
     this.onCreated.emit(created);
 
+    return created;
+  }
+
+  async connectExchange(
+    user: User,
+    type: WalletExchangeType,
+    payload: { apiKey: string; apiSecret: string },
+  ): Promise<WalletExchange> {
+    const existingExchangeConnection = await this.walletExchangeTable()
+      .innerJoin(walletTableName, `${walletTableName}.id`, `${walletExchangeTableName}.id`)
+      .where({
+        user: user.id,
+        type,
+      })
+      .first();
+    if (existingExchangeConnection) {
+      return existingExchangeConnection;
+    }
+
+    // await this.create(); // create wallet
+
+    const created = {
+      id: '1', // wallet.id,
+      payload: container.cryptography().encryptJson(payload),
+      type,
+    };
+    await this.walletExchangeTable().insert(created);
+    return created;
+  }
+
+  async disconnectExchange(user: User, type: WalletExchangeType): Promise<WalletExchange> {
+    const existingExchangeConnection = await this.walletExchangeTable()
+      // pk -> pk-fk, wallet.id -> walletExchange.id, its correct condition
+      // .where('id', wallet.id)
+      .first();
+    if (existingExchangeConnection) {
+      return existingExchangeConnection;
+    }
+
+    const created = {
+      id: '1', // wallet.id,
+      payload: container.cryptography().encryptJson({}),
+      type,
+    };
+    await this.walletExchangeTable().insert(created);
     return created;
   }
 
@@ -76,7 +134,7 @@ export class WalletService {
       address: wallet.blockchain === 'ethereum' ? wallet.address.toLowerCase() : wallet.address,
       updatedAt: new Date(),
     };
-    await this.table().where({ id: wallet.id }).update(updated);
+    await this.walletTable().where({ id: wallet.id }).update(updated);
 
     return updated;
   }
@@ -85,7 +143,7 @@ export class WalletService {
     walletId: string,
     reason: WalletSuspenseReason | null,
   ): Promise<WalletSuspenseReason | null> {
-    await this.table().where({ id: walletId }).update({
+    await this.walletTable().where({ id: walletId }).update({
       suspendReason: reason,
     });
 
@@ -93,7 +151,7 @@ export class WalletService {
   }
 
   async delete(wallet: Wallet) {
-    await this.table().where({ id: wallet.id }).delete();
+    await this.walletTable().where({ id: wallet.id }).delete();
   }
 
   async changeOwner(wallet: Wallet, user: User) {
