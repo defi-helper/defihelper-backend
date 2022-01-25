@@ -1551,11 +1551,6 @@ export const IntegrationBinanceConnectMutation: GraphQLFieldConfig<any, Request>
         new GraphQLInputObjectType({
           name: 'IntegrationBinanceConnectInputType',
           fields: {
-            type: {
-              type: GraphQLNonNull(WalletExchangeTypeEnum),
-              description: 'Type',
-            },
-
             apiKey: {
               type: GraphQLNonNull(GraphQLString),
               description: 'Api key',
@@ -1570,14 +1565,14 @@ export const IntegrationBinanceConnectMutation: GraphQLFieldConfig<any, Request>
       ),
     },
   },
-  resolve: onlyAllowed('integration.connect', async (root, { input }, { currentUser }) => {
+  resolve: onlyAllowed('integration.connect', async (root, _, { currentUser }) => {
     if (!currentUser) {
       throw new AuthenticationError('UNAUTHENTICATED');
     }
 
     return {
       id: 'a4b23ba2-0a32-41b2-a160-60a0274a830b',
-      type: input.type,
+      type: 'binance',
       account: 'avT55DccZMENH54MIoXesamrkDFp6s9nCRBijkQLj7CPMsq9639N2jJYjEbEg3Fu',
     };
   }),
