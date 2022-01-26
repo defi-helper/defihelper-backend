@@ -26,7 +26,7 @@ import {
   metricProtocolTableName,
   metricWalletTableName,
 } from '@models/Metric/Entity';
-import { walletTableName, WalletType } from '@models/Wallet/Entity';
+import { walletBlockchainTableName, walletTableName, WalletType } from '@models/Wallet/Entity';
 import { AuthenticationError, ForbiddenError, UserInputError } from 'apollo-server-express';
 import BN from 'bignumber.js';
 import { Blockchain } from '@models/types';
@@ -579,7 +579,15 @@ export const ContractWalletLinkMutation: GraphQLFieldConfig<any, Request> = {
     const contract = await container.model.contractTable().where('id', contractId).first();
     if (!contract) throw new UserInputError('Contract not found');
 
-    const wallet = await container.model.walletTable().where('id', walletId).first();
+    const wallet = await container.model
+      .walletTable()
+      .innerJoin(
+        walletBlockchainTableName,
+        `${walletBlockchainTableName}.id`,
+        `${walletTableName}.id`,
+      )
+      .where('id', walletId)
+      .first();
     if (!wallet) throw new UserInputError('Wallet not found');
 
     if (wallet.blockchain !== contract.blockchain) throw new UserInputError('Invalid blockchain');
@@ -615,7 +623,15 @@ export const ContractWalletUnlinkMutation: GraphQLFieldConfig<any, Request> = {
     const contract = await container.model.contractTable().where('id', contractId).first();
     if (!contract) throw new UserInputError('Contract not found');
 
-    const wallet = await container.model.walletTable().where('id', walletId).first();
+    const wallet = await container.model
+      .walletTable()
+      .innerJoin(
+        walletBlockchainTableName,
+        `${walletBlockchainTableName}.id`,
+        `${walletTableName}.id`,
+      )
+      .where('id', walletId)
+      .first();
     if (!wallet) throw new UserInputError('Wallet not found');
 
     if (wallet.blockchain !== contract.blockchain) throw new UserInputError('Invalid blockchain');

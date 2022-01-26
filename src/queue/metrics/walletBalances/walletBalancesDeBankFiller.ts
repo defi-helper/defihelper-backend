@@ -3,6 +3,7 @@ import { Process } from '@models/Queue/Entity';
 import { TokenAliasLiquidity, TokenCreatedBy } from '@models/Token/Entity';
 import BN from 'bignumber.js';
 import axios from 'axios';
+import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 
 interface Params {
   id: string;
@@ -23,7 +24,15 @@ export default async (process: Process) => {
   const { id } = process.task.params as Params;
 
   const walletMetrics = container.model.metricService();
-  const wallet = await container.model.walletTable().where({ id }).first();
+  const wallet = await container.model
+    .walletTable()
+    .innerJoin(
+      walletBlockchainTableName,
+      `${walletBlockchainTableName}.id`,
+      `${walletTableName}.id`,
+    )
+    .where({ id })
+    .first();
   let chain: 'movr';
 
   if (!wallet || wallet.blockchain !== 'ethereum') {

@@ -1,4 +1,4 @@
-import { tableFactory as createTableFactory } from '@services/Database';
+import { typedTableFactory } from '@services/Database';
 import { Blockchain as BlockchainType } from '@models/types';
 
 export enum WalletType {
@@ -6,11 +6,13 @@ export enum WalletType {
   Contract = 'contract',
 }
 
-export type WalletValues<T extends WalletSource> = T extends WalletSource.Blockchain
-  ? Omit<WalletBlockchain, 'id'>
+export type WalletChild<T extends WalletSource> = T extends WalletSource.Blockchain
+  ? WalletBlockchain
   : T extends WalletSource.Exchange
-  ? Omit<WalletExchange, 'id'>
+  ? WalletExchange
   : never;
+
+export type WalletValues<T extends WalletSource> = Omit<WalletChild<T>, 'id'>;
 
 export enum WalletSource {
   Blockchain = 'blockchain',
@@ -31,10 +33,6 @@ export interface Wallet {
   type: WalletType;
   name: string;
   suspendReason: WalletSuspenseReason | null;
-  blockchain: BlockchainType;
-  network: string;
-  address: string;
-  publicKey: string;
   updatedAt: Date;
   createdAt: Date;
 }
@@ -50,19 +48,25 @@ export interface WalletBlockchain {
 export interface WalletExchange {
   id: string;
   type: WalletExchangeType;
-  payload: string; // decoded json
+  payload: string; // encoded json
 }
 
 export const walletTableName = 'wallet';
 export const walletBlockchainTableName = 'wallet_blockchain';
 export const walletExchangeTableName = 'wallet_exchange';
 
-export const walletTableFactory = createTableFactory<Wallet>(walletTableName);
-export const walletBlockchainTableFactory =
-  createTableFactory<WalletBlockchain>(walletBlockchainTableName);
-export const walletExchangeTableFactory =
-  createTableFactory<WalletExchange>(walletExchangeTableName);
+export const walletTableFactory = typedTableFactory(walletTableName);
+export const walletBlockchainTableFactory = typedTableFactory(walletBlockchainTableName);
+export const walletExchangeTableFactory = typedTableFactory(walletExchangeTableName);
 
 export type WalletTable = ReturnType<ReturnType<typeof walletTableFactory>>;
 export type WalletBlockchainTable = ReturnType<ReturnType<typeof walletBlockchainTableFactory>>;
 export type WalletExchangeTable = ReturnType<ReturnType<typeof walletExchangeTableFactory>>;
+
+declare module 'knex/types/tables' {
+  interface Tables {
+    [walletTableName]: Wallet;
+    [walletBlockchainTableName]: WalletBlockchain;
+    [walletExchangeTableName]: WalletExchange;
+  }
+}

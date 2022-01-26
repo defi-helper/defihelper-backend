@@ -2,6 +2,7 @@ import container from '@container';
 import { EthereumAutomateTransaction } from '@models/Automate/Entity';
 import { Process } from '@models/Queue/Entity';
 import dayjs from 'dayjs';
+import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 
 export interface Params {
   id: string;
@@ -17,7 +18,15 @@ export default async (process: Process) => {
   const contract = await automateService.contractTable().where('id', transaction.contract).first();
   if (!contract) throw new Error('Contract not found');
 
-  const wallet = await container.model.walletTable().where('id', contract.wallet).first();
+  const wallet = await container.model
+    .walletTable()
+    .innerJoin(
+      walletBlockchainTableName,
+      `${walletBlockchainTableName}.id`,
+      `${walletTableName}.id`,
+    )
+    .where('id', contract.wallet)
+    .first();
   if (!wallet) throw new Error('Wallet not found');
 
   const network = container.blockchain.ethereum.byNetwork(wallet.network);

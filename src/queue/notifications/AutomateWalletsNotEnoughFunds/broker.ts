@@ -3,7 +3,7 @@ import container from '@container';
 import { tableName as userTableName } from '@models/User/Entity';
 import dayjs from 'dayjs';
 import { userNotificationTableName, UserNotificationType } from '@models/UserNotification/Entity';
-import { walletTableName } from '@models/Wallet/Entity';
+import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 import { triggerTableName } from '@models/Automate/Entity';
 
 export default async (process: Process) => {
@@ -21,7 +21,7 @@ export default async (process: Process) => {
       `${userNotificationTableName}.user`,
     )
     .where(`${triggerTableName}.active`, true)
-    .andWhere(`${walletTableName}.blockchain`, 'ethereum')
+    .andWhere(`${walletBlockchainTableName}.blockchain`, 'ethereum')
     .having(database.raw(`count(distinct ${triggerTableName}.id) > 0`))
     .andWhere(`${userNotificationTableName}.type`, UserNotificationType.AutomateCallNotEnoughFunds)
     .groupBy(`${userTableName}.id`);

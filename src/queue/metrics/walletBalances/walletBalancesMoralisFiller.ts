@@ -3,6 +3,7 @@ import { Process } from '@models/Queue/Entity';
 import { TokenAliasLiquidity, TokenCreatedBy } from '@models/Token/Entity';
 import BN from 'bignumber.js';
 import dayjs from 'dayjs';
+import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 
 export interface Params {
   id: string;
@@ -11,7 +12,15 @@ export interface Params {
 export default async (process: Process) => {
   const { id } = process.task.params as Params;
 
-  const wallet = await container.model.walletTable().where({ id }).first();
+  const wallet = await container.model
+    .walletTable()
+    .innerJoin(
+      walletBlockchainTableName,
+      `${walletBlockchainTableName}.id`,
+      `${walletTableName}.id`,
+    )
+    .where({ id })
+    .first();
   let chain: 'eth' | 'bsc' | 'avalanche' | 'polygon';
 
   if (!wallet || wallet.blockchain !== 'ethereum') {

@@ -1,4 +1,4 @@
-import { tableFactory as createTableFactory } from '@services/Database';
+import { tableFactoryLegacy } from '@services/Database';
 
 export enum ProposalState {
   Pending = 'pending',
@@ -39,7 +39,7 @@ export interface Proposal {
 
 export const proposalTableName = 'governance_proposal';
 
-export const proposalTableFactory = createTableFactory<Proposal>(proposalTableName);
+export const proposalTableFactory = tableFactoryLegacy<Proposal>(proposalTableName);
 
 export type ProposalTable = ReturnType<ReturnType<typeof proposalTableFactory>>;
 
@@ -63,6 +63,6 @@ export interface Receipt {
 
 export const receiptTableName = 'governance_receipt';
 
-export const receiptTableFactory = createTableFactory<Receipt>(receiptTableName);
+export const receiptTableFactory = tableFactoryLegacy<Receipt>(receiptTableName);
 
 export type ReceiptTable = ReturnType<ReturnType<typeof receiptTableFactory>>;

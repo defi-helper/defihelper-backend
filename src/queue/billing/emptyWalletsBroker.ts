@@ -1,7 +1,12 @@
 import { Process } from '@models/Queue/Entity';
 import container from '@container';
 import { transferTableName } from '@models/Billing/Entity';
-import { walletTableName, WalletSuspenseReason, WalletType } from '@models/Wallet/Entity';
+import {
+  walletTableName,
+  WalletSuspenseReason,
+  WalletType,
+  walletBlockchainTableName,
+} from '@models/Wallet/Entity';
 import BN from 'bignumber.js';
 import { triggerTableName } from '@models/Automate/Entity';
 
@@ -12,12 +17,15 @@ export default async (process: Process) => {
     .billingTransferTable()
     .column(`${walletTableName}.id as walletId`)
     .column(`${walletTableName}.user as userId`)
-    .column(`${walletTableName}.network as walletNetwork`)
+    .column(`${walletBlockchainTableName}.network as walletNetwork`)
     .column(database.raw('greatest(0, sum(amount)) as funds'))
     .innerJoin(walletTableName, `${walletTableName}.address`, `${transferTableName}.account`)
     .innerJoin(triggerTableName, `${triggerTableName}.wallet`, `${walletTableName}.id`)
-    .andWhere(`${transferTableName}.network`, database.raw(`${walletTableName}.network`))
-    .andWhere(`${transferTableName}.blockchain`, database.raw(`${walletTableName}.blockchain`))
+    .andWhere(`${transferTableName}.network`, database.raw(`${walletBlockchainTableName}.network`))
+    .andWhere(
+      `${transferTableName}.blockchain`,
+      database.raw(`${walletBlockchainTableName}.blockchain`),
+    )
     .andWhere(`${walletTableName}.type`, WalletType.Wallet)
     .groupBy(`${walletTableName}.id`);
 

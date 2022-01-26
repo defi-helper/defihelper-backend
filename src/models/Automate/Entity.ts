@@ -1,4 +1,4 @@
-import { tableFactory as createTableFactory } from '@services/Database';
+import { tableFactoryLegacy } from '@services/Database';
 import * as Conditions from '../../automate/condition';
 import * as Actions from '../../automate/action';
 
@@ -44,7 +44,7 @@ export type Trigger = {
 
 export const triggerTableName = 'automate_trigger';
 
-export const triggerTableFactory = createTableFactory<Trigger>(triggerTableName);
+export const triggerTableFactory = tableFactoryLegacy<Trigger>(triggerTableName);
 
 export type TriggerTable = ReturnType<ReturnType<typeof triggerTableFactory>>;
 
@@ -72,7 +72,7 @@ export function getConditionHandler(condition: Condition) {
 
 export const conditionTableName = 'automate_condition';
 
-export const conditionTableFactory = createTableFactory<Condition>(conditionTableName);
+export const conditionTableFactory = tableFactoryLegacy<Condition>(conditionTableName);
 
 export type ConditionTable = ReturnType<ReturnType<typeof conditionTableFactory>>;
 
@@ -96,7 +96,7 @@ export function getActionHandler(action: Action) {
 
 export const actionTableName = 'automate_action';
 
-export const actionTableFactory = createTableFactory<Action>(actionTableName);
+export const actionTableFactory = tableFactoryLegacy<Action>(actionTableName);
 
 export type ActionTable = ReturnType<ReturnType<typeof actionTableFactory>>;
 
@@ -109,7 +109,7 @@ export interface TriggerCallHistory {
 
 export const triggerCallHistoryTableName = 'automate_trigger_call_history';
 
-export const triggerCallHistoryTableFactory = createTableFactory<TriggerCallHistory>(
+export const triggerCallHistoryTableFactory = tableFactoryLegacy<TriggerCallHistory>(
   triggerCallHistoryTableName,
 );
 
@@ -138,7 +138,7 @@ export interface Contract {
 
 export const contractTableName = 'automate_contract';
 
-export const contractTableFactory = createTableFactory<Contract>(contractTableName);
+export const contractTableFactory = tableFactoryLegacy<Contract>(contractTableName);
 
 export type ContractTable = ReturnType<ReturnType<typeof contractTableFactory>>;
 
@@ -178,6 +178,6 @@ export interface AutomateTransaction {
 export const transactionTableName = 'automate_transaction';
 
 export const transactionTableFactory =
-  createTableFactory<AutomateTransaction>(transactionTableName);
+  tableFactoryLegacy<AutomateTransaction>(transactionTableName);
 
 export type TransactionTable = ReturnType<ReturnType<typeof transactionTableFactory>>;

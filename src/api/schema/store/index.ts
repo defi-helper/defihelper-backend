@@ -8,7 +8,7 @@ import {
   purchaseTableName,
 } from '@models/Store/Entity';
 import { User } from '@models/User/Entity';
-import { walletTableName } from '@models/Wallet/Entity';
+import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 import {
   GraphQLBoolean,
   GraphQLEnumType,
@@ -130,11 +130,16 @@ export const ProductType = new GraphQLObjectType<Product>({
       resolve: async (product, { filter, sort, pagination }) => {
         const select = container.model
           .storePurchaseTable()
-          .innerJoin(walletTableName, function () {
-            this.on(`${walletTableName}.blockchain`, '=', `${purchaseTableName}.blockchain`)
-              .andOn(`${walletTableName}.network`, '=', `${purchaseTableName}.network`)
-              .andOn(`${walletTableName}.address`, '=', `${purchaseTableName}.account`);
+          .innerJoin(walletBlockchainTableName, function () {
+            this.on(
+              `${walletBlockchainTableName}.blockchain`,
+              '=',
+              `${purchaseTableName}.blockchain`,
+            )
+              .andOn(`${walletBlockchainTableName}.network`, '=', `${purchaseTableName}.network`)
+              .andOn(`${walletBlockchainTableName}.address`, '=', `${purchaseTableName}.account`);
           })
+          .innerJoin(walletTableName, `${walletTableName}.id`, `${walletBlockchainTableName}.id`)
           .where(function () {
             this.where('product', product.id);
             if (filter.user !== undefined) {
@@ -206,11 +211,16 @@ export const UserStoreType = new GraphQLObjectType<User>({
       resolve: async (user, { filter, sort, pagination }) => {
         const select = container.model
           .storePurchaseTable()
-          .innerJoin(walletTableName, function () {
-            this.on(`${walletTableName}.blockchain`, '=', `${purchaseTableName}.blockchain`)
-              .andOn(`${walletTableName}.network`, '=', `${purchaseTableName}.network`)
-              .andOn(`${walletTableName}.address`, '=', `${purchaseTableName}.account`);
+          .innerJoin(walletBlockchainTableName, function () {
+            this.on(
+              `${walletBlockchainTableName}.blockchain`,
+              '=',
+              `${purchaseTableName}.blockchain`,
+            )
+              .andOn(`${walletBlockchainTableName}.network`, '=', `${purchaseTableName}.network`)
+              .andOn(`${walletBlockchainTableName}.address`, '=', `${purchaseTableName}.account`);
           })
+          .innerJoin(walletTableName, `${walletTableName}.id`, `${walletBlockchainTableName}.id`)
           .where(function () {
             this.where(`${walletTableName}.user`, user.id);
             if (filter.product !== undefined) {
@@ -261,11 +271,16 @@ export const UserStoreType = new GraphQLObjectType<User>({
             '=',
             `${purchaseTableName}.product`,
           )
-          .innerJoin(walletTableName, function () {
-            this.on(`${walletTableName}.blockchain`, '=', `${purchaseTableName}.blockchain`)
-              .andOn(`${walletTableName}.network`, '=', `${purchaseTableName}.network`)
-              .andOn(`${walletTableName}.address`, '=', `${purchaseTableName}.account`);
+          .innerJoin(walletBlockchainTableName, function () {
+            this.on(
+              `${walletBlockchainTableName}.blockchain`,
+              '=',
+              `${purchaseTableName}.blockchain`,
+            )
+              .andOn(`${walletBlockchainTableName}.network`, '=', `${purchaseTableName}.network`)
+              .andOn(`${walletBlockchainTableName}.address`, '=', `${purchaseTableName}.account`);
           })
+          .innerJoin(walletTableName, `${walletTableName}.id`, `${walletBlockchainTableName}.id`)
           .where(function () {
             this.where(`${walletTableName}.user`, user.id);
             if (Array.isArray(filter.code) && filter.code.length > 0) {

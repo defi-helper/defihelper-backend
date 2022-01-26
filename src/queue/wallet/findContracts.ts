@@ -1,5 +1,6 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
+import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 
 export interface Params {
   walletId: string;
@@ -7,7 +8,15 @@ export interface Params {
 
 export default async (process: Process) => {
   const { walletId } = process.task.params as Params;
-  const wallet = await container.model.walletTable().where('id', walletId).first();
+  const wallet = await container.model
+    .walletTable()
+    .innerJoin(
+      walletBlockchainTableName,
+      `${walletBlockchainTableName}.id`,
+      `${walletTableName}.id`,
+    )
+    .where('id', walletId)
+    .first();
   if (!wallet) throw new Error('Wallet is not found');
 
   if (wallet.blockchain !== 'ethereum') {

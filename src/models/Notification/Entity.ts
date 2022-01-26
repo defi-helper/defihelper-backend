@@ -1,4 +1,4 @@
-import { tableFactory as createTableFactory } from '@services/Database';
+import { tableFactoryLegacy } from '@services/Database';
 
 export enum ContactBroker {
   Email = 'email',
@@ -87,19 +87,19 @@ export interface UserEventSubscription {
 
 export const userContactTableName = 'user_contact';
 
-export const userContactTableFactory = createTableFactory<UserContact>(userContactTableName);
+export const userContactTableFactory = tableFactoryLegacy<UserContact>(userContactTableName);
 
 export type UserContactTable = ReturnType<ReturnType<typeof userContactTableFactory>>;
 
 export const notificationTableName = 'notification';
 
-export const notificationTableFactory = createTableFactory<Notification>(notificationTableName);
+export const notificationTableFactory = tableFactoryLegacy<Notification>(notificationTableName);
 
 export type NotificationTable = ReturnType<ReturnType<typeof notificationTableFactory>>;
 
 export const contractEventWebHookTableName = 'contract_event_webhook';
 
-export const contractEventWebHookTableFactory = createTableFactory<ContractEventWebHook>(
+export const contractEventWebHookTableFactory = tableFactoryLegacy<ContractEventWebHook>(
   contractEventWebHookTableName,
 );
 
@@ -109,7 +109,7 @@ export type ContractEventWebHookTable = ReturnType<
 
 export const userEventSubscriptionTableName = 'user_event_subscription';
 
-export const userEventSubscriptionTableFactory = createTableFactory<UserEventSubscription>(
+export const userEventSubscriptionTableFactory = tableFactoryLegacy<UserEventSubscription>(
   userEventSubscriptionTableName,
 );
 

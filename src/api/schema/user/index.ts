@@ -21,6 +21,7 @@ import {
   walletExchangeTableName,
   walletTableName,
   WalletExchangeType as WalletExchangeModelType,
+  walletBlockchainTableName,
 } from '@models/Wallet/Entity';
 import { Blockchain } from '@models/types';
 import BN from 'bignumber.js';
@@ -161,7 +162,7 @@ export const WalletMetricType = new GraphQLObjectType({
   },
 });
 
-export const WalletType = new GraphQLObjectType<Wallet.Wallet, Request>({
+export const WalletType = new GraphQLObjectType<Wallet.Wallet & Wallet.WalletBlockchain, Request>({
   name: 'WalletType',
   fields: {
     id: {
@@ -669,6 +670,11 @@ export const UserBlockchainType = new GraphQLObjectType<{
       resolve: async ({ user, blockchain, network }, { filter, sort, pagination }) => {
         let select = container.model
           .walletTable()
+          .innerJoin(
+            walletBlockchainTableName,
+            `${walletBlockchainTableName}.id`,
+            `${walletTableName}.id`,
+          )
           .where('user', user.id)
           .andWhere('blockchain', blockchain)
           .andWhere('network', network);
@@ -755,8 +761,8 @@ export const UserBlockchainType = new GraphQLObjectType<{
           )
           .where(function () {
             this.where(`${walletTableName}.user`, user.id)
-              .andWhere(`${walletTableName}.blockchain`, blockchain)
-              .andWhere(`${walletTableName}.network`, network)
+              .andWhere(`${walletBlockchainTableName}.blockchain`, blockchain)
+              .andWhere(`${walletBlockchainTableName}.network`, network)
               .andWhere(
                 database.raw(`${metricWalletTokenTableName}.data->>'${metric}' IS NOT NULL`),
               );
@@ -971,26 +977,33 @@ export const UserType = new GraphQLObjectType<User, Request>({
         pagination: PaginationArgument('WalletListPaginationInputType'),
       },
       resolve: async (user, { filter, sort, pagination }) => {
-        const select = container.model.walletTable().where(function () {
-          this.where('user', user.id);
-          const { id, blockchain, type, search } = filter;
-          if (id) {
-            this.andWhere('id', id);
-          }
-          if (blockchain) {
-            const { protocol, network } = blockchain;
-            this.andWhere('blockchain', protocol);
-            if (network !== undefined) {
-              this.andWhere('network', network);
+        const select = container.model
+          .walletTable()
+          .innerJoin(
+            walletBlockchainTableName,
+            `${walletBlockchainTableName}.id`,
+            `${walletTableName}.id`,
+          )
+          .where(function () {
+            this.where('user', user.id);
+            const { id, blockchain, type, search } = filter;
+            if (id) {
+              this.andWhere('id', id);
             }
-          }
-          if (type) {
-            this.andWhere('type', type);
-          }
-          if (search !== undefined && search !== '') {
-            this.andWhere('address', 'iLike', `%${search}%`);
-          }
-        });
+            if (blockchain) {
+              const { protocol, network } = blockchain;
+              this.andWhere('blockchain', protocol);
+              if (network !== undefined) {
+                this.andWhere('network', network);
+              }
+            }
+            if (type) {
+              this.andWhere('type', type);
+            }
+            if (search !== undefined && search !== '') {
+              this.andWhere('address', 'iLike', `%${search}%`);
+            }
+          });
 
         return {
           list: await select
@@ -1023,15 +1036,16 @@ export const UserType = new GraphQLObjectType<User, Request>({
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(UserBlockchainType))),
       resolve: async (user, args, { dataLoader }) => {
         const blockchains = await dataLoader.userBlockchains().load(user.id);
-
-        return blockchains.map(({ blockchain, network }) => ({
-          blockchain,
-          network,
-          name:
-            container.blockchain[blockchain]?.byNetwork(network)?.name ??
-            `${blockchain}:${network}`,
-          user,
-        }));
+        return blockchains
+          .filter((v) => v)
+          .map(({ blockchain, network }) => ({
+            blockchain,
+            network,
+            name:
+              container.blockchain[blockchain]?.byNetwork(network)?.name ??
+              `${blockchain}:${network}`,
+            user,
+          }));
       },
     },
     metricChart: {
@@ -1097,9 +1111,9 @@ export const UserType = new GraphQLObjectType<User, Request>({
             );
             if (filter.blockchain) {
               const { protocol, network } = filter.blockchain;
-              this.andWhere(`${walletTableName}.blockchain`, protocol);
+              this.andWhere(`${walletBlockchainTableName}.blockchain`, protocol);
               if (network !== undefined) {
-                this.andWhere(`${walletTableName}.network`, network);
+                this.andWhere(`${walletBlockchainTableName}.network`, network);
               }
             }
             if (Array.isArray(filter.wallet) && filter.wallet.length > 0) {
@@ -1211,9 +1225,9 @@ export const UserType = new GraphQLObjectType<User, Request>({
             );
             if (filter.blockchain) {
               const { protocol, network } = filter.blockchain;
-              this.andWhere(`${walletTableName}.blockchain`, protocol);
+              this.andWhere(`${walletBlockchainTableName}.blockchain`, protocol);
               if (network !== undefined) {
-                this.andWhere(`${walletTableName}.network`, network);
+                this.andWhere(`${walletBlockchainTableName}.network`, network);
               }
             }
             if (Array.isArray(filter.wallet) && filter.wallet.length > 0) {
@@ -1414,6 +1428,11 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
 
     const duplicate = await container.model
       .walletTable()
+      .innerJoin(
+        walletBlockchainTableName,
+        `${walletBlockchainTableName}.id`,
+        `${walletTableName}.id`,
+      )
       .where({
         blockchain: 'ethereum',
         network,
@@ -1507,6 +1526,11 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
 
     const duplicate = await container.model
       .walletTable()
+      .innerJoin(
+        walletBlockchainTableName,
+        `${walletBlockchainTableName}.id`,
+        `${walletTableName}.id`,
+      )
       .where({
         blockchain: 'waves',
         network,
@@ -1649,12 +1673,20 @@ export const WalletUpdateMutation: GraphQLFieldConfig<any, Request> = {
       throw new AuthenticationError('UNAUTHENTICATED');
     }
 
-    const wallet = await container.model.walletTable().where('id', id).first();
+    const wallet = await container.model
+      .walletTable()
+      .innerJoin(
+        walletBlockchainTableName,
+        `${walletBlockchainTableName}.id`,
+        `${walletTableName}.id`,
+      )
+      .where('id', id)
+      .first();
     if (!wallet) throw new UserInputError('Wallet not found');
     if (wallet.user !== currentUser.id) throw new UserInputError('Foreign wallet');
 
     const { name } = input;
-    const updated = await container.model.walletService().update({
+    const updated = await container.model.walletService().updateBlockchainWallet({
       ...wallet,
       name: typeof name === 'string' ? name : wallet.name,
     });

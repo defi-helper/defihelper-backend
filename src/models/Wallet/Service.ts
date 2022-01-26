@@ -6,6 +6,7 @@ import { Emitter } from '@services/Event';
 import container from '@container';
 import {
   Wallet,
+  WalletBlockchain,
   WalletBlockchainTable,
   WalletExchange,
   WalletExchangeTable,
@@ -144,13 +145,11 @@ export class WalletService {
   ): Promise<WalletExchange> {
     // todo не уверен что оно верно выбирает
     const existingExchangeConnection = await this.walletExchangeTable()
-      .column(`${walletExchangeTableName}.*`)
       .innerJoin(walletTableName, `${walletTableName}.id`, `${walletExchangeTableName}.id`)
-      .where({
-        user: user.id,
-        [`${walletExchangeTableName}.type`]: type,
-      })
+      .where('user', user.id)
+      .andWhere(`${walletExchangeTableName}.type`, type)
       .first();
+
     if (existingExchangeConnection) {
       return existingExchangeConnection;
     }
@@ -167,10 +166,21 @@ export class WalletService {
     await this.walletTable().where({ id: entity.id }).delete();
   }
 
-  async update(wallet: Wallet): Promise<Wallet> {
+  /* @deprecated use another method which u should make yourself. 35 DIY IDEAS */
+  async updateBlockchainWallet(wallet: Wallet & WalletBlockchain): Promise<Wallet> {
     const updated = {
       ...wallet,
       address: wallet.blockchain === 'ethereum' ? wallet.address.toLowerCase() : wallet.address,
+      updatedAt: new Date(),
+    };
+    await this.walletTable().where({ id: wallet.id }).update(updated);
+
+    return updated;
+  }
+
+  async updateParentWalletOnly(wallet: Wallet) {
+    const updated = {
+      ...wallet,
       updatedAt: new Date(),
     };
     await this.walletTable().where({ id: wallet.id }).update(updated);
@@ -196,7 +206,7 @@ export class WalletService {
   async changeOwner(wallet: Wallet, user: User) {
     if (wallet.user === user.id) return wallet;
 
-    const updated = await this.update({
+    const updated = await this.updateParentWalletOnly({
       ...wallet,
       user: user.id,
     });

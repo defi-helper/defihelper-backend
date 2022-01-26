@@ -2,7 +2,7 @@ import { Blockchain } from '@models/types';
 import { v4 as uuid } from 'uuid';
 import { Factory } from '@services/Container';
 import { User } from '@models/User/Entity';
-import { walletTableName } from '@models/Wallet/Entity';
+import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 import {
   userContactTableName,
   NotificationTable,
@@ -92,8 +92,9 @@ export class StoreService {
       .sum<{ sum: string }>(`${purchaseTableName}.amount`)
       .innerJoin(productTableName, `${purchaseTableName}.product`, '=', `${productTableName}.id`)
       .innerJoin(walletTableName, function () {
-        this.on(`${walletTableName}.blockchain`, '=', `${purchaseTableName}.blockchain`)
-          .andOn(`${walletTableName}.network`, '=', `${purchaseTableName}.network`)
+        // todo fix me
+        this.on(`${walletBlockchainTableName}.blockchain`, '=', `${purchaseTableName}.blockchain`)
+          .andOn(`${walletBlockchainTableName}.network`, '=', `${purchaseTableName}.network`)
           .andOn(`${walletTableName}.address`, '=', `${purchaseTableName}.account`);
       })
       .where(`${productTableName}.code`, code)

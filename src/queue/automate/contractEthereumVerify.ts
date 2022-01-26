@@ -1,6 +1,7 @@
 import container from '@container';
 import { Contract, ContractVerificationStatus } from '@models/Automate/Entity';
 import { Process } from '@models/Queue/Entity';
+import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 
 async function reject(contract: Contract, rejectReason: string) {
   return container.model.automateService().updateContract({
@@ -25,7 +26,15 @@ export default async (process: Process) => {
   const protocol = await container.model.protocolTable().where('id', contract.protocol).first();
   if (!protocol) throw new Error('Protocol not found');
 
-  const wallet = await container.model.walletTable().where('id', contract.wallet).first();
+  const wallet = await container.model
+    .walletTable()
+    .innerJoin(
+      walletBlockchainTableName,
+      `${walletBlockchainTableName}.id`,
+      `${walletTableName}.id`,
+    )
+    .where('id', contract.wallet)
+    .first();
   if (!wallet) throw new Error('Wallet not found');
 
   const { ethereum } = container.blockchain;

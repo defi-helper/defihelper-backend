@@ -1,5 +1,6 @@
 import { Process } from '@models/Queue/Entity';
 import container from '@container';
+import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 
 interface Event {
   address: string;
@@ -40,6 +41,11 @@ export default async (process: Process) => {
     eventNotificationParams.events.map(async (event) => {
       const wallet = await container.model
         .walletTable()
+        .innerJoin(
+          walletBlockchainTableName,
+          `${walletBlockchainTableName}.id`,
+          `${walletTableName}.id`,
+        )
         .where({
           blockchain: contract.blockchain,
           network: contract.network,

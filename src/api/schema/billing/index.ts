@@ -3,7 +3,12 @@ import asyncify from 'callback-to-async-iterator';
 import { Request } from 'express';
 import { AuthenticationError, UserInputError } from 'apollo-server-express';
 import { User } from '@models/User/Entity';
-import { Wallet, walletTableName } from '@models/Wallet/Entity';
+import {
+  Wallet,
+  WalletBlockchain,
+  walletBlockchainTableName,
+  walletTableName,
+} from '@models/Wallet/Entity';
 import { withFilter } from 'graphql-subscriptions';
 import {
   Bill,
@@ -177,7 +182,7 @@ export const BalanceType = new GraphQLObjectType({
   },
 });
 
-export const WalletBillingType = new GraphQLObjectType<Wallet>({
+export const WalletBillingType = new GraphQLObjectType<Wallet & WalletBlockchain>({
   name: 'WalletBillingType',
   fields: {
     transfers: {
@@ -388,18 +393,23 @@ export const UserBillingType = new GraphQLObjectType<User>({
       resolve: async (user, { filter, sort, pagination }) => {
         const select = container.model
           .billingTransferTable()
-          .innerJoin(walletTableName, function () {
-            this.on(`${walletTableName}.blockchain`, '=', `${transferTableName}.blockchain`)
-              .andOn(`${walletTableName}.network`, '=', `${transferTableName}.network`)
-              .andOn(`${walletTableName}.address`, '=', `${transferTableName}.account`);
+          .innerJoin(walletBlockchainTableName, function () {
+            this.on(
+              `${walletBlockchainTableName}.blockchain`,
+              '=',
+              `${transferTableName}.blockchain`,
+            )
+              .andOn(`${walletBlockchainTableName}.network`, '=', `${transferTableName}.network`)
+              .andOn(`${walletBlockchainTableName}.address`, '=', `${transferTableName}.account`);
           })
+          .innerJoin(walletTableName, `${walletTableName}.id`, `${walletBlockchainTableName}.id`)
           .where(function () {
             this.where(`${walletTableName}.user`, user.id);
             if (filter.blockchain) {
               const { protocol, network } = filter.blockchain;
-              this.andWhere(`${walletTableName}.blockchain`, protocol);
+              this.andWhere(`${walletBlockchainTableName}.blockchain`, protocol);
               if (network !== undefined) {
-                this.andWhere(`${walletTableName}.network`, network);
+                this.andWhere(`${walletBlockchainTableName}.network`, network);
               }
             }
             if (filter.deposit !== undefined) {
@@ -461,17 +471,17 @@ export const UserBillingType = new GraphQLObjectType<User>({
         const select = container.model
           .billingBillTable()
           .innerJoin(walletTableName, function () {
-            this.on(`${walletTableName}.blockchain`, '=', `${billTableName}.blockchain`)
-              .andOn(`${walletTableName}.network`, '=', `${billTableName}.network`)
+            this.on(`${walletBlockchainTableName}.blockchain`, '=', `${billTableName}.blockchain`)
+              .andOn(`${walletBlockchainTableName}.network`, '=', `${billTableName}.network`)
               .andOn(`${walletTableName}.address`, '=', `${billTableName}.account`);
           })
           .where(function () {
             this.where(`${walletTableName}.user`, user.id);
             if (filter.blockchain) {
               const { protocol, network } = filter.blockchain;
-              this.andWhere(`${walletTableName}.blockchain`, protocol);
+              this.andWhere(`${walletBlockchainTableName}.blockchain`, protocol);
               if (network !== undefined) {
-                this.andWhere(`${walletTableName}.network`, network);
+                this.andWhere(`${walletBlockchainTableName}.network`, network);
               }
             }
             if (filter.status !== undefined) {
@@ -500,8 +510,12 @@ export const UserBillingType = new GraphQLObjectType<User>({
             .billingTransferTable()
             .sum('amount')
             .innerJoin(walletTableName, function () {
-              this.on(`${walletTableName}.blockchain`, '=', `${transferTableName}.blockchain`)
-                .andOn(`${walletTableName}.network`, '=', `${transferTableName}.network`)
+              this.on(
+                `${walletBlockchainTableName}.blockchain`,
+                '=',
+                `${transferTableName}.blockchain`,
+              )
+                .andOn(`${walletBlockchainTableName}.network`, '=', `${transferTableName}.network`)
                 .andOn(`${walletTableName}.address`, '=', `${transferTableName}.account`);
             })
             .where(`${walletTableName}.user`, user.id)
@@ -511,8 +525,12 @@ export const UserBillingType = new GraphQLObjectType<User>({
             .billingTransferTable()
             .sum('amount')
             .innerJoin(walletTableName, function () {
-              this.on(`${walletTableName}.blockchain`, '=', `${transferTableName}.blockchain`)
-                .andOn(`${walletTableName}.network`, '=', `${transferTableName}.network`)
+              this.on(
+                `${walletBlockchainTableName}.blockchain`,
+                '=',
+                `${transferTableName}.blockchain`,
+              )
+                .andOn(`${walletBlockchainTableName}.network`, '=', `${transferTableName}.network`)
                 .andOn(`${walletTableName}.address`, '=', `${transferTableName}.account`);
             })
             .where(`${walletTableName}.user`, user.id)
@@ -522,8 +540,8 @@ export const UserBillingType = new GraphQLObjectType<User>({
             .billingBillTable()
             .sum('claim')
             .innerJoin(walletTableName, function () {
-              this.on(`${walletTableName}.blockchain`, '=', `${billTableName}.blockchain`)
-                .andOn(`${walletTableName}.network`, '=', `${billTableName}.network`)
+              this.on(`${walletBlockchainTableName}.blockchain`, '=', `${billTableName}.blockchain`)
+                .andOn(`${walletBlockchainTableName}.network`, '=', `${billTableName}.network`)
                 .andOn(`${walletTableName}.address`, '=', `${billTableName}.account`);
             })
             .where(`${walletTableName}.user`, user.id)
@@ -638,6 +656,11 @@ export const OnTransferCreated: GraphQLFieldConfig<{ id: string }, Request> = {
       if (!transfer) return false;
       const wallet = await container.model
         .walletTable()
+        .innerJoin(
+          walletBlockchainTableName,
+          `${walletBlockchainTableName}.id`,
+          `${walletTableName}.id`,
+        )
         .where({
           blockchain: transfer.blockchain,
           network: transfer.network,
@@ -693,6 +716,11 @@ export const OnTransferUpdated: GraphQLFieldConfig<{ id: string }, Request> = {
       if (!transfer) return false;
       const wallet = await container.model
         .walletTable()
+        .innerJoin(
+          walletBlockchainTableName,
+          `${walletBlockchainTableName}.id`,
+          `${walletTableName}.id`,
+        )
         .where({
           blockchain: transfer.blockchain,
           network: transfer.network,

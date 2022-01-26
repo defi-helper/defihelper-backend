@@ -1,7 +1,7 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import axios from 'axios';
-import * as Wallet from '@models/Wallet/Entity';
+import { walletBlockchainTableName, walletTableName, WalletType } from '@models/Wallet/Entity';
 
 export interface Params {
   walletId: string;
@@ -14,7 +14,15 @@ interface Asset {
 
 export default async (process: Process) => {
   const { walletId } = process.task.params as Params;
-  const inheritWallet = await container.model.walletTable().where('id', walletId).first();
+  const inheritWallet = await container.model
+    .walletTable()
+    .innerJoin(
+      walletBlockchainTableName,
+      `${walletBlockchainTableName}.id`,
+      `${walletTableName}.id`,
+    )
+    .where('id', walletId)
+    .first();
   if (!inheritWallet) throw new Error('Wallet is not found');
 
   if (inheritWallet.blockchain !== 'ethereum') {
@@ -24,7 +32,14 @@ export default async (process: Process) => {
   const walletOwner = await container.model.userTable().where('id', inheritWallet.user).first();
   if (!walletOwner) throw new Error('Wallet owner is not found');
 
-  const existingWallets = await container.model.walletTable().where('user', inheritWallet.user);
+  const existingWallets = await container.model
+    .walletTable()
+    .innerJoin(
+      walletBlockchainTableName,
+      `${walletBlockchainTableName}.id`,
+      `${walletTableName}.id`,
+    )
+    .where('user', inheritWallet.user);
   const assetsList: Asset[] = (
     await axios.get(
       `https://openapi.debank.com/v1/user/token_list?id=${inheritWallet.address}&is_all=true`,
@@ -71,7 +86,7 @@ export default async (process: Process) => {
             walletOwner,
             inheritWallet.blockchain,
             network,
-            Wallet.WalletType.Wallet,
+            WalletType.Wallet,
             inheritWallet.address,
             inheritWallet.publicKey,
             '',

@@ -1,7 +1,7 @@
 import container from '@container';
 import { ContractVerificationStatus } from '@models/Automate/Entity';
 import { Process } from '@models/Queue/Entity';
-import { WalletType } from '@models/Wallet/Entity';
+import { walletBlockchainTableName, walletTableName, WalletType } from '@models/Wallet/Entity';
 
 export interface Params {
   contract: string;
@@ -26,7 +26,15 @@ export default async (process: Process) => {
     .first();
   if (!targetContract) throw new Error('Target contract not found');
 
-  const wallet = await container.model.walletTable().where('id', contract.wallet).first();
+  const wallet = await container.model
+    .walletTable()
+    .innerJoin(
+      walletBlockchainTableName,
+      `${walletBlockchainTableName}.id`,
+      `${walletTableName}.id`,
+    )
+    .where('id', contract.wallet)
+    .first();
   if (!wallet) throw new Error('Wallet not found');
 
   const user = await container.model.userTable().where('id', wallet.user).first();

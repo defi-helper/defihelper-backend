@@ -1,4 +1,4 @@
-import { tableFactory as createTableFactory } from '@services/Database';
+import { tableFactoryLegacy } from '@services/Database';
 
 export enum Status {
   Open = 'open',
@@ -21,7 +21,7 @@ export interface Proposal {
 
 export const proposalTableName = 'proposal';
 
-export const proposalTableFactory = createTableFactory<Proposal>(proposalTableName);
+export const proposalTableFactory = tableFactoryLegacy<Proposal>(proposalTableName);
 
 export type ProposalTable = ReturnType<ReturnType<typeof proposalTableFactory>>;
 
@@ -35,6 +35,6 @@ export interface Vote {
 
 export const voteTableName = 'proposal_vote';
 
-export const voteTableFactory = createTableFactory<Vote>(voteTableName);
+export const voteTableFactory = tableFactoryLegacy<Vote>(voteTableName);
 
 export type VoteTable = ReturnType<ReturnType<typeof voteTableFactory>>;

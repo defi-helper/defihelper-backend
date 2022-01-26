@@ -1,4 +1,4 @@
-import { tableFactory as createTableFactory } from '@services/Database';
+import { tableFactoryLegacy } from '@services/Database';
 import { Blockchain } from '@models/types';
 
 export interface Transfer {
@@ -16,7 +16,7 @@ export interface Transfer {
 
 export const transferTableName = 'billing_transfer';
 
-export const transferTableFactory = createTableFactory<Transfer>(transferTableName);
+export const transferTableFactory = tableFactoryLegacy<Transfer>(transferTableName);
 
 export type TransferTable = ReturnType<ReturnType<typeof transferTableFactory>>;
 
@@ -48,6 +48,6 @@ export interface Bill {
 
 export const billTableName = 'billing_bill';
 
-export const billTableFactory = createTableFactory<Bill>(billTableName);
+export const billTableFactory = tableFactoryLegacy<Bill>(billTableName);
 
 export type BillTable = ReturnType<ReturnType<typeof billTableFactory>>;
