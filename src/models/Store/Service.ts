@@ -91,12 +91,12 @@ export class StoreService {
     const result = await this.purchaseTable()
       .sum<{ sum: string }>(`${purchaseTableName}.amount`)
       .innerJoin(productTableName, `${purchaseTableName}.product`, '=', `${productTableName}.id`)
-      .innerJoin(walletTableName, function () {
-        // todo fix me
+      .innerJoin(walletBlockchainTableName, function () {
         this.on(`${walletBlockchainTableName}.blockchain`, '=', `${purchaseTableName}.blockchain`)
           .andOn(`${walletBlockchainTableName}.network`, '=', `${purchaseTableName}.network`)
-          .andOn(`${walletTableName}.address`, '=', `${purchaseTableName}.account`);
+          .andOn(`${walletBlockchainTableName}.address`, '=', `${purchaseTableName}.account`);
       })
+      .innerJoin(walletTableName, `${walletTableName}.id`, `${walletBlockchainTableName}.id`)
       .where(`${productTableName}.code`, code)
       .where(`${walletTableName}.user`, user.id)
       .first();

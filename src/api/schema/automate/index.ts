@@ -209,7 +209,15 @@ export const TriggerType = new GraphQLObjectType<Automate.Trigger>({
       type: GraphQLNonNull(WalletType),
       description: 'Wallet of owner',
       resolve: ({ wallet }) => {
-        return container.model.walletTable().where('id', wallet).first();
+        return container.model
+          .walletTable()
+          .innerJoin(
+            walletBlockchainTableName,
+            `${walletBlockchainTableName}.id`,
+            `${walletTableName}.id`,
+          )
+          .where(`${walletTableName}.id`, wallet)
+          .first();
       },
     },
     name: {
@@ -397,6 +405,11 @@ export const TriggerListQuery: GraphQLFieldConfig<any, Request> = {
         `${walletTableName}.id`,
         '=',
         `${Automate.triggerTableName}.wallet`,
+      )
+      .innerJoin(
+        walletBlockchainTableName,
+        `${walletBlockchainTableName}.id`,
+        `${walletTableName}.id`,
       )
       .where(function () {
         const { active, search, wallet, user } = filter;

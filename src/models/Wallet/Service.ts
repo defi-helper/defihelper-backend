@@ -80,7 +80,7 @@ export class WalletService {
     };
     const rootWalletLinkedSource = {
       ...values,
-      id: uuid(),
+      id: rootWalletObject.id,
     };
 
     if (!Object.values(WalletSource).includes(source)) {
@@ -98,12 +98,10 @@ export class WalletService {
       default:
     }
 
-    // todo fix event
-    // this.onCreated.emit(rootWalletObject);
+    this.onCreated.emit(rootWalletObject);
 
     return {
-      // fixme тут в реальности не wallet, добавил каст чтобы сбилдить проект
-      parent: rootWalletObject as Wallet,
+      parent: rootWalletObject,
       child: rootWalletLinkedSource,
     };
   }
@@ -117,25 +115,15 @@ export class WalletService {
     address: string,
     publicKey: string,
     name: string,
-  ): Promise<Wallet> {
-    const created = {
-      id: uuid(),
-      user: user.id,
+  ): Promise<Wallet & WalletBlockchain> {
+    const created = await this.createWallet(user, type, WalletSource.Blockchain, name, {
+      address,
       blockchain,
       network,
-      type,
-      address: blockchain === 'ethereum' ? address.toLowerCase() : address,
       publicKey,
-      name,
-      suspendReason: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    await this.walletTable().insert(created);
+    });
 
-    this.onCreated.emit(created);
-
-    return created;
+    return { ...created.parent, ...created.child };
   }
 
   async connectExchange(
