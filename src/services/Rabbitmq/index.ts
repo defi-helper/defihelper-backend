@@ -18,12 +18,10 @@ export interface Config {
 
 export function queuesInit(connect: Rabbit, queues: QueueConfig[]) {
   return Promise.all(
-    queues.map(() =>
+    queues.map((queue) =>
       connect
-        .on('log', () => {})
-        .on('disconnected', () => {
-          // throw new Error('Rabbit disconnected');
-        }),
+        .createQueue(queue.name, { durable: false })
+        .then(() => connect.bindToTopic(queue.name, queue.topic)),
     ),
   );
 }

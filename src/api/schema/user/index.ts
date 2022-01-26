@@ -605,15 +605,6 @@ export const WalletExchangeType = new GraphQLObjectType<Wallet.WalletExchange, R
       type: GraphQLNonNull(GraphQLString),
       description: 'Account',
       resolve: (wallet) => {
-        // console.log(
-        //   container
-        //     .cryptography()
-        //     .encrypt(
-        //       '{"apiKey":"avT55DccZMENH54MIoXesamrkDFp6s9nCRBijkQLj7CPMsq9639N2jJYjEbEg3Fu"}',
-        //     ),
-        // );
-        // return '';
-
         const payload = container.cryptography().decryptJson(wallet.payload);
 
         if (!payload?.apiKey) {
