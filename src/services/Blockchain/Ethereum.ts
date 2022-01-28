@@ -344,12 +344,7 @@ export class BlockchainContainer extends Container<Config> {
       name: 'Avalanche Testnet',
       txExplorerURL: new URL('https://testnet.snowtrace.io/tx'),
       walletExplorerURL: new URL('https://testnet.snowtrace.io/address'),
-      getContractAbi: async (address: string) => {
-        const res = await axios.get(
-          `https://repo.sourcify.dev/contracts/full_match/43113/${address}/metadata.json`,
-        );
-        return res.data.output.abi;
-      },
+      getContractAbi: useEtherscanContractAbi('https://api.snowtrace.io/api'),
       getAvgGasPrice: avgGasPriceFeedManual('25000000000'),
       nativeTokenPrice: coingeckoPriceFeedUSD('avalanche-2'),
       nativeTokenDetails: {
@@ -365,12 +360,7 @@ export class BlockchainContainer extends Container<Config> {
       name: 'Avalanche',
       txExplorerURL: new URL('https://snowtrace.io/tx'),
       walletExplorerURL: new URL('https://snowtrace.io/address'),
-      getContractAbi: async (address: string) => {
-        const res = await axios.get(
-          `https://repo.sourcify.dev/contracts/full_match/43114/${address}/metadata.json`,
-        );
-        return res.data.output.abi;
-      },
+      getContractAbi: useEtherscanContractAbi('https://api.snowtrace.io/api'),
       getAvgGasPrice: avgGasPriceFeedManual('25000000000'),
       nativeTokenPrice: coingeckoPriceFeedUSD('avalanche-2'),
       nativeTokenDetails: {
