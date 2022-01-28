@@ -77,6 +77,7 @@
     "module-alias": "^2.2.2",
     "moralis": "^0.0.143",
     "mustache": "^4.2.0",
+    "node-binance-api": "^0.13.1",
     "node-html-parser": "^4.0.0",
     "node-telegram-bot-api": "^0.53.0",
     "nodemailer": "^6.6.2",

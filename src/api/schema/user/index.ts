@@ -1593,6 +1593,9 @@ export const IntegrationBinanceConnectMutation: GraphQLFieldConfig<any, Request>
       throw new AuthenticationError('UNAUTHENTICATED');
     }
 
+    if (!(await container.cexServicesProvider().binance().validateAccount(input))) {
+      throw new UserInputError('Invalid api key pair');
+    }
     const connectedOne = await container.model
       .walletService()
       .connectExchange(currentUser, WalletExchangeModelType.Binance, input);

@@ -15,6 +15,7 @@ import { scannerServiceFactory } from '@services/Scanner';
 import { moralisServiceFactory } from '@services/Moralis';
 import { rabbitmqFactory } from '@services/Rabbitmq';
 import { cryptographyServiceFactory } from '@services/Cryptography';
+import { cexServicesProviderFactory } from '@services/Cex';
 import config from './config';
 
 class AppContainer extends Container<typeof config> {
@@ -33,6 +34,8 @@ class AppContainer extends Container<typeof config> {
   readonly email = singleton(emailServiceFactory(this.parent.email));
 
   readonly telegram = singleton(telegramServiceFactory(this.parent.telegram.token));
+
+  readonly cexServicesProvider = singleton(cexServicesProviderFactory());
 
   readonly moralis = singleton(moralisServiceFactory(this.parent.moralis));
 
