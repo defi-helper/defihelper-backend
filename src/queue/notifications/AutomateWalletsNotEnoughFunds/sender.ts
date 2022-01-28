@@ -53,9 +53,13 @@ export default async (process: Process) => {
     )
     .groupBy(`${walletTableName}.id`);
 
-  const notifyBy = triggers.find(async (t) => {
-    const walletFunds = walletsFunds.find((w) => w.id === t.walletId);
+  const notifyBy = await triggers.reduce<
+    Promise<{ walletId: string; walletNetwork: string; triggerId: string } | null>
+  >(async (prev, t) => {
+    const result = await prev;
+    if (result !== null) return result;
 
+    const walletFunds = walletsFunds.find((w) => w.id === t.walletId);
     if (!walletFunds) {
       throw new Error('wallet funds must be found here');
     }
@@ -64,10 +68,9 @@ export default async (process: Process) => {
       await container.blockchain.ethereum.byNetwork(t.walletNetwork).nativeTokenPrice(),
     ).toNumber();
 
-    return walletFunds.funds * chainNativeUSD - (1 + chainNativeUSD * 0.1) <= 0;
-  });
-
-  if (!notifyBy) {
+    return walletFunds.funds * chainNativeUSD - (1 + chainNativeUSD * 0.1) <= 0 ? t : null;
+  }, Promise.resolve(null));
+  if (notifyBy === null) {
     return process.done();
   }
 

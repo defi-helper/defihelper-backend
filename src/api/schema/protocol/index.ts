@@ -1572,6 +1572,30 @@ export const ProtocolDeleteMutation: GraphQLFieldConfig<any, Request> = {
   }),
 };
 
+export const ContractScannerRegisterMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLBoolean),
+  args: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+    },
+    events: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString))),
+    },
+  },
+  resolve: onlyAllowed('contract.update', async (root, { id, events }, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const contract = await container.model.contractTable().where('id', id).first();
+    if (!contract) throw new UserInputError('Contract not found');
+
+    await container.model
+      .queueService()
+      .push('registerContractInScanner', { contract: contract.id, events });
+
+    return true;
+  }),
+};
+
 export const ProtocolResolveContractsMutation: GraphQLFieldConfig<any, Request> = {
   type: GraphQLNonNull(GraphQLBoolean),
   args: {
