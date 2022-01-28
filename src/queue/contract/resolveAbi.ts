@@ -29,7 +29,7 @@ export default async (process: Process) => {
       return process.done();
     }
 
-    return process.later(dayjs().add(1, 'minute').toDate());
+    return process.info(e.message).later(dayjs().add(1, 'minute').toDate());
   }
 
   return process.done();
