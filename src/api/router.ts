@@ -239,14 +239,9 @@ export function route({ express, server }: { express: Express; server: Server })
       }),
     );
 
+    const maxBoostedApy = Math.round(Math.max(...calculatedApyList.map((v) => v.boosted)));
     const avgInitialApy = Math.round(
       (calculatedApyList.reduce((prev, curr) => new BN(prev).plus(curr.initial).toNumber(), 0) /
-        calculatedApyList.length) *
-        100,
-    );
-
-    const avgBoostedApy = Math.round(
-      (calculatedApyList.reduce((prev, curr) => new BN(prev).plus(curr.boosted).toNumber(), 0) /
         calculatedApyList.length) *
         100,
     );
@@ -280,7 +275,7 @@ export function route({ express, server }: { express: Express; server: Server })
       withDfhBoostedFont,
       117,
       380,
-      `APY ${avgBoostedApy > 10000 ? '>10000' : avgBoostedApy.toFixed()}%`,
+      `APY ${maxBoostedApy > 10000 ? '>10000' : maxBoostedApy.toFixed()}%`,
     );
 
     // total apy
@@ -289,7 +284,7 @@ export function route({ express, server }: { express: Express; server: Server })
       117,
       660,
       `${
-        avgBoostedApy + avgInitialApy > 10000 ? '>10000' : (avgBoostedApy + avgInitialApy).toFixed()
+        maxBoostedApy + avgInitialApy > 10000 ? '>10000' : (maxBoostedApy + avgInitialApy).toFixed()
       }%`,
     );
 
