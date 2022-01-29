@@ -7,10 +7,10 @@ export default class implements ICexService {
       APIKEY: account.apiKey,
       APISECRET: account.apiSecret,
       useServerTime: true,
-      verbose: true,
-    } as any);
+    } as any); // fixme as any
 
     try {
+      // todo check error code
       await binance.balance();
       return true;
     } catch {

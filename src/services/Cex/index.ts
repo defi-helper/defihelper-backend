@@ -7,6 +7,7 @@ export interface ICexService {
 
 export class CexServicesProviderService {
   binance = () => new BinanceCexService();
+  // bybit = () => new ...
 }
 
 export function cexServicesProviderFactory(): Factory<CexServicesProviderService> {
