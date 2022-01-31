@@ -2,6 +2,7 @@ import { Process } from '@models/Queue/Entity';
 import container from '@container';
 import dayjs from 'dayjs';
 import { MetadataType } from '@models/Protocol/Entity';
+import { Contract } from '@services/Scanner';
 
 export interface ContractRegisterParams {
   contract: string;
@@ -20,7 +21,7 @@ export default async (process: Process) => {
   const deployBlockNumber =
     contract.deployBlockNumber === null ? undefined : parseInt(contract.deployBlockNumber, 10);
 
-  let contractFromScanner;
+  let contractFromScanner: Contract | undefined;
   try {
     contractFromScanner = await container
       .scanner()
