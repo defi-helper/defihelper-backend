@@ -58,7 +58,10 @@ export default async (process: Process) => {
       })
       .map(async (network) => {
         const existing = existingWallets.some(
-          (w) => w.network === network && w.blockchain === 'ethereum',
+          (w) =>
+            w.network === network &&
+            w.blockchain === 'ethereum' &&
+            w.address.toLowerCase() === inheritWallet.address.toLowerCase(),
         );
 
         if (existing || network === null) {
