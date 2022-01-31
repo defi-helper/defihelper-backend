@@ -3,6 +3,7 @@ import { Process } from '@models/Queue/Entity';
 import { TokenCreatedBy } from '@models/Token/Entity';
 import dayjs from 'dayjs';
 import { ethers } from 'ethers';
+import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 
 export interface ContractMetricsParams {
   contract: string;
@@ -75,7 +76,15 @@ export async function walletMetrics(process: Process) {
   const protocol = await container.model.protocolTable().where('id', contract.protocol).first();
   if (!protocol) throw new Error('Protocol not found');
 
-  const wallet = await container.model.walletTable().where('id', walletId).first();
+  const wallet = await container.model
+    .walletTable()
+    .innerJoin(
+      walletBlockchainTableName,
+      `${walletBlockchainTableName}.id`,
+      `${walletTableName}.id`,
+    )
+    .where('id', walletId)
+    .first();
   if (!wallet) throw new Error('Wallet not found');
   if (wallet.blockchain !== contract.blockchain || wallet.network !== contract.network) {
     throw new Error('Invalid blockchain');

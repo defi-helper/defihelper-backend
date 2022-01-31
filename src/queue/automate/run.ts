@@ -1,7 +1,7 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import { getActionHandler, getConditionHandler, triggerTableName } from '@models/Automate/Entity';
-import { tableName as walletTableName } from '@models/Wallet/Entity';
+import { walletTableName } from '@models/Wallet/Entity';
 
 export interface Params {
   id: string;

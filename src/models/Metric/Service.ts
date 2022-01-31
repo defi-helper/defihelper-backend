@@ -4,7 +4,7 @@ import { Blockchain } from '@models/types';
 import { Emitter } from '@services/Event';
 import { Protocol, Contract } from '@models/Protocol/Entity';
 import { Factory } from '@services/Container';
-import { Wallet } from '@models/Wallet/Entity';
+import { Wallet, WalletBlockchain } from '@models/Wallet/Entity';
 import { Token } from '@models/Token/Entity';
 import {
   MetricBlockchainTable,
@@ -89,15 +89,23 @@ export class MetricContractService {
     return created;
   }
 
-  async createWallet(contract: Contract, wallet: Wallet, data: MetricMap, date: Date) {
-    if (contract.blockchain !== wallet.blockchain || contract.network !== wallet.network) {
-      throw new Error('Invalid wallet');
+  async createWallet(
+    contract: Contract,
+    blockchainWallet: Wallet & WalletBlockchain,
+    data: MetricMap,
+    date: Date,
+  ) {
+    if (
+      contract.blockchain !== blockchainWallet.blockchain ||
+      contract.network !== blockchainWallet.network
+    ) {
+      throw new Error('Invalid blockchainWallet');
     }
 
     const created = {
       id: uuid(),
       contract: contract.id,
-      wallet: wallet.id,
+      wallet: blockchainWallet.id,
       data,
       date,
       createdAt: new Date(),
@@ -110,21 +118,24 @@ export class MetricContractService {
 
   async createToken(
     contract: Contract | null,
-    wallet: Wallet,
+    blockchainWallet: Wallet & WalletBlockchain,
     token: Token,
     data: MetricMap,
     date: Date,
   ) {
     if (contract !== null) {
-      if (contract.blockchain !== wallet.blockchain || contract.network !== wallet.network) {
-        throw new Error('Invalid wallet');
+      if (
+        contract.blockchain !== blockchainWallet.blockchain ||
+        contract.network !== blockchainWallet.network
+      ) {
+        throw new Error('Invalid blockchainWallet');
       }
     }
 
     const created = {
       id: uuid(),
       contract: contract ? contract.id : null,
-      wallet: wallet.id,
+      wallet: blockchainWallet.id,
       token: token.id,
       data,
       date,

@@ -1,4 +1,4 @@
-import { tableFactory as createTableFactory } from '@services/Database';
+import { tableFactoryLegacy } from '@services/Database';
 import { Blockchain } from '@models/types';
 
 export enum TokenAliasLiquidity {
@@ -21,7 +21,7 @@ export interface TokenAlias {
 
 export const tokenAliasTableName = 'token_alias';
 
-export const tokenAliasTableFactory = createTableFactory<TokenAlias>(tokenAliasTableName);
+export const tokenAliasTableFactory = tableFactoryLegacy<TokenAlias>(tokenAliasTableName);
 
 export type TokenAliasTable = ReturnType<ReturnType<typeof tokenAliasTableFactory>>;
 
@@ -47,6 +47,6 @@ export interface Token {
 
 export const tokenTableName = 'token';
 
-export const tokenTableFactory = createTableFactory<Token>(tokenTableName);
+export const tokenTableFactory = tableFactoryLegacy<Token>(tokenTableName);
 
 export type TokenTable = ReturnType<ReturnType<typeof tokenTableFactory>>;

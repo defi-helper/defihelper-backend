@@ -2,7 +2,7 @@ import { Blockchain } from '@models/types';
 import { v4 as uuid } from 'uuid';
 import { Factory } from '@services/Container';
 import { User } from '@models/User/Entity';
-import { tableName as walletTableName } from '@models/Wallet/Entity';
+import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 import {
   userContactTableName,
   NotificationTable,
@@ -91,11 +91,12 @@ export class StoreService {
     const result = await this.purchaseTable()
       .sum<{ sum: string }>(`${purchaseTableName}.amount`)
       .innerJoin(productTableName, `${purchaseTableName}.product`, '=', `${productTableName}.id`)
-      .innerJoin(walletTableName, function () {
-        this.on(`${walletTableName}.blockchain`, '=', `${purchaseTableName}.blockchain`)
-          .andOn(`${walletTableName}.network`, '=', `${purchaseTableName}.network`)
-          .andOn(`${walletTableName}.address`, '=', `${purchaseTableName}.account`);
+      .innerJoin(walletBlockchainTableName, function () {
+        this.on(`${walletBlockchainTableName}.blockchain`, '=', `${purchaseTableName}.blockchain`)
+          .andOn(`${walletBlockchainTableName}.network`, '=', `${purchaseTableName}.network`)
+          .andOn(`${walletBlockchainTableName}.address`, '=', `${purchaseTableName}.account`);
       })
+      .innerJoin(walletTableName, `${walletTableName}.id`, `${walletBlockchainTableName}.id`)
       .where(`${productTableName}.code`, code)
       .where(`${walletTableName}.user`, user.id)
       .first();

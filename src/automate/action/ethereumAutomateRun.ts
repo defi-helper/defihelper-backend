@@ -5,7 +5,7 @@ import {
   EthereumAutomateTransaction,
   transactionTableName,
 } from '@models/Automate/Entity';
-import { tableName as walletTableName } from '@models/Wallet/Entity';
+import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 import { EthereumAutomateAdapter } from '@services/Blockchain/Adapter';
 import { Wallet } from 'ethers';
 
@@ -23,7 +23,15 @@ export default async (params: Params) => {
     throw new Error('Contract on archive');
   }
 
-  const wallet = await container.model.walletTable().where('id', contract.wallet).first();
+  const wallet = await container.model
+    .walletTable()
+    .where('id', contract.wallet)
+    .innerJoin(
+      walletBlockchainTableName,
+      `${walletBlockchainTableName}.id`,
+      `${walletTableName}.id`,
+    )
+    .first();
   if (!wallet) throw new Error('Wallet not found');
 
   const protocol = await container.model.protocolTable().where('id', contract.protocol).first();
@@ -42,9 +50,14 @@ export default async (params: Params) => {
     .distinct(`${transactionTableName}.consumer`)
     .join(contractTableName, `${transactionTableName}.contract`, '=', `${contractTableName}.id`)
     .join(walletTableName, `${contractTableName}.wallet`, '=', `${walletTableName}.id`)
+    .innerJoin(
+      walletBlockchainTableName,
+      `${walletBlockchainTableName}.id`,
+      `${walletTableName}.id`,
+    )
     .where(function () {
-      this.andWhere(`${walletTableName}.blockchain`, wallet.blockchain)
-        .andWhere(`${walletTableName}.network`, wallet.network)
+      this.andWhere(`${walletBlockchainTableName}.blockchain`, wallet.blockchain)
+        .andWhere(`${walletBlockchainTableName}.network`, wallet.network)
         .andWhere(`${transactionTableName}.confirmed`, false)
         .whereIn(
           `${transactionTableName}.consumer`,

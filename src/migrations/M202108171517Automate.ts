@@ -1,5 +1,5 @@
 import { SchemaBuilder } from 'knex';
-import { tableName as walletTableName } from '@models/Wallet/Entity';
+import { walletTableName } from '@models/Wallet/Entity';
 import {
   triggerTableName,
   conditionTableName,

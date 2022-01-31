@@ -1,4 +1,4 @@
-import { tableFactory as createTableFactory } from '@services/Database';
+import { tableFactoryLegacy } from '@services/Database';
 import * as Handlers from '../../queue';
 
 export enum TaskStatus {
@@ -75,6 +75,6 @@ export interface Task {
 
 export const tableName = 'queue';
 
-export const tableFactory = createTableFactory<Task>(tableName);
+export const tableFactory = tableFactoryLegacy<Task>(tableName);
 
 export type Table = ReturnType<ReturnType<typeof tableFactory>>;

@@ -1,6 +1,6 @@
 import { SchemaBuilder } from 'knex';
 import { contractTableName } from '@models/Protocol/Entity';
-import { tableName as walletTableName } from '@models/Wallet/Entity';
+import { walletTableName } from '@models/Wallet/Entity';
 import { metricWalletTokenTableName } from '@models/Metric/Entity';
 
 export default (schema: SchemaBuilder) => {

@@ -1,11 +1,16 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import dayjs from 'dayjs';
-import { WalletType } from '@models/Wallet/Entity';
+import { walletBlockchainTableName, walletTableName, WalletType } from '@models/Wallet/Entity';
 
 export default async (process: Process) => {
   const wallets = await container.model
     .walletTable()
+    .innerJoin(
+      walletBlockchainTableName,
+      `${walletBlockchainTableName}.id`,
+      `${walletTableName}.id`,
+    )
     .where('type', WalletType.Wallet)
     .andWhere('blockchain', 'ethereum');
 

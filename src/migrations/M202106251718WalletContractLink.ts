@@ -1,6 +1,6 @@
 import { SchemaBuilder } from 'knex';
 import { contractTableName, walletContractLinkTableName } from '@models/Protocol/Entity';
-import { tableName as walletTableName } from '@models/Wallet/Entity';
+import { walletTableName } from '@models/Wallet/Entity';
 
 export default (schema: SchemaBuilder) => {
   return schema.createTable(walletContractLinkTableName, (table) => {

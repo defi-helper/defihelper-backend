@@ -2,6 +2,7 @@ import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import { ProductCode } from '@models/Store/Entity';
 import { UserNotificationType } from '@models/UserNotification/Entity';
+import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 
 export interface Params {
   id: string;
@@ -21,7 +22,15 @@ export default async (process: Process) => {
     })
     .first();
   if (notificationProduct) {
-    const firstWallet = await container.model.walletTable().where('user', user.id).first();
+    const firstWallet = await container.model
+      .walletTable()
+      .innerJoin(
+        walletBlockchainTableName,
+        `${walletBlockchainTableName}.id`,
+        `${walletTableName}.id`,
+      )
+      .where('user', user.id)
+      .first();
     if (firstWallet) {
       await container.model
         .storeService()

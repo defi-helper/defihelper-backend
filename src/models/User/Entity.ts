@@ -1,4 +1,4 @@
-import { tableFactory as createTableFactory } from '@services/Database';
+import { tableFactoryLegacy } from '@services/Database';
 import { Locale } from '@services/I18n/container';
 
 export enum Role {
@@ -16,6 +16,6 @@ export interface User {
 
 export const tableName = 'user';
 
-export const tableFactory = createTableFactory<User>(tableName);
+export const tableFactory = tableFactoryLegacy<User>(tableName);
 
 export type Table = ReturnType<ReturnType<typeof tableFactory>>;

@@ -1,5 +1,5 @@
 import { Factory } from '@services/Container';
-import { tableFactory as createTableFactory } from '@services/Database';
+import { tableFactoryLegacy } from '@services/Database';
 import { Log } from '@services/Log';
 import Knex from 'knex';
 
@@ -10,7 +10,7 @@ export interface Migration {
 
 export const tableName = 'migration';
 
-export const tableFactory = createTableFactory<Migration>(tableName);
+export const tableFactory = tableFactoryLegacy<Migration>(tableName);
 
 export type Table = ReturnType<ReturnType<typeof tableFactory>>;
 

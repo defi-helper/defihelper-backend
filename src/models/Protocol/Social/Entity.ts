@@ -1,4 +1,4 @@
-import { tableFactory as createTableFactory } from '@services/Database';
+import { tableFactoryLegacy } from '@services/Database';
 import { PostProvider } from '@services/SocialStats';
 
 export interface Post {
@@ -13,6 +13,6 @@ export interface Post {
 
 export const postTableName = 'protocol_social_post';
 
-export const postTableFactory = createTableFactory<Post>(postTableName);
+export const postTableFactory = tableFactoryLegacy<Post>(postTableName);
 
 export type PostTable = ReturnType<ReturnType<typeof postTableFactory>>;

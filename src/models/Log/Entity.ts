@@ -1,4 +1,4 @@
-import { tableFactory as createTableFactory } from '@services/Database';
+import { tableFactoryLegacy } from '@services/Database';
 
 export interface Message {
   id: string;
@@ -9,6 +9,6 @@ export interface Message {
 
 export const logTableName = 'log';
 
-export const logTableFactory = createTableFactory<Message>(logTableName);
+export const logTableFactory = tableFactoryLegacy<Message>(logTableName);
 
 export type LogTable = ReturnType<ReturnType<typeof logTableFactory>>;

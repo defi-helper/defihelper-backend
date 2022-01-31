@@ -1,4 +1,4 @@
-import { tableFactory as createTableFactory } from '@services/Database';
+import { tableFactoryLegacy } from '@services/Database';
 import { Blockchain } from '@models/types';
 
 export enum ProductCode {
@@ -19,7 +19,7 @@ export interface Product {
 
 export const productTableName = 'store_product';
 
-export const productTableFactory = createTableFactory<Product>(productTableName);
+export const productTableFactory = tableFactoryLegacy<Product>(productTableName);
 
 export type ProductTable = ReturnType<ReturnType<typeof productTableFactory>>;
 
@@ -36,6 +36,6 @@ export interface Purchase {
 
 export const purchaseTableName = 'store_purchase';
 
-export const purchaseTableFactory = createTableFactory<Purchase>(purchaseTableName);
+export const purchaseTableFactory = tableFactoryLegacy<Purchase>(purchaseTableName);
 
 export type PurchaseTable = ReturnType<ReturnType<typeof purchaseTableFactory>>;
