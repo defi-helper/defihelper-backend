@@ -20,9 +20,14 @@ export default async (process: Process) => {
   const deployBlockNumber =
     contract.deployBlockNumber === null ? undefined : parseInt(contract.deployBlockNumber, 10);
 
-  const contractFromScanner = await container
-    .scanner()
-    .findContract(contract.network, contract.address);
+  let contractFromScanner;
+  try {
+    contractFromScanner = await container
+      .scanner()
+      .findContract(contract.network, contract.address);
+  } catch {
+    return process.info('postponed').later(dayjs().add(5, 'minute').toDate());
+  }
 
   if (!contractFromScanner) {
     const servedAbi = await container.model
@@ -43,15 +48,19 @@ export default async (process: Process) => {
       return process.done();
     }
 
-    await container
-      .scanner()
-      .registerContract(
-        contract.network,
-        contract.address,
-        servedAbi.value.value,
-        contract.name,
-        deployBlockNumber,
-      );
+    try {
+      await container
+        .scanner()
+        .registerContract(
+          contract.network,
+          contract.address,
+          servedAbi.value.value,
+          contract.name,
+          deployBlockNumber,
+        );
+    } catch {
+      return process.info('postponed').later(dayjs().add(5, 'minute').toDate());
+    }
 
     return process.later(dayjs().add(1, 'minutes').toDate());
   }
@@ -67,12 +76,18 @@ export default async (process: Process) => {
     )
     .map(({ name }: any) => name);
 
-  await Promise.all(
-    events.map(async (event) => {
-      await container.scanner().registerListener(contractFromScanner.id, event, deployBlockNumber);
-      await container.model.contractEventWebHookService().create(contract, event);
-    }),
-  );
+  try {
+    await Promise.all(
+      events.map(async (event) => {
+        await container
+          .scanner()
+          .registerListener(contractFromScanner.id, event, deployBlockNumber);
+        await container.model.contractEventWebHookService().create(contract, event);
+      }),
+    );
+  } catch {
+    return process.info('postponed').later(dayjs().add(5, 'minute').toDate());
+  }
 
   return process.done();
 };
