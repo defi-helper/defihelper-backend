@@ -2,6 +2,7 @@ import { Process } from '@models/Queue/Entity';
 import container from '@container';
 import dayjs from 'dayjs';
 import { MetadataType } from '@models/Protocol/Entity';
+import * as Scanner from '@services/Scanner';
 
 export interface ContractRegisterParams {
   contract: string;
@@ -76,8 +77,12 @@ export default async (process: Process) => {
         await container.model.contractEventWebHookService().create(contract, event);
       }),
     );
-  } catch {
-    return process.info('postponed').later(dayjs().add(5, 'minute').toDate());
+  } catch (e) {
+    if (e instanceof Scanner.TemporaryOutOfService) {
+      return process
+        .info('postponed due to temporarily service unavailability')
+        .later(dayjs().add(5, 'minute').toDate());
+    }
   }
 
   return process.done();

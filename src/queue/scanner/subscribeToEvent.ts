@@ -1,6 +1,7 @@
 import { Process } from '@models/Queue/Entity';
 import container from '@container';
 import dayjs from 'dayjs';
+import * as Scanner from '@services/Scanner';
 
 export interface ScannerSubscriptionParams {
   network: string;
@@ -23,8 +24,12 @@ export default async (process: Process) => {
         subscriptionParams.event,
         callBackUrl,
       );
-  } catch {
-    return process.info('postponed').later(dayjs().add(5, 'minute').toDate());
+  } catch (e) {
+    if (e instanceof Scanner.TemporaryOutOfService) {
+      return process
+        .info('postponed due to temporarily service unavailability')
+        .later(dayjs().add(5, 'minute').toDate());
+    }
   }
 
   return process.done();
