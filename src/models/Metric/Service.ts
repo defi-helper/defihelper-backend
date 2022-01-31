@@ -4,7 +4,7 @@ import { Blockchain } from '@models/types';
 import { Emitter } from '@services/Event';
 import { Protocol, Contract } from '@models/Protocol/Entity';
 import { Factory } from '@services/Container';
-import { Wallet, WalletBlockchain } from '@models/Wallet/Entity';
+import { Wallet } from '@models/Wallet/Entity';
 import { Token } from '@models/Token/Entity';
 import {
   MetricBlockchainTable,
@@ -89,23 +89,11 @@ export class MetricContractService {
     return created;
   }
 
-  async createWallet(
-    contract: Contract,
-    blockchainWallet: Wallet & WalletBlockchain,
-    data: MetricMap,
-    date: Date,
-  ) {
-    if (
-      contract.blockchain !== blockchainWallet.blockchain ||
-      contract.network !== blockchainWallet.network
-    ) {
-      throw new Error('Invalid blockchainWallet');
-    }
-
+  async createWallet(contract: Contract, wallet: Wallet, data: MetricMap, date: Date) {
     const created = {
       id: uuid(),
       contract: contract.id,
-      wallet: blockchainWallet.id,
+      wallet: wallet.id,
       data,
       date,
       createdAt: new Date(),
@@ -118,24 +106,15 @@ export class MetricContractService {
 
   async createToken(
     contract: Contract | null,
-    blockchainWallet: Wallet & WalletBlockchain,
+    wallet: Wallet,
     token: Token,
     data: MetricMap,
     date: Date,
   ) {
-    if (contract !== null) {
-      if (
-        contract.blockchain !== blockchainWallet.blockchain ||
-        contract.network !== blockchainWallet.network
-      ) {
-        throw new Error('Invalid blockchainWallet');
-      }
-    }
-
     const created = {
       id: uuid(),
       contract: contract ? contract.id : null,
-      wallet: blockchainWallet.id,
+      wallet: wallet.id,
       token: token.id,
       data,
       date,

@@ -1,7 +1,11 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import dayjs from 'dayjs';
-import { walletBlockchainTableName, walletTableName, WalletType } from '@models/Wallet/Entity';
+import {
+  walletBlockchainTableName,
+  walletTableName,
+  WalletBlockchainType,
+} from '@models/Wallet/Entity';
 
 export default async (process: Process) => {
   const wallets = await container.model
@@ -11,8 +15,8 @@ export default async (process: Process) => {
       `${walletBlockchainTableName}.id`,
       `${walletTableName}.id`,
     )
-    .where('type', WalletType.Wallet)
-    .andWhere('blockchain', 'ethereum');
+    .where(`${walletBlockchainTableName}.type`, WalletBlockchainType.Wallet)
+    .andWhere(`${walletBlockchainTableName}.blockchain`, 'ethereum');
 
   const lag = 86400 / wallets.length;
   await wallets.reduce<Promise<dayjs.Dayjs>>(async (prev, wallet) => {

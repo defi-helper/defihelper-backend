@@ -52,9 +52,11 @@ export class ModelContainer extends Container<typeof AppContainer> {
   readonly walletService = singleton(
     () =>
       new Models.Wallet.Service.WalletService(
+        this.parent.database(),
         this.walletTable,
         this.walletExchangeTable,
         this.walletBlockchainTable,
+        this.parent.cryptography(),
       ),
   );
 

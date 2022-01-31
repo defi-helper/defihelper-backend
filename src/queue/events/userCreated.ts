@@ -22,23 +22,23 @@ export default async (process: Process) => {
     })
     .first();
   if (notificationProduct) {
-    const firstWallet = await container.model
+    const firstBlockchainWallet = await container.model
       .walletTable()
       .innerJoin(
         walletBlockchainTableName,
         `${walletBlockchainTableName}.id`,
         `${walletTableName}.id`,
       )
-      .where('user', user.id)
+      .where(`${walletTableName}.user`, user.id)
       .first();
-    if (firstWallet) {
+    if (firstBlockchainWallet) {
       await container.model
         .storeService()
         .purchase(
           notificationProduct,
-          firstWallet.blockchain,
-          firstWallet.network,
-          firstWallet.address,
+          firstBlockchainWallet.blockchain,
+          firstBlockchainWallet.network,
+          firstBlockchainWallet.address,
           notificationProduct.amount,
           '',
           new Date(),

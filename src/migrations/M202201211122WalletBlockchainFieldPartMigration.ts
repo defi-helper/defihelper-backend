@@ -6,12 +6,13 @@ export default async (schema: SchemaBuilder) => {
   const database = container.database();
 
   await database.raw(`
-    insert into wallet_blockchain (id, blockchain, network, "publicKey", address)
+    insert into wallet_blockchain (id, type, blockchain, network, "publicKey", address)
       select
-          rootWallet.id, rootWallet.blockchain, rootWallet.network, rootWallet."publicKey", rootWallet.address
+          rootWallet.id, rootWallet.type, rootWallet.blockchain, rootWallet.network, rootWallet."publicKey", rootWallet.address
       from wallet AS rootWallet
   `);
   return schema.alterTable(walletTableName, (table) => {
+    table.dropColumn('type');
     table.dropColumn('blockchain');
     table.dropColumn('network');
     table.dropColumn('publicKey');

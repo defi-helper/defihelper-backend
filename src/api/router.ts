@@ -75,16 +75,15 @@ export function route({ express, server }: { express: Express; server: Server })
       mutation: new GraphQLObjectType({
         name: 'Mutation',
         fields: {
-          integrationBinanceConnect: userSchemas.IntegrationBinanceConnectMutation,
-          integrationDisconnect: userSchemas.IntegrationDisconnectMutation,
-
+          userUpdate: userSchemas.UserUpdateMutation,
           authEth: userSchemas.AuthEthereumMutation,
           authWaves: userSchemas.AuthWavesMutation,
           addWallet: userSchemas.AddWalletMutation,
           walletUpdate: userSchemas.WalletUpdateMutation,
           walletDelete: userSchemas.WalletDeleteMutation,
-          userUpdate: userSchemas.UserUpdateMutation,
           walletMetricScan: userSchemas.WalletMetricScanMutation,
+          integrationBinanceConnect: userSchemas.IntegrationBinanceConnectMutation,
+          integrationDisconnect: userSchemas.IntegrationDisconnectMutation,
           protocolCreate: protocolSchemas.ProtocolCreateMutation,
           protocolUpdate: protocolSchemas.ProtocolUpdateMutation,
           protocolResolveContracts: protocolSchemas.ProtocolResolveContractsMutation,

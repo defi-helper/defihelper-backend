@@ -12,22 +12,22 @@ export interface Params {
 export default async (process: Process) => {
   const { id } = process.task.params as Params;
 
-  const wallet = await container.model
+  const blockchainWallet = await container.model
     .walletTable()
     .innerJoin(
       walletBlockchainTableName,
       `${walletBlockchainTableName}.id`,
       `${walletTableName}.id`,
     )
-    .where({ id })
+    .where(`${walletTableName}.id`, id)
     .first();
   let chain: 'eth' | 'bsc' | 'avalanche' | 'polygon';
 
-  if (!wallet || wallet.blockchain !== 'ethereum') {
+  if (!blockchainWallet || blockchainWallet.blockchain !== 'ethereum') {
     throw new Error('wallet not found or unsupported blockchain');
   }
 
-  switch (wallet.network) {
+  switch (blockchainWallet.network) {
     case '1':
       chain = 'eth';
       break;
@@ -41,7 +41,7 @@ export default async (process: Process) => {
       chain = 'avalanche';
       break;
     default:
-      throw new Error(`unsupported network: ${wallet.network}`);
+      throw new Error(`unsupported network: ${blockchainWallet.network}`);
   }
 
   const moralis = await container.moralis().getWeb3API();
@@ -51,7 +51,7 @@ export default async (process: Process) => {
   try {
     tokensBalances = await moralis.account.getTokenBalances({
       chain,
-      address: wallet.address,
+      address: blockchainWallet.address,
     });
   } catch (e) {
     if (e.code === 141) {
@@ -69,7 +69,7 @@ export default async (process: Process) => {
       ...(await result),
       await new Promise((resolve) => {
         container.blockchain.ethereum
-          .byNetwork(wallet.network)
+          .byNetwork(blockchainWallet.network)
           .tokenPriceResolver.usd(token.token_address)
           .then((r) => resolve({ usd: r, address: token.token_address }))
           .catch(() => resolve(null));
@@ -83,8 +83,8 @@ export default async (process: Process) => {
       'address',
       tokensBalances.map((v) => v.token_address.toLowerCase()),
     )
-    .andWhere('blockchain', wallet.blockchain)
-    .andWhere('network', wallet.network);
+    .andWhere('blockchain', blockchainWallet.blockchain)
+    .andWhere('network', blockchainWallet.network);
 
   await Promise.all(
     tokensBalances.map(async (tokenBalance) => {
@@ -119,8 +119,8 @@ export default async (process: Process) => {
           .tokenService()
           .create(
             tokenRecordAlias,
-            wallet.blockchain,
-            wallet.network,
+            blockchainWallet.blockchain,
+            blockchainWallet.network,
             tokenBalance.token_address.toLowerCase(),
             tokenBalance.name,
             tokenBalance.symbol,
@@ -134,7 +134,7 @@ export default async (process: Process) => {
 
       return walletMetrics.createToken(
         null,
-        wallet,
+        blockchainWallet,
         tokenRecord,
         {
           usd: totalTokensUSDPrice.toString(10),
@@ -147,14 +147,14 @@ export default async (process: Process) => {
 
   let nativeBalance;
   const nativeTokenPrice = await container.blockchain.ethereum
-    .byNetwork(wallet.network)
+    .byNetwork(blockchainWallet.network)
     .nativeTokenPrice();
-  const { nativeTokenDetails } = container.blockchain.ethereum.byNetwork(wallet.network);
+  const { nativeTokenDetails } = container.blockchain.ethereum.byNetwork(blockchainWallet.network);
   try {
     nativeBalance = new BN(
       (
         await moralis.account.getNativeBalance({
-          address: wallet.address,
+          address: blockchainWallet.address,
           chain,
         })
       ).balance,
@@ -170,8 +170,8 @@ export default async (process: Process) => {
   let nativeTokenRecord = await container.model
     .tokenTable()
     .where('address', '0x0000000000000000000000000000000000000000')
-    .andWhere('blockchain', wallet.blockchain)
-    .andWhere('network', wallet.network)
+    .andWhere('blockchain', blockchainWallet.blockchain)
+    .andWhere('network', blockchainWallet.network)
     .first();
 
   if (!nativeTokenRecord) {
@@ -195,8 +195,8 @@ export default async (process: Process) => {
       .tokenService()
       .create(
         nativeTokenAlias,
-        wallet.blockchain,
-        wallet.network,
+        blockchainWallet.blockchain,
+        blockchainWallet.network,
         '0x0000000000000000000000000000000000000000',
         nativeTokenDetails.name,
         nativeTokenDetails.symbol,
@@ -207,7 +207,7 @@ export default async (process: Process) => {
 
   await walletMetrics.createToken(
     null,
-    wallet,
+    blockchainWallet,
     nativeTokenRecord,
     {
       usd: nativeUSD.toString(10),

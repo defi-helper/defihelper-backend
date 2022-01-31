@@ -1,28 +1,6 @@
 import { typedTableFactory } from '@services/Database';
 import { Blockchain as BlockchainType } from '@models/types';
 
-export enum WalletType {
-  Wallet = 'wallet',
-  Contract = 'contract',
-}
-
-export type WalletChild<T extends WalletSource> = T extends WalletSource.Blockchain
-  ? WalletBlockchain
-  : T extends WalletSource.Exchange
-  ? WalletExchange
-  : never;
-
-export type WalletValues<T extends WalletSource> = Omit<WalletChild<T>, 'id'>;
-
-export enum WalletSource {
-  Blockchain = 'blockchain',
-  Exchange = 'exchange',
-}
-
-export enum WalletExchangeType {
-  Binance = 'binance',
-}
-
 export enum WalletSuspenseReason {
   LowFunds = 'lowFunds',
 }
@@ -30,24 +8,33 @@ export enum WalletSuspenseReason {
 export interface Wallet {
   id: string;
   user: string;
-  type: WalletType;
   name: string;
   suspendReason: WalletSuspenseReason | null;
   updatedAt: Date;
   createdAt: Date;
 }
 
+export enum WalletBlockchainType {
+  Wallet = 'wallet',
+  Contract = 'contract',
+}
+
 export interface WalletBlockchain {
   id: string;
+  type: WalletBlockchainType;
   blockchain: BlockchainType;
   network: string;
   address: string;
   publicKey: string;
 }
 
+export enum WalletExchangeType {
+  Binance = 'binance',
+}
+
 export interface WalletExchange {
   id: string;
-  type: WalletExchangeType;
+  exchange: WalletExchangeType;
   payload: string; // encoded json
 }
 

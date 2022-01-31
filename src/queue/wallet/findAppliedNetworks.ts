@@ -1,7 +1,11 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import axios from 'axios';
-import { walletBlockchainTableName, walletTableName, WalletType } from '@models/Wallet/Entity';
+import {
+  walletBlockchainTableName,
+  walletTableName,
+  WalletBlockchainType,
+} from '@models/Wallet/Entity';
 
 export interface Params {
   walletId: string;
@@ -21,7 +25,7 @@ export default async (process: Process) => {
       `${walletBlockchainTableName}.id`,
       `${walletTableName}.id`,
     )
-    .where('id', walletId)
+    .where(`${walletTableName}.id`, walletId)
     .first();
   if (!inheritWallet) throw new Error('Wallet is not found');
 
@@ -82,11 +86,11 @@ export default async (process: Process) => {
 
         await container.model
           .walletService()
-          .create(
+          .createBlockchainWallet(
             walletOwner,
             inheritWallet.blockchain,
             network,
-            WalletType.Wallet,
+            WalletBlockchainType.Wallet,
             inheritWallet.address,
             inheritWallet.publicKey,
             '',

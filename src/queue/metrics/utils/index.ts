@@ -76,17 +76,20 @@ export async function walletMetrics(process: Process) {
   const protocol = await container.model.protocolTable().where('id', contract.protocol).first();
   if (!protocol) throw new Error('Protocol not found');
 
-  const wallet = await container.model
+  const blockchainWallet = await container.model
     .walletTable()
     .innerJoin(
       walletBlockchainTableName,
       `${walletBlockchainTableName}.id`,
       `${walletTableName}.id`,
     )
-    .where('id', walletId)
+    .where(`${walletTableName}.id`, walletId)
     .first();
-  if (!wallet) throw new Error('Wallet not found');
-  if (wallet.blockchain !== contract.blockchain || wallet.network !== contract.network) {
+  if (!blockchainWallet) throw new Error('Wallet not found');
+  if (
+    blockchainWallet.blockchain !== contract.blockchain ||
+    blockchainWallet.network !== contract.network
+  ) {
     throw new Error('Invalid blockchain');
   }
 
@@ -111,12 +114,12 @@ export async function walletMetrics(process: Process) {
   });
   if (!contractAdapterData.wallet) return process.done();
 
-  const walletAdapterData = await contractAdapterData.wallet(wallet.address);
+  const walletAdapterData = await contractAdapterData.wallet(blockchainWallet.address);
   if (
     typeof walletAdapterData.metrics === 'object' &&
     Object.keys(walletAdapterData.metrics).length > 0
   ) {
-    await metricService.createWallet(contract, wallet, walletAdapterData.metrics, date);
+    await metricService.createWallet(contract, blockchainWallet, walletAdapterData.metrics, date);
   }
 
   if (
@@ -153,7 +156,7 @@ export async function walletMetrics(process: Process) {
             );
         }
 
-        await metricService.createToken(contract, wallet, token, metric, date);
+        await metricService.createToken(contract, blockchainWallet, token, metric, date);
       }),
     );
   }

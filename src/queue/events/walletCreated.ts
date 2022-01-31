@@ -8,18 +8,18 @@ export interface Params {
 
 export default async (process: Process) => {
   const { id } = process.task.params as Params;
-  const wallet = await container.model
+  const blockchainWallet = await container.model
     .walletTable()
     .innerJoin(
       walletBlockchainTableName,
       `${walletBlockchainTableName}.id`,
       `${walletTableName}.id`,
     )
-    .where('id', id)
+    .where(`${walletTableName}.id`, id)
     .first();
-  if (!wallet) throw new Error('Wallet not found');
+  if (!blockchainWallet) throw new Error('Wallet not found');
 
-  if (wallet.blockchain !== 'ethereum') {
+  if (blockchainWallet.blockchain !== 'ethereum') {
     return process.done();
   }
 
@@ -27,18 +27,18 @@ export default async (process: Process) => {
     container.model.queueService().push(
       'findWalletAppliedNetworks',
       {
-        walletId: wallet.id,
+        walletId: blockchainWallet.id,
       },
       { topic: 'metricCurrent' },
     ),
     container.model.queueService().push('findWalletContracts', {
-      walletId: wallet.id,
+      walletId: blockchainWallet.id,
     }),
     container.model.queueService().push(
       'metricsWalletBalancesFillSelector',
       {
-        id: wallet.id,
-        network: wallet.network,
+        id: blockchainWallet.id,
+        network: blockchainWallet.network,
       },
       { topic: 'metricCurrent' },
     ),

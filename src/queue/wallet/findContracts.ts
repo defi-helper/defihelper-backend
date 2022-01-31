@@ -8,24 +8,24 @@ export interface Params {
 
 export default async (process: Process) => {
   const { walletId } = process.task.params as Params;
-  const wallet = await container.model
+  const blockchainWallet = await container.model
     .walletTable()
     .innerJoin(
       walletBlockchainTableName,
       `${walletBlockchainTableName}.id`,
       `${walletTableName}.id`,
     )
-    .where('id', walletId)
+    .where(`${walletTableName}.id`, walletId)
     .first();
-  if (!wallet) throw new Error('Wallet is not found');
+  if (!blockchainWallet) throw new Error('Wallet is not found');
 
-  if (wallet.blockchain !== 'ethereum') {
+  if (blockchainWallet.blockchain !== 'ethereum') {
     return process.done();
   }
 
   const contractsAddresses = await container
     .scanner()
-    .getContractsAddressByUserAddress(wallet.network, wallet.address);
+    .getContractsAddressByUserAddress(blockchainWallet.network, blockchainWallet.address);
 
   const groupLimit = 50;
   const grouped = contractsAddresses.reduce<string[][]>((groups, address) => {
@@ -53,7 +53,7 @@ export default async (process: Process) => {
         .then((contracts) => {
           contracts.reduce((chainableContractsPromise, contract) => {
             return chainableContractsPromise.then(async () => {
-              await container.model.contractService().walletLink(contract, wallet);
+              await container.model.contractService().walletLink(contract, blockchainWallet);
             });
           }, Promise.resolve());
         });

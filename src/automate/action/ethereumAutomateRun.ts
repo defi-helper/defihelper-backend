@@ -25,12 +25,12 @@ export default async (params: Params) => {
 
   const wallet = await container.model
     .walletTable()
-    .where('id', contract.wallet)
     .innerJoin(
       walletBlockchainTableName,
       `${walletBlockchainTableName}.id`,
       `${walletTableName}.id`,
     )
+    .where(`${walletTableName}.id`, contract.wallet)
     .first();
   if (!wallet) throw new Error('Wallet not found');
 
@@ -48,8 +48,8 @@ export default async (params: Params) => {
   const busyConsumers = await container.model
     .automateTransactionTable()
     .distinct(`${transactionTableName}.consumer`)
-    .join(contractTableName, `${transactionTableName}.contract`, '=', `${contractTableName}.id`)
-    .join(walletTableName, `${contractTableName}.wallet`, '=', `${walletTableName}.id`)
+    .innerJoin(contractTableName, `${transactionTableName}.contract`, `${contractTableName}.id`)
+    .innerJoin(walletTableName, `${contractTableName}.wallet`, `${walletTableName}.id`)
     .innerJoin(
       walletBlockchainTableName,
       `${walletBlockchainTableName}.id`,

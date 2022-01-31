@@ -5,9 +5,9 @@ import { Request } from 'express';
 import { Role } from '@models/User/Entity';
 import container from '@container';
 import {
-  WalletType as WalletTypeEnum,
   walletTableName,
   walletBlockchainTableName,
+  WalletBlockchainType as WalletBlockchainModelType,
 } from '@models/Wallet/Entity';
 import {
   GraphQLBoolean,
@@ -33,7 +33,7 @@ import {
 } from '../types';
 import * as Actions from '../../../automate/action';
 import * as Conditions from '../../../automate/condition';
-import { WalletType } from '../user';
+import { WalletBlockchainType } from '../user';
 import { ProtocolType, ContractType as ProtocolContractType } from '../protocol';
 
 export const ConditionTypeEnum = new GraphQLEnumType({
@@ -206,7 +206,7 @@ export const TriggerType = new GraphQLObjectType<Automate.Trigger>({
       resolve: ({ params }) => JSON.stringify(params),
     },
     wallet: {
-      type: GraphQLNonNull(WalletType),
+      type: GraphQLNonNull(WalletBlockchainType),
       description: 'Wallet of owner',
       resolve: ({ wallet }) => {
         return container.model
@@ -400,17 +400,7 @@ export const TriggerListQuery: GraphQLFieldConfig<any, Request> = {
 
     const select = container.model
       .automateTriggerTable()
-      .innerJoin(
-        walletTableName,
-        `${walletTableName}.id`,
-        '=',
-        `${Automate.triggerTableName}.wallet`,
-      )
-      .innerJoin(
-        walletBlockchainTableName,
-        `${walletBlockchainTableName}.id`,
-        `${walletTableName}.id`,
-      )
+      .innerJoin(walletTableName, `${walletTableName}.id`, `${Automate.triggerTableName}.wallet`)
       .where(function () {
         const { active, search, wallet, user } = filter;
         if (typeof user === 'string' && currentUser.role === Role.Admin) {
@@ -967,7 +957,7 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
       description: 'Identificator',
     },
     wallet: {
-      type: GraphQLNonNull(WalletType),
+      type: GraphQLNonNull(WalletBlockchainType),
       description: 'Owner wallet',
       resolve: (contract, args, { dataLoader }) => {
         return dataLoader.wallet().load(contract.wallet);
@@ -994,7 +984,7 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
       description: 'Address in blockchain',
     },
     contractWallet: {
-      type: WalletType,
+      type: WalletBlockchainType,
       description: 'Automate contract wallet',
       resolve: async (contract, args, { dataLoader }) => {
         if (contract.verification !== Automate.ContractVerificationStatus.Confirmed) return null;
@@ -1011,8 +1001,11 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
           )
           .where({
             user: ownerWallet.user,
-            type: WalletTypeEnum.Contract,
-            address: contract.address.toLowerCase(),
+            type: WalletBlockchainModelType.Contract,
+            address:
+              ownerWallet.blockchain === 'ethereum'
+                ? contract.address.toLowerCase()
+                : contract.address,
           })
           .first();
       },
@@ -1060,7 +1053,7 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
           )
           .where({
             user: ownerWallet.user,
-            type: WalletTypeEnum.Contract,
+            type: WalletBlockchainModelType.Contract,
             address:
               ownerWallet.blockchain === 'ethereum'
                 ? contract.address.toLowerCase()
@@ -1134,17 +1127,7 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
   resolve: async (root, { filter, sort, pagination }) => {
     const select = container.model
       .automateContractTable()
-      .innerJoin(
-        walletTableName,
-        `${walletTableName}.id`,
-        '=',
-        `${Automate.contractTableName}.wallet`,
-      )
-      .innerJoin(
-        walletBlockchainTableName,
-        `${walletBlockchainTableName}.id`,
-        `${Automate.contractTableName}.wallet`,
-      )
+      .innerJoin(walletTableName, `${walletTableName}.id`, `${Automate.contractTableName}.wallet`)
       .where(function () {
         const { wallet, user, protocol, contract, address, archived } = filter;
         if (typeof user === 'string') {
@@ -1230,17 +1213,17 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
       adapter,
       initParams,
     } = input;
-    const wallet = await container.model
+    const blockchainWallet = await container.model
       .walletTable()
       .innerJoin(
         walletBlockchainTableName,
         `${walletBlockchainTableName}.id`,
         `${walletTableName}.id`,
       )
-      .where('id', walletId)
+      .where(`${walletTableName}.id`, walletId)
       .first();
-    if (!wallet) throw new UserInputError('Wallet not found');
-    if (wallet.user !== currentUser.id) throw new UserInputError('Foreign wallet');
+    if (!blockchainWallet) throw new UserInputError('Wallet not found');
+    if (blockchainWallet.user !== currentUser.id) throw new UserInputError('Foreign wallet');
 
     const protocol = await container.model.protocolTable().where('id', protocolId).first();
     if (!protocol) throw new UserInputError('Protocol not found');
@@ -1255,7 +1238,14 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
 
     const created = await container.model
       .automateService()
-      .createContract(wallet, protocol, contract, address, adapter, JSON.parse(initParams));
+      .createContract(
+        blockchainWallet,
+        protocol,
+        contract,
+        address,
+        adapter,
+        JSON.parse(initParams),
+      );
 
     return created;
   }),

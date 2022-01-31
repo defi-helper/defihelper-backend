@@ -9,6 +9,7 @@ export default async (schema: SchemaBuilder) => {
   return schema
     .createTable(walletBlockchainTableName, (table) => {
       table.string('id', 36).notNullable();
+      table.string('type', 64).notNullable();
       table.string('blockchain', 64).notNullable();
       table.string('network', 64).notNullable();
       table.string('address', 512).notNullable();
@@ -25,7 +26,7 @@ export default async (schema: SchemaBuilder) => {
 
     .createTable(walletExchangeTableName, (table) => {
       table.string('id', 36).notNullable();
-      table.string('type', 25).notNullable();
+      table.string('exchange', 25).index().notNullable();
       table.text('payload').notNullable();
 
       table.primary(['id'], `${walletExchangeTableName}_fk_pk`);

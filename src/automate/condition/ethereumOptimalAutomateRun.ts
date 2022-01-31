@@ -37,7 +37,7 @@ export default async (params: Params) => {
       `${walletBlockchainTableName}.id`,
       `${walletTableName}.id`,
     )
-    .where('id', contract.wallet)
+    .where(`${walletTableName}.id`, contract.wallet)
     .first();
   if (!wallet) throw new Error('Wallet not found');
 

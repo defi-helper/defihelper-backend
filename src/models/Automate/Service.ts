@@ -298,15 +298,15 @@ export class AutomateService {
     consumer: string,
     data: T,
   ) {
-    const wallet = await this.walletTable()
+    const blockchainWallet = await this.walletTable()
       .innerJoin(
         walletBlockchainTableName,
         `${walletBlockchainTableName}.id`,
         `${walletTableName}.id`,
       )
-      .where('id', contract.wallet)
+      .where(`${walletTableName}.id`, contract.wallet)
       .first();
-    if (!wallet) throw new Error('Wallet not found');
+    if (!blockchainWallet) throw new Error('Wallet not found');
 
     const created: AutomateTransaction = {
       id: uuid(),
@@ -318,7 +318,7 @@ export class AutomateService {
       createdAt: new Date(),
     };
     await this.transactionTable().insert(created);
-    this.onTransactionCreated.emit({ blockchainWallet: wallet, contract, transaction: created });
+    this.onTransactionCreated.emit({ blockchainWallet, contract, transaction: created });
 
     return created;
   }

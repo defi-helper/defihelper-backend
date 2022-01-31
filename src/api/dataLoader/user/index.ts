@@ -28,9 +28,17 @@ export const userBlockchainLoader = () =>
           `${walletBlockchainTableName}.id`,
           `${walletTableName}.id`,
         )
-        .columns('user', 'blockchain', 'network')
-        .whereIn('user', usersId)
-        .groupBy('user', 'blockchain', 'network');
+        .columns(
+          `${walletTableName}.user`,
+          `${walletBlockchainTableName}.blockchain`,
+          `${walletBlockchainTableName}.network`,
+        )
+        .whereIn(`${walletTableName}.user`, usersId)
+        .groupBy(
+          `${walletTableName}.user`,
+          `${walletBlockchainTableName}.blockchain`,
+          `${walletBlockchainTableName}.network`,
+        );
 
       return usersId.map((userId) => blockchains.filter(({ user }) => user === userId));
     },

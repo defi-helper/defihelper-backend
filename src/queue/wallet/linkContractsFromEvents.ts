@@ -39,7 +39,7 @@ export default async (process: Process) => {
 
   await Promise.all(
     eventNotificationParams.events.map(async (event) => {
-      const wallet = await container.model
+      const blockchainWallet = await container.model
         .walletTable()
         .innerJoin(
           walletBlockchainTableName,
@@ -52,12 +52,11 @@ export default async (process: Process) => {
           address: event.from.toLowerCase(),
         })
         .first();
-
-      if (!wallet) {
+      if (!blockchainWallet) {
         return;
       }
 
-      await container.model.contractService().walletLink(contract, wallet);
+      await container.model.contractService().walletLink(contract, blockchainWallet);
     }),
   );
 

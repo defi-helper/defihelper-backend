@@ -21,9 +21,9 @@ export default async (process: Process) => {
   }
 
   const database = container.database();
-  const triggers: TriggerItem[] = await container.model
+  const triggers = await container.model
     .automateTriggerTable()
-    .columns(
+    .columns<TriggerItem[]>(
       `${walletTableName}.id as walletId`,
       `${walletBlockchainTableName}.network as walletNetwork`,
       `${triggerTableName}.id as triggerId`,
@@ -41,15 +41,15 @@ export default async (process: Process) => {
     .billingTransferTable()
     .column(`${walletTableName}.id as id`)
     .column(database.raw('coalesce(sum(amount), 0) as funds'))
-    .innerJoin(walletTableName, `${walletTableName}.address`, `${transferTableName}.account`)
+    .innerJoin(walletBlockchainTableName, function () {
+      this.on(`${walletBlockchainTableName}.blockchain`, '=', `${transferTableName}.blockchain`)
+        .andOn(`${walletBlockchainTableName}.network`, '=', `${transferTableName}.network`)
+        .andOn(`${walletBlockchainTableName}.address`, '=', `${transferTableName}.account`);
+    })
+    .innerJoin(walletTableName, `${walletTableName}.id`, `${walletBlockchainTableName}.id`)
     .whereIn(
       `${walletTableName}.id`,
-      triggers.map((t) => t.walletId),
-    )
-    .andWhere(`${transferTableName}.network`, database.raw(`${walletBlockchainTableName}.network`))
-    .andWhere(
-      `${transferTableName}.blockchain`,
-      database.raw(`${walletBlockchainTableName}.blockchain`),
+      triggers.map(({ walletId }) => walletId),
     )
     .groupBy(`${walletTableName}.id`);
 

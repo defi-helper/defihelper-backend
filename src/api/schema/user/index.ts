@@ -50,8 +50,7 @@ import {
   PaginationArgument,
   SortArgument,
   UuidType,
-  WalletExchangeTypeEnum,
-  WalletTypeEnum,
+  WalletBlockchainTypeEnum,
 } from '../types';
 import * as locales from '../../../locales';
 import { UserBillingType, WalletBillingType } from '../billing';
@@ -162,32 +161,19 @@ export const WalletMetricType = new GraphQLObjectType({
   },
 });
 
-export const WalletType = new GraphQLObjectType<Wallet.Wallet & Wallet.WalletBlockchain, Request>({
-  name: 'WalletType',
+export const WalletBlockchainType = new GraphQLObjectType<
+  Wallet.Wallet & Wallet.WalletBlockchain,
+  Request
+>({
+  name: 'WalletBlockchainType',
   fields: {
     id: {
       type: GraphQLNonNull(UuidType),
       description: 'Identificator',
     },
-    blockchain: {
-      type: GraphQLNonNull(BlockchainEnum),
-      description: 'Blockchain type',
-    },
-    network: {
-      type: GraphQLNonNull(GraphQLString),
-      description: 'Blockchain network id',
-    },
     type: {
-      type: GraphQLNonNull(WalletTypeEnum),
+      type: GraphQLNonNull(WalletBlockchainTypeEnum),
       description: 'Type',
-    },
-    address: {
-      type: GraphQLNonNull(GraphQLString),
-      description: 'Address',
-    },
-    publicKey: {
-      type: GraphQLNonNull(GraphQLString),
-      description: 'Public key',
     },
     name: {
       type: GraphQLNonNull(GraphQLString),
@@ -197,6 +183,22 @@ export const WalletType = new GraphQLObjectType<Wallet.Wallet & Wallet.WalletBlo
 
         return `${wallet.address.slice(0, 5)}...${wallet.address.slice(-5)}`;
       },
+    },
+    blockchain: {
+      type: GraphQLNonNull(BlockchainEnum),
+      description: 'Blockchain type',
+    },
+    network: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Blockchain network id',
+    },
+    address: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Address',
+    },
+    publicKey: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Public key',
     },
     contracts: {
       type: GraphQLNonNull(PaginateList('WalletContractListType', GraphQLNonNull(ContractType))),
@@ -589,23 +591,37 @@ export const WalletType = new GraphQLObjectType<Wallet.Wallet & Wallet.WalletBlo
   },
 });
 
-export const WalletExchangeType = new GraphQLObjectType<Wallet.WalletExchange, Request>({
+export const WalletExchangeTypeEnum = new GraphQLEnumType({
+  name: 'WalletExchangeTypeEnum',
+  values: Object.values(Wallet.WalletExchangeType).reduce(
+    (res, type) => ({ ...res, [type]: { value: type } }),
+    {},
+  ),
+});
+
+export const WalletExchangeType = new GraphQLObjectType<
+  Wallet.Wallet & Wallet.WalletExchange,
+  Request
+>({
   name: 'WalletExchangeType',
   fields: {
     id: {
       type: GraphQLNonNull(UuidType),
       description: 'Identifier',
     },
-    type: {
+    name: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Name',
+    },
+    exchange: {
       type: GraphQLNonNull(WalletExchangeTypeEnum),
       description: 'Exchange type',
     },
-
     account: {
       type: GraphQLNonNull(GraphQLString),
       description: 'Account',
-      resolve: (wallet) => {
-        const payload = container.cryptography().decryptJson(wallet.payload);
+      resolve: (walletExchange) => {
+        const payload = container.cryptography().decryptJson(walletExchange.payload);
 
         if (!payload?.apiKey) {
           return '';
@@ -613,6 +629,10 @@ export const WalletExchangeType = new GraphQLObjectType<Wallet.WalletExchange, R
 
         return `${payload.apiKey.slice(0, 10)}...${payload.apiKey.slice(-4)}`;
       },
+    },
+    createdAt: {
+      type: GraphQLNonNull(DateTimeType),
+      description: 'Date of created account',
     },
   },
 });
@@ -637,7 +657,7 @@ export const UserBlockchainType = new GraphQLObjectType<{
     },
     wallets: {
       type: GraphQLNonNull(
-        PaginateList('UserBlockchainWalletListType', GraphQLNonNull(WalletType)),
+        PaginateList('UserBlockchainWalletListType', GraphQLNonNull(WalletBlockchainType)),
       ),
       args: {
         filter: {
@@ -659,19 +679,21 @@ export const UserBlockchainType = new GraphQLObjectType<{
         pagination: PaginationArgument('UserBlockchainWalletListPaginationInputType'),
       },
       resolve: async ({ user, blockchain, network }, { filter, sort, pagination }) => {
-        let select = container.model
+        const select = container.model
           .walletTable()
           .innerJoin(
             walletBlockchainTableName,
             `${walletBlockchainTableName}.id`,
             `${walletTableName}.id`,
           )
-          .where('user', user.id)
-          .andWhere('blockchain', blockchain)
-          .andWhere('network', network);
-        if (filter.search !== undefined && filter.search !== '') {
-          select = select.andWhere('address', 'iLike', `%${filter.search}%`);
-        }
+          .where(function () {
+            this.where(`${walletTableName}.user`, user.id)
+              .andWhere(`${walletExchangeTableName}.blockchain`, blockchain)
+              .andWhere(`${walletExchangeTableName}.network`, network);
+            if (filter.search !== undefined && filter.search !== '') {
+              this.andWhere(`${walletExchangeTableName}.address`, 'iLike', `%${filter.search}%`);
+            }
+          });
 
         return {
           list: await select
@@ -938,7 +960,7 @@ export const UserType = new GraphQLObjectType<User, Request>({
       },
     },
     wallets: {
-      type: GraphQLNonNull(PaginateList('WalletListType', GraphQLNonNull(WalletType))),
+      type: GraphQLNonNull(PaginateList('WalletListType', GraphQLNonNull(WalletBlockchainType))),
       args: {
         filter: {
           type: new GraphQLInputObjectType({
@@ -951,7 +973,7 @@ export const UserType = new GraphQLObjectType<User, Request>({
                 type: BlockchainFilterInputType,
               },
               type: {
-                type: WalletTypeEnum,
+                type: WalletBlockchainTypeEnum,
               },
               search: {
                 type: GraphQLString,
@@ -976,23 +998,23 @@ export const UserType = new GraphQLObjectType<User, Request>({
             `${walletTableName}.id`,
           )
           .where(function () {
-            this.where('user', user.id);
+            this.where(`${walletTableName}.user`, user.id);
             const { id, blockchain, type, search } = filter;
             if (id) {
-              this.andWhere('id', id);
+              this.andWhere(`${walletTableName}.id`, id);
             }
             if (blockchain) {
               const { protocol, network } = blockchain;
-              this.andWhere('blockchain', protocol);
+              this.andWhere(`${walletBlockchainTableName}.blockchain`, protocol);
               if (network !== undefined) {
-                this.andWhere('network', network);
+                this.andWhere(`${walletBlockchainTableName}.network`, network);
               }
             }
             if (type) {
-              this.andWhere('type', type);
+              this.andWhere(`${walletBlockchainTableName}.type`, type);
             }
             if (search !== undefined && search !== '') {
-              this.andWhere('address', 'iLike', `%${search}%`);
+              this.andWhere(`${walletBlockchainTableName}.address`, 'iLike', `%${search}%`);
             }
           });
 
@@ -1009,18 +1031,37 @@ export const UserType = new GraphQLObjectType<User, Request>({
       },
     },
     exchanges: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(WalletExchangeType))),
-      resolve: async (user) => {
-        const select = await container.model
+      type: GraphQLNonNull(
+        PaginateList('WalletExchangeListType', GraphQLNonNull(WalletExchangeType)),
+      ),
+      args: {
+        sort: SortArgument(
+          'WalletExchangeListSortInputType',
+          ['id', 'createdAt'],
+          [{ column: 'createdAt', order: 'asc' }],
+        ),
+        pagination: PaginationArgument('WalletExchangeListPaginationInputType'),
+      },
+      resolve: async (user, { sort, pagination }) => {
+        const select = container.model
           .walletTable()
           .innerJoin(
             walletExchangeTableName,
             `${walletExchangeTableName}.id`,
             `${walletTableName}.id`,
           )
-          .where('user', user.id);
+          .where(`${walletTableName}.user`, user.id);
 
-        return select;
+        return {
+          list: await select
+            .clone()
+            .orderBy(sort)
+            .limit(pagination.limit)
+            .offset(pagination.offset),
+          pagination: {
+            count: await select.clone().count().first(),
+          },
+        };
       },
     },
     blockchains: {
@@ -1449,11 +1490,11 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
     const user = currentUser ?? (await container.model.userService().create(Role.User));
     await container.model
       .walletService()
-      .create(
+      .createBlockchainWallet(
         user,
         'ethereum',
         network,
-        Wallet.WalletType.Wallet,
+        Wallet.WalletBlockchainType.Wallet,
         recoveredAddress,
         recoveredPubKey,
         '',
@@ -1539,31 +1580,19 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
     const user = currentUser ?? (await container.model.userService().create(Role.User));
     await container.model
       .walletService()
-      .create(user, 'waves', network, Wallet.WalletType.Wallet, recoveredAddress, publicKey, '');
+      .createBlockchainWallet(
+        user,
+        'waves',
+        network,
+        Wallet.WalletBlockchainType.Wallet,
+        recoveredAddress,
+        publicKey,
+        '',
+      );
     const sid = container.model.sessionService().generate(user);
 
     return { user, sid };
   },
-};
-
-export const IntegrationDisconnectMutation: GraphQLFieldConfig<any, Request> = {
-  type: GraphQLNonNull(GraphQLBoolean),
-  args: {
-    id: {
-      type: GraphQLNonNull(UuidType),
-    },
-  },
-  resolve: onlyAllowed('integration.disconnect', async (root, { id }, { currentUser }) => {
-    if (!currentUser) {
-      throw new AuthenticationError('UNAUTHENTICATED');
-    }
-
-    const wallet = await container.model.walletTable().where({ id, user: currentUser.id }).first();
-    if (!wallet) throw new UserInputError('Wallet not found');
-
-    await container.model.walletService().disconnectExchange(wallet);
-    return true;
-  }),
 };
 
 export const IntegrationBinanceConnectMutation: GraphQLFieldConfig<any, Request> = {
@@ -1578,7 +1607,6 @@ export const IntegrationBinanceConnectMutation: GraphQLFieldConfig<any, Request>
               type: GraphQLNonNull(GraphQLString),
               description: 'Api key',
             },
-
             apiSecret: {
               type: GraphQLNonNull(GraphQLString),
               description: 'Api secret',
@@ -1596,11 +1624,32 @@ export const IntegrationBinanceConnectMutation: GraphQLFieldConfig<any, Request>
     if (!(await container.cexServicesProvider().binance().validateAccount(input))) {
       throw new UserInputError('Invalid api key pair');
     }
-    const connectedOne = await container.model
+    const exchangeWallet = await container.model
       .walletService()
-      .connectExchange(currentUser, WalletExchangeModelType.Binance, input);
+      .createExchangeWallet(currentUser, WalletExchangeModelType.Binance, input);
 
-    return connectedOne;
+    return exchangeWallet;
+  }),
+};
+
+export const IntegrationDisconnectMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLBoolean),
+  args: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+    },
+  },
+  resolve: onlyAllowed('integration.disconnect', async (root, { id }, { currentUser }) => {
+    if (!currentUser) {
+      throw new AuthenticationError('UNAUTHENTICATED');
+    }
+
+    const wallet = await container.model.walletTable().where({ id, user: currentUser.id }).first();
+    if (!wallet) throw new UserInputError('Wallet not found');
+
+    await container.model.walletService().deleteExchangeWallet(wallet);
+
+    return true;
   }),
 };
 
@@ -1635,7 +1684,15 @@ export const AddWalletMutation: GraphQLFieldConfig<any, Request> = {
 
     await container.model
       .walletService()
-      .create(currentUser, blockchain, network, Wallet.WalletType.Wallet, address, '', '');
+      .createBlockchainWallet(
+        currentUser,
+        blockchain,
+        network,
+        Wallet.WalletBlockchainType.Wallet,
+        address,
+        '',
+        '',
+      );
     const sid = container.model.sessionService().generate(currentUser);
 
     return { currentUser, sid };
@@ -1643,7 +1700,7 @@ export const AddWalletMutation: GraphQLFieldConfig<any, Request> = {
 };
 
 export const WalletUpdateMutation: GraphQLFieldConfig<any, Request> = {
-  type: GraphQLNonNull(WalletType),
+  type: GraphQLNonNull(WalletBlockchainType),
   args: {
     id: {
       type: GraphQLNonNull(UuidType),
@@ -1667,23 +1724,23 @@ export const WalletUpdateMutation: GraphQLFieldConfig<any, Request> = {
       throw new AuthenticationError('UNAUTHENTICATED');
     }
 
-    const wallet = await container.model
-      .walletTable()
-      .innerJoin(
-        walletBlockchainTableName,
-        `${walletBlockchainTableName}.id`,
-        `${walletTableName}.id`,
-      )
-      .where('id', id)
-      .first();
+    const wallet = await container.model.walletTable().where('id', id).first();
     if (!wallet) throw new UserInputError('Wallet not found');
     if (wallet.user !== currentUser.id) throw new UserInputError('Foreign wallet');
+    const blockchainWallet = await container.model
+      .walletBlockchainTable()
+      .where('id', wallet.id)
+      .first();
+    if (!blockchainWallet) throw new UserInputError('Wallet not found');
 
     const { name } = input;
-    const updated = await container.model.walletService().updateBlockchainWallet({
-      ...wallet,
-      name: typeof name === 'string' ? name : wallet.name,
-    });
+    const updated = await container.model.walletService().updateBlockchainWallet(
+      {
+        ...wallet,
+        name: typeof name === 'string' ? name : wallet.name,
+      },
+      blockchainWallet,
+    );
 
     return updated;
   }),
@@ -1703,7 +1760,7 @@ export const WalletDeleteMutation: GraphQLFieldConfig<any, Request> = {
     if (!wallet) throw new UserInputError('Wallet not found');
     if (wallet.user !== currentUser.id) throw new UserInputError('Foreign wallet');
 
-    await container.model.walletService().delete(wallet);
+    await container.model.walletService().deleteBlockchainWallet(wallet);
 
     return true;
   }),
@@ -1789,9 +1846,17 @@ export const WalletMetricUpdatedEvent = new GraphQLObjectType({
       type: GraphQLNonNull(UuidType),
     },
     wallet: {
-      type: GraphQLNonNull(WalletType),
+      type: GraphQLNonNull(WalletBlockchainType),
       resolve: ({ wallet }) => {
-        return container.model.walletTable().where('id', wallet).first();
+        return container.model
+          .walletTable()
+          .innerJoin(
+            walletBlockchainTableName,
+            `${walletTableName}.id`,
+            `${walletBlockchainTableName}.id`,
+          )
+          .where(`${walletTableName}.id`, wallet)
+          .first();
       },
     },
     contract: {
@@ -1804,7 +1869,7 @@ export const WalletMetricUpdatedEvent = new GraphQLObjectType({
 });
 
 export const OnWalletCreated: GraphQLFieldConfig<{ id: string }, Request> = {
-  type: GraphQLNonNull(WalletType),
+  type: GraphQLNonNull(WalletBlockchainType),
   args: {
     filter: {
       type: new GraphQLInputObjectType({
@@ -1835,7 +1900,15 @@ export const OnWalletCreated: GraphQLFieldConfig<{ id: string }, Request> = {
     },
   ),
   resolve: ({ id }) => {
-    return container.model.walletTable().where('id', id).first();
+    return container.model
+      .walletTable()
+      .innerJoin(
+        walletBlockchainTableName,
+        `${walletTableName}.id`,
+        `${walletBlockchainTableName}.id`,
+      )
+      .where(`${walletTableName}.id`, id)
+      .first();
   },
 };
 
@@ -1898,9 +1971,17 @@ export const TokenMetricUpdatedEvent = new GraphQLObjectType({
       type: GraphQLNonNull(UuidType),
     },
     wallet: {
-      type: GraphQLNonNull(WalletType),
+      type: GraphQLNonNull(WalletBlockchainType),
       resolve: ({ wallet }) => {
-        return container.model.walletTable().where('id', wallet).first();
+        return container.model
+          .walletTable()
+          .innerJoin(
+            walletBlockchainTableName,
+            `${walletTableName}.id`,
+            `${walletBlockchainTableName}.id`,
+          )
+          .where(`${walletTableName}.id`, wallet)
+          .first();
       },
     },
     contract: {
@@ -1910,7 +1991,7 @@ export const TokenMetricUpdatedEvent = new GraphQLObjectType({
       },
     },
     token: {
-      type: GraphQLNonNull(WalletType),
+      type: GraphQLNonNull(WalletBlockchainType),
       resolve: ({ token }) => {
         return container.model.tokenTable().where('id', token).first();
       },

@@ -112,7 +112,6 @@ export class StoreService {
       .innerJoin(
         userContactTableName,
         `${userContactTableName}.id`,
-        '=',
         `${notificationTableName}.contact`,
       )
       .where(`${userContactTableName}.user`, user.id)

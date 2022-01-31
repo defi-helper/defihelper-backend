@@ -1,15 +1,15 @@
-import { walletTableName, WalletType } from '@models/Wallet/Entity';
+import { walletTableName, WalletBlockchainType } from '@models/Wallet/Entity';
 import { SchemaBuilder } from 'knex';
 
 export default async (schema: SchemaBuilder) => {
   return schema.alterTable(walletTableName, (table) => {
     table
-      .enum('type', [WalletType.Wallet, WalletType.Contract], {
+      .enum('type', [WalletBlockchainType.Wallet, WalletBlockchainType.Contract], {
         useNative: true,
         enumName: `${walletTableName}_type_enum`,
       })
       .notNullable()
       .index()
-      .defaultTo(WalletType.Wallet);
+      .defaultTo(WalletBlockchainType.Wallet);
   });
 };

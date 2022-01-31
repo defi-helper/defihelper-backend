@@ -141,7 +141,7 @@ export const ProductType = new GraphQLObjectType<Product>({
           })
           .innerJoin(walletTableName, `${walletTableName}.id`, `${walletBlockchainTableName}.id`)
           .where(function () {
-            this.where('product', product.id);
+            this.where(`${purchaseTableName}.product`, product.id);
             if (filter.user !== undefined) {
               this.andWhere(`${walletTableName}.user`, filter.user);
             }
@@ -265,12 +265,7 @@ export const UserStoreType = new GraphQLObjectType<User>({
       resolve: async (user, { filter, sort, pagination }) => {
         const select = container.model
           .storeProductTable()
-          .innerJoin(
-            purchaseTableName,
-            `${productTableName}.id`,
-            '=',
-            `${purchaseTableName}.product`,
-          )
+          .innerJoin(purchaseTableName, `${productTableName}.id`, `${purchaseTableName}.product`)
           .innerJoin(walletBlockchainTableName, function () {
             this.on(
               `${walletBlockchainTableName}.blockchain`,

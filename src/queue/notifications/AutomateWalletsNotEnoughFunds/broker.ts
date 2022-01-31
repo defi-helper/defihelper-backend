@@ -14,6 +14,11 @@ export default async (process: Process) => {
     .column(`${userTableName}.id`)
     .distinct(`${userTableName}.id`)
     .innerJoin(walletTableName, `${userTableName}.id`, `${walletTableName}.user`)
+    .innerJoin(
+      walletBlockchainTableName,
+      `${walletTableName}.id`,
+      `${walletBlockchainTableName}.id`,
+    )
     .innerJoin(triggerTableName, `${walletTableName}.id`, `${triggerTableName}.wallet`)
     .innerJoin(
       userNotificationTableName,
