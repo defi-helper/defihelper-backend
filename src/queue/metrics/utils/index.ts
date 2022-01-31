@@ -3,6 +3,7 @@ import { Process } from '@models/Queue/Entity';
 import { TokenCreatedBy } from '@models/Token/Entity';
 import dayjs from 'dayjs';
 import { ethers } from 'ethers';
+import * as Adapters from '@services/Blockchain/Adapter';
 
 export interface ContractMetricsParams {
   contract: string;
@@ -18,9 +19,20 @@ export async function contractMetrics(process: Process) {
   if (!protocol) throw new Error('Protocol not found');
 
   const metricService = container.model.metricService();
-  const protocolAdapters = await container.blockchainAdapter.loadAdapter(protocol.adapter);
-  const contractAdapterFactory = protocolAdapters[contract.adapter];
-  if (typeof contractAdapterFactory !== 'function') throw new Error('Contract adapter not found');
+  let contractAdapterFactory;
+  try {
+    const protocolAdapters = await container.blockchainAdapter.loadAdapter(protocol.adapter);
+    contractAdapterFactory = protocolAdapters[contract.adapter];
+    if (typeof contractAdapterFactory !== 'function') throw new Error('Contract adapter not found');
+  } catch (e) {
+    if (e instanceof Adapters.TemporaryOutOfService) {
+      return process
+        .info('postponed due to temporarily service unavailability')
+        .later(dayjs().add(5, 'minute').toDate());
+    }
+
+    throw e;
+  }
 
   const blockchain = container.blockchain[contract.blockchain];
   const network = blockchain.byNetwork(contract.network);
@@ -82,9 +94,21 @@ export async function walletMetrics(process: Process) {
   }
 
   const metricService = container.model.metricService();
-  const protocolAdapter = await container.blockchainAdapter.loadAdapter(protocol.adapter);
-  const contractAdapterFactory = protocolAdapter[contract.adapter];
-  if (typeof contractAdapterFactory !== 'function') throw new Error('Contract adapter not found');
+  let contractAdapterFactory;
+
+  try {
+    const protocolAdapter = await container.blockchainAdapter.loadAdapter(protocol.adapter);
+    contractAdapterFactory = protocolAdapter[contract.adapter];
+    if (typeof contractAdapterFactory !== 'function') throw new Error('Contract adapter not found');
+  } catch (e) {
+    if (e instanceof Adapters.TemporaryOutOfService) {
+      return process
+        .info('postponed due to temporarily service unavailability')
+        .later(dayjs().add(5, 'minute').toDate());
+    }
+
+    throw e;
+  }
 
   const blockchain = container.blockchain[contract.blockchain];
   const network = blockchain.byNetwork(contract.network);
