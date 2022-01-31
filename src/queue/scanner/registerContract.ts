@@ -2,7 +2,6 @@ import { Process } from '@models/Queue/Entity';
 import container from '@container';
 import dayjs from 'dayjs';
 import { MetadataType } from '@models/Protocol/Entity';
-import { Contract } from '@services/Scanner';
 
 export interface ContractRegisterParams {
   contract: string;
@@ -21,35 +20,30 @@ export default async (process: Process) => {
   const deployBlockNumber =
     contract.deployBlockNumber === null ? undefined : parseInt(contract.deployBlockNumber, 10);
 
-  let contractFromScanner: Contract | undefined;
   try {
-    contractFromScanner = await container
+    const contractFromScanner = await container
       .scanner()
       .findContract(contract.network, contract.address);
-  } catch {
-    return process.info('postponed').later(dayjs().add(5, 'minute').toDate());
-  }
 
-  if (!contractFromScanner) {
-    const servedAbi = await container.model
-      .metadataTable()
-      .where({
-        contract: contract.id,
-        type: MetadataType.EthereumContractAbi,
-      })
-      .first();
+    if (!contractFromScanner) {
+      const servedAbi = await container.model
+        .metadataTable()
+        .where({
+          contract: contract.id,
+          type: MetadataType.EthereumContractAbi,
+        })
+        .first();
 
-    if (!servedAbi) {
-      await container.model.queueService().push('contractResolveAbi', {
-        id: contract.id,
-      });
-      return process.later(dayjs().add(5, 'minutes').toDate());
-    }
-    if (servedAbi.value.value === null) {
-      return process.done();
-    }
+      if (!servedAbi) {
+        await container.model.queueService().push('contractResolveAbi', {
+          id: contract.id,
+        });
+        return process.later(dayjs().add(5, 'minutes').toDate());
+      }
+      if (servedAbi.value.value === null) {
+        return process.done();
+      }
 
-    try {
       await container
         .scanner()
         .registerContract(
@@ -59,25 +53,21 @@ export default async (process: Process) => {
           contract.name,
           deployBlockNumber,
         );
-    } catch {
-      return process.info('postponed').later(dayjs().add(5, 'minute').toDate());
+
+      return process.later(dayjs().add(1, 'minutes').toDate());
     }
 
-    return process.later(dayjs().add(1, 'minutes').toDate());
-  }
+    if (eventsToSubscribe && eventsToSubscribe.length === 0) {
+      return process.done();
+    }
 
-  if (eventsToSubscribe && eventsToSubscribe.length === 0) {
-    return process.done();
-  }
+    const events: string[] = contractFromScanner.abi
+      .filter(
+        ({ type, name }: any) =>
+          type === 'event' && (!eventsToSubscribe || eventsToSubscribe.includes(name)),
+      )
+      .map(({ name }: any) => name);
 
-  const events: string[] = contractFromScanner.abi
-    .filter(
-      ({ type, name }: any) =>
-        type === 'event' && (!eventsToSubscribe || eventsToSubscribe.includes(name)),
-    )
-    .map(({ name }: any) => name);
-
-  try {
     await Promise.all(
       events.map(async (event) => {
         await container
