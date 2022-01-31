@@ -30,6 +30,8 @@ export default async (process: Process) => {
         .info('postponed due to temporarily service unavailability')
         .later(dayjs().add(5, 'minute').toDate());
     }
+
+    throw e;
   }
 
   return process.done();
