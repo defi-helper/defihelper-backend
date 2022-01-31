@@ -46,7 +46,9 @@ export default async (process: Process) => {
     if (result !== null) return result;
 
     const walletFunds = walletsFunds.find((w) => w.id === t.walletId);
-    if (!walletFunds) return null;
+    if (!walletFunds) {
+      throw new Error('wallet funds must be found here');
+    }
 
     const chainNativeUSD = new BN(
       await container.blockchain.ethereum.byNetwork(t.walletNetwork).nativeTokenPrice(),
