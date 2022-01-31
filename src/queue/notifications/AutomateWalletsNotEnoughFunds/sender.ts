@@ -46,9 +46,7 @@ export default async (process: Process) => {
     if (result !== null) return result;
 
     const walletFunds = walletsFunds.find((w) => w.id === t.walletId);
-    if (!walletFunds) {
-      throw new Error('wallet funds must be found here');
-    }
+    if (!walletFunds) return null;
 
     const chainNativeUSD = new BN(
       await container.blockchain.ethereum.byNetwork(t.walletNetwork).nativeTokenPrice(),
@@ -86,7 +84,9 @@ export default async (process: Process) => {
             locale: user.locale,
             template: 'automateNotEnoughFunds',
             params: {
-              debugInfo: notifyBy.triggerId.substring(0, 8),
+              debugInfo: Object.values(notifyBy)
+                .map((v) => v.substring(0, 13))
+                .join(':'),
             },
           });
 
