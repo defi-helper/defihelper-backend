@@ -3,6 +3,7 @@ import container from '@container';
 import { ContactBroker, ContactStatus } from '@models/Notification/Entity';
 import { DataLoaderContainer } from '@api/dataLoader/container';
 import BN from 'bignumber.js';
+import { TokenAliasLiquidity } from '@models/Token/Entity';
 
 export default async (process: Process) => {
   const { userId } = process.task.params as { userId: string };
@@ -24,9 +25,15 @@ export default async (process: Process) => {
       const chatId = contact.params?.chatId;
       if (!chatId) return null;
 
-      const [totalStackedUSD, totalEarnedUSD] = await Promise.all([
+      const [totalStackedUSD, totalEarnedUSD, totalTokensUSD] = await Promise.all([
         dataLoader.userMetric({ metric: 'stakingUSD' }).load(user.id),
         dataLoader.userMetric({ metric: 'earnedUSD' }).load(user.id),
+        dataLoader
+          .userTokenMetric({
+            contract: null,
+            tokenAlias: { liquidity: [TokenAliasLiquidity.Stable, TokenAliasLiquidity.Unstable] },
+          })
+          .load(user.id),
       ]);
 
       if (!totalStackedUSD) return null;
@@ -35,7 +42,11 @@ export default async (process: Process) => {
         chatId,
         locale: user.locale,
         params: {
-          totalNetWorth: new BN(totalStackedUSD).plus(totalEarnedUSD).toFixed(2),
+          debugInfo: [totalStackedUSD, totalEarnedUSD, totalTokensUSD].join(':'),
+          totalNetWorth: new BN(totalStackedUSD)
+            .plus(totalEarnedUSD)
+            .plus(totalTokensUSD)
+            .toFixed(2),
           totalEarnedUSD: new BN(totalEarnedUSD).toFixed(2),
         },
         template: 'portfolioMetrics',

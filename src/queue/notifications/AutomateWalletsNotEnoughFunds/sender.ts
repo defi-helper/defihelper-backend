@@ -84,9 +84,7 @@ export default async (process: Process) => {
             locale: user.locale,
             template: 'automateNotEnoughFunds',
             params: {
-              debugInfo: Object.values(notifyBy)
-                .map((v) => v.substring(0, 13))
-                .join(':'),
+              debugInfo: notifyBy.triggerId.substring(0, 8),
             },
           });
 
