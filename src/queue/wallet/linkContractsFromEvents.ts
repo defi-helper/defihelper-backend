@@ -49,12 +49,10 @@ export default async (process: Process) => {
         .where({
           blockchain: contract.blockchain,
           network: contract.network,
-          address: event.from.toLowerCase(),
+          address: contract.blockchain === 'ethereum' ? event.from.toLowerCase() : event.from,
         })
         .first();
-      if (!blockchainWallet) {
-        return;
-      }
+      if (!blockchainWallet) return;
 
       await container.model.contractService().walletLink(contract, blockchainWallet);
     }),

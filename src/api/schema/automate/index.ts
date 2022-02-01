@@ -1232,8 +1232,16 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
       ? await container.model.contractTable().where('id', contractId).first()
       : null;
     if (contract === undefined) throw new UserInputError('Protocol contract not found');
-    if (contract !== null && contract.protocol !== protocol.id) {
-      throw new UserInputError('Invalid protocol contract');
+    if (contract !== null) {
+      if (contract.protocol !== protocol.id) {
+        throw new UserInputError('Invalid protocol contract');
+      }
+      if (blockchainWallet.blockchain !== contract.blockchain) {
+        throw new UserInputError('Invalid blockchain');
+      }
+      if (blockchainWallet.network !== contract.network) {
+        throw new UserInputError('Invalid network');
+      }
     }
 
     const created = await container.model
