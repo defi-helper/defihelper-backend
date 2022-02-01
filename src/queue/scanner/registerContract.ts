@@ -2,6 +2,7 @@ import { Process } from '@models/Queue/Entity';
 import container from '@container';
 import dayjs from 'dayjs';
 import { MetadataType } from '@models/Protocol/Entity';
+import * as Scanner from '@services/Scanner';
 
 export interface ContractRegisterParams {
   contract: string;
@@ -20,59 +21,71 @@ export default async (process: Process) => {
   const deployBlockNumber =
     contract.deployBlockNumber === null ? undefined : parseInt(contract.deployBlockNumber, 10);
 
-  const contractFromScanner = await container
-    .scanner()
-    .findContract(contract.network, contract.address);
+  try {
+    const contractFromScanner = await container
+      .scanner()
+      .findContract(contract.network, contract.address);
 
-  if (!contractFromScanner) {
-    const servedAbi = await container.model
-      .metadataTable()
-      .where({
-        contract: contract.id,
-        type: MetadataType.EthereumContractAbi,
-      })
-      .first();
+    if (!contractFromScanner) {
+      const servedAbi = await container.model
+        .metadataTable()
+        .where({
+          contract: contract.id,
+          type: MetadataType.EthereumContractAbi,
+        })
+        .first();
 
-    if (!servedAbi) {
-      await container.model.queueService().push('contractResolveAbi', {
-        id: contract.id,
-      });
-      return process.later(dayjs().add(5, 'minutes').toDate());
+      if (!servedAbi) {
+        await container.model.queueService().push('contractResolveAbi', {
+          id: contract.id,
+        });
+        return process.later(dayjs().add(5, 'minutes').toDate());
+      }
+      if (servedAbi.value.value === null) {
+        return process.done();
+      }
+
+      await container
+        .scanner()
+        .registerContract(
+          contract.network,
+          contract.address,
+          servedAbi.value.value,
+          contract.name,
+          deployBlockNumber,
+        );
+
+      return process.later(dayjs().add(1, 'minutes').toDate());
     }
-    if (servedAbi.value.value === null) {
+
+    if (eventsToSubscribe && eventsToSubscribe.length === 0) {
       return process.done();
     }
 
-    await container
-      .scanner()
-      .registerContract(
-        contract.network,
-        contract.address,
-        servedAbi.value.value,
-        contract.name,
-        deployBlockNumber,
-      );
+    const events: string[] = contractFromScanner.abi
+      .filter(
+        ({ type, name }: any) =>
+          type === 'event' && (!eventsToSubscribe || eventsToSubscribe.includes(name)),
+      )
+      .map(({ name }: any) => name);
 
-    return process.later(dayjs().add(1, 'minutes').toDate());
+    await Promise.all(
+      events.map(async (event) => {
+        await container
+          .scanner()
+          .registerListener(contractFromScanner.id, event, deployBlockNumber);
+        await container.model.contractEventWebHookService().create(contract, event);
+      }),
+    );
+  } catch (e) {
+    if (e instanceof Scanner.TemporaryOutOfService) {
+      return process
+        .info('postponed due to temporarily service unavailability')
+        .later(dayjs().add(5, 'minute').toDate());
+    }
+
+    throw e;
   }
-
-  if (eventsToSubscribe && eventsToSubscribe.length === 0) {
-    return process.done();
-  }
-
-  const events: string[] = contractFromScanner.abi
-    .filter(
-      ({ type, name }: any) =>
-        type === 'event' && (!eventsToSubscribe || eventsToSubscribe.includes(name)),
-    )
-    .map(({ name }: any) => name);
-
-  await Promise.all(
-    events.map(async (event) => {
-      await container.scanner().registerListener(contractFromScanner.id, event, deployBlockNumber);
-      await container.model.contractEventWebHookService().create(contract, event);
-    }),
-  );
 
   return process.done();
 };

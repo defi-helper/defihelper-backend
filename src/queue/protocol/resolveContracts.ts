@@ -1,6 +1,8 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import { Blockchain } from '@models/types';
+import * as Adapters from '@services/Blockchain/Adapter';
+import dayjs from 'dayjs';
 
 export interface Params {
   protocolId: string;
@@ -31,18 +33,29 @@ export default async (process: Process) => {
   const protocol = await container.model.protocolTable().where('id', protocolId).first();
   if (!protocol) throw new Error('Protocol not found');
 
-  // todo introduce type
-  const protocolAdapters: any = await container.blockchainAdapter.loadAdapter(protocol.adapter);
+  let protocolDefaultResolver;
+  try {
+    // todo introduce type
+    const protocolAdapters: any = await container.blockchainAdapter.loadAdapter(protocol.adapter);
 
-  if (
-    !protocolAdapters.automates ||
-    !protocolAdapters.automates.contractsResolver ||
-    !protocolAdapters.automates.contractsResolver.default
-  ) {
-    throw new Error('Adapter have no pools resolver, u should implement it first');
+    if (
+      !protocolAdapters.automates ||
+      !protocolAdapters.automates.contractsResolver ||
+      !protocolAdapters.automates.contractsResolver.default
+    ) {
+      throw new Error('Adapter have no pools resolver, u should implement it first');
+    }
+
+    protocolDefaultResolver = protocolAdapters.automates.contractsResolver.default;
+  } catch (e) {
+    if (e instanceof Adapters.TemporaryOutOfService) {
+      return process
+        .info('postponed due to temporarily service unavailability')
+        .later(dayjs().add(5, 'minute').toDate());
+    }
+
+    throw e;
   }
-
-  const protocolDefaultResolver = protocolAdapters.automates.contractsResolver.default;
 
   const blockchain = container.blockchain[protocolBlockchain];
   const network = blockchain.byNetwork(protocolNetwork);

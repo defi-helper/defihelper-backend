@@ -5,6 +5,12 @@ import { ethers } from 'ethers';
 import ethersMulticall from '@defihelper/ethers-multicall';
 import vm from 'vm';
 
+export class TemporaryOutOfService extends Error {
+  constructor(m = 'wait a bit, usually it means that we updating our infrastructure') {
+    super(m);
+  }
+}
+
 export interface MetricMap {
   [k: string]: string;
 }
@@ -89,7 +95,10 @@ export class AdapterService {
   constructor(readonly host: string) {}
 
   async loadAdapter(protocol: string): Promise<ProtocolAdapter> {
-    const adapterResponse = await axios.get(`${this.host}/${protocol}.js`);
+    const adapterResponse = await axios.get(`${this.host}/${protocol}.js`).catch((e) => {
+      if (e.response?.code === 503) throw new TemporaryOutOfService();
+      throw new Error(`Undefined error in adapters: ${e.message}`);
+    });
     const context = vm.createContext({
       Error,
       module: { exports: new Error('Adapter not evaluated') },
@@ -110,9 +119,12 @@ export class AdapterService {
     protocol: string,
     contract: string,
   ): Promise<EthereumAutomateArtifact> {
-    const artifactResponse = await axios.get(
-      `${this.host}/automates/ethereum/${protocol}/${contract}/${network}`,
-    );
+    const artifactResponse = await axios
+      .get(`${this.host}/automates/ethereum/${protocol}/${contract}/${network}`)
+      .catch((e) => {
+        if (e.response?.code === 503) throw new TemporaryOutOfService();
+        throw new Error(`Undefined error in adapters: ${e.message}`);
+      });
     const artifact = artifactResponse.data;
     if (!isEthereumAutomateArtifact(artifact)) throw new Error('Invalid artifact response');
 
