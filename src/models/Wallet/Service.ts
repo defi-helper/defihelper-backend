@@ -178,7 +178,7 @@ export class WalletService {
       ...wallet,
       user: user.id,
     };
-    await this.walletTable().update(updated).where('id', wallet.id);
+    await this.walletTable().update({ user: user.id }).where('id', wallet.id);
     this.onBlockchainWalletChangeOwner.emit({ prev: wallet, current: updated });
 
     return updated;
