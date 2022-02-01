@@ -33,11 +33,13 @@ export default async (process: Process) => {
       groups.push([]);
     }
 
+    const normalizedAddress =
+      blockchainWallet.blockchain === 'ethereum' ? address.toLowerCase() : address;
     const lastGroup = groups[groups.length - 1];
     if (lastGroup.length < groupLimit) {
-      lastGroup.push(address);
+      lastGroup.push(normalizedAddress);
     } else {
-      groups.push([address]);
+      groups.push([normalizedAddress]);
     }
 
     return groups;
@@ -49,6 +51,8 @@ export default async (process: Process) => {
     chainablePromise = chainablePromise.then(() => {
       return container.model
         .contractTable()
+        .andWhere('blockchain', blockchainWallet.blockchain)
+        .andWhere('network', blockchainWallet.network)
         .whereIn('address', group)
         .then((contracts) => {
           contracts.reduce((chainableContractsPromise, contract) => {
