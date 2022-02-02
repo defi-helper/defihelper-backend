@@ -52,7 +52,10 @@ export default async (process: Process) => {
   const isTrash = token.is_verified === true || token.is_core === true || token.is_wallet === true;
   await container.model
     .tokenAliasService()
-    .verify(tokenAlias, isTrash ? TokenAliasLiquidity.Trash : TokenAliasLiquidity.Unstable);
+    .changeLiquidity(
+      tokenAlias,
+      isTrash ? TokenAliasLiquidity.Trash : TokenAliasLiquidity.Unstable,
+    );
 
   return process.done();
 };

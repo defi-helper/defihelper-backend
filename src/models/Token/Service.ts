@@ -50,34 +50,32 @@ export class TokenAliasService {
     await this.table().where({ id: tokenAlias.id }).delete();
   }
 
-  async verify(tokenAlias: TokenAlias, liquidity: TokenAliasLiquidity) {
-    const updated = await this.update({
+  async changeLiquidity(tokenAlias: TokenAlias, liquidity: TokenAliasLiquidity) {
+    return this.update({
       ...tokenAlias,
       liquidity,
     });
-
-    return updated;
   }
 }
 
 export class TokenService {
   public readonly onCreated = new Emitter<Token>((token) => {
-    if (
-      token.blockchain === 'ethereum' &&
-      (token.name === '' || token.symbol === '' || token.decimals === 0)
-    ) {
-      container.model.queueService().push('tokenInfoEth', { token: token.id });
-    }
-    if (token.blockchain === 'waves') {
-      container.model.queueService().push('tokenInfoWaves', { token: token.id });
+    if (token.blockchain === 'ethereum') {
+      if (token.name === '' || token.symbol === '' || token.decimals === 0) {
+        container.model.queueService().push('tokenInfoEth', { token: token.id });
+      }
+
+      if (token.alias) {
+        container.model.queueService().push('resolveTokenAliasLiquidity', {
+          aliasId: token.alias,
+          network: token.network,
+          address: token.address,
+        });
+      }
     }
 
-    if (token.alias && token.blockchain === 'ethereum') {
-      container.model.queueService().push('resolveTokenAliasLiquidity', {
-        aliasId: token.alias,
-        network: token.network,
-        address: token.address,
-      });
+    if (token.blockchain === 'waves') {
+      container.model.queueService().push('tokenInfoWaves', { token: token.id });
     }
 
     return null;

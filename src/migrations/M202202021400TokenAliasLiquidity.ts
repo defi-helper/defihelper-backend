@@ -1,15 +1,12 @@
-import { SchemaBuilder } from 'knex';
 import container from '@container';
 import { TokenAliasLiquidity, tokenAliasTableName, tokenTableName } from '@models/Token/Entity';
 
-export default async (schema: SchemaBuilder) => {
-  await schema.raw(`
-    update token_alias
-    set
-        liquidity = 'unstable'
-    where
-        "logoUrl" is not null and liquidity = 'trash'
-  `);
+export default async () => {
+  await container.model
+    .tokenAliasTable()
+    .update({ liquidity: TokenAliasLiquidity.Unstable })
+    .whereNotNull('logoUrl')
+    .andWhere('liquidity', TokenAliasLiquidity.Trash);
 
   const tokens = await container.model
     .tokenTable()
