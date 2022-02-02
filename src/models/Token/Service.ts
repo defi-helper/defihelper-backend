@@ -1,11 +1,11 @@
 import { Factory } from '@services/Container';
 import {
-  TokenAlias,
   Token,
-  TokenTable,
-  TokenAliasTable,
+  TokenAlias,
   TokenAliasLiquidity,
+  TokenAliasTable,
   TokenCreatedBy,
+  TokenTable,
 } from '@models/Token/Entity';
 import { Blockchain } from '@models/types';
 import { v4 as uuid } from 'uuid';
@@ -49,18 +49,33 @@ export class TokenAliasService {
   async delete(tokenAlias: TokenAlias) {
     await this.table().where({ id: tokenAlias.id }).delete();
   }
+
+  async changeLiquidity(tokenAlias: TokenAlias, liquidity: TokenAliasLiquidity) {
+    return this.update({
+      ...tokenAlias,
+      liquidity,
+    });
+  }
 }
 
 export class TokenService {
   public readonly onCreated = new Emitter<Token>((token) => {
-    if (
-      token.blockchain === 'ethereum' &&
-      (token.name === '' || token.symbol === '' || token.decimals === 0)
-    ) {
-      return container.model.queueService().push('tokenInfoEth', { token: token.id });
+    if (token.blockchain === 'ethereum') {
+      if (token.name === '' || token.symbol === '' || token.decimals === 0) {
+        container.model.queueService().push('tokenInfoEth', { token: token.id });
+      }
+
+      if (token.alias) {
+        container.model.queueService().push('resolveTokenAliasLiquidity', {
+          aliasId: token.alias,
+          network: token.network,
+          address: token.address,
+        });
+      }
     }
+
     if (token.blockchain === 'waves') {
-      return container.model.queueService().push('tokenInfoWaves', { token: token.id });
+      container.model.queueService().push('tokenInfoWaves', { token: token.id });
     }
 
     return null;

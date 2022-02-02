@@ -3,9 +3,6 @@ export * as scheduleHourStart from './schedule/hourStart';
 export * as scheduleDayStart from './schedule/dayStart';
 export * as scheduleWeekStart from './schedule/weekStart';
 export * as scheduleMonthStart from './schedule/monthStart';
-export * as tokenAlias from './token/alias';
-export * as tokenInfoEth from './token/ethereumInfo';
-export * as tokenInfoWaves from './token/wavesInfo';
 export * as metricsProtocolLinksSocialBroker from './metrics/protocol/links/socialBroker';
 export * as metricsProtocolLinksSocial from './metrics/protocol/links/social';
 export * as metricsProtocolLinksListingBroker from './metrics/protocol/links/listingBroker';
@@ -79,3 +76,9 @@ export * as findWalletContracts from './wallet/findContracts';
 export * as findWalletAppliedNetworks from './wallet/findAppliedNetworks';
 export * as linkContractsFromEvents from './wallet/linkContractsFromEvents';
 export * as regularFindUnknownAppliedNetworks from './wallet/regularFindUnknownAppliedNetworks';
+
+/* token */
+export * as tokenAlias from './token/alias';
+export * as tokenInfoEth from './token/ethereumInfo';
+export * as tokenInfoWaves from './token/wavesInfo';
+export * as resolveTokenAliasLiquidity from './token/resolveTokenAliasLiquidity';
