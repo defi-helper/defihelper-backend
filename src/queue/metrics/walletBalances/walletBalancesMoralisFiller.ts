@@ -101,7 +101,7 @@ export default async (process: Process) => {
             .create(
               tokenBalance.name,
               tokenBalance.symbol,
-              tokenBalance.thumbnail ? TokenAliasLiquidity.Unstable : TokenAliasLiquidity.Trash,
+              tokenBalance.thumbnail ? TokenAliasLiquidity.Unstable : TokenAliasLiquidity.Unknown,
               tokenBalance.thumbnail || null,
             );
         }
