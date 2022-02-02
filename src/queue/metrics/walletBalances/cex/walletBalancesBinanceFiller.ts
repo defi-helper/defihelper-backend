@@ -18,7 +18,6 @@ export default async (process: Process) => {
   }
 
   const keyPair = container.cryptography().decryptJson(exchangeWallet.payload);
-
   const binance = Binance({
     apiKey: keyPair?.apiKey,
     apiSecret: keyPair?.apiSecret,
@@ -46,20 +45,24 @@ export default async (process: Process) => {
     .map((v) => {
       const bridgedPrice = resolveTokenPrice(v.asset);
 
-      if (bridgedPrice) {
-        return {
-          symbol: v.asset,
-          amount: new BN(v.free).plus(v.locked).multipliedBy(bridgedPrice).toString(10),
-        };
-      }
-
       return {
-        symbol: v.asset, // stablecoin
-        amount: new BN(v.free).plus(v.locked).multipliedBy(1).toString(10),
+        symbol: v.asset,
+        amount: new BN(v.free)
+          .plus(v.locked)
+          .multipliedBy(bridgedPrice || 1) // else stablecoin
+          .toString(10),
       };
     });
+  const existingTokens = await container.model
+    .tokenTable()
+    .distinctOn('symbol')
+    .columns('alias', 'id', 'symbol')
+    .whereIn(
+      'symbol',
+      assetsOnBalance.map((v) => v.symbol),
+    );
 
-  console.warn(assetsOnBalance);
+  console.warn(existingTokens);
 
   return process.done();
 };
