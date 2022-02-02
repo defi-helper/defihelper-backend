@@ -1553,7 +1553,7 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
       ),
       signature,
     );
-    const recoveredAddress = WavesCrypto.address({ publicKey }, network);
+    const recoveredAddress = WavesCrypto.address({ publicKey }, network === 'test' ? 'T' : 'W');
     if (!isValidSignature || recoveredAddress !== address) return null;
 
     const duplicate = await container.model
