@@ -30,7 +30,7 @@ export default async (schema: SchemaBuilder) => {
       table.text('payload').notNullable();
 
       table.primary(['id'], `${walletExchangeTableName}_fk_pk`);
-      table.unique(['id', 'type']);
+      table.unique(['id', 'exchange']);
       table
         .foreign('id')
         .references(`${walletTableName}.id`)
