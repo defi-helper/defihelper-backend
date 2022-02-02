@@ -8,7 +8,7 @@ export default async (schema: SchemaBuilder) => {
     set
         liquidity = 'unstable'
     where
-        "logoUrl" is not null
+        "logoUrl" is not null and liquidity = 'trash'
   `);
 
   const tokens = await container.model

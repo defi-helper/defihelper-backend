@@ -49,11 +49,10 @@ export default async (process: Process) => {
     `https://openapi.debank.com/v1/token?chain_id=${chain}&id=${params.address}`,
   );
 
-  if (token.is_verified === true || token.is_core === true || token.is_wallet === true) {
-    await container.model.tokenAliasService().verify(tokenAlias, TokenAliasLiquidity.Unstable);
-    process.done();
-  }
+  const isTrash = token.is_verified === true || token.is_core === true || token.is_wallet === true;
+  await container.model
+    .tokenAliasService()
+    .verify(tokenAlias, isTrash ? TokenAliasLiquidity.Trash : TokenAliasLiquidity.Unstable);
 
-  await container.model.tokenAliasService().verify(tokenAlias, TokenAliasLiquidity.Trash);
   return process.done();
 };
