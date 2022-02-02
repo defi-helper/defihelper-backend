@@ -2,8 +2,7 @@ import { AuthenticationError, UserInputError } from 'apollo-server-express';
 import container from '@container';
 import { Request } from 'express';
 import { Token, TokenAlias, TokenAliasLiquidity, tokenTableName } from '@models/Token/Entity';
-import { tableName as walletTableName } from '@models/Wallet/Entity';
-
+import { walletTableName } from '@models/Wallet/Entity';
 import {
   GraphQLBoolean,
   GraphQLEnumType,

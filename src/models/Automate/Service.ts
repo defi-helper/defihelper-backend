@@ -4,7 +4,13 @@ import { Emitter } from '@services/Event';
 import { Factory } from '@services/Container';
 import { v4 as uuid } from 'uuid';
 import { Protocol, Contract as ProtocolContract } from '@models/Protocol/Entity';
-import { Wallet, Table as WalletTable } from '@models/Wallet/Entity';
+import {
+  Wallet,
+  WalletBlockchain,
+  walletBlockchainTableName,
+  WalletTable,
+  walletTableName,
+} from '@models/Wallet/Entity';
 import { ScannerService } from '@services/Scanner';
 import {
   Action,
@@ -57,23 +63,24 @@ export class AutomateService {
     }
   });
 
-  public readonly onContractCreated = new Emitter<{ wallet: Wallet; contract: Contract }>(
-    ({ wallet, contract }) => {
-      if (wallet.blockchain === 'ethereum') {
-        container.model.queueService().push('automateContractEthereumVerify', {
-          id: contract.id,
-        });
-      }
-    },
-  );
+  public readonly onContractCreated = new Emitter<{
+    blockchainWallet: Wallet & WalletBlockchain;
+    contract: Contract;
+  }>(({ blockchainWallet, contract }) => {
+    if (blockchainWallet.blockchain === 'ethereum') {
+      container.model.queueService().push('automateContractEthereumVerify', {
+        id: contract.id,
+      });
+    }
+  });
 
   public readonly onTransactionCreated = new Emitter<{
-    wallet: Wallet;
+    blockchainWallet: Wallet & WalletBlockchain;
     contract: Contract;
     transaction: AutomateTransaction;
-  }>(async ({ wallet, transaction }) => {
-    if (wallet.blockchain === 'ethereum') {
-      const network = container.blockchain.ethereum.byNetwork(wallet.network);
+  }>(async ({ blockchainWallet, transaction }) => {
+    if (blockchainWallet.blockchain === 'ethereum') {
+      const network = container.blockchain.ethereum.byNetwork(blockchainWallet.network);
       container.model.queueService().push(
         'automateTransactionEthereumConfirm',
         {
@@ -245,7 +252,7 @@ export class AutomateService {
   }
 
   async createContract(
-    wallet: Wallet,
+    blockchainWallet: Wallet & WalletBlockchain,
     protocol: Protocol,
     contract: ProtocolContract | null,
     address: string,
@@ -254,7 +261,7 @@ export class AutomateService {
   ) {
     const created: Contract = {
       id: uuid(),
-      wallet: wallet.id,
+      wallet: blockchainWallet.id,
       protocol: protocol.id,
       contract: contract?.id ?? null,
       address,
@@ -267,7 +274,7 @@ export class AutomateService {
       createdAt: new Date(),
     };
     await this.contractTable().insert(created);
-    this.onContractCreated.emit({ wallet, contract: created });
+    this.onContractCreated.emit({ blockchainWallet, contract: created });
 
     return created;
   }
@@ -291,8 +298,15 @@ export class AutomateService {
     consumer: string,
     data: T,
   ) {
-    const wallet = await this.walletTable().where('id', contract.wallet).first();
-    if (!wallet) throw new Error('Wallet not found');
+    const blockchainWallet = await this.walletTable()
+      .innerJoin(
+        walletBlockchainTableName,
+        `${walletBlockchainTableName}.id`,
+        `${walletTableName}.id`,
+      )
+      .where(`${walletTableName}.id`, contract.wallet)
+      .first();
+    if (!blockchainWallet) throw new Error('Wallet not found');
 
     const created: AutomateTransaction = {
       id: uuid(),
@@ -304,7 +318,7 @@ export class AutomateService {
       createdAt: new Date(),
     };
     await this.transactionTable().insert(created);
-    this.onTransactionCreated.emit({ wallet, contract, transaction: created });
+    this.onTransactionCreated.emit({ blockchainWallet, contract, transaction: created });
 
     return created;
   }

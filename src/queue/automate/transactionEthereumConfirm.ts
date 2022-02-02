@@ -2,6 +2,7 @@ import container from '@container';
 import { EthereumAutomateTransaction } from '@models/Automate/Entity';
 import { Process } from '@models/Queue/Entity';
 import dayjs from 'dayjs';
+import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 
 export interface Params {
   id: string;
@@ -17,10 +18,18 @@ export default async (process: Process) => {
   const contract = await automateService.contractTable().where('id', transaction.contract).first();
   if (!contract) throw new Error('Contract not found');
 
-  const wallet = await container.model.walletTable().where('id', contract.wallet).first();
-  if (!wallet) throw new Error('Wallet not found');
+  const blockchainWallet = await container.model
+    .walletTable()
+    .innerJoin(
+      walletBlockchainTableName,
+      `${walletBlockchainTableName}.id`,
+      `${walletTableName}.id`,
+    )
+    .where(`${walletTableName}.id`, contract.wallet)
+    .first();
+  if (!blockchainWallet) throw new Error('Wallet not found');
 
-  const network = container.blockchain.ethereum.byNetwork(wallet.network);
+  const network = container.blockchain.ethereum.byNetwork(blockchainWallet.network);
   const provider = network.provider();
   const { hash } = transaction.data as EthereumAutomateTransaction;
   if (!hash) throw new Error('Transaction hash not found');
@@ -34,7 +43,7 @@ export default async (process: Process) => {
     container
       .semafor()
       .unlock(
-        `defihelper:automate:consumer:${wallet.blockchain}:${wallet.network}:${transaction.consumer}`,
+        `defihelper:automate:consumer:${blockchainWallet.blockchain}:${blockchainWallet.network}:${transaction.consumer}`,
       ),
     automateService.updateTransaction({
       ...transaction,

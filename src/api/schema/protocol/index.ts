@@ -26,7 +26,11 @@ import {
   metricProtocolTableName,
   metricWalletTableName,
 } from '@models/Metric/Entity';
-import { tableName as walletTableName, WalletType } from '@models/Wallet/Entity';
+import {
+  walletBlockchainTableName,
+  walletTableName,
+  WalletBlockchainType,
+} from '@models/Wallet/Entity';
 import { AuthenticationError, ForbiddenError, UserInputError } from 'apollo-server-express';
 import BN from 'bignumber.js';
 import { Blockchain } from '@models/types';
@@ -44,7 +48,7 @@ import {
   SortArgument,
   onlyAllowed,
   UuidType,
-  WalletTypeEnum,
+  WalletBlockchainTypeEnum,
 } from '../types';
 
 export const ContractMetricType = new GraphQLObjectType({
@@ -229,7 +233,7 @@ export const ContractType = new GraphQLObjectType<Contract, Request>({
                   name: 'ContractMetricWalletFilterInputType',
                   fields: {
                     type: {
-                      type: GraphQLList(GraphQLNonNull(WalletTypeEnum)),
+                      type: GraphQLList(GraphQLNonNull(WalletBlockchainTypeEnum)),
                     },
                   },
                 }),
@@ -263,7 +267,10 @@ export const ContractType = new GraphQLObjectType<Contract, Request>({
         const userMetric = await dataLoader
           .contractUserMetric({
             userId: currentUser.id,
-            walletType: filter.wallet?.type ?? [WalletType.Contract, WalletType.Wallet],
+            walletType: filter.wallet?.type ?? [
+              WalletBlockchainType.Contract,
+              WalletBlockchainType.Wallet,
+            ],
           })
           .load(contract.id);
         const totalBalance = new BN(userMetric.stakingUSD).plus(userMetric.earnedUSD).toNumber();
@@ -579,19 +586,28 @@ export const ContractWalletLinkMutation: GraphQLFieldConfig<any, Request> = {
     const contract = await container.model.contractTable().where('id', contractId).first();
     if (!contract) throw new UserInputError('Contract not found');
 
-    const wallet = await container.model.walletTable().where('id', walletId).first();
-    if (!wallet) throw new UserInputError('Wallet not found');
+    const blockchainWallet = await container.model
+      .walletTable()
+      .innerJoin(
+        walletBlockchainTableName,
+        `${walletBlockchainTableName}.id`,
+        `${walletTableName}.id`,
+      )
+      .where(`${walletTableName}.id`, walletId)
+      .first();
+    if (!blockchainWallet) throw new UserInputError('Wallet not found');
 
-    if (wallet.blockchain !== contract.blockchain) throw new UserInputError('Invalid blockchain');
-    if (wallet.network !== contract.network) throw new UserInputError('Invalid network');
+    if (blockchainWallet.blockchain !== contract.blockchain)
+      throw new UserInputError('Invalid blockchain');
+    if (blockchainWallet.network !== contract.network) throw new UserInputError('Invalid network');
     if (
-      !(wallet.user === currentUser.id && acl.isAllowed('contract', 'walletLink-own')) &&
+      !(blockchainWallet.user === currentUser.id && acl.isAllowed('contract', 'walletLink-own')) &&
       !acl.isAllowed('contract', 'walletLink')
     ) {
       throw new ForbiddenError('FORBIDDEN');
     }
 
-    await container.model.contractService().walletLink(contract, wallet);
+    await container.model.contractService().walletLink(contract, blockchainWallet);
 
     return true;
   },
@@ -615,7 +631,15 @@ export const ContractWalletUnlinkMutation: GraphQLFieldConfig<any, Request> = {
     const contract = await container.model.contractTable().where('id', contractId).first();
     if (!contract) throw new UserInputError('Contract not found');
 
-    const wallet = await container.model.walletTable().where('id', walletId).first();
+    const wallet = await container.model
+      .walletTable()
+      .innerJoin(
+        walletBlockchainTableName,
+        `${walletBlockchainTableName}.id`,
+        `${walletTableName}.id`,
+      )
+      .where(`${walletTableName}.id`, walletId)
+      .first();
     if (!wallet) throw new UserInputError('Wallet not found');
 
     if (wallet.blockchain !== contract.blockchain) throw new UserInputError('Invalid blockchain');

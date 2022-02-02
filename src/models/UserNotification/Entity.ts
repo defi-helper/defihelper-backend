@@ -1,4 +1,4 @@
-import { tableFactory as createTableFactory } from '@services/Database';
+import { tableFactoryLegacy } from '@services/Database';
 
 export enum UserNotificationType {
   PortfolioMetrics = 'portfolioMetrics',
@@ -15,6 +15,6 @@ export interface UserNotification {
 export const userNotificationTableName = 'user_notification';
 
 export const userNotificationTableFactory =
-  createTableFactory<UserNotification>(userNotificationTableName);
+  tableFactoryLegacy<UserNotification>(userNotificationTableName);
 
 export type UserNotificationTable = ReturnType<ReturnType<typeof userNotificationTableFactory>>;

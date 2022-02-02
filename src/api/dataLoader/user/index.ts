@@ -9,20 +9,40 @@ import {
   metricWalletTokenTableName,
 } from '@models/Metric/Entity';
 import { walletContractLinkTableName } from '@models/Protocol/Entity';
-import { Wallet, tableName as walletTableName } from '@models/Wallet/Entity';
+import {
+  Wallet,
+  WalletBlockchain,
+  walletBlockchainTableName,
+  walletTableName,
+} from '@models/Wallet/Entity';
 import DataLoader from 'dataloader';
 import { TokenAliasLiquidity, tokenAliasTableName, tokenTableName } from '@models/Token/Entity';
 
 export const userBlockchainLoader = () =>
-  new DataLoader(async (usersId: ReadonlyArray<string>) => {
-    const blockchains = await container.model
-      .walletTable()
-      .columns('user', 'blockchain', 'network')
-      .whereIn('user', usersId)
-      .groupBy('user', 'blockchain', 'network');
+  new DataLoader<string, Array<Pick<Wallet & WalletBlockchain, 'user' | 'blockchain' | 'network'>>>(
+    async (usersId) => {
+      const blockchains = await container.model
+        .walletTable()
+        .innerJoin(
+          walletBlockchainTableName,
+          `${walletBlockchainTableName}.id`,
+          `${walletTableName}.id`,
+        )
+        .columns(
+          `${walletTableName}.user`,
+          `${walletBlockchainTableName}.blockchain`,
+          `${walletBlockchainTableName}.network`,
+        )
+        .whereIn(`${walletTableName}.user`, usersId)
+        .groupBy(
+          `${walletTableName}.user`,
+          `${walletBlockchainTableName}.blockchain`,
+          `${walletBlockchainTableName}.network`,
+        );
 
-    return usersId.map((userId) => blockchains.filter(({ user }) => user === userId));
-  });
+      return usersId.map((userId) => blockchains.filter(({ user }) => user === userId));
+    },
+  );
 
 export const userLastMetricLoader = ({ metric }: { metric: MetricWalletField }) =>
   new DataLoader(async (usersId: ReadonlyArray<string>) => {
@@ -193,11 +213,16 @@ export const userTokenLastMetricLoader = ({
   });
 
 export const walletLoader = () =>
-  new DataLoader<string, Wallet | null>(async (walletsId) => {
+  new DataLoader<string, (Wallet & WalletBlockchain) | null>(async (walletsId) => {
     const map = new Map(
       await container.model
         .walletTable()
-        .whereIn('id', walletsId)
+        .innerJoin(
+          walletBlockchainTableName,
+          `${walletBlockchainTableName}.id`,
+          `${walletTableName}.id`,
+        )
+        .whereIn(`${walletTableName}.id`, walletsId)
         .then((rows) => rows.map((wallet) => [wallet.id, wallet])),
     );
 

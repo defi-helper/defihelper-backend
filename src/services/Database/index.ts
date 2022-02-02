@@ -1,5 +1,6 @@
 import knex from 'knex';
 import { Factory } from '@services/Container';
+import { Tables } from 'knex/types/tables';
 
 export interface ConnectFactoryConfig {
   readonly host?: string;
@@ -17,7 +18,7 @@ export function pgConnectFactory(config: ConnectFactoryConfig) {
     });
 }
 
-export function tableFactory<R extends any = {}, L extends any[] = R[]>(
+export function tableFactoryLegacy<R extends any = {}, L extends any[] = R[]>(
   table: string,
   schema: string = 'public',
 ) {
@@ -26,4 +27,11 @@ export function tableFactory<R extends any = {}, L extends any[] = R[]>(
 
     return connect<R, L>(table).withSchema(schema);
   };
+}
+
+export function typedTableFactory<TTable extends keyof Tables>(
+  table: TTable,
+  schema: string = 'public',
+) {
+  return (connectFactory: Factory<knex>) => () => connectFactory()(table).withSchema(schema);
 }

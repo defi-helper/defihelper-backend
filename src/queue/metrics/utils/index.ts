@@ -3,6 +3,7 @@ import { Process } from '@models/Queue/Entity';
 import { TokenCreatedBy } from '@models/Token/Entity';
 import dayjs from 'dayjs';
 import { ethers } from 'ethers';
+import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 import * as Adapters from '@services/Blockchain/Adapter';
 
 export interface ContractMetricsParams {
@@ -87,9 +88,20 @@ export async function walletMetrics(process: Process) {
   const protocol = await container.model.protocolTable().where('id', contract.protocol).first();
   if (!protocol) throw new Error('Protocol not found');
 
-  const wallet = await container.model.walletTable().where('id', walletId).first();
-  if (!wallet) throw new Error('Wallet not found');
-  if (wallet.blockchain !== contract.blockchain || wallet.network !== contract.network) {
+  const blockchainWallet = await container.model
+    .walletTable()
+    .innerJoin(
+      walletBlockchainTableName,
+      `${walletBlockchainTableName}.id`,
+      `${walletTableName}.id`,
+    )
+    .where(`${walletTableName}.id`, walletId)
+    .first();
+  if (!blockchainWallet) throw new Error('Wallet not found');
+  if (
+    blockchainWallet.blockchain !== contract.blockchain ||
+    blockchainWallet.network !== contract.network
+  ) {
     throw new Error('Invalid blockchain');
   }
 
@@ -126,12 +138,12 @@ export async function walletMetrics(process: Process) {
   });
   if (!contractAdapterData.wallet) return process.done();
 
-  const walletAdapterData = await contractAdapterData.wallet(wallet.address);
+  const walletAdapterData = await contractAdapterData.wallet(blockchainWallet.address);
   if (
     typeof walletAdapterData.metrics === 'object' &&
     Object.keys(walletAdapterData.metrics).length > 0
   ) {
-    await metricService.createWallet(contract, wallet, walletAdapterData.metrics, date);
+    await metricService.createWallet(contract, blockchainWallet, walletAdapterData.metrics, date);
   }
 
   if (
@@ -168,7 +180,7 @@ export async function walletMetrics(process: Process) {
             );
         }
 
-        await metricService.createToken(contract, wallet, token, metric, date);
+        await metricService.createToken(contract, blockchainWallet, token, metric, date);
       }),
     );
   }

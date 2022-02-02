@@ -3,6 +3,7 @@ import { ActionParams, ContractVerificationStatus } from '@models/Automate/Entit
 import { EthereumAutomateAdapter } from '@services/Blockchain/Adapter';
 import axios from 'axios';
 import BN from 'bignumber.js';
+import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 
 interface Params {
   id: string;
@@ -29,7 +30,15 @@ export default async (params: Params) => {
     return false;
   }
 
-  const wallet = await container.model.walletTable().where('id', contract.wallet).first();
+  const wallet = await container.model
+    .walletTable()
+    .innerJoin(
+      walletBlockchainTableName,
+      `${walletBlockchainTableName}.id`,
+      `${walletTableName}.id`,
+    )
+    .where(`${walletTableName}.id`, contract.wallet)
+    .first();
   if (!wallet) throw new Error('Wallet not found');
 
   const protocol = await container.model.protocolTable().where('id', contract.protocol).first();

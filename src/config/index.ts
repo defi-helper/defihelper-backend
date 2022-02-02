@@ -26,6 +26,10 @@ export default {
   scanner: {
     host: process.env.SCANNER_HOST ?? 'https://scanner-local.defihelper.io',
   },
+  cryptography: {
+    // key must be 128 bit length
+    key: process.env.KEY_FOR_SOMETHING ?? '&F)J@NcRfUjXn2r5',
+  },
   socilaStats: {
     host: process.env.SOCIAL_STATS_HOST ?? 'https://stats.defihelper.io',
   },

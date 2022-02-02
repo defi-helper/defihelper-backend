@@ -1,5 +1,5 @@
 import { Blockchain } from '@models/types';
-import { tableFactory as createTableFactory } from '@services/Database';
+import { tableFactoryLegacy } from '@services/Database';
 
 export interface MetricMap {
   [k: string]: string;
@@ -20,7 +20,7 @@ export interface MetricBlockchain extends Metric {
 export const metricBlockchainTableName = 'metric_blockchain';
 
 export const metricBlockchainTableFactory =
-  createTableFactory<MetricBlockchain>(metricBlockchainTableName);
+  tableFactoryLegacy<MetricBlockchain>(metricBlockchainTableName);
 
 export type MetricBlockchainTable = ReturnType<ReturnType<typeof metricBlockchainTableFactory>>;
 
@@ -31,7 +31,7 @@ export interface MetricProtocol extends Metric {
 export const metricProtocolTableName = 'metric_protocol';
 
 export const metricProtocolTableFactory =
-  createTableFactory<MetricProtocol>(metricProtocolTableName);
+  tableFactoryLegacy<MetricProtocol>(metricProtocolTableName);
 
 export type MetricProtocolTable = ReturnType<ReturnType<typeof metricProtocolTableFactory>>;
 
@@ -52,7 +52,7 @@ export interface MetricContract extends Metric {
 export const metricContractTableName = 'metric_contract';
 
 export const metricContractTableFactory =
-  createTableFactory<MetricContract>(metricContractTableName);
+  tableFactoryLegacy<MetricContract>(metricContractTableName);
 
 export type MetricContractTable = ReturnType<ReturnType<typeof metricContractTableFactory>>;
 
@@ -65,7 +65,7 @@ export interface MetricWallet extends Metric {
 
 export const metricWalletTableName = 'metric_wallet';
 
-export const metricWalletTableFactory = createTableFactory<MetricWallet>(metricWalletTableName);
+export const metricWalletTableFactory = tableFactoryLegacy<MetricWallet>(metricWalletTableName);
 
 export type MetricWalletTable = ReturnType<ReturnType<typeof metricWalletTableFactory>>;
 
@@ -77,7 +77,7 @@ export interface MetricWalletToken extends Metric {
 
 export const metricWalletTokenTableName = 'metric_wallet_token';
 
-export const metricWalletTokenTableFactory = createTableFactory<MetricWalletToken>(
+export const metricWalletTokenTableFactory = tableFactoryLegacy<MetricWalletToken>(
   metricWalletTokenTableName,
 );
 

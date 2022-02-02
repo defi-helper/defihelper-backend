@@ -90,10 +90,6 @@ export class MetricContractService {
   }
 
   async createWallet(contract: Contract, wallet: Wallet, data: MetricMap, date: Date) {
-    if (contract.blockchain !== wallet.blockchain || contract.network !== wallet.network) {
-      throw new Error('Invalid wallet');
-    }
-
     const created = {
       id: uuid(),
       contract: contract.id,
@@ -115,12 +111,6 @@ export class MetricContractService {
     data: MetricMap,
     date: Date,
   ) {
-    if (contract !== null) {
-      if (contract.blockchain !== wallet.blockchain || contract.network !== wallet.network) {
-        throw new Error('Invalid wallet');
-      }
-    }
-
     const created = {
       id: uuid(),
       contract: contract ? contract.id : null,

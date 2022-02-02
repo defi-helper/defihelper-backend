@@ -1,10 +1,5 @@
-import { tableFactory as createTableFactory } from '@services/Database';
-import { Blockchain } from '@models/types';
-
-export enum WalletType {
-  Wallet = 'wallet',
-  Contract = 'contract',
-}
+import { typedTableFactory } from '@services/Database';
+import { Blockchain as BlockchainType } from '@models/types';
 
 export enum WalletSuspenseReason {
   LowFunds = 'lowFunds',
@@ -13,19 +8,52 @@ export enum WalletSuspenseReason {
 export interface Wallet {
   id: string;
   user: string;
-  blockchain: Blockchain;
-  network: string;
-  type: WalletType;
-  address: string;
-  publicKey: string;
   name: string;
   suspendReason: WalletSuspenseReason | null;
   updatedAt: Date;
   createdAt: Date;
 }
 
-export const tableName = 'wallet';
+export enum WalletBlockchainType {
+  Wallet = 'wallet',
+  Contract = 'contract',
+}
 
-export const tableFactory = createTableFactory<Wallet>(tableName);
+export interface WalletBlockchain {
+  id: string;
+  type: WalletBlockchainType;
+  blockchain: BlockchainType;
+  network: string;
+  address: string;
+  publicKey: string;
+}
 
-export type Table = ReturnType<ReturnType<typeof tableFactory>>;
+export enum WalletExchangeType {
+  Binance = 'binance',
+}
+
+export interface WalletExchange {
+  id: string;
+  exchange: WalletExchangeType;
+  payload: string; // encoded json
+}
+
+export const walletTableName = 'wallet';
+export const walletBlockchainTableName = 'wallet_blockchain';
+export const walletExchangeTableName = 'wallet_exchange';
+
+export const walletTableFactory = typedTableFactory(walletTableName);
+export const walletBlockchainTableFactory = typedTableFactory(walletBlockchainTableName);
+export const walletExchangeTableFactory = typedTableFactory(walletExchangeTableName);
+
+export type WalletTable = ReturnType<ReturnType<typeof walletTableFactory>>;
+export type WalletBlockchainTable = ReturnType<ReturnType<typeof walletBlockchainTableFactory>>;
+export type WalletExchangeTable = ReturnType<ReturnType<typeof walletExchangeTableFactory>>;
+
+declare module 'knex/types/tables' {
+  interface Tables {
+    [walletTableName]: Wallet;
+    [walletBlockchainTableName]: WalletBlockchain;
+    [walletExchangeTableName]: WalletExchange;
+  }
+}

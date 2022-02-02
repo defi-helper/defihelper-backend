@@ -1,10 +1,16 @@
 import { Process } from '@models/Queue/Entity';
 import container from '@container';
 import { triggerTableName } from '@models/Automate/Entity';
-import { tableName as walletTableName } from '@models/Wallet/Entity';
+import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 import { transferTableName } from '@models/Billing/Entity';
 import { ContactBroker, ContactStatus } from '@models/Notification/Entity';
 import BN from 'bignumber.js';
+
+interface TriggerItem {
+  walletId: string;
+  walletNetwork: string;
+  triggerId: string;
+}
 
 export default async (process: Process) => {
   const { userId } = process.task.params as { userId: string };
@@ -17,12 +23,17 @@ export default async (process: Process) => {
   const database = container.database();
   const triggers = await container.model
     .automateTriggerTable()
-    .columns(
+    .columns<TriggerItem[]>(
       `${walletTableName}.id as walletId`,
-      `${walletTableName}.network as walletNetwork`,
+      `${walletBlockchainTableName}.network as walletNetwork`,
       `${triggerTableName}.id as triggerId`,
     )
     .innerJoin(walletTableName, `${triggerTableName}.wallet`, `${walletTableName}.id`)
+    .innerJoin(
+      walletBlockchainTableName,
+      `${walletBlockchainTableName}.id`,
+      `${walletTableName}.id`,
+    )
     .where('active', true)
     .andWhere(`${walletTableName}.user`, user.id);
 
@@ -30,13 +41,16 @@ export default async (process: Process) => {
     .billingTransferTable()
     .column(`${walletTableName}.id as id`)
     .column(database.raw('coalesce(sum(amount), 0) as funds'))
-    .innerJoin(walletTableName, `${walletTableName}.address`, `${transferTableName}.account`)
+    .innerJoin(walletBlockchainTableName, function () {
+      this.on(`${walletBlockchainTableName}.blockchain`, '=', `${transferTableName}.blockchain`)
+        .andOn(`${walletBlockchainTableName}.network`, '=', `${transferTableName}.network`)
+        .andOn(`${walletBlockchainTableName}.address`, '=', `${transferTableName}.account`);
+    })
+    .innerJoin(walletTableName, `${walletTableName}.id`, `${walletBlockchainTableName}.id`)
     .whereIn(
       `${walletTableName}.id`,
-      triggers.map((t) => t.walletId),
+      triggers.map(({ walletId }) => walletId),
     )
-    .andWhere(`${transferTableName}.network`, database.raw(`${walletTableName}.network`))
-    .andWhere(`${transferTableName}.blockchain`, database.raw(`${walletTableName}.blockchain`))
     .groupBy(`${walletTableName}.id`);
 
   const notifyBy = await triggers.reduce<
@@ -86,7 +100,7 @@ export default async (process: Process) => {
             locale: user.locale,
             template: 'automateNotEnoughFunds',
             params: {
-              debugInfo: notifyBy.triggerId.substring(0, 8),
+              debugInfo: notifyBy.walletId.substring(0, 8),
             },
           });
 

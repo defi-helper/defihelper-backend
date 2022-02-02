@@ -7,7 +7,11 @@ import {
   MetricContractAPRField,
   MetricContract,
 } from '@models/Metric/Entity';
-import { tableName as walletTableName, WalletType } from '@models/Wallet/Entity';
+import {
+  walletTableName,
+  WalletBlockchainType,
+  walletBlockchainTableName,
+} from '@models/Wallet/Entity';
 import BN from 'bignumber.js';
 import DataLoader from 'dataloader';
 
@@ -315,7 +319,7 @@ export const contractUserLastMetricLoader = ({
   walletType,
 }: {
   userId: string;
-  walletType: WalletType[];
+  walletType: WalletBlockchainType[];
 }) =>
   new DataLoader<string, { stakingUSD: string; earnedUSD: string }>(async (contractsId) => {
     const database = container.database();
@@ -339,9 +343,14 @@ export const contractUserLastMetricLoader = ({
               database.raw(`(${metricWalletTableName}.data->>'earnedUSD')::numeric AS "earnedUSD"`),
             )
             .innerJoin(walletTableName, `${walletTableName}.id`, `${metricWalletTableName}.wallet`)
+            .innerJoin(
+              walletBlockchainTableName,
+              `${walletTableName}.id`,
+              `${walletBlockchainTableName}.id`,
+            )
             .where(function () {
               this.where(`${walletTableName}.user`, userId);
-              this.whereIn(`${walletTableName}.type`, walletType);
+              this.whereIn(`${walletBlockchainTableName}.type`, walletType);
             })
             .orderBy(`${metricWalletTableName}.contract`)
             .orderBy(`${metricWalletTableName}.wallet`)

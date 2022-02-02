@@ -233,9 +233,9 @@ export function onlyAllowed<TSource, TArgs = { [argName: string]: any }>(
   };
 }
 
-export const WalletTypeEnum = new GraphQLEnumType({
-  name: 'WalletTypeEnum',
-  values: Object.values(Wallet.WalletType).reduce(
+export const WalletBlockchainTypeEnum = new GraphQLEnumType({
+  name: 'WalletBlockchainTypeEnum',
+  values: Object.values(Wallet.WalletBlockchainType).reduce(
     (res, type) => ({ ...res, [type]: { value: type } }),
     {},
   ),

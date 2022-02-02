@@ -1,4 +1,4 @@
-import { tableFactory as createTableFactory } from '@services/Database';
+import { tableFactoryLegacy } from '@services/Database';
 import { Blockchain } from '@models/types';
 
 export interface ProtocolLink {
@@ -30,7 +30,7 @@ export interface Protocol {
 
 export const protocolTableName = 'protocol';
 
-export const protocolTableFactory = createTableFactory<Protocol>(protocolTableName);
+export const protocolTableFactory = tableFactoryLegacy<Protocol>(protocolTableName);
 
 export type ProtocolTable = ReturnType<ReturnType<typeof protocolTableFactory>>;
 
@@ -43,7 +43,7 @@ export interface ProtocolUserFavorite {
 
 export const protocolUserFavoriteTableName = 'protocol_user_favorite';
 
-export const protocolUserFavoriteTableFactory = createTableFactory<ProtocolUserFavorite>(
+export const protocolUserFavoriteTableFactory = tableFactoryLegacy<ProtocolUserFavorite>(
   protocolUserFavoriteTableName,
 );
 
@@ -85,7 +85,7 @@ export interface Contract {
 
 export const contractTableName = 'protocol_contract';
 
-export const contractTableFactory = createTableFactory<Contract>(contractTableName);
+export const contractTableFactory = tableFactoryLegacy<Contract>(contractTableName);
 
 export type ContractTable = ReturnType<ReturnType<typeof contractTableFactory>>;
 
@@ -98,7 +98,7 @@ export interface WalletContractLink {
 
 export const walletContractLinkTableName = 'protocol_contract_wallet_link';
 
-export const walletContractLinkTableFactory = createTableFactory<WalletContractLink>(
+export const walletContractLinkTableFactory = tableFactoryLegacy<WalletContractLink>(
   walletContractLinkTableName,
 );
 
@@ -117,6 +117,6 @@ export interface Metadata {
 
 export const metadataTableName = 'protocol_contract_metadata';
 
-export const metadataTableFactory = createTableFactory<Metadata>(metadataTableName);
+export const metadataTableFactory = tableFactoryLegacy<Metadata>(metadataTableName);
 
 export type MetadataTable = ReturnType<ReturnType<typeof metadataTableFactory>>;

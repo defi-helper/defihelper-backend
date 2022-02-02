@@ -1,5 +1,6 @@
 import { Process } from '@models/Queue/Entity';
 import container from '@container';
+import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 
 interface Event {
   address: string;
@@ -38,20 +39,22 @@ export default async (process: Process) => {
 
   await Promise.all(
     eventNotificationParams.events.map(async (event) => {
-      const wallet = await container.model
+      const blockchainWallet = await container.model
         .walletTable()
+        .innerJoin(
+          walletBlockchainTableName,
+          `${walletBlockchainTableName}.id`,
+          `${walletTableName}.id`,
+        )
         .where({
           blockchain: contract.blockchain,
           network: contract.network,
-          address: event.from.toLowerCase(),
+          address: contract.blockchain === 'ethereum' ? event.from.toLowerCase() : event.from,
         })
         .first();
+      if (!blockchainWallet) return;
 
-      if (!wallet) {
-        return;
-      }
-
-      await container.model.contractService().walletLink(contract, wallet);
+      await container.model.contractService().walletLink(contract, blockchainWallet);
     }),
   );
 

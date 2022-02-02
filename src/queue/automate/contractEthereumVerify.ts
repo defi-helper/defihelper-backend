@@ -1,6 +1,7 @@
 import container from '@container';
 import { Contract, ContractVerificationStatus } from '@models/Automate/Entity';
 import { Process } from '@models/Queue/Entity';
+import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 
 async function reject(contract: Contract, rejectReason: string) {
   return container.model.automateService().updateContract({
@@ -25,11 +26,19 @@ export default async (process: Process) => {
   const protocol = await container.model.protocolTable().where('id', contract.protocol).first();
   if (!protocol) throw new Error('Protocol not found');
 
-  const wallet = await container.model.walletTable().where('id', contract.wallet).first();
-  if (!wallet) throw new Error('Wallet not found');
+  const blockchainWallet = await container.model
+    .walletTable()
+    .innerJoin(
+      walletBlockchainTableName,
+      `${walletBlockchainTableName}.id`,
+      `${walletTableName}.id`,
+    )
+    .where(`${walletTableName}.id`, contract.wallet)
+    .first();
+  if (!blockchainWallet) throw new Error('Wallet not found');
 
   const { ethereum } = container.blockchain;
-  const network = ethereum.byNetwork(wallet.network);
+  const network = ethereum.byNetwork(blockchainWallet.network);
   const provider = network.provider();
   const contracts = network.dfhContracts();
   if (contracts === null) {
@@ -40,7 +49,7 @@ export default async (process: Process) => {
   const automate = ethereum.contract(contract.address, ethereum.abi.automateABI, provider);
   try {
     const owner = await automate.owner();
-    if (owner.toLowerCase() !== wallet.address.toLowerCase()) {
+    if (owner.toLowerCase() !== blockchainWallet.address.toLowerCase()) {
       await reject(contract, 'Invalid owner');
       return process.done();
     }
@@ -52,7 +61,7 @@ export default async (process: Process) => {
   const erc1167 = ethereum.contract(contracts.ERC1167.address, ethereum.abi.erc1167ABI, provider);
   try {
     const expectedPrototype = await container.blockchainAdapter.loadEthereumAutomateArtifact(
-      wallet.network,
+      blockchainWallet.network,
       protocol.adapter,
       contract.adapter,
     );

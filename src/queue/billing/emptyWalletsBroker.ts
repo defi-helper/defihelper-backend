@@ -2,9 +2,10 @@ import { Process } from '@models/Queue/Entity';
 import container from '@container';
 import { transferTableName } from '@models/Billing/Entity';
 import {
-  tableName as walletTableName,
+  walletTableName,
   WalletSuspenseReason,
-  WalletType,
+  WalletBlockchainType,
+  walletBlockchainTableName,
 } from '@models/Wallet/Entity';
 import BN from 'bignumber.js';
 import { triggerTableName } from '@models/Automate/Entity';
@@ -16,13 +17,16 @@ export default async (process: Process) => {
     .billingTransferTable()
     .column(`${walletTableName}.id as walletId`)
     .column(`${walletTableName}.user as userId`)
-    .column(`${walletTableName}.network as walletNetwork`)
+    .column(`${walletBlockchainTableName}.network as walletNetwork`)
     .column(database.raw('greatest(0, sum(amount)) as funds'))
-    .innerJoin(walletTableName, `${walletTableName}.address`, `${transferTableName}.account`)
+    .innerJoin(walletBlockchainTableName, function () {
+      this.on(`${walletBlockchainTableName}.blockchain`, '=', `${transferTableName}.blockchain`)
+        .andOn(`${walletBlockchainTableName}.network`, '=', `${transferTableName}.network`)
+        .andOn(`${walletBlockchainTableName}.address`, '=', `${transferTableName}.account`);
+    })
+    .innerJoin(walletTableName, `${walletBlockchainTableName}.id`, `${walletTableName}.id`)
     .innerJoin(triggerTableName, `${triggerTableName}.wallet`, `${walletTableName}.id`)
-    .andWhere(`${transferTableName}.network`, database.raw(`${walletTableName}.network`))
-    .andWhere(`${transferTableName}.blockchain`, database.raw(`${walletTableName}.blockchain`))
-    .andWhere(`${walletTableName}.type`, WalletType.Wallet)
+    .andWhere(`${walletBlockchainTableName}.type`, WalletBlockchainType.Wallet)
     .groupBy(`${walletTableName}.id`);
 
   await Promise.all(

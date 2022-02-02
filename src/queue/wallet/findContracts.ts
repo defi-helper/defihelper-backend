@@ -1,5 +1,6 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
+import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 
 export interface Params {
   walletId: string;
@@ -7,16 +8,24 @@ export interface Params {
 
 export default async (process: Process) => {
   const { walletId } = process.task.params as Params;
-  const wallet = await container.model.walletTable().where('id', walletId).first();
-  if (!wallet) throw new Error('Wallet is not found');
+  const blockchainWallet = await container.model
+    .walletTable()
+    .innerJoin(
+      walletBlockchainTableName,
+      `${walletBlockchainTableName}.id`,
+      `${walletTableName}.id`,
+    )
+    .where(`${walletTableName}.id`, walletId)
+    .first();
+  if (!blockchainWallet) throw new Error('Wallet is not found');
 
-  if (wallet.blockchain !== 'ethereum') {
+  if (blockchainWallet.blockchain !== 'ethereum') {
     return process.done();
   }
 
   const contractsAddresses = await container
     .scanner()
-    .getContractsAddressByUserAddress(wallet.network, wallet.address);
+    .getContractsAddressByUserAddress(blockchainWallet.network, blockchainWallet.address);
 
   const groupLimit = 50;
   const grouped = contractsAddresses.reduce<string[][]>((groups, address) => {
@@ -24,11 +33,13 @@ export default async (process: Process) => {
       groups.push([]);
     }
 
+    const normalizedAddress =
+      blockchainWallet.blockchain === 'ethereum' ? address.toLowerCase() : address;
     const lastGroup = groups[groups.length - 1];
     if (lastGroup.length < groupLimit) {
-      lastGroup.push(address);
+      lastGroup.push(normalizedAddress);
     } else {
-      groups.push([address]);
+      groups.push([normalizedAddress]);
     }
 
     return groups;
@@ -40,11 +51,13 @@ export default async (process: Process) => {
     chainablePromise = chainablePromise.then(() => {
       return container.model
         .contractTable()
+        .andWhere('blockchain', blockchainWallet.blockchain)
+        .andWhere('network', blockchainWallet.network)
         .whereIn('address', group)
         .then((contracts) => {
           contracts.reduce((chainableContractsPromise, contract) => {
             return chainableContractsPromise.then(async () => {
-              await container.model.contractService().walletLink(contract, wallet);
+              await container.model.contractService().walletLink(contract, blockchainWallet);
             });
           }, Promise.resolve());
         });

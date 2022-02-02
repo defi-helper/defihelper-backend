@@ -3,6 +3,7 @@ import { Process } from '@models/Queue/Entity';
 import { TokenAliasLiquidity, TokenCreatedBy } from '@models/Token/Entity';
 import BN from 'bignumber.js';
 import axios from 'axios';
+import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 
 interface Params {
   id: string;
@@ -23,25 +24,33 @@ export default async (process: Process) => {
   const { id } = process.task.params as Params;
 
   const walletMetrics = container.model.metricService();
-  const wallet = await container.model.walletTable().where({ id }).first();
+  const blockchainWallet = await container.model
+    .walletTable()
+    .innerJoin(
+      walletBlockchainTableName,
+      `${walletBlockchainTableName}.id`,
+      `${walletTableName}.id`,
+    )
+    .where(`${walletTableName}.id`, id)
+    .first();
   let chain: 'movr';
 
-  if (!wallet || wallet.blockchain !== 'ethereum') {
+  if (!blockchainWallet || blockchainWallet.blockchain !== 'ethereum') {
     throw new Error('wallet not found or unsupported blockchain');
   }
 
-  switch (wallet.network) {
+  switch (blockchainWallet.network) {
     case '1285':
       chain = 'movr';
       break;
     default:
-      throw new Error(`unsupported network: ${wallet.network}`);
+      throw new Error(`unsupported network: ${blockchainWallet.network}`);
   }
 
   const debankUserTokenList = (
     (
       await axios.get(
-        `https://openapi.debank.com/v1/user/token_list?id=${wallet.address}&chain_id=${chain}&is_all=true`,
+        `https://openapi.debank.com/v1/user/token_list?id=${blockchainWallet.address}&chain_id=${chain}&is_all=true`,
       )
     ).data as AssetToken[]
   ).map((tokenAsset) => {
@@ -60,8 +69,8 @@ export default async (process: Process) => {
       'address',
       debankUserTokenList.map((token) => token.id.toLowerCase()),
     )
-    .andWhere('blockchain', wallet.blockchain)
-    .andWhere('network', wallet.network);
+    .andWhere('blockchain', blockchainWallet.blockchain)
+    .andWhere('network', blockchainWallet.network);
 
   await Promise.all(
     debankUserTokenList.map(async (tokenAsset) => {
@@ -90,8 +99,8 @@ export default async (process: Process) => {
           .tokenService()
           .create(
             tokenRecordAlias,
-            wallet.blockchain,
-            wallet.network,
+            blockchainWallet.blockchain,
+            blockchainWallet.network,
             tokenAsset.id.toLowerCase(),
             tokenAsset.name,
             tokenAsset.symbol,
@@ -102,7 +111,7 @@ export default async (process: Process) => {
 
       return walletMetrics.createToken(
         null,
-        wallet,
+        blockchainWallet,
         tokenRecord,
         {
           usd: new BN(tokenAsset.price).multipliedBy(tokenAsset.amount).toString(10),

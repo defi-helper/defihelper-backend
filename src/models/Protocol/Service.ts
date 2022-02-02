@@ -1,7 +1,7 @@
 import container from '@container';
 import { Blockchain } from '@models/types';
 import { User } from '@models/User/Entity';
-import { Wallet } from '@models/Wallet/Entity';
+import { Wallet, WalletBlockchain } from '@models/Wallet/Entity';
 import { Factory } from '@services/Container';
 import { Emitter } from '@services/Event';
 import { v4 as uuid } from 'uuid';
@@ -196,21 +196,21 @@ export class ContractService {
     await this.contractTable().where({ id: contract.id }).delete();
   }
 
-  async walletLink(contract: Contract, wallet: Wallet) {
+  async walletLink(contract: Contract, blockchainWallet: Wallet & WalletBlockchain) {
     const duplicate = await this.walletLinkTable()
       .where('contract', contract.id)
-      .andWhere('wallet', wallet.id)
+      .andWhere('wallet', blockchainWallet.id)
       .first();
     if (duplicate) return duplicate;
 
     const created = {
       id: uuid(),
       contract: contract.id,
-      wallet: wallet.id,
+      wallet: blockchainWallet.id,
       createdAt: new Date(),
     };
     await this.walletLinkTable().insert(created);
-    this.onWalletLink.emit({ contract, wallet, link: created });
+    this.onWalletLink.emit({ contract, wallet: blockchainWallet, link: created });
 
     return created;
   }

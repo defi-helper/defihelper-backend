@@ -47,10 +47,25 @@ export class ModelContainer extends Container<typeof AppContainer> {
     () => new Models.UserNotification.Service.UserNotificationService(this.userNotificationTable),
   );
 
-  readonly walletTable = Models.Wallet.Entity.tableFactory(this.parent.database);
+  readonly walletTable = Models.Wallet.Entity.walletTableFactory(this.parent.database);
 
   readonly walletService = singleton(
-    () => new Models.Wallet.Service.WalletService(this.walletTable),
+    () =>
+      new Models.Wallet.Service.WalletService(
+        this.parent.database(),
+        this.walletTable,
+        this.walletExchangeTable,
+        this.walletBlockchainTable,
+        this.parent.cryptography(),
+      ),
+  );
+
+  readonly walletBlockchainTable = Models.Wallet.Entity.walletBlockchainTableFactory(
+    this.parent.database,
+  );
+
+  readonly walletExchangeTable = Models.Wallet.Entity.walletExchangeTableFactory(
+    this.parent.database,
   );
 
   readonly protocolTable = Models.Protocol.Entity.protocolTableFactory(this.parent.database);
