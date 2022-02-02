@@ -49,13 +49,6 @@ export class TokenAliasService {
   async delete(tokenAlias: TokenAlias) {
     await this.table().where({ id: tokenAlias.id }).delete();
   }
-
-  async changeLiquidity(tokenAlias: TokenAlias, liquidity: TokenAliasLiquidity) {
-    return this.update({
-      ...tokenAlias,
-      liquidity,
-    });
-  }
 }
 
 export class TokenService {
