@@ -5,17 +5,12 @@ export default async () => {
   await container.model
     .tokenAliasTable()
     .update({ liquidity: TokenAliasLiquidity.Unstable })
-    .whereNotNull('logoUrl')
-    .andWhere('liquidity', TokenAliasLiquidity.Trash);
+    .whereNotNull('logoUrl');
 
   const tokens = await container.model
     .tokenTable()
     .distinctOn(`${tokenTableName}.alias`)
-    .innerJoin(tokenAliasTableName, `${tokenAliasTableName}.id`, `${tokenTableName}.alias`)
-    .whereIn(`${tokenAliasTableName}.liquidity`, [
-      TokenAliasLiquidity.Trash,
-      TokenAliasLiquidity.Unknown,
-    ]);
+    .innerJoin(tokenAliasTableName, `${tokenAliasTableName}.id`, `${tokenTableName}.alias`);
 
   await Promise.all(
     tokens.map((v) =>
