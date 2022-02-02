@@ -1,11 +1,11 @@
 import { Factory } from '@services/Container';
 import {
-  TokenAlias,
   Token,
-  TokenTable,
-  TokenAliasTable,
+  TokenAlias,
   TokenAliasLiquidity,
+  TokenAliasTable,
   TokenCreatedBy,
+  TokenTable,
 } from '@models/Token/Entity';
 import { Blockchain } from '@models/types';
 import { v4 as uuid } from 'uuid';
@@ -49,6 +49,15 @@ export class TokenAliasService {
   async delete(tokenAlias: TokenAlias) {
     await this.table().where({ id: tokenAlias.id }).delete();
   }
+
+  async verify(tokenAlias: TokenAlias, liquidity: TokenAliasLiquidity) {
+    const updated = await this.update({
+      ...tokenAlias,
+      liquidity,
+    });
+
+    return updated;
+  }
 }
 
 export class TokenService {
@@ -57,10 +66,18 @@ export class TokenService {
       token.blockchain === 'ethereum' &&
       (token.name === '' || token.symbol === '' || token.decimals === 0)
     ) {
-      return container.model.queueService().push('tokenInfoEth', { token: token.id });
+      container.model.queueService().push('tokenInfoEth', { token: token.id });
     }
     if (token.blockchain === 'waves') {
-      return container.model.queueService().push('tokenInfoWaves', { token: token.id });
+      container.model.queueService().push('tokenInfoWaves', { token: token.id });
+    }
+
+    if (token.alias && token.blockchain === 'ethereum') {
+      container.model.queueService().push('resolveTokenAliasLiquidity', {
+        aliasId: token.alias,
+        network: token.network,
+        address: token.address,
+      });
     }
 
     return null;

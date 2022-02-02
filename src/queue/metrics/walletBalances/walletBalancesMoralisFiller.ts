@@ -101,7 +101,7 @@ export default async (process: Process) => {
             .create(
               tokenBalance.name,
               tokenBalance.symbol,
-              TokenAliasLiquidity.Trash,
+              tokenBalance.thumbnail ? TokenAliasLiquidity.Unstable : TokenAliasLiquidity.Trash,
               tokenBalance.thumbnail || null,
             );
         }
@@ -177,7 +177,7 @@ export default async (process: Process) => {
         .create(
           nativeTokenDetails.name,
           nativeTokenDetails.symbol,
-          TokenAliasLiquidity.Trash,
+          TokenAliasLiquidity.Unstable,
           null,
         );
     }

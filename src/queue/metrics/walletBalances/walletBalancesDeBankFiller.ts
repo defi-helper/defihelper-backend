@@ -81,7 +81,7 @@ export default async (process: Process) => {
             .create(
               tokenAsset.name,
               tokenAsset.symbol,
-              TokenAliasLiquidity.Trash,
+              TokenAliasLiquidity.Unstable,
               tokenAsset.logo_url || null,
             );
         }
