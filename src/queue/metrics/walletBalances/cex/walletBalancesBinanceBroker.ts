@@ -7,7 +7,7 @@ export default async (process: Process) => {
   const wallets = await container.model
     .walletTable()
     .innerJoin(walletExchangeTableName, `${walletExchangeTableName}.id`, `${walletTableName}.id`)
-    .andWhere(`${walletExchangeTableName}.suspendReason is null`);
+    .andWhere(`${walletTableName}.suspendReason`, null);
 
   const lag = 600 / wallets.length;
   await wallets.reduce<Promise<dayjs.Dayjs>>(async (prev, wallet) => {
