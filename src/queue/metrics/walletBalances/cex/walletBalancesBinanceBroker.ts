@@ -1,15 +1,10 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import dayjs from 'dayjs';
-import {
-  walletTableName,
-  walletExchangeTableName,
-  Wallet,
-  WalletExchange,
-} from '@models/Wallet/Entity';
+import { walletTableName, walletExchangeTableName } from '@models/Wallet/Entity';
 
 export default async (process: Process) => {
-  const wallets: (Wallet & WalletExchange)[] = await container.model
+  const wallets = await container.model
     .walletTable()
     .innerJoin(walletExchangeTableName, `${walletExchangeTableName}.id`, `${walletTableName}.id`)
     .andWhere(`${walletExchangeTableName}.suspendReason is null`);
