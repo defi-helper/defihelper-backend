@@ -42,7 +42,6 @@ export default async (process: Process) => {
         chatId,
         locale: user.locale,
         params: {
-          debugInfo: [totalStackedUSD, totalEarnedUSD, totalTokensUSD].join(':'),
           totalNetWorth: new BN(totalStackedUSD)
             .plus(totalEarnedUSD)
             .plus(totalTokensUSD)
