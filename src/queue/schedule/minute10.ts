@@ -7,8 +7,9 @@ export default async (process: Process) => {
     queue.push('metricsEthereumCurrent', { network: '1' }),
     queue.push('metricsEthereumCurrent', { network: '3' }),
     queue.push('metricsEthereumCurrent', { network: '56' }),
-    queue.push('emptyWalletsBroker', {}),
-    queue.push('logBilling', {}),
+    queue.push('metricsWalletBalancesCexBinanceBroker'),
+    queue.push('emptyWalletsBroker'),
+    queue.push('logBilling'),
   ]);
 
   return process.done();
