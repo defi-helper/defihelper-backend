@@ -54,6 +54,9 @@ export * as metricsWalletBalancesMoralisFiller from './metrics/walletBalances/wa
 export * as metricsWalletBalancesFillSelector from './metrics/walletBalances/walletBalancesFillSelector';
 export * as metricsWalletBalancesBroker from './metrics/walletBalances/walletBalancesBroker';
 
+export * as metricsWalletBalancesCexBinanceFiller from './metrics/walletBalances/cex/walletBalancesBinanceFiller';
+export * as metricsWalletBalancesCexBinanceBroker from './metrics/walletBalances/cex/walletBalancesBinanceBroker';
+
 /* protocol */
 export * as protocolContractsResolver from './protocol/resolveContracts';
 

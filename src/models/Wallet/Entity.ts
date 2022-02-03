@@ -3,6 +3,7 @@ import { Blockchain as BlockchainType } from '@models/types';
 
 export enum WalletSuspenseReason {
   LowFunds = 'lowFunds',
+  CexUnableToAuthorize = 'cexUnableToAuthorize',
 }
 
 export interface Wallet {
