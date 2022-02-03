@@ -7,6 +7,8 @@ import {
   walletTableName,
 } from '@models/Wallet/Entity';
 import BN from 'bignumber.js';
+import { metricWalletTokenTableName } from '@models/Metric/Entity';
+import { Token, tokenTableName } from '@models/Token/Entity';
 
 interface Params {
   id: string;
@@ -38,7 +40,7 @@ export default async (process: Process) => {
     spotAssetsList = (await binance.accountInfo()).balances;
     prices = await binance.prices();
   } catch (e) {
-    if (e.message !== 'Invalid API-key, IP, or permissions for action.') {
+    if (!(e instanceof Error) || e.message !== 'Invalid API-key, IP, or permissions for action.') {
       throw e;
     }
 
@@ -50,53 +52,78 @@ export default async (process: Process) => {
   }
 
   const resolveTokenPrice = (symbol: string) => {
-    // || stablecoin
     return ['USDT', 'BUSD'].map((bridge) => prices[symbol + bridge]).find((v) => v) || 1;
   };
+
+  const database = container.database();
+  const walletTokenBalances = await container.model
+    .metricWalletTokenTable()
+    .distinctOn(`${metricWalletTokenTableName}.wallet`, `${metricWalletTokenTableName}.token`)
+    .column(`${tokenTableName}.symbol AS token`)
+    .column(database.raw(`(${metricWalletTokenTableName}.data->>'balance')::numeric AS balance`))
+    .innerJoin(tokenTableName, `${metricWalletTokenTableName}.token`, `${tokenTableName}.id`)
+    .where(`${metricWalletTokenTableName}.wallet`, exchangeWallet.id)
+    .orderBy(`${metricWalletTokenTableName}.wallet`)
+    .orderBy(`${metricWalletTokenTableName}.token`)
+    .orderBy(`${metricWalletTokenTableName}.date`, 'DESC')
+    .then((rows) => new Map(rows.map(({ token, balance }) => [token, balance])));
+
   const assetsOnBalance = spotAssetsList
-    .filter((v) => !new BN(v.free).plus(v.locked).isZero())
-    .map((v) => {
-      const bridgedPrice = resolveTokenPrice(v.asset);
+    .filter(({ asset, free, locked }) => {
+      const metricBalance = walletTokenBalances.get(asset);
+
+      return !new BN(free).plus(locked).isZero() || (metricBalance && metricBalance !== '0');
+    })
+    .map(({ asset, free, locked }) => {
+      const bridgedPrice = resolveTokenPrice(asset);
 
       return {
-        symbol: v.asset,
-        amountTokens: new BN(v.free).plus(v.locked).toString(10),
-        amountUSD: new BN(v.free).plus(v.locked).multipliedBy(bridgedPrice).toString(10),
+        symbol: asset,
+        balance: new BN(free).plus(locked).toString(10),
+        usd: new BN(free).plus(locked).multipliedBy(bridgedPrice).toString(10),
       };
     });
+
   const existingTokens = await container.model
     .tokenTable()
     .distinctOn('symbol')
     .whereIn(
       'symbol',
-      assetsOnBalance.map((v) => v.symbol),
-    );
+      assetsOnBalance.map(({ symbol }) => symbol),
+    )
+    .then((rows) => new Map(rows.map((token) => [token.symbol, token])));
 
-  const aggregatedAssetsList = assetsOnBalance
-    .map((v) => ({
-      ...v,
-      existingToken: existingTokens.find((eToken) => eToken.symbol === v.symbol),
-    }))
-    .filter((v) => v.existingToken);
+  const { found, notFound } = assetsOnBalance.reduce<{
+    found: Array<{ symbol: string; balance: string; usd: string; token: Token }>;
+    notFound: string[];
+  }>(
+    (result, v) => {
+      const token = existingTokens.get(v.symbol);
+      if (!token) {
+        return { found: result.found, notFound: [...result.notFound, v.symbol] };
+      }
+
+      return { notFound: result.notFound, found: [...result.found, { ...v, token }] };
+    },
+    { found: [], notFound: [] },
+  );
 
   await Promise.all(
-    aggregatedAssetsList.map((v) => {
-      if (!v.existingToken) return null;
-
-      return walletMetrics.createToken(
+    found.map(({ token, balance, usd }) =>
+      walletMetrics.createToken(
         null,
         exchangeWallet,
-        v.existingToken,
+        token,
         {
-          usd: v.amountUSD,
-          balance: v.amountTokens,
+          usd,
+          balance,
         },
         new Date(),
-      );
-    }),
+      ),
+    ),
   );
 
   return process
     .done()
-    .info(assetsOnBalance.length > aggregatedAssetsList.length ? "some tokens didn't found" : '');
+    .info(notFound.length > 0 ? `tokens "${notFound.join(', ')}" didn't found` : '');
 };
