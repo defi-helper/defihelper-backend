@@ -31,7 +31,7 @@ export class QueueService {
     readonly logService: Factory<LogService>,
   ) {}
 
-  async push<H extends Handler>(handler: H, params: Object, options: PushOptions = {}) {
+  async push<H extends Handler>(handler: H, params: Object = {}, options: PushOptions = {}) {
     let task: Task = {
       id: uuid(),
       handler,
