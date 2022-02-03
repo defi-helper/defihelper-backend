@@ -2,8 +2,6 @@ import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import Binance, { AssetBalance } from 'binance-api-node';
 import {
-  Wallet,
-  WalletExchange,
   walletExchangeTableName,
   WalletSuspenseReason,
   walletTableName,
@@ -18,7 +16,7 @@ export default async (process: Process) => {
   const { id } = process.task.params as Params;
 
   const walletMetrics = container.model.metricService();
-  const exchangeWallet: Wallet & WalletExchange = await container.model
+  const exchangeWallet = await container.model
     .walletTable()
     .innerJoin(walletExchangeTableName, `${walletExchangeTableName}.id`, `${walletTableName}.id`)
     .where(`${walletTableName}.id`, id)
