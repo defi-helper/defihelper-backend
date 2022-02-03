@@ -27,7 +27,7 @@ export default async (process: Process) => {
     .innerJoin(walletTableName, `${walletBlockchainTableName}.id`, `${walletTableName}.id`)
     .innerJoin(triggerTableName, `${triggerTableName}.wallet`, `${walletTableName}.id`)
     .andWhere(`${walletBlockchainTableName}.type`, WalletBlockchainType.Wallet)
-    .groupBy(`${walletTableName}.id`);
+    .groupBy(`${walletTableName}.id`, `${walletBlockchainTableName}.network`);
 
   await Promise.all(
     amounts.map(async (v) => {
