@@ -1,5 +1,6 @@
 import { Factory } from '@services/Container';
 import redis, { RedisClient } from 'redis';
+import asyncify from 'callback-to-async-iterator';
 
 export interface ConnectFactoryConfig {
   readonly host?: string;
@@ -25,8 +26,17 @@ export function redisSubscriberFactory(connectFactory: Factory<redis.RedisClient
 
     return {
       subscriber,
-      onJSON: (callback: <T = any>(msg: T) => any) =>
-        subscriber.on('message', (_, message) => callback(JSON.parse(message))),
+      onJSON<T = any>(callback: (msg: T) => any) {
+        const handler = (_: unknown, message: string) => callback(JSON.parse(message));
+        subscriber.on('message', handler);
+
+        return handler;
+      },
+      asyncIterator() {
+        return asyncify((callback) => Promise.resolve(this.onJSON(callback)), {
+          onClose: (handler) => subscriber.off('message', handler),
+        });
+      },
     };
   };
 }

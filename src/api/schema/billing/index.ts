@@ -1,5 +1,4 @@
 import container from '@container';
-import asyncify from 'callback-to-async-iterator';
 import { Request } from 'express';
 import { AuthenticationError, UserInputError } from 'apollo-server-express';
 import { User } from '@models/User/Entity';
@@ -645,12 +644,7 @@ export const OnTransferCreated: GraphQLFieldConfig<{ id: string }, Request> = {
     },
   },
   subscribe: withFilter(
-    () =>
-      asyncify((callback) =>
-        Promise.resolve(
-          container.cacheSubscriber('defihelper:channel:onBillingTransferCreated').onJSON(callback),
-        ),
-      ),
+    () => container.cacheSubscriber('defihelper:channel:onBillingTransferCreated').asyncIterator(),
     async ({ id }, { filter }) => {
       const transfer = await container.model.billingTransferTable().where('id', id).first();
       if (!transfer) return false;
@@ -705,12 +699,7 @@ export const OnTransferUpdated: GraphQLFieldConfig<{ id: string }, Request> = {
     },
   },
   subscribe: withFilter(
-    () =>
-      asyncify((callback) =>
-        Promise.resolve(
-          container.cacheSubscriber('defihelper:channel:onBillingTransferUpdated').onJSON(callback),
-        ),
-      ),
+    () => container.cacheSubscriber('defihelper:channel:onBillingTransferUpdated').asyncIterator(),
     async ({ id }, { filter }) => {
       const transfer = await container.model.billingTransferTable().where('id', id).first();
       if (!transfer) return false;
