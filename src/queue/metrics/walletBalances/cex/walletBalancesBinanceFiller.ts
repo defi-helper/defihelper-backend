@@ -82,7 +82,7 @@ export default async (process: Process) => {
     .filter((v) => v.existingToken);
 
   await Promise.all(
-    aggregatedAssetsList.map(async (v) => {
+    aggregatedAssetsList.map((v) => {
       if (!v.existingToken) return null;
 
       return walletMetrics.createToken(
