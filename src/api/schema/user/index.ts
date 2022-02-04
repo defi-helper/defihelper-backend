@@ -11,7 +11,6 @@ import {
 } from 'graphql';
 import { withFilter } from 'graphql-subscriptions';
 import container from '@container';
-import asyncify from 'callback-to-async-iterator';
 import { utils } from 'ethers';
 import { Request } from 'express';
 import { Locale } from '@services/I18n/container';
@@ -1884,12 +1883,7 @@ export const OnWalletCreated: GraphQLFieldConfig<{ id: string }, Request> = {
     },
   },
   subscribe: withFilter(
-    () =>
-      asyncify((callback) =>
-        Promise.resolve(
-          container.cacheSubscriber('defihelper:channel:onWalletCreated').onJSON(callback),
-        ),
-      ),
+    () => container.cacheSubscriber('defihelper:channel:onWalletCreated').asyncIterator(),
     async ({ id }, { filter }) => {
       if (!filter.user) {
         return false;
@@ -1937,12 +1931,7 @@ export const OnWalletMetricUpdated: GraphQLFieldConfig<
     },
   },
   subscribe: withFilter(
-    () =>
-      asyncify((callback) =>
-        Promise.resolve(
-          container.cacheSubscriber('defihelper:channel:onWalletMetricUpdated').onJSON(callback),
-        ),
-      ),
+    () => container.cacheSubscriber('defihelper:channel:onWalletMetricUpdated').asyncIterator(),
     async ({ wallet: walletId, contract }, { filter }) => {
       let result = true;
       if (Array.isArray(filter.wallet) && filter.wallet.length > 0) {
@@ -2027,12 +2016,7 @@ export const OnTokenMetricUpdated: GraphQLFieldConfig<
     },
   },
   subscribe: withFilter(
-    () =>
-      asyncify((callback) =>
-        Promise.resolve(
-          container.cacheSubscriber('defihelper:channel:onTokenMetricUpdated').onJSON(callback),
-        ),
-      ),
+    () => container.cacheSubscriber('defihelper:channel:onTokenMetricUpdated').asyncIterator(),
     async ({ wallet: walletId, contract, token }, { filter }) => {
       let result = true;
       if (Array.isArray(filter.wallet) && filter.wallet.length > 0) {

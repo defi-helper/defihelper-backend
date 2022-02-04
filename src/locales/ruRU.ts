@@ -21,8 +21,8 @@ export default {
       'Внимание, одна из ваших автоматизаций скоро будет заморожена ввиду нехватки средств',
     "DeFiHelper's public beta now available. Get your APY boost right now on https://app.defihelper.io!":
       'Стартовало публичное тестирование DeFiHelper. Посмотрите сейчас на https://app.defihelper.io!',
-    'Total Net Worth ${{totalNetWorth}}, Total unclaimed ${{totalEarnedUSD}}':
-      'Всего в портфолио: {{totalNetWorth}}$, можно забрать: {{totalEarnedUSD}}$',
+    'Tracked Balance ${{totalNetWorth}}, Total unclaimed ${{totalEarnedUSD}}':
+      'Отслеживаемый баланс: {{totalNetWorth}}$, можно забрать: {{totalEarnedUSD}}$',
     'automate:trigger:contractEvent:name': 'Событие контракта',
     'automate:trigger:contractEvent:description': 'Вызов триггера в ответ на событие в контракте',
     'automate:trigger:everyMonth:name': 'Периодически',
