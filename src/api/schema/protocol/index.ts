@@ -1522,6 +1522,10 @@ export const ProtocolUpdateMutation: GraphQLFieldConfig<any, Request> = {
               type: GraphQLString,
               description: 'Icon image URL',
             },
+            previewPicture: {
+              type: GraphQLString,
+              description: 'Preview picture URL',
+            },
             link: {
               type: GraphQLString,
               description: 'Website URL',
@@ -1545,7 +1549,7 @@ export const ProtocolUpdateMutation: GraphQLFieldConfig<any, Request> = {
     const protocol = await container.model.protocolTable().where('id', id).first();
     if (!protocol) throw new UserInputError('Protocol not found');
 
-    const { adapter, name, description, icon, link, links, hidden } = input;
+    const { adapter, name, description, icon, link, links, hidden, previewPicture } = input;
     const updated = await container.model.protocolService().update({
       ...protocol,
       adapter: typeof adapter === 'string' ? adapter : protocol.adapter,
@@ -1555,6 +1559,7 @@ export const ProtocolUpdateMutation: GraphQLFieldConfig<any, Request> = {
       link: typeof link === 'string' ? link : protocol.link,
       links: typeof links === 'object' ? links : protocol.links,
       hidden: typeof hidden === 'boolean' ? hidden : protocol.hidden,
+      previewPicture: typeof previewPicture === 'string' ? previewPicture : protocol.previewPicture,
     });
 
     return updated;
