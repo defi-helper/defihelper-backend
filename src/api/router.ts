@@ -232,7 +232,7 @@ export function route({ express, server }: { express: Express; server: Server })
           new BN(apr.apr).toNumber(),
         );
 
-        const actualBoost = new BN(boost).minus(apr.apr).toNumber();
+        const actualBoost = new BN(boost).multipliedBy(100).minus(apr.apr).toNumber();
 
         return {
           initial: new BN(apr.apr).toNumber(),
