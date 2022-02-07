@@ -51,6 +51,9 @@ export * as emptyWalletsBroker from './billing/emptyWalletsBroker';
 export * as metricsWalletBalancesDeBankFiller from './metrics/walletBalances/walletBalancesDeBankFiller';
 export * as metricsWalletBalancesMoralisFiller from './metrics/walletBalances/walletBalancesMoralisFiller';
 
+export * as metricsWalletProtocolsBalancesDeBankFiller from './metrics/walletBalances/walletProtocolsBalancesDeBankFiller';
+export * as metricsWalletProtocolsBalancesDeBankBroker from './metrics/walletBalances/walletProtocolsBalancesDeBankBroker';
+
 export * as metricsWalletBalancesFillSelector from './metrics/walletBalances/walletBalancesFillSelector';
 export * as metricsWalletBalancesBroker from './metrics/walletBalances/walletBalancesBroker';
 

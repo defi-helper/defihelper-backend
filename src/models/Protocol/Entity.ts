@@ -1,6 +1,19 @@
 import { tableFactoryLegacy } from '@services/Database';
 import { Blockchain } from '@models/types';
 
+export interface ProtocolIdentifier {
+  id: string;
+  identifier: string;
+}
+
+export const protocolIdentifierTableName = 'protocol_identifier';
+
+export const protocolIdentifierTableFactory = tableFactoryLegacy<ProtocolIdentifier>(
+  protocolIdentifierTableName,
+);
+
+export type ProtocolIdentifierTable = ReturnType<ReturnType<typeof protocolIdentifierTableFactory>>;
+
 export interface ProtocolLink {
   id: string;
   name: string;
@@ -23,6 +36,7 @@ export interface Protocol {
   link: string | null;
   links: ProtocolLinkMap;
   hidden: boolean;
+  metric: { tvl?: string };
   updatedAt: Date;
   createdAt: Date;
   previewPicture: string | null;

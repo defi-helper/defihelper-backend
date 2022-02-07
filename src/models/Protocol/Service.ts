@@ -5,6 +5,7 @@ import { Wallet, WalletBlockchain } from '@models/Wallet/Entity';
 import { Factory } from '@services/Container';
 import { Emitter } from '@services/Event';
 import { v4 as uuid } from 'uuid';
+import Knex from 'knex';
 import {
   Protocol,
   ProtocolTable,
@@ -16,13 +17,32 @@ import {
   ProtocolUserFavoriteTable,
   MetadataTable,
   MetadataType,
+  ProtocolIdentifierTable,
+  ProtocolIdentifier,
 } from './Entity';
 
 export class ProtocolService {
   constructor(
     readonly protocolTable: Factory<ProtocolTable>,
     readonly protocolFavoriteTable: Factory<ProtocolUserFavoriteTable>,
+    readonly protocolIdentifierTable: Factory<ProtocolIdentifierTable>,
+    readonly database: Knex,
   ) {}
+
+  async addExternalIdentifier(protocol: Protocol, identifier: string): Promise<ProtocolIdentifier> {
+    const v = {
+      id: protocol.id,
+      identifier,
+    };
+
+    const existing = await this.protocolIdentifierTable().where(v).first();
+    if (existing) {
+      return existing;
+    }
+
+    await this.protocolIdentifierTable().insert(v);
+    return v;
+  }
 
   async create(
     adapter: string,
@@ -33,6 +53,8 @@ export class ProtocolService {
     link: string | null = null,
     links: ProtocolLinkMap = {},
     hidden: boolean = false,
+    metric: { tvl?: string } = {},
+    externalIdentifier: string = adapter,
   ) {
     const created = {
       id: uuid(),
@@ -44,10 +66,20 @@ export class ProtocolService {
       link,
       links,
       hidden,
+      metric,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    await this.protocolTable().insert(created);
+
+    await this.database.transaction(async (trx) => {
+      await this.protocolTable().insert(created).transacting(trx);
+      await this.protocolIdentifierTable()
+        .insert({
+          id: created.id,
+          identifier: externalIdentifier,
+        })
+        .transacting(trx);
+    });
 
     return created;
   }

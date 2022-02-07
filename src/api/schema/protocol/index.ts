@@ -1188,7 +1188,7 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
       type: GraphQLNonNull(ProtocolMetricType),
       resolve: async (protocol, args, { currentUser, dataLoader }) => {
         const metric = {
-          tvl: await dataLoader.protocolMetric({ metric: 'tvl' }).load(protocol.id),
+          tvl: protocol.metric?.tvl ?? '0',
           uniqueWalletsCount: await dataLoader
             .protocolMetric({ metric: 'uniqueWalletsCount' })
             .load(protocol.id),
