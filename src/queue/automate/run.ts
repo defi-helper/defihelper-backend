@@ -13,6 +13,7 @@ export default async (process: Process) => {
   const automateService = container.model.automateService();
   const trigger = await automateService
     .triggerTable()
+    .columns(`${triggerTableName}.*`)
     .innerJoin(walletTableName, `${walletTableName}.id`, `${triggerTableName}.wallet`)
     .where(`${triggerTableName}.id`, id)
     .andWhere(`${triggerTableName}.active`, true)
