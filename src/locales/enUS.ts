@@ -30,30 +30,30 @@ export default {
     'automate:trigger:everyHour:description': 'Call trigger every hour',
     'automate:action:notification:paramsDescription': 'Send notification to {{contactId}}',
     'automate:action:ethereumAutomateRun:paramsDescription': 'Run automate {{id}}',
-    'automate:condition:ethereumBalance:name': 'Native token balance',
+    'automate:condition:ethereumBalance:name': 'Native Token Balance',
     'automate:condition:ethereumBalance:description':
-      'Checks the native (eth,bnb,avax and etc.) token balance',
+      'Check native token balance (ETH, BNB, AVAX etc.)',
     'automate:condition:ethereumBalance:paramsDescription':
       'Wallet balance {{wallet}} in network {{network}} {{op}} {{value}}',
-    'automate:condition:ethereumOptimalAutomateRun:name': 'Optimised Staking',
-    'automate:condition:ethereumOptimalAutomateRun:description': 'Use our Autostaking feature',
+    'automate:condition:ethereumOptimalAutomateRun:name': 'Optimized Staking',
+    'automate:condition:ethereumOptimalAutomateRun:description': 'Use auto-staking',
     'automate:action:ethereumOptimalAutomateRun:paramsDescription':
       'Autostaking for action: {{id}}',
     'automate:condition:ethereumOptimalAutomateRun:paramsDescription':
       'Restake optimal run for {{id}}',
-    'automate:condition:ethereumAvgGasPrice:name': 'GAS price variation',
+    'automate:condition:ethereumAvgGasPrice:name': 'Gas Price Fluctuation',
     'automate:condition:ethereumAvgGasPrice:description':
-      'Check the GAS price with expected values based on time and day',
+      'Check gas price with expected values based on specific time and day',
     'automate:condition:ethereumAvgGasPrice:paramsDescription':
       'AVG gas price for network {{network}} in {{tolerance}}',
     'automate:condition:schedule:name': 'Schedule',
-    'automate:condition:schedule:description':
-      'Choose a specific timeframe to launch the automations',
+    'automate:condition:schedule:description': 'Choose a specific time frame to launch automation',
     'automate:condition:schedule:paramsDescription':
       'Days of week {{weeks}}; Months {{months}}; Days of month {{days}}; Hours {{hours}}',
-    'automate:action:ethereumAutomateRun:name': 'Run transaction',
-    'automate:action:ethereumAutomateRun:description': 'Automatically run blockchain transaction',
-    'automate:action:notification:name': 'Send notification',
-    'automate:action:notification:description': 'Send notification via email or telegram',
+    'automate:action:ethereumAutomateRun:name': 'Execute Transaction',
+    'automate:action:ethereumAutomateRun:description':
+      'Execute blockchain transaction automatically',
+    'automate:action:notification:name': 'Send Notification',
+    'automate:action:notification:description': 'Send message via email or Telegram',
   },
 };
