@@ -251,9 +251,9 @@ export const walletLastMetricLoader = () =>
             .whereIn('wallet', walletsId)
             .orderBy('wallet')
             .orderBy('contract')
-            .orderBy('date', 'DESC'),
+            .orderBy('date', 'DESC')
+            .as('metric'),
         )
-        .as('metric')
         .groupBy('wallet')
         .then((rows) =>
           rows.map(({ wallet, stakingUSD, earnedUSD }) => [wallet, { stakingUSD, earnedUSD }]),
