@@ -64,7 +64,7 @@ export const ConditionType = new GraphQLObjectType<Automate.Condition, Request>(
       type: GraphQLNonNull(GraphQLString),
       description: 'Stringify parameters',
       resolve: ({ type, params }, args, { i18n }) =>
-        container.template.render(i18n.t(`automate:action:${type}:paramsDescription`), params),
+        container.template.render(i18n.t(`automate:condition:${type}:paramsDescription`), params),
     },
     priority: {
       type: GraphQLNonNull(GraphQLInt),
