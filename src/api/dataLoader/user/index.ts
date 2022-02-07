@@ -243,10 +243,12 @@ export const walletLastMetricLoader = () =>
             .distinctOn('wallet', 'contract')
             .column(`${metricWalletTableName}.wallet`)
             .column(
-              database.raw(`(${metricWalletTableName}.data->>'stakingUSD')::numeric AS stakingUSD`),
+              database.raw(
+                `(${metricWalletTableName}.data->>'stakingUSD')::numeric AS "stakingUSD"`,
+              ),
             )
             .column(
-              database.raw(`(${metricWalletTableName}.data->>'earnedUSD')::numeric AS earnedUSD`),
+              database.raw(`(${metricWalletTableName}.data->>'earnedUSD')::numeric AS "earnedUSD"`),
             )
             .whereIn('wallet', walletsId)
             .orderBy('wallet')
