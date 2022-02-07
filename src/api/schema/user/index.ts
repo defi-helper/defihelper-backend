@@ -568,8 +568,8 @@ export const WalletBlockchainType = new GraphQLObjectType<
           })
           .load(wallet.id);
 
-        const stakedUSD = walletMetric?.data.stakingUSD ?? '0';
-        const earnedUSD = walletMetric?.data.earnedUSD ?? '0';
+        const stakedUSD = walletMetric?.stakingUSD ?? '0';
+        const earnedUSD = walletMetric?.earnedUSD ?? '0';
         return {
           stakedUSD,
           earnedUSD,

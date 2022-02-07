@@ -5,7 +5,6 @@ import {
   MetricWalletField,
   metricContractTableName,
   MetricContractAPRField,
-  MetricWallet,
   metricWalletTokenTableName,
 } from '@models/Metric/Entity';
 import { walletContractLinkTableName } from '@models/Protocol/Entity';
@@ -230,16 +229,35 @@ export const walletLoader = () =>
   });
 
 export const walletLastMetricLoader = () =>
-  new DataLoader<string, MetricWallet | null>(async (walletsId: ReadonlyArray<string>) => {
+  new DataLoader<string, { [k in MetricWalletField]: string } | null>(async (walletsId) => {
+    const database = container.database();
     const map = new Map(
-      await container.model
-        .metricWalletTable()
-        .distinctOn('wallet')
-        .columns('*')
-        .whereIn('wallet', walletsId)
-        .orderBy('wallet')
-        .orderBy('date', 'DESC')
-        .then((rows) => rows.map((row) => [row.wallet, row])),
+      await container
+        .database()
+        .column('wallet')
+        .sum('stakingUSD AS stakingUSD')
+        .sum('earnedUSD AS earnedUSD')
+        .from(
+          container.model
+            .metricWalletTable()
+            .distinctOn('wallet', 'contract')
+            .column(`${metricWalletTableName}.wallet`)
+            .column(
+              database.raw(`(${metricWalletTableName}.data->>'stakingUSD')::numeric AS stakingUSD`),
+            )
+            .column(
+              database.raw(`(${metricWalletTableName}.data->>'earnedUSD')::numeric AS earnedUSD`),
+            )
+            .whereIn('wallet', walletsId)
+            .orderBy('wallet')
+            .orderBy('contract')
+            .orderBy('date', 'DESC'),
+        )
+        .as('metric')
+        .groupBy('wallet')
+        .then((rows) =>
+          rows.map(({ wallet, stakingUSD, earnedUSD }) => [wallet, { stakingUSD, earnedUSD }]),
+        ),
     );
 
     return walletsId.map((id) => map.get(id) ?? null);

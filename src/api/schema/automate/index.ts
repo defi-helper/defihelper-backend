@@ -1065,12 +1065,12 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
         const walletMetric = await dataLoader.walletMetric().load(wallet.id);
         if (!walletMetric) return def;
 
-        const totalBalance = new BN(walletMetric.data.stakingUSD)
-          .plus(walletMetric.data.earnedUSD)
+        const totalBalance = new BN(walletMetric.stakingUSD)
+          .plus(walletMetric.earnedUSD)
           .toNumber();
         return {
-          staked: walletMetric.data.stakingUSD,
-          earned: walletMetric.data.earnedUSD,
+          staked: walletMetric.stakingUSD,
+          earned: walletMetric.earnedUSD,
           apyBoost: await apyBoost(
             staking.blockchain,
             staking.network,
