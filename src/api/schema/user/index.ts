@@ -2,6 +2,7 @@ import {
   GraphQLBoolean,
   GraphQLEnumType,
   GraphQLFieldConfig,
+  GraphQLFloat,
   GraphQLInputObjectType,
   GraphQLInt,
   GraphQLList,
@@ -615,6 +616,19 @@ export const WalletExchangeType = new GraphQLObjectType<
     exchange: {
       type: GraphQLNonNull(WalletExchangeTypeEnum),
       description: 'Exchange type',
+    },
+    balance: {
+      type: GraphQLNonNull(GraphQLFloat),
+      resolve: async (walletExchange, args, { dataLoader }) => {
+        const v = await dataLoader
+          .userTokenMetric({
+            contract: null,
+            tokenAlias: { liquidity: [TokenAliasLiquidity.Stable, TokenAliasLiquidity.Unstable] },
+          })
+          .load(walletExchange.id);
+
+        return v;
+      },
     },
     account: {
       type: GraphQLNonNull(GraphQLString),
