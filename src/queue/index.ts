@@ -34,14 +34,10 @@ export * as billingTransferScan from './billing/transferScan';
 export * as billingClaimScan from './billing/claimScan';
 export * as billingFeeOracle from './billing/feeOracle';
 export * as billingStoreScan from './billing/storeScan';
-export * as masterChiefFarmPoolScanner from './pools/masterChief';
-export * as pancakeStakingPoolScanner from './pools/pancakeStaking';
-export * as quickSwapPolygonStakingPoolScanner from './pools/quickSwapPolygonStaking';
 export * as automateContractEthereumVerify from './automate/contractEthereumVerify';
 export * as automateTransactionEthereumConfirm from './automate/transactionEthereumConfirm';
 export * as automateTriggerRun from './automate/run';
 export * as automateTriggerByTime from './automate/trigger/byTime';
-export * as swopfiLPFarmingPoolScanner from './pools/swopfiLPFarming';
 export * as logBilling from './log/billingLogger';
 
 /* billing */
