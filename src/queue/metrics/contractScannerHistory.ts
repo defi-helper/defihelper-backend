@@ -26,13 +26,17 @@ export default async (process: Process) => {
   let startDate = dayjs.unix(startBlock.timestamp).startOf('month');
   while (startDate.isBefore(currentMonth)) {
     const endDate = startDate.clone().add(1, 'month').startOf('month');
-    queue.push('metricsContractScannerDate', {
-      contract: contract.id,
-      date: {
-        from: startDate.unix(),
-        to: endDate.unix(),
+    queue.push(
+      'metricsContractScannerDate',
+      {
+        contract: contract.id,
+        date: {
+          from: startDate.unix(),
+          to: endDate.unix(),
+        },
       },
-    });
+      { topic: 'metricHistory' },
+    );
 
     startDate = endDate;
   }
