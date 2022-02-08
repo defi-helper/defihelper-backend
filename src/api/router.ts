@@ -250,7 +250,7 @@ export function route({ express, server }: { express: Express; server: Server })
 
     try {
       if (protocol.previewPicture) Jimp.read(protocol.previewPicture);
-    } catch (e) {
+    } catch {
       return res.status(503).send('picture must be in png');
     }
 
