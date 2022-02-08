@@ -248,6 +248,12 @@ export function route({ express, server }: { express: Express; server: Server })
         100,
     );
 
+    try {
+      if (protocol.previewPicture) Jimp.read(protocol.previewPicture);
+    } catch {
+      return res.status(503).send('picture must be in png');
+    }
+
     const [
       templateInstance,
       protocolLogoInstance,
