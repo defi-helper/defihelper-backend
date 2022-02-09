@@ -93,6 +93,7 @@ export default async (process: Process) => {
     .column(`${tokenTableName}.*`)
     .innerJoin(tokenTableName, `${metricWalletTokenTableName}.token`, `${tokenTableName}.id`)
     .where(`${metricWalletTokenTableName}.wallet`, blockchainWallet.id)
+    .whereNull(`${metricWalletTokenTableName}.contract`)
     .orderBy(`${metricWalletTokenTableName}.wallet`)
     .orderBy(`${metricWalletTokenTableName}.token`)
     .orderBy(`${metricWalletTokenTableName}.date`, 'DESC');
