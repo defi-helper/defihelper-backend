@@ -1,9 +1,10 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
-import { TokenAliasLiquidity, TokenCreatedBy } from '@models/Token/Entity';
+import { TokenAliasLiquidity, TokenCreatedBy, tokenTableName } from '@models/Token/Entity';
 import BN from 'bignumber.js';
 import axios from 'axios';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
+import { metricWalletTokenTableName } from '@models/Metric/Entity';
 
 interface Params {
   id: string;
@@ -71,6 +72,31 @@ export default async (process: Process) => {
     )
     .andWhere('blockchain', blockchainWallet.blockchain)
     .andWhere('network', blockchainWallet.network);
+
+  const lastTokenMetrics = await container.model
+    .metricWalletTokenTable()
+    .distinctOn(`${metricWalletTokenTableName}.wallet`, `${metricWalletTokenTableName}.token`)
+    .column(`${tokenTableName}.*`)
+    .innerJoin(tokenTableName, `${metricWalletTokenTableName}.token`, `${tokenTableName}.id`)
+    .where(`${metricWalletTokenTableName}.wallet`, blockchainWallet.id)
+    .orderBy(`${metricWalletTokenTableName}.wallet`)
+    .orderBy(`${metricWalletTokenTableName}.token`)
+    .orderBy(`${metricWalletTokenTableName}.date`, 'DESC');
+
+  await Promise.all(
+    lastTokenMetrics.map((v) =>
+      walletMetrics.createToken(
+        null,
+        blockchainWallet,
+        v,
+        {
+          usd: '0',
+          balance: '0',
+        },
+        new Date(),
+      ),
+    ),
+  );
 
   await Promise.all(
     debankUserTokenList.map(async (tokenAsset) => {
