@@ -797,6 +797,10 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
       type: GraphQLNonNull(GraphQLBoolean),
       description: 'Is hidden',
     },
+    previewPicture: {
+      type: GraphQLString,
+      description: 'Preview picture',
+    },
     favorite: {
       type: GraphQLNonNull(GraphQLBoolean),
       resolve: async (protocol, args, { currentUser, dataLoader }) => {
