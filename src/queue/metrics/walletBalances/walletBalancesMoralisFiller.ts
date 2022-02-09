@@ -1,9 +1,10 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
-import { TokenAliasLiquidity, TokenCreatedBy } from '@models/Token/Entity';
+import { TokenAliasLiquidity, TokenCreatedBy, tokenTableName } from '@models/Token/Entity';
 import BN from 'bignumber.js';
 import dayjs from 'dayjs';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
+import { metricWalletTokenTableName } from '@models/Metric/Entity';
 
 export interface Params {
   id: string;
@@ -86,7 +87,20 @@ export default async (process: Process) => {
     .andWhere('blockchain', blockchainWallet.blockchain)
     .andWhere('network', blockchainWallet.network);
 
-  await Promise.all(
+  const database = container.database();
+  const lastTokenMetrics = await container.model
+    .metricWalletTokenTable()
+    .distinctOn(`${metricWalletTokenTableName}.wallet`, `${metricWalletTokenTableName}.token`)
+    .column(`${tokenTableName}.*`)
+    .column(database.raw(`(${metricWalletTokenTableName}.data->>'balance')::numeric AS balance`))
+    .innerJoin(tokenTableName, `${metricWalletTokenTableName}.token`, `${tokenTableName}.id`)
+    .where(`${metricWalletTokenTableName}.wallet`, blockchainWallet.id)
+    .whereNull(`${metricWalletTokenTableName}.contract`)
+    .orderBy(`${metricWalletTokenTableName}.wallet`)
+    .orderBy(`${metricWalletTokenTableName}.token`)
+    .orderBy(`${metricWalletTokenTableName}.date`, 'DESC');
+
+  const createdMetrics = await Promise.all(
     tokensBalances.map(async (tokenBalance) => {
       const tokenPrice = tokensPrices.find((t) => {
         return t && (t.address || '').toLowerCase() === tokenBalance.token_address.toLowerCase();
@@ -139,6 +153,25 @@ export default async (process: Process) => {
         {
           usd: totalTokensUSDPrice.toString(10),
           balance: totalTokenNumber.toString(10),
+        },
+        new Date(),
+      );
+    }),
+  );
+
+  await Promise.all(
+    lastTokenMetrics.map((v) => {
+      if (createdMetrics.some((exstng) => exstng?.token === v.id) || v.balance === '0') {
+        return null;
+      }
+
+      return walletMetrics.createToken(
+        null,
+        blockchainWallet,
+        v,
+        {
+          usd: '0',
+          balance: '0',
         },
         new Date(),
       );
