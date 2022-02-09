@@ -83,22 +83,7 @@ export default async (process: Process) => {
     .orderBy(`${metricWalletTokenTableName}.token`)
     .orderBy(`${metricWalletTokenTableName}.date`, 'DESC');
 
-  await Promise.all(
-    lastTokenMetrics.map((v) =>
-      walletMetrics.createToken(
-        null,
-        blockchainWallet,
-        v,
-        {
-          usd: '0',
-          balance: '0',
-        },
-        new Date(),
-      ),
-    ),
-  );
-
-  await Promise.all(
+  const createdMetrics = await Promise.all(
     debankUserTokenList.map(async (tokenAsset) => {
       let tokenRecord = existingTokensRecords.find(
         (exstng) => exstng.address.toLowerCase() === tokenAsset.id,
@@ -142,6 +127,25 @@ export default async (process: Process) => {
         {
           usd: new BN(tokenAsset.price).multipliedBy(tokenAsset.amount).toString(10),
           balance: tokenAsset.amount.toString(10),
+        },
+        new Date(),
+      );
+    }),
+  );
+
+  await Promise.all(
+    lastTokenMetrics.map((v) => {
+      if (createdMetrics.some((exstng) => exstng.token === v.id)) {
+        return null;
+      }
+
+      return walletMetrics.createToken(
+        null,
+        blockchainWallet,
+        v,
+        {
+          usd: '0',
+          balance: '0',
         },
         new Date(),
       );

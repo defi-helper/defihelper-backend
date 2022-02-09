@@ -97,22 +97,7 @@ export default async (process: Process) => {
     .orderBy(`${metricWalletTokenTableName}.token`)
     .orderBy(`${metricWalletTokenTableName}.date`, 'DESC');
 
-  await Promise.all(
-    lastTokenMetrics.map((v) =>
-      walletMetrics.createToken(
-        null,
-        blockchainWallet,
-        v,
-        {
-          usd: '0',
-          balance: '0',
-        },
-        new Date(),
-      ),
-    ),
-  );
-
-  await Promise.all(
+  const createdMetrics = await Promise.all(
     tokensBalances.map(async (tokenBalance) => {
       const tokenPrice = tokensPrices.find((t) => {
         return t && (t.address || '').toLowerCase() === tokenBalance.token_address.toLowerCase();
@@ -165,6 +150,25 @@ export default async (process: Process) => {
         {
           usd: totalTokensUSDPrice.toString(10),
           balance: totalTokenNumber.toString(10),
+        },
+        new Date(),
+      );
+    }),
+  );
+
+  await Promise.all(
+    lastTokenMetrics.map((v) => {
+      if (createdMetrics.some((exstng) => exstng?.token === v.id)) {
+        return null;
+      }
+
+      return walletMetrics.createToken(
+        null,
+        blockchainWallet,
+        v,
+        {
+          usd: '0',
+          balance: '0',
         },
         new Date(),
       );
