@@ -2,7 +2,6 @@ import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import axios from 'axios';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
-import { protocolIdentifierTableName, protocolTableName } from '@models/Protocol/Entity';
 
 interface Params {
   id: string;
@@ -11,6 +10,7 @@ interface Params {
 interface AssetToken {
   id: string;
   chain: string;
+  symbol: string;
 }
 
 interface ProtocolListResponse {
@@ -60,46 +60,99 @@ export default async (process: Process) => {
     return {
       ...protocol,
       id: pureProtocolId,
-      portfolio_item_list: protocol.portfolio_item_list.map((v) => ({
-        ...v,
-        poolIdentifier: container
-          .cryptography()
-          .md5(v.detail.supply_token_list?.map((token) => token.id + token.chain).join(':') || ''), // tokens ids
-      })),
     };
   });
 
-  const existingProtocols = await container.model
-    .protocolIdentifierTable()
-    .innerJoin(protocolTableName, `${protocolTableName}.id`, `${protocolIdentifierTableName}.id`)
-    .whereIn(
-      'identifier',
-      debankUserProtocolsList.map((v) => v.id),
-    );
-
-  await Promise.all(
-    debankUserProtocolsList.map(async (v) => {
-      const exising = existingProtocols.some((existing) => existing.identifier === v.id);
-      if (exising) return;
-
-      container.model
-        .protocolService()
-        .create(
-          'debankByApiReadonly',
-          v.name,
-          '',
-          v.logo_url,
-          v.logo_url,
-          v.site_url,
-          undefined,
-          true,
-          { tvl: v.tvl.toString(10) },
-          v.id,
-        );
-    }),
+  const existingProtocols = await container.model.protocolTable().whereIn(
+    'debankId',
+    debankUserProtocolsList.map((v) => v.id),
   );
 
-  console.warn(JSON.stringify(debankUserProtocolsList));
+  const protocols = [
+    ...existingProtocols,
+    ...(await Promise.all(
+      debankUserProtocolsList.map(async (v) => {
+        const exising = existingProtocols.some((existing) => existing.debankId === v.id);
+        if (exising) return null;
+
+        return container.model
+          .protocolService()
+          .create(
+            'debankByApiReadonly',
+            v.name,
+            '',
+            v.logo_url,
+            v.logo_url,
+            v.site_url,
+            undefined,
+            true,
+            { tvl: v.tvl.toString(10) },
+            v.id,
+          );
+      }),
+    )),
+  ].filter((v) => v);
+
+  const stakingContracts = debankUserProtocolsList.map((v) => ({
+    protocol: v.id,
+    contracts: v.portfolio_item_list
+      .filter((a) => {
+        return a.detail_types.toString() === ['common'].toString() && a.detail.supply_token_list;
+      })
+      .map((contract) => {
+        console.warn(contract.detail_types);
+        return {
+          contractName:
+            contract.detail.supply_token_list?.map((supply) => supply.symbol).join('/') || '',
+          rawAddress:
+            contract.detail.supply_token_list
+              ?.map((supply) => supply.id + supply.chain)
+              ?.join(':') || '',
+          hashAddress: container
+            .cryptography()
+            .md5(
+              contract.detail.supply_token_list
+                ?.map((supply) => supply.id + supply.chain)
+                ?.join(':') || '',
+            ),
+        };
+      }),
+  }));
+
+  const list = await Promise.all(
+    stakingContracts.flatMap((v) =>
+      Promise.all(
+        v.contracts.map((a) => {
+          const protocol = protocols.find((existings) => existings?.debankId === v.protocol);
+
+          if (!protocol) {
+            return null;
+          }
+
+          return container.model
+            .contractService()
+            .create(
+              protocol,
+              'ethereum',
+              '1',
+              '0x0000000000000000000000000000000000000000',
+              '0',
+              'debankApiReadonly',
+              'staking',
+              { adapters: [] },
+              a.contractName,
+              '',
+              '',
+              true,
+              [],
+              a.hashAddress,
+            );
+        }),
+      ),
+    ),
+  );
+
+  console.warn(JSON.stringify(list));
 
   return process.done();
 };

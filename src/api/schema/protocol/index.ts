@@ -773,6 +773,10 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
       type: GraphQLNonNull(GraphQLString),
       description: 'Adapter name',
     },
+    debankId: {
+      type: GraphQLString,
+      description: 'Debank Identifier',
+    },
     name: {
       type: GraphQLNonNull(GraphQLString),
       description: 'Name',

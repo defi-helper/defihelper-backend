@@ -1,19 +1,6 @@
 import { tableFactoryLegacy } from '@services/Database';
 import { Blockchain } from '@models/types';
 
-export interface ProtocolIdentifier {
-  id: string;
-  identifier: string;
-}
-
-export const protocolIdentifierTableName = 'protocol_identifier';
-
-export const protocolIdentifierTableFactory = tableFactoryLegacy<ProtocolIdentifier>(
-  protocolIdentifierTableName,
-);
-
-export type ProtocolIdentifierTable = ReturnType<ReturnType<typeof protocolIdentifierTableFactory>>;
-
 export interface ProtocolLink {
   id: string;
   name: string;
@@ -35,6 +22,7 @@ export interface Protocol {
   icon: string | null;
   link: string | null;
   links: ProtocolLinkMap;
+  debankId: string | null;
   hidden: boolean;
   metric: { tvl?: string };
   updatedAt: Date;
@@ -92,6 +80,7 @@ export interface Contract {
   description: string;
   link: string | null;
   hidden: boolean;
+  debankAddress: string | null;
   metric: ContractMetric;
   updatedAt: Date;
   createdAt: Date;

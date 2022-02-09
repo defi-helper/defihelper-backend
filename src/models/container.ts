@@ -74,16 +74,11 @@ export class ModelContainer extends Container<typeof AppContainer> {
     this.parent.database,
   );
 
-  readonly protocolIdentifierTable = Models.Protocol.Entity.protocolIdentifierTableFactory(
-    this.parent.database,
-  );
-
   readonly protocolService = singleton(
     () =>
       new Models.Protocol.Service.ProtocolService(
         this.protocolTable,
         this.protocolUserFavoriteTable,
-        this.protocolIdentifierTable,
         this.parent.database(),
       ),
   );
