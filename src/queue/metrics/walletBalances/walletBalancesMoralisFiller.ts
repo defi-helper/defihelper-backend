@@ -87,10 +87,12 @@ export default async (process: Process) => {
     .andWhere('blockchain', blockchainWallet.blockchain)
     .andWhere('network', blockchainWallet.network);
 
+  const database = container.database();
   const lastTokenMetrics = await container.model
     .metricWalletTokenTable()
     .distinctOn(`${metricWalletTokenTableName}.wallet`, `${metricWalletTokenTableName}.token`)
     .column(`${tokenTableName}.*`)
+    .column(database.raw(`(${metricWalletTokenTableName}.data->>'balance')::numeric AS balance`))
     .innerJoin(tokenTableName, `${metricWalletTokenTableName}.token`, `${tokenTableName}.id`)
     .where(`${metricWalletTokenTableName}.wallet`, blockchainWallet.id)
     .whereNull(`${metricWalletTokenTableName}.contract`)
@@ -159,7 +161,7 @@ export default async (process: Process) => {
 
   await Promise.all(
     lastTokenMetrics.map((v) => {
-      if (createdMetrics.some((exstng) => exstng?.token === v.id)) {
+      if (createdMetrics.some((exstng) => exstng?.token === v.id) || v.balance === '0') {
         return null;
       }
 
