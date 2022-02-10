@@ -179,6 +179,7 @@ export default async (process: Process) => {
     .innerJoin(protocolTableName, `${protocolTableName}.id`, `${contractTableName}.protocol`)
     .column(`${contractTableName}.*`)
     .column(`${protocolTableName}.debankId`)
+    .column(`${protocolTableName}.adapter`)
     .whereIn(
       'debankAddress',
       stakingContracts.map((v) => v.contracts.map((c) => c.hashAddress)).flat(),
@@ -187,40 +188,50 @@ export default async (process: Process) => {
   const contracts = (
     await Promise.all(
       stakingContracts
-        .map(async (v) =>
+        .map(async (protocol) =>
           Promise.all(
-            v.contracts.map(async (a) => {
-              const protocol = protocols.find((existings) => existings?.debankId === v.protocol);
-              const contract = existingContracts.find(
-                (existingContract) =>
-                  existingContract.debankAddress === a.hashAddress &&
-                  v.protocol === existingContract.debankId,
-              );
-
-              if (contract) return contract;
-              if (!protocol) {
-                throw new Error('protocol must be found here');
-              }
-
-              return container.model
-                .contractService()
-                .create(
-                  protocol,
-                  'ethereum',
-                  '1',
-                  '0x0000000000000000000000000000000000000000',
-                  '0',
-                  'debankApiReadonly',
-                  'staking',
-                  { adapters: [] },
-                  a.contractName,
-                  '',
-                  '',
-                  true,
-                  undefined,
-                  a.hashAddress,
+            protocol.contracts
+              .filter((contract) => {
+                const existingContract = existingContracts.find(
+                  (v) =>
+                    v.debankAddress === contract.hashAddress && protocol.protocol === v.debankId,
                 );
-            }),
+
+                return existingContract?.adapter !== 'debankByApiReadonly';
+              })
+              .map(async (contract) => {
+                const existingProtocol = protocols.find(
+                  (existings) => existings?.debankId === protocol.protocol,
+                );
+                const existingContract = existingContracts.find(
+                  (v) =>
+                    v.debankAddress === contract.hashAddress && protocol.protocol === v.debankId,
+                );
+
+                if (existingContract) return existingContract;
+                if (!existingProtocol) {
+                  throw new Error('protocol must be found here');
+                }
+
+                return container.model
+                  .contractService()
+                  .create(
+                    existingProtocol,
+                    'ethereum',
+                    '1',
+                    '0x0000000000000000000000000000000000000000',
+                    '0',
+                    'debankApiReadonly',
+                    'staking',
+                    { adapters: [] },
+                    contract.contractName,
+                    '',
+                    '',
+                    true,
+                    undefined,
+                    contract.hashAddress,
+                  );
+              }),
           ),
         )
         .flat(),

@@ -1196,9 +1196,10 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
       type: GraphQLNonNull(ProtocolMetricType),
       resolve: async (protocol, args, { currentUser, dataLoader }) => {
         const metric = {
-          tvl: protocol.debankId
-            ? protocol.metric?.tvl ?? '0'
-            : await dataLoader.protocolMetric({ metric: 'tvl' }).load(protocol.id),
+          tvl:
+            protocol.adapter === 'debankApiReadonly'
+              ? protocol.metric?.tvl ?? '0'
+              : await dataLoader.protocolMetric({ metric: 'tvl' }).load(protocol.id),
           uniqueWalletsCount: await dataLoader
             .protocolMetric({ metric: 'uniqueWalletsCount' })
             .load(protocol.id),
