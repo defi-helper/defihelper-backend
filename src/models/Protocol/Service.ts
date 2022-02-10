@@ -104,7 +104,7 @@ interface ContractRegisterData {
 
 export class ContractService {
   public readonly onCreated = new Emitter<ContractRegisterData>((contract) => {
-    if (!contract.contract.debankAddress) {
+    if (contract.contract.debankAddress) {
       return;
     }
 
