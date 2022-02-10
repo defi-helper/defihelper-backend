@@ -126,22 +126,18 @@ export default async (process: Process) => {
       .filter(
         (a) => a.detail_types.toString() === ['common'].toString() && a.detail.supply_token_list,
       )
-      .map((contract) => {
-        // console.warn(contract.detail_types);
-
-        return {
-          tokens: contract.detail.supply_token_list || [],
-          contractName:
-            contract.detail.supply_token_list?.map((supply) => supply.symbol).join('/') || '',
-          hashAddress: container
-            .cryptography()
-            .md5(
-              contract.detail.supply_token_list
-                ?.map((supply) => supply.id + supply.chain + v.id)
-                ?.join(':') || '',
-            ),
-        };
-      }),
+      .map((contract) => ({
+        tokens: contract.detail.supply_token_list || [],
+        contractName:
+          contract.detail.supply_token_list?.map((supply) => supply.symbol).join('/') || '',
+        hashAddress: container
+          .cryptography()
+          .md5(
+            contract.detail.supply_token_list
+              ?.map((supply) => supply.id + supply.chain + v.id)
+              ?.join(':') || '',
+          ),
+      })),
   }));
 
   const existingContracts = await container.model
@@ -152,44 +148,46 @@ export default async (process: Process) => {
       stakingContracts.map((v) => v.contracts.map((a) => a.hashAddress)).flat(),
     );
 
-  await Promise.all(
-    stakingContracts
-      .map(async (v) =>
-        Promise.all(
-          v.contracts.map(async (a) => {
-            const protocol = protocols.find((existings) => existings?.debankId === v.protocol);
-            const contract = existingContracts.find(
-              (o) => o.debankAddress === a.hashAddress && v.protocol === o.protocol,
-            );
-
-            if (contract) return contract;
-            if (!protocol) {
-              throw new Error('protocol must be found here');
-            }
-
-            return container.model
-              .contractService()
-              .create(
-                protocol,
-                'ethereum',
-                '1',
-                '0x0000000000000000000000000000000000000000',
-                '0',
-                'debankApiReadonly',
-                'staking',
-                { adapters: [] },
-                a.contractName,
-                '',
-                '',
-                true,
-                undefined,
-                a.hashAddress,
+  const contracts = (
+    await Promise.all(
+      stakingContracts
+        .map(async (v) =>
+          Promise.all(
+            v.contracts.map(async (a) => {
+              const protocol = protocols.find((existings) => existings?.debankId === v.protocol);
+              const contract = existingContracts.find(
+                (o) => o.debankAddress === a.hashAddress && v.protocol === o.protocol,
               );
-          }),
-        ),
-      )
-      .flat(),
-  );
+
+              if (contract) return contract;
+              if (!protocol) {
+                throw new Error('protocol must be found here');
+              }
+
+              return container.model
+                .contractService()
+                .create(
+                  protocol,
+                  'ethereum',
+                  '1',
+                  '0x0000000000000000000000000000000000000000',
+                  '0',
+                  'debankApiReadonly',
+                  'staking',
+                  { adapters: [] },
+                  a.contractName,
+                  '',
+                  '',
+                  true,
+                  undefined,
+                  a.hashAddress,
+                );
+            }),
+          ),
+        )
+        .flat(),
+    )
+  ).flat();
 
   const existingTokens = await container.model
     .tokenTable()
@@ -254,12 +252,12 @@ export default async (process: Process) => {
               }
 
               return walletMetrics.createToken(
-                null,
+                contracts.find((c) => c.debankAddress === contract.hashAddress) || null,
                 blockchainWallet,
                 tokenRecord,
                 {
                   usd: new BN(token.price).multipliedBy(token.amount).toString(10),
-                  balance: token.amount.toString(10),
+                  balance: new BN(token.amount).toString(10),
                 },
                 new Date(),
               );
@@ -269,8 +267,6 @@ export default async (process: Process) => {
       );
     }),
   );
-
-  // console.warn(JSON.stringify(allContracts));
 
   return process.done();
 };
