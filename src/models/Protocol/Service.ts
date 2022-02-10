@@ -5,6 +5,7 @@ import { Wallet, WalletBlockchain } from '@models/Wallet/Entity';
 import { Factory } from '@services/Container';
 import { Emitter } from '@services/Event';
 import { v4 as uuid } from 'uuid';
+
 import {
   Protocol,
   ProtocolTable,
@@ -33,6 +34,8 @@ export class ProtocolService {
     link: string | null = null,
     links: ProtocolLinkMap = {},
     hidden: boolean = false,
+    metric: { tvl?: string } = {},
+    debankId: string | null = null,
   ) {
     const created = {
       id: uuid(),
@@ -44,9 +47,12 @@ export class ProtocolService {
       link,
       links,
       hidden,
+      metric,
+      debankId,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
+
     await this.protocolTable().insert(created);
 
     return created;
@@ -97,12 +103,16 @@ interface ContractRegisterData {
 }
 
 export class ContractService {
-  public readonly onCreated = new Emitter<ContractRegisterData>((contract) =>
+  public readonly onCreated = new Emitter<ContractRegisterData>((contract) => {
+    if (contract.contract.debankAddress) {
+      return;
+    }
+
     container.model.queueService().push('eventsContractCreated', {
       contract: contract.contract.id,
       events: contract.eventsToSubscribe,
-    }),
-  );
+    });
+  });
 
   public readonly onWalletLink = new Emitter<{
     contract: Contract;
@@ -149,6 +159,7 @@ export class ContractService {
     link: string | null = null,
     hidden: boolean = false,
     eventsToSubscribe?: string[],
+    debankAddress: string | null = null,
   ) {
     const created: Contract = {
       id: uuid(),
@@ -159,6 +170,7 @@ export class ContractService {
       deployBlockNumber,
       adapter,
       layout,
+      debankAddress,
       automate: {
         adapters: automate.adapters,
         autorestakeAdapter: automate.autorestakeAdapter,

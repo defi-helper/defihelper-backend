@@ -773,6 +773,10 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
       type: GraphQLNonNull(GraphQLString),
       description: 'Adapter name',
     },
+    debankId: {
+      type: GraphQLString,
+      description: 'Debank Identifier',
+    },
     name: {
       type: GraphQLNonNull(GraphQLString),
       description: 'Name',
@@ -1192,7 +1196,9 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
       type: GraphQLNonNull(ProtocolMetricType),
       resolve: async (protocol, args, { currentUser, dataLoader }) => {
         const metric = {
-          tvl: await dataLoader.protocolMetric({ metric: 'tvl' }).load(protocol.id),
+          tvl: protocol.debankId
+            ? protocol.metric?.tvl ?? '0'
+            : await dataLoader.protocolMetric({ metric: 'tvl' }).load(protocol.id),
           uniqueWalletsCount: await dataLoader
             .protocolMetric({ metric: 'uniqueWalletsCount' })
             .load(protocol.id),

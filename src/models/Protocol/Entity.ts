@@ -22,7 +22,9 @@ export interface Protocol {
   icon: string | null;
   link: string | null;
   links: ProtocolLinkMap;
+  debankId: string | null;
   hidden: boolean;
+  metric: { tvl?: string };
   updatedAt: Date;
   createdAt: Date;
   previewPicture: string | null;
@@ -78,6 +80,7 @@ export interface Contract {
   description: string;
   link: string | null;
   hidden: boolean;
+  debankAddress: string | null;
   metric: ContractMetric;
   updatedAt: Date;
   createdAt: Date;
