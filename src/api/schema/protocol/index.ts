@@ -1191,12 +1191,10 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
     metric: {
       type: GraphQLNonNull(ProtocolMetricType),
       resolve: async (protocol, args, { currentUser, dataLoader }) => {
-        const dataloaderLastTvl = await dataLoader
-          .protocolMetric({ metric: 'tvl' })
-          .load(protocol.id);
-
         const metric = {
-          tvl: protocol.debankId ? protocol.metric?.tvl ?? '0' : dataloaderLastTvl,
+          tvl: protocol.debankId
+            ? protocol.metric?.tvl ?? '0'
+            : await dataLoader.protocolMetric({ metric: 'tvl' }).load(protocol.id),
           uniqueWalletsCount: await dataLoader
             .protocolMetric({ metric: 'uniqueWalletsCount' })
             .load(protocol.id),

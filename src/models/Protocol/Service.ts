@@ -103,12 +103,16 @@ interface ContractRegisterData {
 }
 
 export class ContractService {
-  public readonly onCreated = new Emitter<ContractRegisterData>((contract) =>
+  public readonly onCreated = new Emitter<ContractRegisterData>((contract) => {
+    if (!contract.contract.debankAddress) {
+      return;
+    }
+
     container.model.queueService().push('eventsContractCreated', {
       contract: contract.contract.id,
       events: contract.eventsToSubscribe,
-    }),
-  );
+    });
+  });
 
   public readonly onWalletLink = new Emitter<{
     contract: Contract;
