@@ -177,6 +177,8 @@ export default async (process: Process) => {
   const existingContracts = await container.model
     .contractTable()
     .innerJoin(protocolTableName, `${protocolTableName}.id`, `${contractTableName}.protocol`)
+    .column(`${contractTableName}.*`)
+    .column(`${protocolTableName}.debankId`)
     .whereIn(
       'debankAddress',
       stakingContracts.map((v) => v.contracts.map((c) => c.hashAddress)).flat(),
@@ -190,7 +192,9 @@ export default async (process: Process) => {
             v.contracts.map(async (a) => {
               const protocol = protocols.find((existings) => existings?.debankId === v.protocol);
               const contract = existingContracts.find(
-                (o) => o.debankAddress === a.hashAddress && v.protocol === o.protocol,
+                (existingContract) =>
+                  existingContract.debankAddress === a.hashAddress &&
+                  v.protocol === existingContract.debankId,
               );
 
               if (contract) return contract;
