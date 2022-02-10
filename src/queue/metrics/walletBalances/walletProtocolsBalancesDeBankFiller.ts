@@ -212,7 +212,7 @@ export default async (process: Process) => {
             (
               await Promise.all(
                 protocol.contracts.map(async (contract) =>
-                  Promise.all(contract.tokens.map((token) => token.id)),
+                  Promise.all(contract.tokens.map((token) => token.id.toLowerCase())),
                 ),
               )
             ).flat(),
