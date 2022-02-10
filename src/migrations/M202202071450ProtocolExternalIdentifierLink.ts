@@ -1,8 +1,8 @@
 import { SchemaBuilder } from 'knex';
 import { contractTableName, protocolTableName } from '@models/Protocol/Entity';
 
-export default (schema: SchemaBuilder) => {
-  schema
+export default async (schema: SchemaBuilder) => {
+  return schema
     .alterTable(protocolTableName, (table) => {
       table.jsonb('metric').notNullable().defaultTo('{}');
       table.string('debankId', 64).nullable();
