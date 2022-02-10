@@ -95,34 +95,47 @@ export default async (process: Process) => {
     debankUserProtocolsList.map((v) => v.id),
   );
 
+  await Promise.all(
+    existingProtocols.map((protocol) =>
+      container.model.protocolService().update({
+        ...protocol,
+        metric: {
+          tvl:
+            debankUserProtocolsList.find((p) => p.id === protocol.debankId)?.tvl.toString(10) ??
+            '0',
+        },
+      }),
+    ),
+  );
+
   const protocols = [
     ...existingProtocols,
     ...(await Promise.all(
-      debankUserProtocolsList.map(async (v) => {
-        const exising = existingProtocols.some((existing) => existing.debankId === v.id);
+      debankUserProtocolsList.map(async (protocol) => {
+        const exising = existingProtocols.some((existing) => existing.debankId === protocol.id);
         if (exising) return null;
 
         return container.model
           .protocolService()
           .create(
             'debankByApiReadonly',
-            v.name,
+            protocol.name,
             '',
-            v.logo_url,
-            v.logo_url,
-            v.site_url,
+            protocol.logo_url,
+            protocol.logo_url,
+            protocol.site_url,
             undefined,
             true,
-            { tvl: v.tvl.toString(10) },
-            v.id,
+            { tvl: protocol.tvl.toString(10) },
+            protocol.id,
           );
       }),
     )),
   ].filter((v) => v);
 
-  const stakingContracts = debankUserProtocolsList.map((v) => ({
-    protocol: v.id,
-    contracts: v.portfolio_item_list
+  const stakingContracts = debankUserProtocolsList.map((protocol) => ({
+    protocol: protocol.id,
+    contracts: protocol.portfolio_item_list
       .filter(
         (a) => a.detail_types.toString() === ['common'].toString() && a.detail.supply_token_list,
       )
@@ -134,7 +147,7 @@ export default async (process: Process) => {
           .cryptography()
           .md5(
             contract.detail.supply_token_list
-              ?.map((supply) => supply.id + supply.chain + v.id)
+              ?.map((supply) => supply.id + supply.chain + protocol.id)
               ?.join(':') || '',
           ),
       })),
@@ -145,7 +158,7 @@ export default async (process: Process) => {
     .innerJoin(protocolTableName, `${protocolTableName}.id`, `${contractTableName}.protocol`)
     .whereIn(
       'debankAddress',
-      stakingContracts.map((v) => v.contracts.map((a) => a.hashAddress)).flat(),
+      stakingContracts.map((v) => v.contracts.map((c) => c.hashAddress)).flat(),
     );
 
   const contracts = (
@@ -216,7 +229,7 @@ export default async (process: Process) => {
             contract.tokens.map(async (token) => {
               let tokenRecord = existingTokens.find(
                 (exstng) =>
-                  exstng.address.toLowerCase() === token.id &&
+                  exstng.address.toLowerCase() === token.id.toLowerCase() &&
                   exstng.network === namedChainToNumbered(token.chain as NamedChain),
               );
 
@@ -241,8 +254,8 @@ export default async (process: Process) => {
                   .tokenService()
                   .create(
                     tokenRecordAlias,
-                    blockchainWallet.blockchain,
-                    blockchainWallet.network,
+                    'ethereum',
+                    namedChainToNumbered(token.chain as NamedChain),
                     token.id.toLowerCase(),
                     token.name,
                     token.symbol,

@@ -18,7 +18,7 @@ export default async (process: Process) => {
     .where(`${walletBlockchainTableName}.type`, WalletBlockchainType.Wallet)
     .andWhere(`${walletBlockchainTableName}.blockchain`, 'ethereum');
 
-  const lag = 86400 / wallets.length;
+  const lag = 600 / wallets.length;
   await wallets.reduce<Promise<dayjs.Dayjs>>(async (prev, wallet) => {
     const startAt = await prev;
 

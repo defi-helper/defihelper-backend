@@ -5,7 +5,7 @@ import { Wallet, WalletBlockchain } from '@models/Wallet/Entity';
 import { Factory } from '@services/Container';
 import { Emitter } from '@services/Event';
 import { v4 as uuid } from 'uuid';
-import Knex from 'knex';
+
 import {
   Protocol,
   ProtocolTable,
@@ -23,7 +23,6 @@ export class ProtocolService {
   constructor(
     readonly protocolTable: Factory<ProtocolTable>,
     readonly protocolFavoriteTable: Factory<ProtocolUserFavoriteTable>,
-    readonly database: Knex,
   ) {}
 
   async create(
@@ -36,7 +35,7 @@ export class ProtocolService {
     links: ProtocolLinkMap = {},
     hidden: boolean = false,
     metric: { tvl?: string } = {},
-    debankId: string = adapter,
+    debankId: string | null = null,
   ) {
     const created = {
       id: uuid(),

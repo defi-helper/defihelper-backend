@@ -79,7 +79,6 @@ export class ModelContainer extends Container<typeof AppContainer> {
       new Models.Protocol.Service.ProtocolService(
         this.protocolTable,
         this.protocolUserFavoriteTable,
-        this.parent.database(),
       ),
   );
 
