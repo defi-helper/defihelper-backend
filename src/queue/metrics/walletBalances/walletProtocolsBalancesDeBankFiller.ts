@@ -61,7 +61,7 @@ export default async (process: Process) => {
   const { id } = process.task.params as Params;
 
   const walletMetrics = container.model.metricService();
-  const blockchainWallet = await container.model
+  const targetWallet = await container.model
     .walletTable()
     .innerJoin(
       walletBlockchainTableName,
@@ -71,24 +71,45 @@ export default async (process: Process) => {
     .where(`${walletTableName}.id`, id)
     .first();
 
-  if (!blockchainWallet || blockchainWallet.blockchain !== 'ethereum') {
+  if (!targetWallet || targetWallet.blockchain !== 'ethereum') {
     throw new Error('wallet not found or unsupported blockchain');
   }
+
+  const chainsWallets = await container.model
+    .walletTable()
+    .innerJoin(
+      walletBlockchainTableName,
+      `${walletBlockchainTableName}.id`,
+      `${walletTableName}.id`,
+    )
+    .where({
+      user: targetWallet.user,
+      blockchain: 'ethereum',
+    });
 
   const debankUserProtocolsList = (
     (
       await axios.get(
-        `https://openapi.debank.com/v1/user/complex_protocol_list?id=${blockchainWallet.address}`,
+        `https://openapi.debank.com/v1/user/complex_protocol_list?id=${targetWallet.address}`,
       )
     ).data as ProtocolListResponse[]
-  ).map((protocol) => {
-    const pureProtocolId = protocol.id.replace(`${protocol.chain}_`, '');
+  )
+    .map((protocol) => {
+      const pureProtocolId = protocol.id.replace(`${protocol.chain}_`, '');
 
-    return {
-      ...protocol,
-      id: pureProtocolId,
-    };
-  });
+      return {
+        ...protocol,
+        id: pureProtocolId,
+      };
+    })
+    .filter((v) => {
+      try {
+        namedChainToNumbered(v.chain as NamedChain);
+        return true;
+      } catch {
+        return false;
+      }
+    });
 
   const existingProtocols = await container.model.protocolTable().whereIn(
     'debankId',
@@ -264,9 +285,17 @@ export default async (process: Process) => {
                   );
               }
 
+              const walletByChain = chainsWallets.find(
+                (wallet) => wallet.network === namedChainToNumbered(token.chain as NamedChain),
+              );
+
+              if (!walletByChain) {
+                return null;
+              }
+
               return walletMetrics.createToken(
                 contracts.find((c) => c.debankAddress === contract.hashAddress) || null,
-                blockchainWallet,
+                walletByChain,
                 tokenRecord,
                 {
                   usd: new BN(token.price).multipliedBy(token.amount).toString(10),

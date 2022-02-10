@@ -24,12 +24,15 @@ export default async (process: Process) => {
     return process.later(dayjs().add(300, 'seconds').toDate());
   }
 
+  if (!contract.debankAddress) {
+    return process.done();
+  }
+
   await container.model
     .queueService()
     .push('registerContractInScanner', { contract: contract.id, events });
 
   await container.model.queueService().push('metricsContractCurrent', { contract: contract.id });
-
   if (['1', '56'].includes(contract.network)) {
     container.model.queueService().push('metricsContractHistory', { contract: contract.id });
     container.model.queueService().push(
