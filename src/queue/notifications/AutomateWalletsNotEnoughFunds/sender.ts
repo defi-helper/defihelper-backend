@@ -59,16 +59,17 @@ export default async (process: Process) => {
     const result = await prev;
     if (result !== null) return result;
 
+    let funds = 0;
     const walletFunds = walletsFunds.find((w) => w.id === t.walletId);
-    if (!walletFunds) {
-      throw new Error('wallet funds must be found here');
+    if (walletFunds) {
+      funds = walletFunds.funds;
     }
 
     const chainNativeUSD = new BN(
       await container.blockchain.ethereum.byNetwork(t.walletNetwork).nativeTokenPrice(),
     ).toNumber();
 
-    return walletFunds.funds * chainNativeUSD - (1 + chainNativeUSD * 0.1) <= 0 ? t : null;
+    return funds * chainNativeUSD - (1 + chainNativeUSD * 0.1) <= 0 ? t : null;
   }, Promise.resolve(null));
   if (notifyBy === null) {
     return process.done();
