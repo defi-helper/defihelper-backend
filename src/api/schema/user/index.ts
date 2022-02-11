@@ -626,7 +626,7 @@ export const WalletExchangeType = new GraphQLObjectType<
           })
           .load(walletExchange.id);
 
-        return v;
+        return v.usd;
       },
     },
     account: {
