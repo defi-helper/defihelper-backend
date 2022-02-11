@@ -621,13 +621,12 @@ export const WalletExchangeType = new GraphQLObjectType<
       type: GraphQLNonNull(GraphQLFloat),
       resolve: async (walletExchange, args, { dataLoader }) => {
         const v = await dataLoader
-          .userTokenMetric({
-            contract: null,
+          .walletTokenMetric({
             tokenAlias: { liquidity: [TokenAliasLiquidity.Stable, TokenAliasLiquidity.Unstable] },
           })
           .load(walletExchange.id);
 
-        return v;
+        return v.usd;
       },
     },
     account: {
