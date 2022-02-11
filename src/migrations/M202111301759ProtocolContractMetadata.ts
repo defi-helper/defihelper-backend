@@ -4,8 +4,8 @@ import { contractTableName, metadataTableName } from '@models/Protocol/Entity';
 export default (schema: SchemaBuilder) => {
   return schema.createTable(metadataTableName, (table) => {
     table.string('id', 36).notNullable();
-    table.string('contract', 36).notNullable();
-    table.string('type', 32).notNullable();
+    table.string('contract', 36).notNullable().index();
+    table.string('type', 32).notNullable().index();
     table.jsonb('value').notNullable();
     table.dateTime('createdAt').notNullable();
 

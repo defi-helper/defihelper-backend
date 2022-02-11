@@ -5,7 +5,7 @@ import { tableName as userTableName } from '@models/User/Entity';
 export default (schema: SchemaBuilder) => {
   return schema.createTable(userNotificationTableName, (table) => {
     table.string('id', 36).notNullable();
-    table.string('user', 36).notNullable();
+    table.string('user', 36).notNullable().index();
     table.string('type', 32).notNullable().index();
     table.dateTime('createdAt').notNullable();
 

@@ -18,7 +18,7 @@ export default (schema: SchemaBuilder) => {
     })
     .createTable(purchaseTableName, (table) => {
       table.string('id', 36).notNullable();
-      table.string('product', 36).notNullable();
+      table.string('product', 36).notNullable().index();
       table.string('blockchain', 64).notNullable();
       table.string('network', 64).notNullable();
       table.string('account', 512).notNullable();
