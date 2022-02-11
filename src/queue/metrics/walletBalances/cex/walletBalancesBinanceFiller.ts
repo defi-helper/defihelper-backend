@@ -86,11 +86,12 @@ export default async (process: Process) => {
 
   const existingTokens = await container.model
     .tokenTable()
-    .distinctOn('symbol')
+    .distinctOn('symbol', 'createdAt')
     .whereIn(
       'symbol',
       assetsOnBalance.map(({ symbol }) => symbol),
     )
+    .orderBy('createdAt', 'desc')
     .then((rows) => new Map(rows.map((token) => [token.symbol, token])));
 
   const { found, notFound } = assetsOnBalance.reduce<{
