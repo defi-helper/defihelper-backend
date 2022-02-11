@@ -79,7 +79,7 @@ export default async (process: Process) => {
         const existing = existingWallets.some(
           (w) =>
             w.network === network &&
-            w.blockchain === 'ethereum' &&
+            w.blockchain === inheritWallet.blockchain &&
             w.address.toLowerCase() === inheritWallet.address.toLowerCase(),
         );
 
