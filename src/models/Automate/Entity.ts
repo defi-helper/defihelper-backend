@@ -86,6 +86,7 @@ export interface Action {
   type: ActionType;
   params: ActionParams<ActionType>;
   priority: number;
+  restakeAt: Date | null;
   updatedAt: Date;
   createdAt: Date;
 }

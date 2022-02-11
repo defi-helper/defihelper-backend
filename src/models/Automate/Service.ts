@@ -216,6 +216,7 @@ export class AutomateService {
       type,
       params,
       priority,
+      restakeAt: null,
       updatedAt: new Date(),
       createdAt: new Date(),
     };

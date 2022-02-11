@@ -4,6 +4,7 @@ import { EthereumAutomateAdapter } from '@services/Blockchain/Adapter';
 import axios from 'axios';
 import BN from 'bignumber.js';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
+import dayjs from 'dayjs';
 
 interface Params {
   id: string;
@@ -113,6 +114,11 @@ export default async (params: Params) => {
     headers: {
       'Content-Type': 'application/json',
     },
+  });
+
+  container.model.automateService().updateAction({
+    ...action,
+    restakeAt: dayjs().add(new BN(optimalRes.v).multipliedBy(86400).toNumber(), 'second').toDate(),
   });
 
   return new BN(optimalRes.v).lte(0);
