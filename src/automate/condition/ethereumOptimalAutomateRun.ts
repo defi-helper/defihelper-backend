@@ -8,6 +8,7 @@ import dayjs from 'dayjs';
 
 interface Params {
   id: string;
+  conditionId: string;
 }
 
 export default async (params: Params) => {
@@ -44,6 +45,12 @@ export default async (params: Params) => {
 
   const protocol = await container.model.protocolTable().where('id', contract.protocol).first();
   if (!protocol) throw new Error('Protocol not found');
+
+  const condition = await container.model
+    .automateConditionTable()
+    .where('id', params.conditionId)
+    .first();
+  if (!condition) throw new Error('Condition not found');
 
   const targetContract = await container.model
     .contractTable()
@@ -116,8 +123,8 @@ export default async (params: Params) => {
     },
   });
 
-  container.model.automateService().updateAction({
-    ...action,
+  await container.model.automateService().updateCondition({
+    ...condition,
     restakeAt: dayjs().add(new BN(optimalRes.v).multipliedBy(86400).toNumber(), 'second').toDate(),
   });
 

@@ -60,6 +60,7 @@ export interface Condition {
   type: ConditionType;
   params: ConditionParams<ConditionType>;
   priority: number;
+  restakeAt: Date | null;
   updatedAt: Date;
   createdAt: Date;
 }
@@ -86,7 +87,6 @@ export interface Action {
   type: ActionType;
   params: ActionParams<ActionType>;
   priority: number;
-  restakeAt: Date | null;
   updatedAt: Date;
   createdAt: Date;
 }

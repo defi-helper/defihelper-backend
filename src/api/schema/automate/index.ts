@@ -236,6 +236,20 @@ export const TriggerType = new GraphQLObjectType<Automate.Trigger>({
       type: GraphQLNonNull(DateTimeType),
       description: 'Created at date',
     },
+    restakeAt: {
+      type: DateTimeType,
+      description: 'Next restake date',
+      resolve: async (trigger) => {
+        const optimalRestakeCondition = await container.model
+          .automateConditionTable()
+          .where({
+            trigger: trigger.id,
+            type: 'ethereumOptimalAutomateRun',
+          })
+          .first();
+        return optimalRestakeCondition?.restakeAt ?? null;
+      },
+    },
     conditions: {
       type: GraphQLNonNull(
         PaginateList('AutomateConditionListType', GraphQLNonNull(ConditionType)),

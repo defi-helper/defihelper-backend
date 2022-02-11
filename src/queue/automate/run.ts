@@ -31,7 +31,10 @@ export default async (process: Process) => {
         if (!(await prev)) return false;
 
         try {
-          return await getConditionHandler(condition).call(null, condition.params);
+          return await getConditionHandler(condition).call(null, {
+            ...condition.params,
+            conditionId: condition.id,
+          });
         } catch (e) {
           throw new Error(`Condition "${condition.id}": ${e instanceof Error ? e.stack : e}`);
         }
