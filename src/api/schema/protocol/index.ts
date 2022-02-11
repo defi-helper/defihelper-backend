@@ -93,6 +93,22 @@ export const ContractAutomatesType = new GraphQLObjectType<ContractAutomate, Req
       description: 'Autorestake adapter name',
       resolve: ({ autorestakeAdapter }) => autorestakeAdapter,
     },
+    buyLiquidity: {
+      type: new GraphQLObjectType({
+        name: 'ContractAutomatesBuyLiquidityType',
+        fields: {
+          router: {
+            type: GraphQLNonNull(GraphQLString),
+            description: 'Liquidity pool router address',
+          },
+          pair: {
+            type: GraphQLNonNull(GraphQLString),
+            description: 'Target pool address',
+          },
+        },
+      }),
+      description: 'Buy liquidity automate config',
+    },
   },
 });
 
