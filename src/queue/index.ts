@@ -3,6 +3,7 @@ export * as scheduleHourStart from './schedule/hourStart';
 export * as scheduleDayStart from './schedule/dayStart';
 export * as scheduleWeekStart from './schedule/weekStart';
 export * as scheduleMonthStart from './schedule/monthStart';
+export * as systemGarbageCollector from './system/garbageCollector';
 export * as metricsProtocolLinksSocialBroker from './metrics/protocol/links/socialBroker';
 export * as metricsProtocolLinksSocial from './metrics/protocol/links/social';
 export * as metricsProtocolLinksListingBroker from './metrics/protocol/links/listingBroker';
@@ -84,3 +85,8 @@ export * as tokenAlias from './token/alias';
 export * as tokenInfoEth from './token/ethereumInfo';
 export * as tokenInfoWaves from './token/wavesInfo';
 export * as resolveTokenAliasLiquidity from './token/resolveTokenAliasLiquidity';
+
+/* utils */
+export * as utilsTokensLogoBroker from './utils/tokensLogoBroker';
+export * as utilsDebankProtocolsTvlHistoryBroker from './utils/debankProtocolsTvlHistoryBroker';
+export * as utilsDebankProtocolsTvlHistoryFiller from './utils/debankProtocolsTvlHistoryFiller';

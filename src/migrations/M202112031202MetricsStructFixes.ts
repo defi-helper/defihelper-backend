@@ -42,7 +42,7 @@ export default async (schema: SchemaBuilder) => {
   });
 
   schema.alterTable(tokenAliasTableName, (table) => {
-    table.string('protocol', 36).nullable();
+    table.string('protocol', 36).nullable().index();
 
     table
       .foreign('protocol')

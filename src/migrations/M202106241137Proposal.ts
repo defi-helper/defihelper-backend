@@ -5,7 +5,7 @@ import { proposalTableName } from '@models/Proposal/Entity';
 export default (schema: SchemaBuilder) => {
   return schema.createTable(proposalTableName, (table) => {
     table.string('id', 36).notNullable();
-    table.string('author', 36).nullable();
+    table.string('author', 36).nullable().index();
     table.string('title', 512).notNullable();
     table.text('description').notNullable();
     table.string('status', 64).notNullable().index();
