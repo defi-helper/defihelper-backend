@@ -14,7 +14,7 @@ export default (schema: SchemaBuilder) => {
     .createTable(triggerTableName, (table) => {
       table.string('id', 36).notNullable();
       table.string('type', 64).notNullable();
-      table.string('wallet', 36).notNullable();
+      table.string('wallet', 36).notNullable().index();
       table.string('name', 512).notNullable();
       table.dateTime('lastCallAt').nullable();
       table.boolean('active').notNullable();
@@ -29,7 +29,7 @@ export default (schema: SchemaBuilder) => {
     })
     .createTable(conditionTableName, (table) => {
       table.string('id', 36).notNullable();
-      table.string('trigger', 36).notNullable();
+      table.string('trigger', 36).notNullable().index();
       table.string('type', 64).notNullable();
       table.jsonb('params').notNullable();
       table.integer('priority').notNullable();
@@ -44,7 +44,7 @@ export default (schema: SchemaBuilder) => {
     })
     .createTable(actionTableName, (table) => {
       table.string('id', 36).notNullable();
-      table.string('trigger', 36).notNullable();
+      table.string('trigger', 36).notNullable().index();
       table.string('type', 64).notNullable();
       table.jsonb('params').notNullable();
       table.integer('priority').notNullable();
@@ -59,8 +59,8 @@ export default (schema: SchemaBuilder) => {
     })
     .createTable(contractTableName, (table) => {
       table.string('id', 36).notNullable();
-      table.string('wallet', 36).notNullable();
-      table.string('protocol', 36).notNullable();
+      table.string('wallet', 36).notNullable().index();
+      table.string('protocol', 36).notNullable().index();
       table.string('address', 512).notNullable();
       table.string('adapter', 512).notNullable();
       table

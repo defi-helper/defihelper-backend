@@ -36,7 +36,7 @@ export default (schema: SchemaBuilder) => {
       table.string('network', 64).notNullable();
       table.string('account', 512).notNullable();
       table.float('amount').notNullable();
-      table.string('bill', 36).nullable();
+      table.string('bill', 36).nullable().index();
       table.string('tx', 512).notNullable();
       table.dateTime('createdAt').notNullable();
       table.primary(['id'], `${transferTableName}_pkey`);
