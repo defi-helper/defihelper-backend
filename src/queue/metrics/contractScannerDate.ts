@@ -15,6 +15,12 @@ export default async (process: Process) => {
     return process.info('No ethereum').done();
   }
 
+  const protocol = await container.model.protocolTable().where('id', contract.protocol).first();
+  if (!protocol) throw new Error('Protocol not found');
+  if (protocol.adapter === 'debankByApiReadonly') {
+    return process.info('Do not need to add in scanner').done();
+  }
+
   const scanner = container.scanner();
   const scannerContract = await scanner.findContract(contract.network, contract.address);
   if (!scannerContract) {

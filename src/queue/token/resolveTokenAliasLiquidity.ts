@@ -45,9 +45,9 @@ export default async (process: Process) => {
       throw new Error(`unsupported network: ${params.network}`);
   }
 
-  const token: ApiTokenResponse = await axios.get(
-    `https://openapi.debank.com/v1/token?chain_id=${chain}&id=${params.address}`,
-  );
+  const token: ApiTokenResponse = (
+    await axios.get(`https://openapi.debank.com/v1/token?chain_id=${chain}&id=${params.address}`)
+  ).data;
 
   const isLiquid = token.is_verified === true || token.is_core === true || token.is_wallet === true;
   await container.model.tokenAliasService().update({
