@@ -31,7 +31,7 @@ export default async (process: Process) => {
         if (!(await prev)) return false;
 
         try {
-          return await getConditionHandler(condition).call(null, condition.params);
+          return await getConditionHandler(condition).call(condition, condition.params);
         } catch (e) {
           throw new Error(`Condition "${condition.id}": ${e instanceof Error ? e.stack : e}`);
         }
@@ -49,7 +49,7 @@ export default async (process: Process) => {
         await prev;
 
         try {
-          return await Promise.resolve(getActionHandler(action).call(null, action.params));
+          return await Promise.resolve(getActionHandler(action).call(action, action.params));
         } catch (e) {
           throw new Error(`Action "${action.id}": ${e instanceof Error ? e.stack : e}`);
         }

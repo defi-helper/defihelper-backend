@@ -66,6 +66,7 @@ export interface Condition {
 
 export function getConditionHandler(condition: Condition) {
   return Conditions[condition.type].default as (
+    this: Condition,
     params: ConditionParams<Condition['type']>,
   ) => boolean | Promise<boolean>;
 }
@@ -91,7 +92,10 @@ export interface Action {
 }
 
 export function getActionHandler(action: Action) {
-  return Actions[action.type].default as (params: ActionParams<Action['type']>) => any;
+  return Actions[action.type].default as (
+    this: Action,
+    params: ActionParams<Action['type']>,
+  ) => any;
 }
 
 export const actionTableName = 'automate_action';
