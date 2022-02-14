@@ -182,7 +182,7 @@ export default async (process: Process) => {
     .column(`${protocolTableName}.adapter`)
     .whereIn(
       'debankAddress',
-      stakingContracts.map((v) => v.hashAddress), // test here
+      stakingContracts.map((v) => v.hashAddress),
     );
 
   const contracts = await Promise.all(
