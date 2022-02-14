@@ -4,7 +4,7 @@ import { SchemaBuilder } from 'knex';
 
 export default async (schema: SchemaBuilder) => {
   return schema.alterTable(contractTableName, (table) => {
-    table.string('contract', 36).nullable().defaultTo(null);
+    table.string('contract', 36).nullable().defaultTo(null).index();
     table
       .foreign('contract')
       .references(`${protocolContractTableName}.id`)

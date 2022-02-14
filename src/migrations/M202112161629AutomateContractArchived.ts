@@ -3,6 +3,6 @@ import { contractTableName } from '@models/Automate/Entity';
 
 export default async (schema: SchemaBuilder) => {
   await schema.alterTable(contractTableName, (table) => {
-    table.dateTime('archivedAt').defaultTo(null);
+    table.dateTime('archivedAt').defaultTo(null).index();
   });
 };

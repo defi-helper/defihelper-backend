@@ -14,7 +14,7 @@ export default (schema: SchemaBuilder) => {
     })
     .createTable(tokenTableName, (table) => {
       table.string('id', 36).notNullable();
-      table.string('alias', 36).nullable();
+      table.string('alias', 36).nullable().index();
       table.string('blockchain', 64).notNullable();
       table.string('network', 64).notNullable();
       table.string('address', 512).notNullable();

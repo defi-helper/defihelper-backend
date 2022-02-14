@@ -5,7 +5,7 @@ import { metricProtocolTableName } from '@models/Metric/Entity';
 export default (schema: SchemaBuilder) => {
   return schema.createTable(metricProtocolTableName, (table) => {
     table.string('id', 36).notNullable();
-    table.string('protocol', 36).notNullable();
+    table.string('protocol', 36).notNullable().index();
     table.jsonb('data').notNullable().defaultTo('{}');
     table.dateTime('date').notNullable();
     table.dateTime('createdAt').notNullable();

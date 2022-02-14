@@ -4,7 +4,7 @@ import { protocolTableName, contractTableName } from '@models/Protocol/Entity';
 export default (schema: SchemaBuilder) => {
   return schema.createTable(contractTableName, (table) => {
     table.string('id', 36).notNullable();
-    table.string('protocol', 36).notNullable();
+    table.string('protocol', 36).notNullable().index();
     table.string('blockchain', 64).notNullable();
     table.string('network', 64).notNullable();
     table.string('address', 512).notNullable();

@@ -4,7 +4,7 @@ import { triggerCallHistoryTableName, triggerTableName } from '@models/Automate/
 export default (schema: SchemaBuilder) => {
   return schema.createTable(triggerCallHistoryTableName, (table) => {
     table.string('id', 36).notNullable();
-    table.string('trigger', 36).notNullable();
+    table.string('trigger', 36).notNullable().index();
     table.text('error').nullable();
     table.dateTime('createdAt').notNullable();
     table.primary(['id'], `${triggerCallHistoryTableName}_pkey`);

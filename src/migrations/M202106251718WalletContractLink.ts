@@ -5,8 +5,8 @@ import { walletTableName } from '@models/Wallet/Entity';
 export default (schema: SchemaBuilder) => {
   return schema.createTable(walletContractLinkTableName, (table) => {
     table.string('id', 36).notNullable();
-    table.string('contract', 36).notNullable();
-    table.string('wallet', 36).notNullable();
+    table.string('contract', 36).notNullable().index();
+    table.string('wallet', 36).notNullable().index();
     table.dateTime('createdAt').notNullable();
     table.primary(['id'], `${walletContractLinkTableName}_pkey`);
     table.unique(['contract', 'wallet']);
