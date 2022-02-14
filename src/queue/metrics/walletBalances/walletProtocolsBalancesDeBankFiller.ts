@@ -154,13 +154,13 @@ export default async (process: Process) => {
     )),
   ].filter((v) => v);
 
-  const stakingContracts = debankUserProtocolsList.map((protocol) => ({
-    protocol: protocol.id,
-    contracts: protocol.portfolio_item_list
+  const stakingContracts = debankUserProtocolsList.flatMap((protocol) =>
+    protocol.portfolio_item_list
       .filter(
         (a) => a.detail_types.toString() === ['common'].toString() && a.detail.supply_token_list,
       )
       .map((contract) => ({
+        protocol: protocol.id,
         tokens: contract.detail.supply_token_list || [],
         contractName:
           contract.detail.supply_token_list?.map((supply) => supply.symbol).join('/') || '',
@@ -172,7 +172,7 @@ export default async (process: Process) => {
               ?.join(':') || '',
           ),
       })),
-  }));
+  );
 
   const existingContracts = await container.model
     .contractTable()
@@ -182,61 +182,59 @@ export default async (process: Process) => {
     .column(`${protocolTableName}.adapter`)
     .whereIn(
       'debankAddress',
-      stakingContracts.map((v) => v.contracts.map((c) => c.hashAddress)).flat(),
+      stakingContracts.map((v) => v.hashAddress), // test here
     );
 
-  const contracts = (
+  const contracts = await Promise.all(
+    stakingContracts
+      .filter((contract) => {
+        const existingContract = existingContracts.find(
+          (v) => v.debankAddress === contract.hashAddress && contract.protocol === v.debankId,
+        );
+
+        return existingContract?.adapter !== 'debankByApiReadonly';
+      })
+      .map(async (contract) => {
+        const existingProtocol = protocols.find(
+          (existings) => existings?.debankId === contract.protocol,
+        );
+        const existingContract = existingContracts.find(
+          (v) => v.debankAddress === contract.hashAddress && contract.protocol === v.debankId,
+        );
+
+        if (existingContract) return existingContract;
+        if (!existingProtocol) {
+          throw new Error('protocol must be found here');
+        }
+
+        return container.model
+          .contractService()
+          .create(
+            existingProtocol,
+            'ethereum',
+            '1',
+            '0x0000000000000000000000000000000000000000',
+            '0',
+            'debankApiReadonly',
+            'staking',
+            { adapters: [] },
+            contract.contractName,
+            '',
+            '',
+            true,
+            undefined,
+            contract.hashAddress,
+          );
+      }),
+  );
+
+  console.warn(
     await Promise.all(
-      stakingContracts
-        .map(async (protocol) =>
-          Promise.all(
-            protocol.contracts
-              .filter((contract) => {
-                const existingContract = existingContracts.find(
-                  (v) =>
-                    v.debankAddress === contract.hashAddress && protocol.protocol === v.debankId,
-                );
-
-                return existingContract?.adapter !== 'debankByApiReadonly';
-              })
-              .map(async (contract) => {
-                const existingProtocol = protocols.find(
-                  (existings) => existings?.debankId === protocol.protocol,
-                );
-                const existingContract = existingContracts.find(
-                  (v) =>
-                    v.debankAddress === contract.hashAddress && protocol.protocol === v.debankId,
-                );
-
-                if (existingContract) return existingContract;
-                if (!existingProtocol) {
-                  throw new Error('protocol must be found here');
-                }
-
-                return container.model
-                  .contractService()
-                  .create(
-                    existingProtocol,
-                    'ethereum',
-                    '1',
-                    '0x0000000000000000000000000000000000000000',
-                    '0',
-                    'debankApiReadonly',
-                    'staking',
-                    { adapters: [] },
-                    contract.contractName,
-                    '',
-                    '',
-                    true,
-                    undefined,
-                    contract.hashAddress,
-                  );
-              }),
-          ),
-        )
-        .flat(),
-    )
-  ).flat();
+      stakingContracts.map(async (contract) =>
+        Promise.all(contract.tokens.map((token) => token.id.toLowerCase())),
+      ),
+    ),
+  );
 
   const existingTokens = await container.model
     .tokenTable()
@@ -244,83 +242,73 @@ export default async (process: Process) => {
       'address',
       (
         await Promise.all(
-          stakingContracts.map(async (protocol) =>
-            (
-              await Promise.all(
-                protocol.contracts.map(async (contract) =>
-                  Promise.all(contract.tokens.map((token) => token.id.toLowerCase())),
-                ),
-              )
-            ).flat(),
+          stakingContracts.map(async (contract) =>
+            Promise.all(contract.tokens.map((token) => token.id.toLowerCase())),
           ),
         )
       ).flat(),
     );
 
   await Promise.all(
-    stakingContracts.map(async (protocol) => {
+    stakingContracts.flatMap(async (contract) => {
       await Promise.all(
-        protocol.contracts.map(async (contract) =>
-          Promise.all(
-            contract.tokens.map(async (token) => {
-              let tokenRecord = existingTokens.find(
-                (exstng) =>
-                  exstng.address.toLowerCase() === token.id.toLowerCase() &&
-                  exstng.network === namedChainToNumbered(token.chain as NamedChain),
+        contract.tokens.map(async (token) => {
+          let tokenRecord = existingTokens.find(
+            (exstng) =>
+              exstng.address.toLowerCase() === token.id.toLowerCase() &&
+              exstng.network === namedChainToNumbered(token.chain as NamedChain),
+          );
+
+          if (!tokenRecord) {
+            let tokenRecordAlias = await container.model
+              .tokenAliasTable()
+              .where('name', 'ilike', token.name)
+              .first();
+
+            if (!tokenRecordAlias) {
+              tokenRecordAlias = await container.model
+                .tokenAliasService()
+                .create(
+                  token.name,
+                  token.symbol,
+                  TokenAliasLiquidity.Unstable,
+                  token.logo_url || null,
+                );
+            }
+
+            tokenRecord = await container.model
+              .tokenService()
+              .create(
+                tokenRecordAlias,
+                'ethereum',
+                namedChainToNumbered(token.chain as NamedChain),
+                token.id.toLowerCase(),
+                token.name,
+                token.symbol,
+                token.decimals,
+                TokenCreatedBy.Scanner,
               );
+          }
 
-              if (!tokenRecord) {
-                let tokenRecordAlias = await container.model
-                  .tokenAliasTable()
-                  .where('name', 'ilike', token.name)
-                  .first();
+          const walletByChain = chainsWallets.find(
+            (wallet) => wallet.network === namedChainToNumbered(token.chain as NamedChain),
+          );
 
-                if (!tokenRecordAlias) {
-                  tokenRecordAlias = await container.model
-                    .tokenAliasService()
-                    .create(
-                      token.name,
-                      token.symbol,
-                      TokenAliasLiquidity.Unstable,
-                      token.logo_url || null,
-                    );
-                }
+          if (!walletByChain) {
+            return null;
+          }
 
-                tokenRecord = await container.model
-                  .tokenService()
-                  .create(
-                    tokenRecordAlias,
-                    'ethereum',
-                    namedChainToNumbered(token.chain as NamedChain),
-                    token.id.toLowerCase(),
-                    token.name,
-                    token.symbol,
-                    token.decimals,
-                    TokenCreatedBy.Scanner,
-                  );
-              }
-
-              const walletByChain = chainsWallets.find(
-                (wallet) => wallet.network === namedChainToNumbered(token.chain as NamedChain),
-              );
-
-              if (!walletByChain) {
-                return null;
-              }
-
-              return walletMetrics.createToken(
-                contracts.find((c) => c.debankAddress === contract.hashAddress) || null,
-                walletByChain,
-                tokenRecord,
-                {
-                  usd: new BN(token.price).multipliedBy(token.amount).toString(10),
-                  balance: new BN(token.amount).toString(10),
-                },
-                new Date(),
-              );
-            }),
-          ),
-        ),
+          return walletMetrics.createToken(
+            contracts.find((c) => c.debankAddress === contract.hashAddress) || null,
+            walletByChain,
+            tokenRecord,
+            {
+              usd: new BN(token.price).multipliedBy(token.amount).toString(10),
+              balance: new BN(token.amount).toString(10),
+            },
+            new Date(),
+          );
+        }),
       );
     }),
   );
