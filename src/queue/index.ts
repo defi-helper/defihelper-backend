@@ -87,3 +87,5 @@ export * as resolveTokenAliasLiquidity from './token/resolveTokenAliasLiquidity'
 
 /* utils */
 export * as utilsTokensLogoBroker from './utils/tokensLogoBroker';
+export * as debankProtocolsTvlHistoryBroker from './utils/debankProtocolsTvlHistoryBroker';
+export * as debankProtocolsTvlHistoryFiller from './utils/debankProtocolsTvlHistoryFiller';
