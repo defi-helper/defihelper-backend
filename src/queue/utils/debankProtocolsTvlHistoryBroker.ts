@@ -10,7 +10,7 @@ export default async (process: Process) => {
     const startAt = await prev;
 
     await container.model.queueService().push(
-      'debankProtocolsTvlHistoryFiller',
+      'utilsDebankProtocolsTvlHistoryFiller',
       {
         id: protocol.id,
       },
