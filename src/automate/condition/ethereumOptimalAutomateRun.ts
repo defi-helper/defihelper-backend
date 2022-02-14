@@ -1,15 +1,16 @@
 import container from '@container';
-import { ActionParams, ContractVerificationStatus } from '@models/Automate/Entity';
+import { ActionParams, Condition, ContractVerificationStatus } from '@models/Automate/Entity';
 import { EthereumAutomateAdapter } from '@services/Blockchain/Adapter';
 import axios from 'axios';
 import BN from 'bignumber.js';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
+import dayjs from 'dayjs';
 
 interface Params {
   id: string;
 }
 
-export default async (params: Params) => {
+export default async function (this: Condition, params: Params) {
   const action = await container.model
     .automateActionTable()
     .where({
@@ -43,6 +44,9 @@ export default async (params: Params) => {
 
   const protocol = await container.model.protocolTable().where('id', contract.protocol).first();
   if (!protocol) throw new Error('Protocol not found');
+
+  const condition = await container.model.automateConditionTable().where('id', this.id).first();
+  if (!condition) throw new Error('Condition not found');
 
   const targetContract = await container.model
     .contractTable()
@@ -115,5 +119,10 @@ export default async (params: Params) => {
     },
   });
 
+  await container.model.automateService().updateCondition({
+    ...condition,
+    restakeAt: dayjs().add(new BN(optimalRes.v).multipliedBy(86400).toNumber(), 'second').toDate(),
+  });
+
   return new BN(optimalRes.v).lte(0);
-};
+}
