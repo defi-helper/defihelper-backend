@@ -5,7 +5,7 @@ import { tableName as userTableName } from '@models/User/Entity';
 export default (schema: SchemaBuilder) => {
   return schema.createTable(walletTableName, (table) => {
     table.string('id', 36).notNullable();
-    table.string('user', 36).notNullable();
+    table.string('user', 36).notNullable().index();
     table.string('blockchain', 64).notNullable();
     table.string('network', 64).notNullable();
     table.string('address', 512).notNullable();

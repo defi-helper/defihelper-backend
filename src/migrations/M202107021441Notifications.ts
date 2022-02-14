@@ -15,7 +15,7 @@ export default async (schema: SchemaBuilder) => {
   return schema
     .createTable(userContactTableName, (table) => {
       table.string('id', 36).notNullable();
-      table.string('user', 36).notNullable();
+      table.string('user', 36).notNullable().index();
       table
         .enum('broker', [ContactBroker.Email, ContactBroker.Telegram], {
           useNative: true,
@@ -37,7 +37,7 @@ export default async (schema: SchemaBuilder) => {
     })
     .createTable(notificationTableName, (table) => {
       table.string('id', 36).notNullable();
-      table.string('contact', 36).notNullable();
+      table.string('contact', 36).notNullable().index();
       table
         .enum('event', [NotificationType.event], {
           useNative: true,
@@ -65,7 +65,7 @@ export default async (schema: SchemaBuilder) => {
     })
     .createTable(contractEventWebHookTableName, (table) => {
       table.string('id', 36).notNullable();
-      table.string('contract', 36).notNullable();
+      table.string('contract', 36).notNullable().index();
       table.string('event', 256).notNullable();
       table.dateTime('createdAt').notNullable();
 
@@ -78,8 +78,8 @@ export default async (schema: SchemaBuilder) => {
     })
     .createTable(userEventSubscriptionTableName, (table) => {
       table.string('id', 36).notNullable();
-      table.string('webHook', 36).notNullable();
-      table.string('contact', 36).notNullable();
+      table.string('webHook', 36).notNullable().index();
+      table.string('contact', 36).notNullable().index();
       table.dateTime('createdAt').notNullable();
 
       table.primary(['id'], `${userEventSubscriptionTableName}_pkey`);
