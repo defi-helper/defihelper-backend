@@ -1213,7 +1213,7 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
       resolve: async (protocol, args, { currentUser, dataLoader }) => {
         const metric = {
           tvl:
-            protocol.adapter === 'debankApiReadonly'
+            protocol.adapter === 'debankByApiReadonly'
               ? protocol.metric?.tvl ?? '0'
               : await dataLoader.protocolMetric({ metric: 'tvl' }).load(protocol.id),
           uniqueWalletsCount: await dataLoader
