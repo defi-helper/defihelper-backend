@@ -228,87 +228,70 @@ export default async (process: Process) => {
       }),
   );
 
-  console.warn(
-    await Promise.all(
-      stakingContracts.map(async (contract) =>
-        Promise.all(contract.tokens.map((token) => token.id.toLowerCase())),
-      ),
-    ),
+  const existingTokens = await container.model.tokenTable().whereIn(
+    'address',
+    stakingContracts.flatMap(({ tokens }) => tokens.map((token) => token.id.toLowerCase())),
   );
 
-  const existingTokens = await container.model
-    .tokenTable()
-    .whereIn(
-      'address',
-      (
-        await Promise.all(
-          stakingContracts.map(async (contract) =>
-            Promise.all(contract.tokens.map((token) => token.id.toLowerCase())),
-          ),
-        )
-      ).flat(),
-    );
+  const debankTokensList = stakingContracts.flatMap((contract) =>
+    contract.tokens.map((token) => ({
+      ...token,
+      protocolId: contract.protocol,
+      protocolHashAddress: contract.hashAddress,
+    })),
+  );
 
   await Promise.all(
-    stakingContracts.flatMap(async (contract) => {
-      await Promise.all(
-        contract.tokens.map(async (token) => {
-          let tokenRecord = existingTokens.find(
-            (exstng) =>
-              exstng.address.toLowerCase() === token.id.toLowerCase() &&
-              exstng.network === namedChainToNumbered(token.chain as NamedChain),
+    debankTokensList.map(async (token) => {
+      let tokenRecord = existingTokens.find(
+        (exstng) =>
+          exstng.address.toLowerCase() === token.id.toLowerCase() &&
+          exstng.network === namedChainToNumbered(token.chain as NamedChain),
+      );
+
+      if (!tokenRecord) {
+        let tokenRecordAlias = await container.model
+          .tokenAliasTable()
+          .where('name', 'ilike', token.name)
+          .first();
+
+        if (!tokenRecordAlias) {
+          tokenRecordAlias = await container.model
+            .tokenAliasService()
+            .create(token.name, token.symbol, TokenAliasLiquidity.Unstable, token.logo_url || null);
+        }
+
+        tokenRecord = await container.model
+          .tokenService()
+          .create(
+            tokenRecordAlias,
+            'ethereum',
+            namedChainToNumbered(token.chain as NamedChain),
+            token.id.toLowerCase(),
+            token.name,
+            token.symbol,
+            token.decimals,
+            TokenCreatedBy.Scanner,
           );
+      }
 
-          if (!tokenRecord) {
-            let tokenRecordAlias = await container.model
-              .tokenAliasTable()
-              .where('name', 'ilike', token.name)
-              .first();
+      const walletByChain = chainsWallets.find(
+        (wallet) => wallet.network === namedChainToNumbered(token.chain as NamedChain),
+      );
 
-            if (!tokenRecordAlias) {
-              tokenRecordAlias = await container.model
-                .tokenAliasService()
-                .create(
-                  token.name,
-                  token.symbol,
-                  TokenAliasLiquidity.Unstable,
-                  token.logo_url || null,
-                );
-            }
+      if (!walletByChain) {
+        return null;
+      }
 
-            tokenRecord = await container.model
-              .tokenService()
-              .create(
-                tokenRecordAlias,
-                'ethereum',
-                namedChainToNumbered(token.chain as NamedChain),
-                token.id.toLowerCase(),
-                token.name,
-                token.symbol,
-                token.decimals,
-                TokenCreatedBy.Scanner,
-              );
-          }
-
-          const walletByChain = chainsWallets.find(
-            (wallet) => wallet.network === namedChainToNumbered(token.chain as NamedChain),
-          );
-
-          if (!walletByChain) {
-            return null;
-          }
-
-          return walletMetrics.createToken(
-            contracts.find((c) => c.debankAddress === contract.hashAddress) || null,
-            walletByChain,
-            tokenRecord,
-            {
-              usd: new BN(token.price).multipliedBy(token.amount).toString(10),
-              balance: new BN(token.amount).toString(10),
-            },
-            new Date(),
-          );
-        }),
+      return walletMetrics.createToken(
+        contracts.find((c) => c.debankAddress === token.protocolHashAddress) || null,
+        walletByChain,
+        tokenRecord,
+        {
+          usd: new BN(token.price).multipliedBy(token.amount).toString(10),
+          balance: new BN(token.amount).toString(10),
+        },
+        new Date(),
       );
     }),
   );
