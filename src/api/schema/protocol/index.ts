@@ -1023,7 +1023,6 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
           .offset(pagination.offset);
       },
     },
-
     metricChartProtocols: {
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(MetricChartType))),
       args: {
@@ -1094,7 +1093,6 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
           .offset(pagination.offset);
       },
     },
-
     metricChartContracts: {
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(MetricChartType))),
       args: {
