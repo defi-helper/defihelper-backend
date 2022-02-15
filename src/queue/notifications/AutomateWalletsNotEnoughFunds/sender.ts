@@ -61,7 +61,7 @@ export default async (process: Process) => {
     if (result !== null) return result;
 
     const walletFunds = walletsFunds.find((w) => w.id === t.walletId);
-    if (walletFunds?s.suspendReason) {
+    if (walletFunds?.suspendReason) {
       return null;
     }
 
