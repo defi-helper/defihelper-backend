@@ -1062,10 +1062,9 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
         const database = container.database();
         const select = container.model
           .metricProtocolTable()
-          .distinct(
-            database.raw(`DATE_TRUNC('${group}', ${metricProtocolTableName}.date) AS "date"`),
-          )
+          .distinctOn(`date`)
           .column(database.raw(`(${metricProtocolTableName}.data->>'${metric}')::numeric AS value`))
+          .column(database.raw(`DATE_TRUNC('${group}', ${metricProtocolTableName}.date) AS "date"`))
           .where(function () {
             this.where(`${metricProtocolTableName}.protocol`, protocol.id).andWhere(
               database.raw(`${metricProtocolTableName}.data->>'${metric}' IS NOT NULL`),
@@ -1077,7 +1076,7 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
               this.andWhere(`${metricProtocolTableName}.date`, '<', filter.dateBefore.toDate());
             }
           })
-          .orderByRaw(`DATE_TRUNC('day', metric_protocol.date) DESC`);
+          .orderBy(`date`, 'DESC');
 
         return container
           .database()
