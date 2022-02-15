@@ -50,7 +50,7 @@
   },
   "dependencies": {
     "@defihelper/ethers-multicall": "^0.3.2",
-    "@defihelper/networks": "^1.0.1",
+    "@defihelper/networks": "^1.0.2",
     "@types/crypto-js": "^4.1.0",
     "@waves/marshall": "^0.14.0",
     "@waves/ts-lib-crypto": "^1.4.4-beta.1",
