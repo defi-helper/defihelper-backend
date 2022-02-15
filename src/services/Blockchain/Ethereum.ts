@@ -65,6 +65,7 @@ interface ContractABIResolver {
 
 function networkFactory({
   id,
+  testnet,
   name,
   txExplorerURL,
   walletExplorerURL,
@@ -76,6 +77,7 @@ function networkFactory({
   network: { node, historicalNode, avgBlockTime, inspectors, consumers },
 }: {
   id: string;
+  testnet: boolean;
   name: string;
   txExplorerURL: URL;
   walletExplorerURL: URL;
@@ -90,6 +92,7 @@ function networkFactory({
 
   return {
     name,
+    testnet,
     provider,
     providerHistorical: providerRandomizerFactory(
       historicalNode.map((host) => singleton(providerFactory(host))),
@@ -261,6 +264,7 @@ export class BlockchainContainer extends Container<Config> {
   readonly networks = {
     '1': networkFactory({
       id: '1',
+      testnet: false,
       name: 'Ethereum',
       txExplorerURL: new URL('https://etherscan.io/tx'),
       walletExplorerURL: new URL('https://etherscan.io/address'),
@@ -277,6 +281,7 @@ export class BlockchainContainer extends Container<Config> {
     }),
     '3': networkFactory({
       id: '3',
+      testnet: true,
       name: 'Ethereum Ropsten',
       txExplorerURL: new URL('https://ropsten.etherscan.io/tx'),
       walletExplorerURL: new URL('https://ropsten.etherscan.io/address'),
@@ -293,6 +298,7 @@ export class BlockchainContainer extends Container<Config> {
     }),
     '56': networkFactory({
       id: '56',
+      testnet: false,
       name: 'Binance Smart Chain',
       txExplorerURL: new URL('https://bscscan.com/tx'),
       walletExplorerURL: new URL('https://bscscan.com/address'),
@@ -309,6 +315,7 @@ export class BlockchainContainer extends Container<Config> {
     }),
     '137': networkFactory({
       id: '137',
+      testnet: false,
       name: 'Polygon',
       txExplorerURL: new URL('https://polygonscan.com/tx'),
       walletExplorerURL: new URL('https://polygonscan.com/address'),
@@ -325,6 +332,7 @@ export class BlockchainContainer extends Container<Config> {
     }),
     '1285': networkFactory({
       id: '1285',
+      testnet: false,
       name: 'Moonriver',
       txExplorerURL: new URL('https://moonriver.moonscan.io/tx'),
       walletExplorerURL: new URL('https://moonriver.moonscan.io/address'),
@@ -341,6 +349,7 @@ export class BlockchainContainer extends Container<Config> {
     }),
     '43113': networkFactory({
       id: '43113',
+      testnet: true,
       name: 'Avalanche Testnet',
       txExplorerURL: new URL('https://testnet.snowtrace.io/tx'),
       walletExplorerURL: new URL('https://testnet.snowtrace.io/address'),
@@ -357,6 +366,7 @@ export class BlockchainContainer extends Container<Config> {
     }),
     '43114': networkFactory({
       id: '43114',
+      testnet: false,
       name: 'Avalanche',
       txExplorerURL: new URL('https://snowtrace.io/tx'),
       walletExplorerURL: new URL('https://snowtrace.io/address'),
@@ -373,6 +383,7 @@ export class BlockchainContainer extends Container<Config> {
     }),
     '31337': networkFactory({
       id: '31337',
+      testnet: true,
       name: 'Localhost',
       txExplorerURL: new URL('https://etherscan.io/tx'),
       walletExplorerURL: new URL('https://etherscan.io/address'),

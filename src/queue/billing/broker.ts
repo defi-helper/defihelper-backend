@@ -28,6 +28,9 @@ export default async (process: Process) => {
   const queueService = container.model.queueService();
   await Promise.all(
     Object.entries(contracts).map(async ([network, networkContracts]) => {
+      // Skip testnet
+      if (container.blockchain.ethereum.byNetwork(network).testnet) return [];
+
       const pool = [];
       if (isKey(networkContracts, 'Balance')) {
         const { deployBlockNumber: balanceFrom } = networkContracts.Balance;
