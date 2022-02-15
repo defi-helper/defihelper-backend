@@ -52,7 +52,6 @@ export default async (process: Process) => {
       `${walletTableName}.id`,
       triggers.map(({ walletId }) => walletId),
     )
-    .andWhere(`${walletTableName}.suspendReason`, null)
     .groupBy(`${walletTableName}.id`);
 
   const notifyBy = await triggers.reduce<
