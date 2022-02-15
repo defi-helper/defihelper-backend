@@ -39,8 +39,8 @@ export default async (process: Process) => {
 
   const walletsFunds = await container.model
     .billingTransferTable()
-    .column(`${walletTableName}.id as id`)
-    .column(`${walletTableName}.suspendReason as suspendReason`)
+    .column(`${walletTableName}.id`)
+    .column(`${walletTableName}.suspendReason`)
     .column(database.raw('coalesce(sum(amount), 0) as funds'))
     .innerJoin(walletBlockchainTableName, function () {
       this.on(`${walletBlockchainTableName}.blockchain`, '=', `${transferTableName}.blockchain`)
@@ -61,7 +61,7 @@ export default async (process: Process) => {
     if (result !== null) return result;
 
     const walletFunds = walletsFunds.find((w) => w.id === t.walletId);
-    if (walletFunds?.suspendReason) {
+    if (walletFunds?s.suspendReason) {
       return null;
     }
 
