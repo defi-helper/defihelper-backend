@@ -1023,6 +1023,77 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
           .offset(pagination.offset);
       },
     },
+
+    metricChartProtocols: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(MetricChartType))),
+      args: {
+        metric: {
+          type: GraphQLNonNull(MetricColumnType),
+          description: 'Metric column',
+        },
+        group: {
+          type: GraphQLNonNull(MetricGroupEnum),
+          description: 'Truncate date mode',
+        },
+        filter: {
+          type: new GraphQLInputObjectType({
+            name: 'ProtocolMetricChartProtocolsFilterInputType',
+            fields: {
+              dateAfter: {
+                type: DateTimeType,
+                description: 'Created at equals or greater',
+              },
+              dateBefore: {
+                type: DateTimeType,
+                description: 'Created at less',
+              },
+            },
+          }),
+          defaultValue: {},
+        },
+        sort: SortArgument(
+          'ProtocolMetricChartProtocolsSortInputType',
+          ['date', 'value'],
+          [{ column: 'date', order: 'desc' }],
+        ),
+        pagination: PaginationArgument('ProtocolMetricChartProtocolsPaginationInputType'),
+      },
+      resolve: async (protocol, { metric, group, filter, sort, pagination }) => {
+        const database = container.database();
+        const select = container.model
+          .metricProtocolTable()
+          .distinctOn(`${metricProtocolTableName}.date`)
+          .column(database.raw(`(${metricProtocolTableName}.data->>'${metric}')::numeric AS value`))
+          .column(database.raw(`DATE_TRUNC('${group}', ${metricProtocolTableName}.date) AS "date"`))
+          .where(function () {
+            this.where(`${metricProtocolTableName}.protocol`, protocol.id).andWhere(
+              database.raw(`${metricProtocolTableName}.data->>'${metric}' IS NOT NULL`),
+            );
+            if (filter.dateAfter) {
+              this.andWhere(`${metricProtocolTableName}.date`, '>=', filter.dateAfter.toDate());
+            }
+            if (filter.dateBefore) {
+              this.andWhere(`${metricProtocolTableName}.date`, '<', filter.dateBefore.toDate());
+            }
+          })
+          .orderBy(`${metricProtocolTableName}.date`, 'DESC');
+
+        return container
+          .database()
+          .column('date')
+          .max({ max: 'value' })
+          .min({ min: 'value' })
+          .count({ count: 'value' })
+          .avg({ avg: 'value' })
+          .sum({ sum: 'value' })
+          .from(select.as('metric'))
+          .groupBy('date')
+          .orderBy(sort)
+          .limit(pagination.limit)
+          .offset(pagination.offset);
+      },
+    },
+
     metricChartContracts: {
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(MetricChartType))),
       args: {
