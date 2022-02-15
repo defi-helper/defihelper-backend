@@ -54,5 +54,8 @@ export default {
     'automate:condition:schedule:description': 'Check the schedule',
     'automate:condition:schedule:paramsDescription':
       'Дни недели {{weeks}}; Месяца {{months}}; Дни месяца {{days}}; Часы {{hours}}',
+    'automate:condition:contractMetric:name': 'Метрики контракта',
+    'automate:condition:contractMetric:description': 'Текущая метрика контракта',
+    'automate:condition:contractMetric:paramsDescription': '{{metric}} {{op}} {{value}}',
   },
 };
