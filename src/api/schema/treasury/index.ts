@@ -80,7 +80,11 @@ export const TreasuryQuery: GraphQLFieldConfig<any, Request> = {
       .from(
         container.model
           .metricWalletTokenTable()
-          .distinctOn(`${metricWalletTokenTableName}.token`)
+          .distinctOn(
+            `${metricWalletTokenTableName}.wallet`,
+            `${metricWalletTokenTableName}.contract`,
+            `${metricWalletTokenTableName}.token`,
+          )
           .column(`${metricWalletTokenTableName}.token`)
           .column(database.raw(`(${metricWalletTokenTableName}.data->>'usd')::numeric AS usd`))
           .innerJoin(tokenTableName, `${metricWalletTokenTableName}.token`, `${tokenTableName}.id`)
@@ -93,6 +97,8 @@ export const TreasuryQuery: GraphQLFieldConfig<any, Request> = {
             this.andWhere(database.raw(`${metricWalletTokenTableName}.data->>'usd' IS NOT NULL`));
             this.andWhere(database.raw(`${metricWalletTokenTableName}.data->>'usd' != 'NaN'`));
           })
+          .orderBy(`${metricWalletTokenTableName}.wallet`)
+          .orderBy(`${metricWalletTokenTableName}.contract`)
           .orderBy(`${metricWalletTokenTableName}.token`)
           .orderBy(`${metricWalletTokenTableName}.date`, 'DESC')
           .as('metric'),
