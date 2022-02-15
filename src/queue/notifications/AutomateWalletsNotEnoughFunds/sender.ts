@@ -40,6 +40,7 @@ export default async (process: Process) => {
   const walletsFunds = await container.model
     .billingTransferTable()
     .column(`${walletTableName}.id as id`)
+    .column(`${walletTableName}.suspendReason as suspendReason`)
     .column(database.raw('coalesce(sum(amount), 0) as funds'))
     .innerJoin(walletBlockchainTableName, function () {
       this.on(`${walletBlockchainTableName}.blockchain`, '=', `${transferTableName}.blockchain`)
@@ -51,6 +52,7 @@ export default async (process: Process) => {
       `${walletTableName}.id`,
       triggers.map(({ walletId }) => walletId),
     )
+    .andWhere(`${walletTableName}.suspendReason`, null)
     .groupBy(`${walletTableName}.id`);
 
   const notifyBy = await triggers.reduce<
@@ -59,8 +61,12 @@ export default async (process: Process) => {
     const result = await prev;
     if (result !== null) return result;
 
-    let funds = 0;
     const walletFunds = walletsFunds.find((w) => w.id === t.walletId);
+    if (walletFunds.suspendReason) {
+      return null;
+    }
+
+    let funds = 0;
     if (walletFunds) {
       funds = walletFunds.funds;
     }
