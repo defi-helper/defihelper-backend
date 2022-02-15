@@ -1076,7 +1076,8 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
               this.andWhere(`${metricProtocolTableName}.date`, '<', filter.dateBefore.toDate());
             }
           })
-          .orderBy(`date`, 'DESC');
+          .orderBy('date')
+          .orderBy(`${metricProtocolTableName}.date`, 'DESC');
 
         return container
           .database()
