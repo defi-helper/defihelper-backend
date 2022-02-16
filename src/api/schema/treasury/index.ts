@@ -1,4 +1,3 @@
-import BN from 'bignumber.js';
 import {
   GraphQLFieldConfig,
   GraphQLFloat,
@@ -8,7 +7,6 @@ import {
 } from 'graphql';
 import { Request } from 'express';
 import container from '@container';
-import { BillStatus } from '@models/Billing/Entity';
 import { Role } from '@models/User/Entity';
 import { TokenAliasLiquidity, tokenAliasTableName, tokenTableName } from '@models/Token/Entity';
 import { metricWalletTokenTableName } from '@models/Metric/Entity';
@@ -16,9 +14,6 @@ import { metricWalletTokenTableName } from '@models/Metric/Entity';
 export const TreasuryType = new GraphQLObjectType({
   name: 'TreasuryType',
   fields: {
-    balanceUSD: {
-      type: GraphQLNonNull(GraphQLFloat),
-    },
     portfoliosCount: {
       type: GraphQLNonNull(GraphQLInt),
     },
@@ -46,21 +41,6 @@ export const TreasuryQuery: GraphQLFieldConfig<any, Request> = {
     if (cachedStats) return cachedStats;
 
     const database = container.database();
-
-    const allowedNetworks = ['1', '56', '1285', '43114'];
-    const protocolFee = await allowedNetworks.reduce(async (sum, network) => {
-      const row = await container.model
-        .billingBillTable()
-        .sum({ protocolFeeSum: 'protocolFee' })
-        .where({ blockchain: 'ethereum', network, status: BillStatus.Accepted })
-        .first();
-      const protocolFeeSum = (row ?? { protocolFeeSum: null }).protocolFeeSum ?? '0';
-      const nativeTokenPriceUSD = await container.blockchain.ethereum
-        .byNetwork(network)
-        .nativeTokenPrice();
-
-      return new BN(protocolFeeSum).multipliedBy(nativeTokenPriceUSD).plus(await sum);
-    }, Promise.resolve(new BN(0)));
 
     const protocolsRow = await container.model
       .protocolTable()
@@ -105,7 +85,6 @@ export const TreasuryQuery: GraphQLFieldConfig<any, Request> = {
       )
       .first();
     const result = {
-      balanceUSD: protocolFee.toString(10),
       protocolsCount: protocolsRow ? protocolsRow.count : '0',
       portfoliosCount: portfoliosRow ? portfoliosRow.count : '0',
       trackedUSD: trackedRow ? trackedRow.usd : '0',
