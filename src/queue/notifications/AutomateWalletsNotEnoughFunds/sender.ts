@@ -10,6 +10,7 @@ interface TriggerItem {
   walletId: string;
   walletNetwork: string;
   triggerId: string;
+  walletAddress: string;
 }
 
 export default async (process: Process) => {
@@ -25,6 +26,7 @@ export default async (process: Process) => {
     .automateTriggerTable()
     .columns<TriggerItem[]>(
       `${walletTableName}.id as walletId`,
+      `${walletBlockchainTableName}.address as walletAddress`,
       `${walletBlockchainTableName}.network as walletNetwork`,
       `${triggerTableName}.id as triggerId`,
     )
@@ -54,9 +56,7 @@ export default async (process: Process) => {
     )
     .groupBy(`${walletTableName}.id`);
 
-  const notifyBy = await triggers.reduce<
-    Promise<{ walletId: string; walletNetwork: string; triggerId: string } | null>
-  >(async (prev, t) => {
+  const notifyBy = await triggers.reduce<Promise<TriggerItem | null>>(async (prev, t) => {
     const result = await prev;
     if (result !== null) return result;
 
@@ -106,7 +106,10 @@ export default async (process: Process) => {
             locale: user.locale,
             template: 'automateNotEnoughFunds',
             params: {
-              debugInfo: notifyBy.walletId.substring(0, 8),
+              visualizedWalletAddress: `${notifyBy.walletAddress.slice(
+                0,
+                6,
+              )}...${notifyBy.walletAddress.slice(-4)}`,
             },
           });
 

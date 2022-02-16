@@ -17,8 +17,8 @@ export default {
       'Новое событие {{eventName}} в контракте {{contractAddress}} сети {{network}}:',
     'Your portfolio: total stacked ${{totalStackedUSD}}, total earned ${{totalEarnedUSD}}':
       'Ваше портфолио\nВсего застейкано: {{totalStackedUSD}}$, всего заработано: {{totalEarnedUSD}}$',
-    'Attention, one of yours automates may be paused due to insufficient funds':
-      'Внимание, одна из ваших автоматизаций скоро будет заморожена ввиду нехватки средств',
+    'Your automate on wallet {{visualizedWalletAddress}} may be paused in short while due to insufficient funds':
+      'Внимание, ваша автоматизация на кошельке {{visualizedWalletAddress}} скоро будет приостановлена ввиду нехватки средств',
     "DeFiHelper's public beta now available. Get your APY boost right now on https://app.defihelper.io!":
       'Стартовало публичное тестирование DeFiHelper. Посмотрите сейчас на https://app.defihelper.io!',
     'Tracked Balance ${{totalNetWorth}}, Total unclaimed ${{totalEarnedUSD}}':
