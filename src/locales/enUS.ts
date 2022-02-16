@@ -12,8 +12,8 @@ export default {
       'New {{eventName}} events in {{contractAddress}} on {{network}}:',
     'Your portfolio: total stacked ${{totalStackedUSD}}, total earned ${{totalEarnedUSD}}':
       'Your portfolio: total stacked ${{totalStackedUSD}}, total earned ${{totalEarnedUSD}}',
-    'Attention, one of yours automates may be paused due to insufficient funds':
-      'Attention, one of yours automates may be paused due to insufficient funds',
+    'Your automate on wallet {{visualizedWalletAddress}} may be paused in short while due to insufficient funds':
+      'Your automate on wallet {{visualizedWalletAddress}} may be paused in short while due to insufficient funds',
     "DeFiHelper's public beta now available. Get your APY boost right now on https://app.defihelper.io!":
       "DeFiHelper's public beta now available. Get your APY boost right now on https://app.defihelper.io!",
     'Tracked Balance ${{totalNetWorth}}, Total unclaimed ${{totalEarnedUSD}}':
