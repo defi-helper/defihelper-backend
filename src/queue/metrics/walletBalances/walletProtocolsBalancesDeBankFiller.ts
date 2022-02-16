@@ -163,7 +163,7 @@ export default async (process: Process) => {
         protocol: protocol.id,
         tokens: contract.detail.supply_token_list || [],
         contractName:
-          contract.detail.supply_token_list?.map((supply) => supply.symbol).join('/') || '',
+          contract.detail.supply_token_list?.map(({ symbol }) => symbol).join('/') || '',
         hashAddress: container
           .cryptography()
           .md5(
