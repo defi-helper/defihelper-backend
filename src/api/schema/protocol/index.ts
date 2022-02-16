@@ -1424,6 +1424,9 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
           search: {
             type: GraphQLString,
           },
+          isDebank: {
+            type: GraphQLBoolean,
+          },
         },
       }),
       defaultValue: {},
@@ -1437,7 +1440,7 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
   },
   resolve: async (root, { filter, sort, pagination }, { currentUser }) => {
     const select = container.model.protocolTable().where(function () {
-      const { blockchain, linked, favorite, hidden, search } = filter;
+      const { blockchain, linked, favorite, hidden, isDebank, search } = filter;
       if (blockchain !== undefined) {
         const { protocol, network } = blockchain;
         const contractSelect = container.model
@@ -1484,6 +1487,15 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
       if (typeof hidden === 'boolean') {
         this.andWhere('hidden', hidden);
       }
+
+      if (typeof isDebank === 'boolean') {
+        if (isDebank === true) {
+          this.andWhere('adapter', 'debankByApiReadonly');
+        } else {
+          this.andWhereNot('adapter', 'debankByApiReadonly');
+        }
+      }
+
       if (search !== undefined && search !== '') {
         this.andWhere('name', 'iLike', `%${search}%`);
       }
