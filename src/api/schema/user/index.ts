@@ -2,7 +2,6 @@ import {
   GraphQLBoolean,
   GraphQLEnumType,
   GraphQLFieldConfig,
-  GraphQLFloat,
   GraphQLInputObjectType,
   GraphQLInt,
   GraphQLList,
@@ -617,8 +616,54 @@ export const WalletExchangeType = new GraphQLObjectType<
       type: GraphQLNonNull(WalletExchangeTypeEnum),
       description: 'Exchange type',
     },
+    tokenAliases: {
+      type: GraphQLNonNull(
+        PaginateList('WalletExchangeTokenAliasListType', GraphQLNonNull(WalletTokenAliasType)),
+      ),
+      args: {
+        filter: {
+          type: new GraphQLInputObjectType({
+            name: 'WalletExchangeTokenAliasListFilterInputType',
+            fields: {
+              liquidity: {
+                type: GraphQLList(GraphQLNonNull(TokenAliasLiquidityEnum)),
+                description: 'Liquidity token',
+              },
+            },
+          }),
+          defaultValue: {},
+        },
+        pagination: PaginationArgument('WalletExchangeTokenAliasListPaginationInputType'),
+      },
+      resolve: async (wallet, { filter, pagination }) => {
+        const select = container.model
+          .metricWalletTokenTable()
+          .column(`${tokenAliasTableName}.*`)
+          .innerJoin(tokenTableName, `${tokenTableName}.id`, `${metricWalletTokenTableName}.token`)
+          .innerJoin(tokenAliasTableName, `${tokenAliasTableName}.id`, `${tokenTableName}.alias`)
+          .where(function () {
+            this.where(`${metricWalletTokenTableName}.wallet`, wallet.id);
+            if (Array.isArray(filter.liquidity) && filter.liquidity.length > 0) {
+              this.whereIn(`${tokenAliasTableName}.liquidity`, filter.liquidity);
+            }
+          })
+          .groupBy(`${tokenAliasTableName}.id`);
+
+        return {
+          list: await select
+            .clone()
+            .orderBy('createdAt', 'desc')
+            .limit(pagination.limit)
+            .offset(pagination.offset)
+            .then((rows) => rows.map((tokenAlias) => ({ tokenAlias, wallet }))),
+          pagination: {
+            count: await select.clone().countDistinct(`${tokenAliasTableName}.id`).first(),
+          },
+        };
+      },
+    },
     balance: {
-      type: GraphQLNonNull(GraphQLFloat),
+      type: GraphQLNonNull(GraphQLString),
       resolve: async (walletExchange, args, { dataLoader }) => {
         const v = await dataLoader
           .walletTokenMetric({
@@ -626,7 +671,7 @@ export const WalletExchangeType = new GraphQLObjectType<
           })
           .load(walletExchange.id);
 
-        return v.usd;
+        return new BN(v.usd).toString(10);
       },
     },
     account: {
@@ -1047,6 +1092,17 @@ export const UserType = new GraphQLObjectType<User, Request>({
         PaginateList('WalletExchangeListType', GraphQLNonNull(WalletExchangeType)),
       ),
       args: {
+        filter: {
+          type: new GraphQLInputObjectType({
+            name: 'WalletExchangexListFilterInputType',
+            fields: {
+              id: {
+                type: UuidType,
+              },
+            },
+          }),
+          defaultValue: {},
+        },
         sort: SortArgument(
           'WalletExchangeListSortInputType',
           ['id', 'createdAt'],
@@ -1054,7 +1110,7 @@ export const UserType = new GraphQLObjectType<User, Request>({
         ),
         pagination: PaginationArgument('WalletExchangeListPaginationInputType'),
       },
-      resolve: async (user, { sort, pagination }) => {
+      resolve: async (user, { sort, pagination, filter }) => {
         const select = container.model
           .walletTable()
           .innerJoin(
@@ -1062,7 +1118,12 @@ export const UserType = new GraphQLObjectType<User, Request>({
             `${walletExchangeTableName}.id`,
             `${walletTableName}.id`,
           )
-          .where(`${walletTableName}.user`, user.id);
+          .where(`${walletTableName}.user`, user.id)
+          .andWhere(function () {
+            if (filter.id) {
+              this.andWhere(`${walletExchangeTableName}.id`, filter.id);
+            }
+          });
 
         return {
           list: await select
