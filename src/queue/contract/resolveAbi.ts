@@ -1,7 +1,11 @@
 import { Process } from '@models/Queue/Entity';
 import container from '@container';
 import dayjs from 'dayjs';
-import { MetadataType } from '@models/Protocol/Entity';
+import {
+  contractBlockchainTableName,
+  contractTableName,
+  MetadataType,
+} from '@models/Protocol/Entity';
 
 export interface Params {
   id: string;
@@ -13,7 +17,15 @@ export default async (process: Process) => {
   const contractService = container.model.contractService();
   const metadataService = container.model.metadataService();
 
-  const contract = await contractService.contractTable().where({ id }).first();
+  const contract = await contractService
+    .contractTable()
+    .innerJoin(
+      contractBlockchainTableName,
+      `${contractBlockchainTableName}.id`,
+      `${contractTableName}.id`,
+    )
+    .where(`${contractTableName}.id`, id)
+    .first();
   if (!contract || contract.blockchain !== 'ethereum') {
     throw new Error(`Contract "${id}" not found or incompatible`);
   }

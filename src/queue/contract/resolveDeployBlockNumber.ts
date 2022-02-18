@@ -1,5 +1,10 @@
 import container from '@container';
-import { Contract } from '@models/Protocol/Entity';
+import {
+  Contract,
+  ContractBlockchain,
+  contractBlockchainTableName,
+  contractTableName,
+} from '@models/Protocol/Entity';
 import { Process } from '@models/Queue/Entity';
 import axios from 'axios';
 import { parse } from 'node-html-parser';
@@ -23,7 +28,7 @@ const oneYearInSeconds = 60 * 60 * 24 * 365;
 const getEthereumContractCreationBlock = async ({
   network,
   address,
-}: Contract): Promise<number> => {
+}: Contract & ContractBlockchain): Promise<number> => {
   const { walletExplorerURL } = container.blockchain.ethereum.byNetwork(network);
   try {
     const res = await axios.get(`${walletExplorerURL}/${address}`, {
@@ -65,7 +70,15 @@ export interface Params {
 
 export default async (process: Process) => {
   const { contract: contractId } = process.task.params as Params;
-  const contract = await container.model.contractTable().where('id', contractId).first();
+  const contract = await container.model
+    .contractTable()
+    .innerJoin(
+      contractBlockchainTableName,
+      `${contractBlockchainTableName}.id`,
+      `${contractTableName}.id`,
+    )
+    .where('id', contractId)
+    .first();
   if (!contract) throw new Error('Contract not found');
 
   if (contract.blockchain !== 'ethereum') throw new Error('Invalid blockchain');

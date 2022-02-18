@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
 import { ethers } from 'ethers';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 import * as Adapters from '@services/Blockchain/Adapter';
+import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
 
 export interface ContractMetricsParams {
   contract: string;
@@ -13,7 +14,15 @@ export interface ContractMetricsParams {
 
 export async function contractMetrics(process: Process) {
   const { contract: contractId, blockNumber } = process.task.params as ContractMetricsParams;
-  const contract = await container.model.contractTable().where('id', contractId).first();
+  const contract = await container.model
+    .contractTable()
+    .innerJoin(
+      contractBlockchainTableName,
+      `${contractBlockchainTableName}.id`,
+      `${contractTableName}.id`,
+    )
+    .where(`${contractTableName}.id`, contractId)
+    .first();
   if (!contract) throw new Error('Contract not found');
 
   const protocol = await container.model.protocolTable().where('id', contract.protocol).first();
@@ -82,7 +91,15 @@ export async function walletMetrics(process: Process) {
     wallet: walletId,
     blockNumber,
   } = process.task.params as WalletMetricsParams;
-  const contract = await container.model.contractTable().where('id', contractId).first();
+  const contract = await container.model
+    .contractTable()
+    .innerJoin(
+      contractBlockchainTableName,
+      `${contractBlockchainTableName}.id`,
+      `${contractTableName}.id`,
+    )
+    .where(`${contractTableName}.id`, contractId)
+    .first();
   if (!contract) throw new Error('Contract not found');
 
   const protocol = await container.model.protocolTable().where('id', contract.protocol).first();

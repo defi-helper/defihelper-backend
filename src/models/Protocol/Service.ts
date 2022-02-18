@@ -1,7 +1,7 @@
 import container from '@container';
 import { Blockchain } from '@models/types';
 import { User } from '@models/User/Entity';
-import { Wallet, WalletBlockchain } from '@models/Wallet/Entity';
+import { Wallet, WalletBlockchain, WalletExchange } from '@models/Wallet/Entity';
 import { Factory } from '@services/Container';
 import { Emitter } from '@services/Event';
 import { v4 as uuid } from 'uuid';
@@ -17,7 +17,14 @@ import {
   ProtocolUserFavoriteTable,
   MetadataTable,
   MetadataType,
+  ContractBlockchainTable,
+  ContractDebankTable,
+  ContractMetric,
+  ContractDebank,
+  ContractBlockchain,
 } from './Entity';
+import knex from 'knex';
+import Knex from 'knex';
 
 export class ProtocolService {
   constructor(
@@ -103,11 +110,12 @@ interface ContractRegisterData {
 }
 
 export class ContractService {
-  public readonly onCreated = new Emitter<ContractRegisterData>((contract) => {
-    if (contract.contract.debankAddress) {
-      return;
-    }
+  public readonly onContractDebankCreated = new Emitter<{
+    contract: Contract;
+    contractDebank: ContractDebank;
+  }>();
 
+  public readonly onContractBlockchainCreated = new Emitter<ContractRegisterData>((contract) => {
     container.model.queueService().push('eventsContractCreated', {
       contract: contract.contract.id,
       events: contract.eventsToSubscribe,
@@ -115,7 +123,7 @@ export class ContractService {
   });
 
   public readonly onWalletLink = new Emitter<{
-    contract: Contract;
+    contract: Contract & ContractBlockchain;
     wallet: Wallet;
     link: WalletContractLink;
   }>(({ contract, link }) => {
@@ -138,12 +146,54 @@ export class ContractService {
   });
 
   constructor(
+    readonly database: Knex,
     readonly contractTable: Factory<ContractTable>,
+    readonly contractBlockchainTable: Factory<ContractBlockchainTable>,
+    readonly contractDebankTable: Factory<ContractDebankTable>,
     readonly walletLinkTable: Factory<WalletContractLinkTable>,
   ) {}
 
-  async create(
-    protocol: Protocol,
+  async createDebank(
+    { id: protocol }: Protocol,
+    hashAddress: string,
+    name: string,
+    metric: ContractMetric,
+    description: string = '',
+    link: string | null = null,
+    hidden: boolean = false,
+  ) {
+    const parentContract: Contract = {
+      id: uuid(),
+      description,
+      hidden,
+      layout: 'debank',
+      link,
+      name,
+      protocol,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    const childContract: ContractDebank = {
+      id: parentContract.id,
+      address: hashAddress,
+      metric,
+    };
+
+    await this.database.transaction(async (trx) => {
+      await this.contractTable().insert(parentContract).transacting(trx);
+      await this.contractDebankTable().insert(childContract).transacting(trx);
+    });
+
+    this.onContractDebankCreated.emit({
+      contract: parentContract,
+      contractDebank: childContract,
+    });
+
+    return { ...parentContract, ...childContract };
+  }
+
+  async createBlockchain(
+    { id: protocol }: Protocol,
     blockchain: Blockchain,
     network: string,
     address: string,
@@ -154,46 +204,55 @@ export class ContractService {
       adapters: string[];
       autorestakeAdapter?: string;
     },
+    metric: ContractMetric,
     name: string,
     description: string = '',
     link: string | null = null,
     hidden: boolean = false,
     eventsToSubscribe?: string[],
-    debankAddress: string | null = null,
   ) {
-    const created: Contract = {
+    const parentContract: Contract = {
       id: uuid(),
-      protocol: protocol.id,
-      blockchain,
-      network,
-      address: blockchain === 'ethereum' ? address.toLowerCase() : address,
-      deployBlockNumber,
-      adapter,
+      description,
+      hidden,
       layout,
-      debankAddress,
+      link,
+      name,
+      protocol,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const childContract: ContractBlockchain = {
+      id: parentContract.id,
+      adapter,
+      address: blockchain === 'ethereum' ? address.toLowerCase() : address,
+
       automate: {
         adapters: automate.adapters,
         autorestakeAdapter: automate.autorestakeAdapter,
       },
-      name,
-      description,
-      link,
-      hidden,
-      metric: {},
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      blockchain,
+      deployBlockNumber,
+      metric,
+      network,
     };
-    await this.contractTable().insert(created);
-    this.onCreated.emit({
-      contract: created,
+
+    await this.database.transaction(async (trx) => {
+      await this.contractTable().insert(parentContract).transacting(trx);
+      await this.contractDebankTable().insert(childContract).transacting(trx);
+    });
+
+    this.onContractBlockchainCreated.emit({
+      contract: { ...parentContract, ...childContract },
       eventsToSubscribe,
     });
 
-    return created;
+    return { ...parentContract, ...childContract };
   }
 
-  async update(contract: Contract) {
-    const updated: Contract = {
+  async updateBlockchain(contract: Contract & ContractBlockchain) {
+    const updated: ContractBlockchain = {
       ...contract,
       address:
         contract.blockchain === 'ethereum' ? contract.address.toLowerCase() : contract.address,

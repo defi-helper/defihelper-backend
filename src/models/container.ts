@@ -91,6 +91,12 @@ export class ModelContainer extends Container<typeof AppContainer> {
   );
 
   readonly contractTable = Models.Protocol.Entity.contractTableFactory(this.parent.database);
+  readonly contractBlockchainTable = Models.Protocol.Entity.contractBlockchainTableFactory(
+    this.parent.database,
+  );
+  readonly contractDebankTable = Models.Protocol.Entity.contractDebankTableFactory(
+    this.parent.database,
+  );
 
   readonly walletContractLinkTable = Models.Protocol.Entity.walletContractLinkTableFactory(
     this.parent.database,
@@ -98,7 +104,13 @@ export class ModelContainer extends Container<typeof AppContainer> {
 
   readonly contractService = singleton(
     () =>
-      new Models.Protocol.Service.ContractService(this.contractTable, this.walletContractLinkTable),
+      new Models.Protocol.Service.ContractService(
+        this.parent.database,
+        this.contractTable,
+        this.contractBlockchainTable,
+        this.contractDebankTable,
+        this.walletContractLinkTable,
+      ),
   );
 
   readonly tokenAliasTable = Models.Token.Entity.tokenAliasTableFactory(this.parent.database);

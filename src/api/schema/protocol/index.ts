@@ -19,6 +19,8 @@ import {
   Protocol,
   walletContractLinkTableName,
   ContractAutomate,
+  ContractBlockchain,
+  contractBlockchainTableName,
 } from '@models/Protocol/Entity';
 import { apyBoost } from '@services/RestakeStrategy';
 import {
@@ -112,7 +114,7 @@ export const ContractAutomatesType = new GraphQLObjectType<ContractAutomate, Req
   },
 });
 
-export const ContractType = new GraphQLObjectType<Contract, Request>({
+export const ContractType = new GraphQLObjectType<Contract & ContractBlockchain, Request>({
   name: 'ContractType',
   fields: {
     id: {
@@ -425,7 +427,7 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
         hidden,
         eventsToSubscribe,
       } = input;
-      const created = await container.model.contractService().create(
+      const created = await container.model.contractService().createBlockchain(
         protocol,
         blockchain,
         network,
@@ -521,7 +523,15 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
     const contractService = container.model.contractService();
-    const contract = await contractService.contractTable().where('id', id).first();
+    const contract = await contractService
+      .contractTable()
+      .innerJoin(
+        contractBlockchainTableName,
+        `${contractBlockchainTableName}.id`,
+        `${contractTableName}.id`,
+      )
+      .where(`${contractTableName}.id`, id)
+      .first();
     if (!contract) throw new UserInputError('Contract not found');
 
     const {
@@ -599,7 +609,15 @@ export const ContractWalletLinkMutation: GraphQLFieldConfig<any, Request> = {
   resolve: async (root, { contract: contractId, wallet: walletId }, { currentUser, acl }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
-    const contract = await container.model.contractTable().where('id', contractId).first();
+    const contract = await container.model
+      .contractTable()
+      .innerJoin(
+        contractBlockchainTableName,
+        `${contractBlockchainTableName}.id`,
+        `${contractTableName}.id`,
+      )
+      .where(`${contractTableName}.id`, contractId)
+      .first();
     if (!contract) throw new UserInputError('Contract not found');
 
     const blockchainWallet = await container.model
@@ -644,7 +662,15 @@ export const ContractWalletUnlinkMutation: GraphQLFieldConfig<any, Request> = {
   resolve: async (root, { contract: contractId, wallet: walletId }, { currentUser, acl }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
-    const contract = await container.model.contractTable().where('id', contractId).first();
+    const contract = await container.model
+      .contractTable()
+      .innerJoin(
+        contractBlockchainTableName,
+        `${contractBlockchainTableName}.id`,
+        `${contractTableName}.id`,
+      )
+      .where(`${contractTableName}.id`, contractId)
+      .first();
     if (!contract) throw new UserInputError('Contract not found');
 
     const wallet = await container.model

@@ -3,6 +3,7 @@ import { Process } from '@models/Queue/Entity';
 import { Blockchain } from '@models/types';
 import * as Adapters from '@services/Blockchain/Adapter';
 import dayjs from 'dayjs';
+import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
 
 export interface Params {
   protocolId: string;
@@ -64,9 +65,16 @@ export default async (process: Process) => {
     cacheAuth: container.parent.adapters.auth,
   });
 
-  const existingPools = await container.model.contractTable().where({
-    protocol: protocolId,
-  });
+  const existingPools = await container.model
+    .contractTable()
+    .innerJoin(
+      contractBlockchainTableName,
+      `${contractBlockchainTableName}.id`,
+      `${contractTableName}.id`,
+    )
+    .where({
+      protocol: protocolId,
+    });
 
   await Promise.all(
     pools.map((pool) => {
