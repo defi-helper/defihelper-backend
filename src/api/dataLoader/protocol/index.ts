@@ -1,21 +1,21 @@
 import container from '@container';
 import {
   Contract,
-  ContractBlockchainType,
   contractBlockchainTableName,
+  ContractBlockchainType,
   contractTableName,
 } from '@models/Protocol/Entity';
 import {
+  MetricContract,
+  MetricContractAPRField,
+  MetricContractField,
   metricContractTableName,
   metricWalletTableName,
-  MetricContractField,
-  MetricContractAPRField,
-  MetricContract,
 } from '@models/Metric/Entity';
 import {
-  walletTableName,
-  WalletBlockchainType,
   walletBlockchainTableName,
+  WalletBlockchainType,
+  walletTableName,
 } from '@models/Wallet/Entity';
 import BN from 'bignumber.js';
 import DataLoader from 'dataloader';
@@ -89,20 +89,25 @@ export const protocolLastMetricLoader = ({ metric }: { metric: MetricContractFie
         .column(`${contractTableName}.protocol`)
         .column(database.raw(`(${metricContractTableName}.data->>'${metric}')::numeric AS v`))
         .innerJoin(
-          contractBlockchainTableName,
-          `${contractBlockchainTableName}.id`,
+          contractTableName,
+          `${contractTableName}.id`,
           `${metricContractTableName}.contract`,
         )
-        .whereIn(`${contractBlockchainTableName}.protocol`, notCachedIds)
+        .whereIn(`${contractTableName}.protocol`, notCachedIds)
         .andWhere(database.raw(`${metricContractTableName}.data->>'${metric}' IS NOT NULL`))
         .orderBy(`${metricContractTableName}.contract`)
         .orderBy(`${metricContractTableName}.date`, 'DESC');
     } else {
       subselect = container.model
-        .contractBlockchainTable()
-        .column(`${contractBlockchainTableName}.protocol`)
+        .contractTable()
+        .innerJoin(
+          contractBlockchainTableName,
+          `${contractBlockchainTableName}.id`,
+          `${contractTableName}.contract`,
+        )
+        .column(`${contractTableName}.protocol`)
         .column(database.raw(`(${contractBlockchainTableName}.metric->>'${metric}')::numeric AS v`))
-        .whereIn(`${contractBlockchainTableName}.protocol`, notCachedIds)
+        .whereIn(`${contractTableName}.protocol`, notCachedIds)
         .andWhere(database.raw(`${contractBlockchainTableName}.metric->>'${metric}' IS NOT NULL`));
     }
     const metrics =
