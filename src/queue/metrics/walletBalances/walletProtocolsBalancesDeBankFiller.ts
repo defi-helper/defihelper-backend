@@ -207,24 +207,19 @@ export default async (process: Process) => {
           throw new Error('protocol must be found here');
         }
 
-        return container.model
-          .contractService()
-          .create(
-            existingProtocol,
-            'ethereum',
-            '1',
-            '0x0000000000000000000000000000000000000000',
-            '0',
-            'debankApiReadonly',
-            'staking',
-            { adapters: [] },
-            contract.contractName,
-            '',
-            '',
-            true,
-            undefined,
-            contract.hashAddress,
-          );
+        return container.model.contractService().createDebank(
+          existingProtocol,
+          contract.hashAddress,
+          contract.contractName,
+          {
+            tvl:
+              debankUserProtocolsList.find((p) => p.id === contract.protocol)?.tvl.toString(10) ??
+              '0',
+          },
+          '',
+          '',
+          false,
+        );
       }),
   );
 

@@ -23,6 +23,7 @@ import {
 import { Role } from '@models/User/Entity';
 import { ContractType } from '@api/schema/protocol';
 import { DateTimeType, PaginateList, PaginationArgument, SortArgument, UuidType } from '../types';
+import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
 
 export const UserContactBrokerEnum = new GraphQLEnumType({
   name: 'UserContactBrokerEnum',
@@ -528,7 +529,15 @@ export const UserEventSubscriptionCreateMutation: GraphQLFieldConfig<any, Reques
 
     const { contact: contactId, contract: contractId, event } = input;
 
-    const contract = await container.model.contractTable().where('id', contractId).first();
+    const contract = await container.model
+      .contractTable()
+      .innerJoin(
+        contractBlockchainTableName,
+        `${contractBlockchainTableName}.id`,
+        `${contractTableName}.id`,
+      )
+      .where('id', contractId)
+      .first();
 
     if (!contract) {
       throw new UserInputError('Contract is not found');

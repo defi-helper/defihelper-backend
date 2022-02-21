@@ -530,9 +530,18 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
         `${contractBlockchainTableName}.id`,
         `${contractTableName}.id`,
       )
+      .where('id', id)
+      .first();
+    const contractBlockchain = await contractService
+      .contractTable()
+      .innerJoin(
+        contractBlockchainTableName,
+        `${contractBlockchainTableName}.id`,
+        `${contractTableName}.id`,
+      )
       .where(`${contractTableName}.id`, id)
       .first();
-    if (!contract) throw new UserInputError('Contract not found');
+    if (!contract || !contractBlockchain) throw new UserInputError('Contract not found');
 
     const {
       blockchain,
@@ -548,27 +557,35 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
       link,
       hidden,
     } = input;
-    const updated = await contractService.update({
-      ...contract,
-      blockchain: (typeof blockchain === 'string' ? blockchain : contract.blockchain) as Blockchain,
-      network: typeof network === 'string' ? network : contract.network,
-      address: typeof address === 'string' ? address : contract.address,
-      deployBlockNumber:
-        typeof deployBlockNumber === 'string' ? deployBlockNumber : contract.deployBlockNumber,
-      adapter: typeof adapter === 'string' ? adapter : contract.adapter,
-      layout: typeof layout === 'string' ? layout : contract.layout,
-      automate: {
-        adapters: Array.isArray(automates) ? automates : contract.automate.adapters,
-        autorestakeAdapter:
-          typeof autorestakeAdapter === 'string'
-            ? autorestakeAdapter
-            : contract.automate.autorestakeAdapter,
+    const updated = await contractService.updateBlockchain(
+      {
+        ...contract,
+        layout: typeof layout === 'string' ? layout : contract.layout,
+        name: typeof name === 'string' ? name : contract.name,
+        protocol: contract.protocol,
+        description: typeof description === 'string' ? description : contract.description,
+        link: typeof link === 'string' ? link : contract.link,
+        hidden: typeof hidden === 'boolean' ? hidden : contract.hidden,
       },
-      name: typeof name === 'string' ? name : contract.name,
-      description: typeof description === 'string' ? description : contract.description,
-      link: typeof link === 'string' ? link : contract.link,
-      hidden: typeof hidden === 'boolean' ? hidden : contract.hidden,
-    });
+      {
+        ...contract,
+        blockchain: (typeof blockchain === 'string'
+          ? blockchain
+          : contract.blockchain) as Blockchain,
+        network: typeof network === 'string' ? network : contract.network,
+        address: typeof address === 'string' ? address : contract.address,
+        deployBlockNumber:
+          typeof deployBlockNumber === 'string' ? deployBlockNumber : contract.deployBlockNumber,
+        adapter: typeof adapter === 'string' ? adapter : contract.adapter,
+        automate: {
+          adapters: Array.isArray(automates) ? automates : contract.automate.adapters,
+          autorestakeAdapter:
+            typeof autorestakeAdapter === 'string'
+              ? autorestakeAdapter
+              : contract.automate.autorestakeAdapter,
+        },
+      },
+    );
 
     return updated;
   }),

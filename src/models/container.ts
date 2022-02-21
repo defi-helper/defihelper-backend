@@ -105,7 +105,7 @@ export class ModelContainer extends Container<typeof AppContainer> {
   readonly contractService = singleton(
     () =>
       new Models.Protocol.Service.ContractService(
-        this.parent.database,
+        this.parent.database(),
         this.contractTable,
         this.contractBlockchainTable,
         this.contractDebankTable,

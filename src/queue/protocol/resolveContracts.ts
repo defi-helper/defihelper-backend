@@ -91,7 +91,7 @@ export default async (process: Process) => {
 
       return container.model
         .contractService()
-        .create(
+        .createBlockchain(
           protocol,
           protocolBlockchain,
           protocolNetwork,
@@ -100,6 +100,7 @@ export default async (process: Process) => {
           pool.adapter,
           pool.layout,
           pool.automate,
+          {},
           pool.name,
           pool.description,
           pool.link,

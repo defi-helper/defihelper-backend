@@ -14,16 +14,12 @@ export interface ContractMetricsParams {
 
 export async function contractMetrics(process: Process) {
   const { contract: contractId, blockNumber } = process.task.params as ContractMetricsParams;
-  const contract = await container.model
-    .contractTable()
-    .innerJoin(
-      contractBlockchainTableName,
-      `${contractBlockchainTableName}.id`,
-      `${contractTableName}.id`,
-    )
-    .where(`${contractTableName}.id`, contractId)
+  const contract = await container.model.contractTable().where(`id`, contractId).first();
+  const contractBlockchain = await container.model
+    .contractBlockchainTable()
+    .where(`id`, contractId)
     .first();
-  if (!contract) throw new Error('Contract not found');
+  if (!contract || !contractBlockchain) throw new Error('Contract not found');
 
   const protocol = await container.model.protocolTable().where('id', contract.protocol).first();
   if (!protocol) throw new Error('Protocol not found');
@@ -32,7 +28,7 @@ export async function contractMetrics(process: Process) {
   let contractAdapterFactory;
   try {
     const protocolAdapters = await container.blockchainAdapter.loadAdapter(protocol.adapter);
-    contractAdapterFactory = protocolAdapters[contract.adapter];
+    contractAdapterFactory = protocolAdapters[contractBlockchain.adapter];
     if (typeof contractAdapterFactory !== 'function') throw new Error('Contract adapter not found');
   } catch (e) {
     if (e instanceof Adapters.TemporaryOutOfService) {
@@ -44,8 +40,8 @@ export async function contractMetrics(process: Process) {
     throw e;
   }
 
-  const blockchain = container.blockchain[contract.blockchain];
-  const network = blockchain.byNetwork(contract.network);
+  const blockchain = container.blockchain[contractBlockchain.blockchain];
+  const network = blockchain.byNetwork(contractBlockchain.network);
   const provider = blockNumber === 'latest' ? network.provider() : network.providerHistorical();
 
   let date = new Date();
@@ -54,7 +50,7 @@ export async function contractMetrics(process: Process) {
     date = dayjs.unix(block.timestamp).toDate();
   }
 
-  const contractAdapterData = await contractAdapterFactory(provider, contract.address, {
+  const contractAdapterData = await contractAdapterFactory(provider, contractBlockchain.address, {
     blockNumber,
   });
   if (
@@ -63,8 +59,8 @@ export async function contractMetrics(process: Process) {
   ) {
     await Promise.all([
       metricService.createContract(contract, contractAdapterData.metrics, date),
-      container.model.contractService().update({
-        ...contract,
+      container.model.contractService().updateBlockchain(contract, {
+        ...contractBlockchain,
         metric: {
           tvl: contractAdapterData.metrics.tvl ?? '0',
           aprDay: contractAdapterData.metrics.aprDay ?? '0',

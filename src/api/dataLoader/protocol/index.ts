@@ -1,5 +1,10 @@
 import container from '@container';
-import { Contract, contractTableName } from '@models/Protocol/Entity';
+import {
+  Contract,
+  ContractBlockchain,
+  contractBlockchainTableName,
+  contractTableName,
+} from '@models/Protocol/Entity';
 import {
   metricContractTableName,
   metricWalletTableName,
@@ -287,10 +292,15 @@ export const protocolUserLastAPRLoader = ({
   });
 
 export const contractLoader = () =>
-  new DataLoader<string, Contract | null>(async (contractsId) => {
+  new DataLoader<string, (Contract & ContractBlockchain) | null>(async (contractsId) => {
     const map = new Map(
       await container.model
         .contractTable()
+        .innerJoin(
+          contractBlockchainTableName,
+          `${contractBlockchainTableName}.id`,
+          `${contractTableName}.id`,
+        )
         .whereIn('id', contractsId)
         .then((rows) => rows.map((contract) => [contract.id, contract])),
     );

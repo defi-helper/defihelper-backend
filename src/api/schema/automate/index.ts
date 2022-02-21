@@ -35,6 +35,7 @@ import * as Actions from '../../../automate/action';
 import * as Conditions from '../../../automate/condition';
 import { WalletBlockchainType } from '../user';
 import { ProtocolType, ContractType as ProtocolContractType } from '../protocol';
+import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
 
 export const ConditionTypeEnum = new GraphQLEnumType({
   name: 'AutomateConditionTypeEnum',
@@ -1243,7 +1244,15 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
     if (!protocol) throw new UserInputError('Protocol not found');
 
     const contract = contractId
-      ? await container.model.contractTable().where('id', contractId).first()
+      ? await container.model
+          .contractTable()
+          .innerJoin(
+            contractBlockchainTableName,
+            `${contractBlockchainTableName}.id`,
+            `${contractTableName}.id`,
+          )
+          .where('id', contractId)
+          .first()
       : null;
     if (contract === undefined) throw new UserInputError('Protocol contract not found');
     if (contract !== null) {

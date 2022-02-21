@@ -79,14 +79,20 @@ export default async (process: Process) => {
     )
     .where('id', contractId)
     .first();
-  if (!contract) throw new Error('Contract not found');
+
+  const contractBlockchain = await container.model
+    .contractBlockchainTable()
+    .where('id', contractId)
+    .first();
+
+  if (!contract || !contractBlockchain) throw new Error('Contract not found');
 
   if (contract.blockchain !== 'ethereum') throw new Error('Invalid blockchain');
   if (contract.deployBlockNumber !== null) throw new Error('Deploy block already resolved');
 
   const deployBlockNumber = await getEthereumContractCreationBlock(contract);
-  await container.model.contractService().update({
-    ...contract,
+  await container.model.contractService().updateBlockchain(contract, {
+    ...contractBlockchain,
     deployBlockNumber: deployBlockNumber.toString(),
   });
 

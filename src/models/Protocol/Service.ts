@@ -251,23 +251,41 @@ export class ContractService {
     return { ...parentContract, ...childContract };
   }
 
-  async updateBlockchain(contract: Contract & ContractBlockchain) {
-    const updated: ContractBlockchain = {
-      ...contract,
+  async updateBlockchain(contract: Contract, contractBlockchain: ContractBlockchain) {
+    if (contract.id !== contractBlockchain.id) throw new Error('Invalid wallet ID');
+
+    const updatedBlockchain: ContractBlockchain = {
+      ...contractBlockchain,
       address:
-        contract.blockchain === 'ethereum' ? contract.address.toLowerCase() : contract.address,
+        contractBlockchain.blockchain === 'ethereum'
+          ? contractBlockchain.address.toLowerCase()
+          : contractBlockchain.address,
+    };
+
+    const updatedParent: Contract = {
+      ...contract,
       updatedAt: new Date(),
     };
-    await this.contractTable().where({ id: contract.id }).update(updated);
 
-    return updated;
+    await this.database.transaction(async (trx) => {
+      await this.contractTable().where('id', contract.id).update(updatedParent).transacting(trx);
+      await this.contractBlockchainTable()
+        .where('id', contract.id)
+        .update(updatedBlockchain)
+        .transacting(trx);
+    });
+
+    return { ...updatedBlockchain, ...updatedParent };
   }
 
   async delete(contract: Contract) {
     await this.contractTable().where({ id: contract.id }).delete();
   }
 
-  async walletLink(contract: Contract, blockchainWallet: Wallet & WalletBlockchain) {
+  async walletLink(
+    contract: Contract & ContractBlockchain,
+    blockchainWallet: Wallet & WalletBlockchain,
+  ) {
     const duplicate = await this.walletLinkTable()
       .where('contract', contract.id)
       .andWhere('wallet', blockchainWallet.id)
