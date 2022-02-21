@@ -111,7 +111,7 @@ export default async (process: Process) => {
 
   await Promise.all(
     found.map(({ token, balance, usd }) =>
-      walletMetrics.createToken(
+      walletMetrics.createWalletToken(
         null,
         exchangeWallet,
         token,

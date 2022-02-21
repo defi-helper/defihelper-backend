@@ -1,11 +1,11 @@
 import container from '@container';
+import { Token } from '@models/Token/Entity';
 import { Blockchain } from '@models/types';
 import { User } from '@models/User/Entity';
 import { Wallet, WalletBlockchain } from '@models/Wallet/Entity';
 import { Factory } from '@services/Container';
 import { Emitter } from '@services/Event';
 import { v4 as uuid } from 'uuid';
-
 import {
   Protocol,
   ProtocolTable,
@@ -17,6 +17,8 @@ import {
   ProtocolUserFavoriteTable,
   MetadataTable,
   MetadataType,
+  TokenContractLinkTable,
+  TokenContractLinkType,
 } from './Entity';
 
 export class ProtocolService {
@@ -140,6 +142,7 @@ export class ContractService {
   constructor(
     readonly contractTable: Factory<ContractTable>,
     readonly walletLinkTable: Factory<WalletContractLinkTable>,
+    readonly tokenLinkTable: Factory<TokenContractLinkTable>,
   ) {}
 
   async create(
@@ -235,6 +238,29 @@ export class ContractService {
     if (!duplicate) return;
 
     await this.walletLinkTable().where('id', duplicate.id).delete();
+  }
+
+  async tokenLink(
+    contract: Contract,
+    tokens: Array<{ token: Token; type: TokenContractLinkType }>,
+  ) {
+    const duplicates = await this.tokenLinkTable()
+      .where('contract', contract.id)
+      .then((rows) => new Set(rows.map(({ type, token }) => `${token}:${type}`)));
+
+    await Promise.all(
+      tokens.map(({ token, type }) => {
+        if (duplicates.has(`${token.id}:${type}`)) return null;
+
+        return this.tokenLinkTable().insert({
+          id: uuid(),
+          contract: contract.id,
+          token: token.id,
+          type,
+          createdAt: new Date(),
+        });
+      }),
+    );
   }
 }
 
