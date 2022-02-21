@@ -1,6 +1,7 @@
 import { v4 as uuid } from 'uuid';
 import { Factory } from '@services/Container';
 import { LogService } from '@models/Log/Service';
+import { Log } from '@services/Log';
 import dayjs from 'dayjs';
 import { Rabbit } from 'rabbit-queue';
 import { Task, TaskStatus, Table, Process } from './Entity';
@@ -29,6 +30,7 @@ export class QueueService {
     readonly queueTable: Factory<Table>,
     readonly rabbitmq: Factory<Rabbit>,
     readonly logService: Factory<LogService>,
+    readonly logger: Factory<Log>,
   ) {}
 
   async push<H extends Handler>(handler: H, params: Object = {}, options: PushOptions = {}) {
@@ -140,6 +142,7 @@ export class QueueService {
 
   async consumer(msg: any, ack: (error?: any, reply?: any) => any) {
     const task: Task = JSON.parse(msg.content.toString());
+    this.logger().info(`Handle task: ${task.id}`);
     await this.handle(task);
     ack();
   }

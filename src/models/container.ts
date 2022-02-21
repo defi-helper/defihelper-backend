@@ -23,7 +23,12 @@ export class ModelContainer extends Container<typeof AppContainer> {
 
   readonly queueService = singleton(
     () =>
-      new Models.Queue.Service.QueueService(this.queueTable, this.parent.rabbitmq, this.logService),
+      new Models.Queue.Service.QueueService(
+        this.queueTable,
+        this.parent.rabbitmq,
+        this.logService,
+        this.parent.logger,
+      ),
   );
 
   readonly userTable = Models.User.Entity.tableFactory(this.parent.database);
@@ -96,9 +101,17 @@ export class ModelContainer extends Container<typeof AppContainer> {
     this.parent.database,
   );
 
+  readonly tokenContractLinkTable = Models.Protocol.Entity.tokenContractLinkTableFactory(
+    this.parent.database,
+  );
+
   readonly contractService = singleton(
     () =>
-      new Models.Protocol.Service.ContractService(this.contractTable, this.walletContractLinkTable),
+      new Models.Protocol.Service.ContractService(
+        this.contractTable,
+        this.walletContractLinkTable,
+        this.tokenContractLinkTable,
+      ),
   );
 
   readonly tokenAliasTable = Models.Token.Entity.tokenAliasTableFactory(this.parent.database);
@@ -137,6 +150,8 @@ export class ModelContainer extends Container<typeof AppContainer> {
     this.parent.database,
   );
 
+  readonly metricTokenTable = Models.Metric.Entity.metricTokenTableFactory(this.parent.database);
+
   readonly metricService = singleton(
     () =>
       new Models.Metric.Service.MetricContractService(
@@ -145,6 +160,7 @@ export class ModelContainer extends Container<typeof AppContainer> {
         this.metricContractTable,
         this.metricWalletTable,
         this.metricWalletTokenTable,
+        this.metricTokenTable,
       ),
   );
 
