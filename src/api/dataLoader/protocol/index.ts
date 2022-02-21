@@ -89,21 +89,21 @@ export const protocolLastMetricLoader = ({ metric }: { metric: MetricContractFie
         .column(`${contractTableName}.protocol`)
         .column(database.raw(`(${metricContractTableName}.data->>'${metric}')::numeric AS v`))
         .innerJoin(
-          contractTableName,
-          `${contractTableName}.id`,
+          contractBlockchainTableName,
+          `${contractBlockchainTableName}.id`,
           `${metricContractTableName}.contract`,
         )
-        .whereIn(`${contractTableName}.protocol`, notCachedIds)
+        .whereIn(`${contractBlockchainTableName}.protocol`, notCachedIds)
         .andWhere(database.raw(`${metricContractTableName}.data->>'${metric}' IS NOT NULL`))
         .orderBy(`${metricContractTableName}.contract`)
         .orderBy(`${metricContractTableName}.date`, 'DESC');
     } else {
       subselect = container.model
-        .contractTable()
-        .column(`${contractTableName}.protocol`)
-        .column(database.raw(`(${contractTableName}.metric->>'${metric}')::numeric AS v`))
-        .whereIn(`${contractTableName}.protocol`, notCachedIds)
-        .andWhere(database.raw(`${contractTableName}.metric->>'${metric}' IS NOT NULL`));
+        .contractBlockchainTable()
+        .column(`${contractBlockchainTableName}.protocol`)
+        .column(database.raw(`(${contractBlockchainTableName}.metric->>'${metric}')::numeric AS v`))
+        .whereIn(`${contractBlockchainTableName}.protocol`, notCachedIds)
+        .andWhere(database.raw(`${contractBlockchainTableName}.metric->>'${metric}' IS NOT NULL`));
     }
     const metrics =
       notCachedIds.length > 0
@@ -216,11 +216,20 @@ export const protocolUserLastAPRLoader = ({
       notCachedIds.length > 0
         ? await container.model
             .contractTable()
+            .innerJoin(
+              contractBlockchainTableName,
+              `${contractBlockchainTableName}.id`,
+              `${contractTableName}.id`,
+            )
             .column(`${contractTableName}.id`)
             .column(`${contractTableName}.protocol`)
-            .column(database.raw(`(${contractTableName}.metric->>'${metric}')::numeric AS apr`))
+            .column(
+              database.raw(`(${contractBlockchainTableName}.metric->>'${metric}')::numeric AS apr`),
+            )
             .whereIn(`${contractTableName}.protocol`, protocolsId)
-            .andWhere(database.raw(`${contractTableName}.metric->>'${metric}' IS NOT NULL`))
+            .andWhere(
+              database.raw(`${contractBlockchainTableName}.metric->>'${metric}' IS NOT NULL`),
+            )
         : [];
     const aprMap = aprMetrics.reduce(
       (map, { protocol, id: contract, apr }) => ({

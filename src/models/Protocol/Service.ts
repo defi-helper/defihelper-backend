@@ -240,7 +240,7 @@ export class ContractService {
 
     await this.database.transaction(async (trx) => {
       await this.contractTable().insert(parentContract).transacting(trx);
-      await this.contractDebankTable().insert(childContract).transacting(trx);
+      await this.contractBlockchainTable().insert(childContract).transacting(trx);
     });
 
     this.onContractBlockchainCreated.emit({

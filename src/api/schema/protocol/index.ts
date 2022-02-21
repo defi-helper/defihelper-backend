@@ -905,7 +905,14 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
       resolve: async (protocol, { filter, sort, pagination }, { currentUser }) => {
         const select = container.model
           .contractTable()
+          .innerJoin(
+            contractBlockchainTableName,
+            `${contractBlockchainTableName}.id`,
+            `${contractTableName}.id`,
+          )
           .column(`${contractTableName}.*`)
+          .column(`${contractTableName}.id`)
+          .column(`${contractBlockchainTableName}.*`)
           .where(function () {
             const { id, hidden, search } = filter;
             if (id) {
@@ -961,18 +968,21 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
           } else {
             listSelect = listSelect
               .column(`${contractTableName}.*`)
+              .column(`${contractBlockchainTableName}.*`)
               .column(database.raw(`'0' AS "myStaked"`));
           }
         }
         if (sortColumns.includes('tvl')) {
           listSelect = listSelect.column(
-            database.raw(`(COALESCE(${contractTableName}.metric->>'tvl', '0'))::numeric AS "tvl"`),
+            database.raw(
+              `(COALESCE(${contractBlockchainTableName}.metric->>'tvl', '0'))::numeric AS "tvl"`,
+            ),
           );
         }
         if (sortColumns.includes('aprYear')) {
           listSelect = listSelect.column(
             database.raw(
-              `(COALESCE(${contractTableName}.metric->>'aprYear', '0'))::numeric AS "aprYear"`,
+              `(COALESCE(${contractBlockchainTableName}.metric->>'aprYear', '0'))::numeric AS "aprYear"`,
             ),
           );
         }
