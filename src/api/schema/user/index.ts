@@ -2090,7 +2090,8 @@ export const OnTokenMetricUpdated: GraphQLFieldConfig<
     },
   },
   subscribe: withFilter(
-    () => container.cacheSubscriber('defihelper:channel:onTokenMetricUpdated').asyncIterator(),
+    () =>
+      container.cacheSubscriber('defihelper:channel:onWalletTokenMetricUpdated').asyncIterator(),
     async ({ wallet: walletId, contract, token }, { filter }) => {
       let result = true;
       if (Array.isArray(filter.wallet) && filter.wallet.length > 0) {

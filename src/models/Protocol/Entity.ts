@@ -127,3 +127,24 @@ export const metadataTableName = 'protocol_contract_metadata';
 export const metadataTableFactory = tableFactoryLegacy<Metadata>(metadataTableName);
 
 export type MetadataTable = ReturnType<ReturnType<typeof metadataTableFactory>>;
+
+export enum TokenContractLinkType {
+  Stake = 'stake',
+  Reward = 'reward',
+}
+
+export interface TokenContractLink {
+  id: string;
+  contract: string;
+  token: string;
+  type: TokenContractLinkType;
+  createdAt: Date;
+}
+
+export const tokenContractLinkTableName = 'protocol_contract_token_link';
+
+export const tokenContractLinkTableFactory = tableFactoryLegacy<TokenContractLink>(
+  tokenContractLinkTableName,
+);
+
+export type TokenContractLinkTable = ReturnType<ReturnType<typeof tokenContractLinkTableFactory>>;

@@ -146,7 +146,7 @@ export default async (process: Process) => {
       const totalTokenNumber = new BN(tokenBalance.balance).div(`1e${tokenBalance.decimals}`);
       const totalTokensUSDPrice = new BN(tokenPrice.usd).multipliedBy(totalTokenNumber);
 
-      return walletMetrics.createToken(
+      return walletMetrics.createWalletToken(
         null,
         blockchainWallet,
         tokenRecord,
@@ -165,7 +165,7 @@ export default async (process: Process) => {
         return null;
       }
 
-      return walletMetrics.createToken(
+      return walletMetrics.createWalletToken(
         null,
         blockchainWallet,
         v,
@@ -238,7 +238,7 @@ export default async (process: Process) => {
       );
   }
 
-  await walletMetrics.createToken(
+  await walletMetrics.createWalletToken(
     null,
     blockchainWallet,
     nativeTokenRecord,

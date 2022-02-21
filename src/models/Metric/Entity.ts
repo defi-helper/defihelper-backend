@@ -82,3 +82,13 @@ export const metricWalletTokenTableFactory = tableFactoryLegacy<MetricWalletToke
 );
 
 export type MetricWalletTokenTable = ReturnType<ReturnType<typeof metricWalletTokenTableFactory>>;
+
+export interface MetricToken extends Metric {
+  token: string;
+}
+
+export const metricTokenTableName = 'metric_token';
+
+export const metricTokenTableFactory = tableFactoryLegacy<MetricToken>(metricTokenTableName);
+
+export type MetricTokenTable = ReturnType<ReturnType<typeof metricTokenTableFactory>>;
