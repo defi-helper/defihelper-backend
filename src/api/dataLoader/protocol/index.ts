@@ -1,7 +1,7 @@
 import container from '@container';
 import {
   Contract,
-  ContractBlockchain,
+  ContractBlockchainType,
   contractBlockchainTableName,
   contractTableName,
 } from '@models/Protocol/Entity';
@@ -301,7 +301,7 @@ export const protocolUserLastAPRLoader = ({
   });
 
 export const contractLoader = () =>
-  new DataLoader<string, (Contract & ContractBlockchain) | null>(async (contractsId) => {
+  new DataLoader<string, (Contract & ContractBlockchainType) | null>(async (contractsId) => {
     const map = new Map(
       await container.model
         .contractTable()

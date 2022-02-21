@@ -1,7 +1,7 @@
 import container from '@container';
 import {
   Contract,
-  ContractBlockchain,
+  ContractBlockchainType,
   contractBlockchainTableName,
   contractTableName,
 } from '@models/Protocol/Entity';
@@ -28,7 +28,7 @@ const oneYearInSeconds = 60 * 60 * 24 * 365;
 const getEthereumContractCreationBlock = async ({
   network,
   address,
-}: Contract & ContractBlockchain): Promise<number> => {
+}: Contract & ContractBlockchainType): Promise<number> => {
   const { walletExplorerURL } = container.blockchain.ethereum.byNetwork(network);
   try {
     const res = await axios.get(`${walletExplorerURL}/${address}`, {

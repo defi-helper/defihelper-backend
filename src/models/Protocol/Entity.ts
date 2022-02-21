@@ -80,13 +80,13 @@ export interface Contract {
   createdAt: Date;
 }
 
-export interface ContractDebank {
+export interface ContractDebankType {
   id: string;
   address: string;
   metric: ContractMetric;
 }
 
-export interface ContractBlockchain {
+export interface ContractBlockchainType {
   id: string;
   blockchain: Blockchain;
   network: string;
@@ -144,7 +144,7 @@ declare module 'knex/types/tables' {
     [contractTableName]: Contract;
     [walletContractLinkTableName]: WalletContractLink;
     [protocolUserFavoriteTableName]: ProtocolUserFavorite;
-    [contractDebankTableName]: ContractDebank;
-    [contractBlockchainTableName]: ContractBlockchain;
+    [contractDebankTableName]: ContractDebankType;
+    [contractBlockchainTableName]: ContractBlockchainType;
   }
 }

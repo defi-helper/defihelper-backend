@@ -1,7 +1,7 @@
 import { Factory } from '@services/Container';
 import { v4 as uuid } from 'uuid';
 import { User } from '@models/User/Entity';
-import { Contract, ContractBlockchain } from '@models/Protocol/Entity';
+import { Contract, ContractBlockchainType } from '@models/Protocol/Entity';
 import container from '@container';
 import { Emitter } from '@services/Event';
 import {
@@ -215,7 +215,7 @@ export class ContractEventWebHookService {
   });
 
   async create(
-    contract: Contract & ContractBlockchain,
+    contract: Contract & ContractBlockchainType,
     event: string,
   ): Promise<ContractEventWebHook> {
     const duplicate = await this.table()

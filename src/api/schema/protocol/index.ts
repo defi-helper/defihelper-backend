@@ -19,7 +19,7 @@ import {
   Protocol,
   walletContractLinkTableName,
   ContractAutomate,
-  ContractBlockchain,
+  ContractBlockchainType,
   contractBlockchainTableName,
 } from '@models/Protocol/Entity';
 import { apyBoost } from '@services/RestakeStrategy';
@@ -114,7 +114,7 @@ export const ContractAutomatesType = new GraphQLObjectType<ContractAutomate, Req
   },
 });
 
-export const ContractType = new GraphQLObjectType<Contract & ContractBlockchain, Request>({
+export const ContractType = new GraphQLObjectType<Contract & ContractBlockchainType, Request>({
   name: 'ContractType',
   fields: {
     id: {
@@ -523,15 +523,7 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
     const contractService = container.model.contractService();
-    const contract = await contractService
-      .contractTable()
-      .innerJoin(
-        contractBlockchainTableName,
-        `${contractBlockchainTableName}.id`,
-        `${contractTableName}.id`,
-      )
-      .where('id', id)
-      .first();
+    const contract = await contractService.contractTable().where('id', id).first();
     const contractBlockchain = await contractService
       .contractTable()
       .innerJoin(
@@ -568,21 +560,23 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
         hidden: typeof hidden === 'boolean' ? hidden : contract.hidden,
       },
       {
-        ...contract,
+        ...contractBlockchain,
         blockchain: (typeof blockchain === 'string'
           ? blockchain
-          : contract.blockchain) as Blockchain,
-        network: typeof network === 'string' ? network : contract.network,
-        address: typeof address === 'string' ? address : contract.address,
+          : contractBlockchain.blockchain) as Blockchain,
+        network: typeof network === 'string' ? network : contractBlockchain.network,
+        address: typeof address === 'string' ? address : contractBlockchain.address,
         deployBlockNumber:
-          typeof deployBlockNumber === 'string' ? deployBlockNumber : contract.deployBlockNumber,
-        adapter: typeof adapter === 'string' ? adapter : contract.adapter,
+          typeof deployBlockNumber === 'string'
+            ? deployBlockNumber
+            : contractBlockchain.deployBlockNumber,
+        adapter: typeof adapter === 'string' ? adapter : contractBlockchain.adapter,
         automate: {
-          adapters: Array.isArray(automates) ? automates : contract.automate.adapters,
+          adapters: Array.isArray(automates) ? automates : contractBlockchain.automate.adapters,
           autorestakeAdapter:
             typeof autorestakeAdapter === 'string'
               ? autorestakeAdapter
-              : contract.automate.autorestakeAdapter,
+              : contractBlockchain.automate.autorestakeAdapter,
         },
       },
     );

@@ -1,11 +1,12 @@
 import container from '@container';
 import { Blockchain } from '@models/types';
 import { User } from '@models/User/Entity';
-import { Wallet, WalletBlockchain, WalletExchange } from '@models/Wallet/Entity';
+import { Wallet, WalletBlockchain } from '@models/Wallet/Entity';
 import { Factory } from '@services/Container';
 import { Emitter } from '@services/Event';
 import { v4 as uuid } from 'uuid';
 
+import Knex from 'knex';
 import {
   Protocol,
   ProtocolTable,
@@ -20,11 +21,9 @@ import {
   ContractBlockchainTable,
   ContractDebankTable,
   ContractMetric,
-  ContractDebank,
-  ContractBlockchain,
+  ContractDebankType,
+  ContractBlockchainType,
 } from './Entity';
-import knex from 'knex';
-import Knex from 'knex';
 
 export class ProtocolService {
   constructor(
@@ -112,7 +111,7 @@ interface ContractRegisterData {
 export class ContractService {
   public readonly onContractDebankCreated = new Emitter<{
     contract: Contract;
-    contractDebank: ContractDebank;
+    contractDebank: ContractDebankType;
   }>();
 
   public readonly onContractBlockchainCreated = new Emitter<ContractRegisterData>((contract) => {
@@ -123,7 +122,7 @@ export class ContractService {
   });
 
   public readonly onWalletLink = new Emitter<{
-    contract: Contract & ContractBlockchain;
+    contract: Contract & ContractBlockchainType;
     wallet: Wallet;
     link: WalletContractLink;
   }>(({ contract, link }) => {
@@ -173,7 +172,7 @@ export class ContractService {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    const childContract: ContractDebank = {
+    const childContract: ContractDebankType = {
       id: parentContract.id,
       address: hashAddress,
       metric,
@@ -223,7 +222,7 @@ export class ContractService {
       updatedAt: new Date(),
     };
 
-    const childContract: ContractBlockchain = {
+    const childContract: ContractBlockchainType = {
       id: parentContract.id,
       adapter,
       address: blockchain === 'ethereum' ? address.toLowerCase() : address,
@@ -251,10 +250,10 @@ export class ContractService {
     return { ...parentContract, ...childContract };
   }
 
-  async updateBlockchain(contract: Contract, contractBlockchain: ContractBlockchain) {
+  async updateBlockchain(contract: Contract, contractBlockchain: ContractBlockchainType) {
     if (contract.id !== contractBlockchain.id) throw new Error('Invalid wallet ID');
 
-    const updatedBlockchain: ContractBlockchain = {
+    const updatedBlockchain: ContractBlockchainType = {
       ...contractBlockchain,
       address:
         contractBlockchain.blockchain === 'ethereum'
@@ -283,7 +282,7 @@ export class ContractService {
   }
 
   async walletLink(
-    contract: Contract & ContractBlockchain,
+    contract: Contract & ContractBlockchainType,
     blockchainWallet: Wallet & WalletBlockchain,
   ) {
     const duplicate = await this.walletLinkTable()
