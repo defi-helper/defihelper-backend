@@ -8,6 +8,9 @@ import {
 } from '@models/Wallet/Entity';
 
 export default async (process: Process) => {
+  // temp remove brokers
+  return process.done();
+
   const wallets = await container.model
     .walletTable()
     .innerJoin(
