@@ -160,53 +160,29 @@ function coingeckoPriceFeedUSD(coinId: string): NativePriceFeedUSD {
   };
 }
 
-function moralisPriceFeed(network: string): { usd: TokenPriceFeedUSD } {
-  return {
-    usd: async (address: string) => {
-      const key = `ethereum:${network}:${address}:price`;
-      const moralis = await container.moralis().getWeb3API();
-
-      let chain: 'eth' | 'bsc' | 'polygon' | 'avalanche';
-      switch (network) {
-        case '1':
-          chain = 'eth';
-          break;
-        case '56':
-          chain = 'bsc';
-          break;
-        case '137':
-          chain = 'polygon';
-          break;
-        case '43114':
-          chain = 'avalanche';
-          break;
-        default:
-          throw new Error(`unsupported network: ${network}`);
-      }
-
-      const cachedPrice = await cacheGet(key);
-      if (cachedPrice) {
-        return cachedPrice;
-      }
-
-      const result = await moralis.token.getTokenPrice({
-        chain,
-        address,
-      });
-
-      cacheSet(key, result.usdPrice.toString(10));
-      return result.usdPrice.toString(10);
-    },
-  };
-}
-
 function debankPriceFeed(network: string): { usd: TokenPriceFeedUSD } {
   return {
     usd: async (address: string) => {
       const key = `ethereum:${network}:${address}:price`;
 
-      let chain: 'movr';
+      let chain: 'movr' | 'bsc' | 'eth' | 'matic' | 'avax';
       switch (network) {
+        case '1':
+          chain = 'eth';
+          break;
+
+        case '56':
+          chain = 'bsc';
+          break;
+
+        case '137':
+          chain = 'matic';
+          break;
+
+        case '43114':
+          chain = 'avax';
+          break;
+
         case '1285':
           chain = 'movr';
           break;
@@ -276,7 +252,7 @@ export class BlockchainContainer extends Container<Config> {
         symbol: 'ETH',
         name: 'Ethereum',
       },
-      tokenPriceResolver: moralisPriceFeed('1'),
+      tokenPriceResolver: debankPriceFeed('1'),
       network: this.parent.eth,
     }),
     '3': networkFactory({
@@ -293,7 +269,7 @@ export class BlockchainContainer extends Container<Config> {
         symbol: 'ETH',
         name: 'Ethereum',
       },
-      tokenPriceResolver: moralisPriceFeed('1'),
+      tokenPriceResolver: debankPriceFeed('1'),
       network: this.parent.ethRopsten,
     }),
     '56': networkFactory({
@@ -310,7 +286,7 @@ export class BlockchainContainer extends Container<Config> {
         symbol: 'BSC',
         name: 'Binance Smart Chain',
       },
-      tokenPriceResolver: moralisPriceFeed('56'),
+      tokenPriceResolver: debankPriceFeed('56'),
       network: this.parent.bsc,
     }),
     '137': networkFactory({
@@ -327,7 +303,7 @@ export class BlockchainContainer extends Container<Config> {
         symbol: 'MATIC',
         name: 'Polygon',
       },
-      tokenPriceResolver: moralisPriceFeed('137'),
+      tokenPriceResolver: debankPriceFeed('137'),
       network: this.parent.polygon,
     }),
     '1285': networkFactory({
@@ -361,7 +337,7 @@ export class BlockchainContainer extends Container<Config> {
         symbol: 'AVAX',
         name: 'Avalanche',
       },
-      tokenPriceResolver: moralisPriceFeed('43113'),
+      tokenPriceResolver: debankPriceFeed('43113'),
       network: this.parent.avalancheTestnet,
     }),
     '43114': networkFactory({
@@ -378,7 +354,7 @@ export class BlockchainContainer extends Container<Config> {
         symbol: 'AVAX',
         name: 'Avalanche',
       },
-      tokenPriceResolver: moralisPriceFeed('43113'),
+      tokenPriceResolver: debankPriceFeed('43113'),
       network: this.parent.avalanche,
     }),
     '31337': networkFactory({
@@ -395,7 +371,7 @@ export class BlockchainContainer extends Container<Config> {
         symbol: 'ETH',
         name: 'Ethereum',
       },
-      tokenPriceResolver: moralisPriceFeed('1'),
+      tokenPriceResolver: debankPriceFeed('1'),
       network: this.parent.local,
     }),
   } as const;
