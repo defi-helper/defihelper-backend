@@ -35,10 +35,9 @@ export default async (process: Process) => {
       walletId: blockchainWallet.id,
     }),
     container.model.queueService().push(
-      'metricsWalletBalancesFillSelector',
+      'metricsWalletBalancesDeBankFiller',
       {
         id: blockchainWallet.id,
-        network: blockchainWallet.network,
       },
       { topic: 'metricCurrent' },
     ),
