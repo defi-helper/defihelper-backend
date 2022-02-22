@@ -86,6 +86,9 @@ export * as tokenInfoEth from './token/ethereumInfo';
 export * as tokenInfoWaves from './token/wavesInfo';
 export * as resolveTokenAliasLiquidity from './token/resolveTokenAliasLiquidity';
 
+/* treasury */
+export * as treasuryStatsCache from './treasury/cache';
+
 /* utils */
 export * as utilsTokensLogoBroker from './utils/tokensLogoBroker';
 export * as utilsDebankProtocolsTvlHistoryBroker from './utils/debankProtocolsTvlHistoryBroker';
