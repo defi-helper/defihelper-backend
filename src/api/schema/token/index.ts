@@ -76,6 +76,9 @@ export const TokenListQuery: GraphQLFieldConfig<any, Request> = {
           address: {
             type: GraphQLList(GraphQLNonNull(GraphQLString)),
           },
+          tradable: {
+            type: GraphQLBoolean,
+          },
           search: {
             type: GraphQLString,
           },
@@ -101,6 +104,9 @@ export const TokenListQuery: GraphQLFieldConfig<any, Request> = {
       }
       if (Array.isArray(filter.address) && filter.address.length > 0) {
         this.whereIn('address', filter.address);
+      }
+      if (typeof filter.tradable === 'boolean') {
+        this.andWhere('tradable', filter.tradable);
       }
       if (filter.search !== undefined && filter.search !== '') {
         this.andWhere('name', 'iLike', `%${filter.search}%`);
