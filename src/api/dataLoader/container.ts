@@ -8,6 +8,7 @@ import {
   protocolUserLastAPRLoader,
   protocolUserLastMetricLoader,
 } from './protocol';
+import { tokenAliasLoader } from './token';
 import {
   userBlockchainLoader,
   userLastAPRLoader,
@@ -46,4 +47,6 @@ export class DataLoaderContainer extends Container<{}> {
   readonly walletMetric = singleton(walletLastMetricLoader);
 
   readonly walletTokenMetric = singletonParametric(walletTokenLastMetricLoader);
+
+  readonly tokenAlias = singleton(tokenAliasLoader);
 }

@@ -25,16 +25,19 @@ import {
   UuidType,
 } from '../types';
 
-export const TokenType = new GraphQLObjectType<Token>({
+export const TokenType: GraphQLObjectType = new GraphQLObjectType<Token, Request>({
   name: 'TokenType',
-  fields: {
+  fields: () => ({
     id: {
       type: GraphQLNonNull(UuidType),
       description: 'Identificator',
     },
     alias: {
-      type: GraphQLNonNull(GraphQLString),
+      type: TokenAliasType,
       description: 'Token alias id',
+      resolve: async ({ alias }, _, { dataLoader }) => {
+        return alias ? dataLoader.tokenAlias().load(alias) : null;
+      },
     },
     blockchain: {
       type: GraphQLNonNull(BlockchainEnum),
@@ -60,7 +63,7 @@ export const TokenType = new GraphQLObjectType<Token>({
       type: GraphQLNonNull(GraphQLInt),
       description: 'Decimals',
     },
-  },
+  }),
 });
 
 export const TokenListQuery: GraphQLFieldConfig<any, Request> = {
