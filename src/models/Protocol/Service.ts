@@ -19,6 +19,7 @@ import {
   MetadataType,
   TokenContractLinkTable,
   TokenContractLinkType,
+  ContractAutomate,
 } from './Entity';
 
 export class ProtocolService {
@@ -153,10 +154,7 @@ export class ContractService {
     deployBlockNumber: string | null,
     adapter: string,
     layout: string,
-    automate: {
-      adapters: string[];
-      autorestakeAdapter?: string;
-    },
+    automate: ContractAutomate,
     name: string,
     description: string = '',
     link: string | null = null,
@@ -177,6 +175,7 @@ export class ContractService {
       automate: {
         adapters: automate.adapters,
         autorestakeAdapter: automate.autorestakeAdapter,
+        buyLiquidity: automate.buyLiquidity,
       },
       name,
       description,
