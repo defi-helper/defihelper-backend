@@ -45,8 +45,11 @@ export default async (process: Process) => {
       throw new Error(`unsupported network: ${blockchainWallet.network}`);
   }
 
+  console.log('moralis init start');
   const moralis = await container.moralis().getWeb3API();
   const walletMetrics = container.model.metricService();
+
+  console.log('moralis init end');
 
   let tokensBalances = [];
   try {
@@ -63,6 +66,8 @@ export default async (process: Process) => {
       .error(new Error(`${e.code}: ${e.error}`));
   }
 
+  console.log('tokensBalances');
+
   const tokensPrices = await tokensBalances.reduce<
     Promise<({ usd: string; address: string } | null)[]>
   >(async (result, token) => {
@@ -78,6 +83,8 @@ export default async (process: Process) => {
     ];
   }, Promise.resolve([]));
 
+  console.log('tokensPrices');
+
   const existingTokensRecords = await container.model
     .tokenTable()
     .whereIn(
@@ -86,6 +93,8 @@ export default async (process: Process) => {
     )
     .andWhere('blockchain', blockchainWallet.blockchain)
     .andWhere('network', blockchainWallet.network);
+
+  console.log('existingTokensRecords');
 
   const database = container.database();
   const lastTokenMetrics = await container.model
@@ -99,6 +108,8 @@ export default async (process: Process) => {
     .orderBy(`${metricWalletTokenTableName}.wallet`)
     .orderBy(`${metricWalletTokenTableName}.token`)
     .orderBy(`${metricWalletTokenTableName}.date`, 'DESC');
+
+  console.log('lastTokenMetrics');
 
   const createdMetrics = await Promise.all(
     tokensBalances.map(async (tokenBalance) => {
@@ -146,7 +157,7 @@ export default async (process: Process) => {
       const totalTokenNumber = new BN(tokenBalance.balance).div(`1e${tokenBalance.decimals}`);
       const totalTokensUSDPrice = new BN(tokenPrice.usd).multipliedBy(totalTokenNumber);
 
-      return walletMetrics.createToken(
+      return walletMetrics.createWalletToken(
         null,
         blockchainWallet,
         tokenRecord,
@@ -159,13 +170,15 @@ export default async (process: Process) => {
     }),
   );
 
+  console.log('createdMetrics');
+
   await Promise.all(
     lastTokenMetrics.map((v) => {
       if (createdMetrics.some((exstng) => exstng?.token === v.id) || v.balance === '0') {
         return null;
       }
 
-      return walletMetrics.createToken(
+      return walletMetrics.createWalletToken(
         null,
         blockchainWallet,
         v,
@@ -177,6 +190,8 @@ export default async (process: Process) => {
       );
     }),
   );
+
+  console.log('lastTokenMetrics');
 
   let nativeBalance;
   const nativeTokenPrice = await container.blockchain.ethereum
@@ -199,6 +214,8 @@ export default async (process: Process) => {
     return process.info(`No native balance: ${e.code}, ${e.error}`).done();
   }
 
+  console.log('nativeTokenPrice');
+
   const nativeUSD = nativeBalance.multipliedBy(nativeTokenPrice);
   let nativeTokenRecord = await container.model
     .tokenTable()
@@ -206,6 +223,8 @@ export default async (process: Process) => {
     .andWhere('blockchain', blockchainWallet.blockchain)
     .andWhere('network', blockchainWallet.network)
     .first();
+
+  console.log('nativeUSD');
 
   if (!nativeTokenRecord) {
     let nativeTokenAlias = await container.model
@@ -224,6 +243,8 @@ export default async (process: Process) => {
         );
     }
 
+    console.log('nativeTokenAlias');
+
     nativeTokenRecord = await container.model
       .tokenService()
       .create(
@@ -236,9 +257,11 @@ export default async (process: Process) => {
         nativeTokenDetails.decimals,
         TokenCreatedBy.Scanner,
       );
+
+    console.log('nativeTokenRecord');
   }
 
-  await walletMetrics.createToken(
+  await walletMetrics.createWalletToken(
     null,
     blockchainWallet,
     nativeTokenRecord,
@@ -248,6 +271,8 @@ export default async (process: Process) => {
     },
     new Date(),
   );
+
+  console.log('createWalletToken');
 
   return process.done();
 };

@@ -40,6 +40,7 @@ export interface Token {
   name: string;
   symbol: string;
   decimals: number;
+  tradable: boolean;
   createdBy: TokenCreatedBy;
   updatedAt: Date;
   createdAt: Date;
