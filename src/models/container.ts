@@ -128,8 +128,15 @@ export class ModelContainer extends Container<typeof AppContainer> {
 
   readonly voteTable = Models.Proposal.Entity.voteTableFactory(this.parent.database);
 
+  readonly proposalTagTable = Models.Proposal.Entity.tagTableFactory(this.parent.database);
+
   readonly proposalService = singleton(
-    () => new Models.Proposal.Service.ProposalService(this.proposalTable, this.voteTable),
+    () =>
+      new Models.Proposal.Service.ProposalService(
+        this.proposalTable,
+        this.voteTable,
+        this.proposalTagTable,
+      ),
   );
 
   readonly metricBlockchainTable = Models.Metric.Entity.metricBlockchainTableFactory(

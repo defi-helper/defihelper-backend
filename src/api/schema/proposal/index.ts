@@ -3,12 +3,21 @@ import {
   GraphQLEnumType,
   GraphQLFieldConfig,
   GraphQLInputObjectType,
+  GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
 } from 'graphql';
 import { UserType } from '@api/schema/user';
-import { Status, Proposal, Vote } from '@models/Proposal/Entity';
+import {
+  Status,
+  Proposal,
+  Vote,
+  Tag,
+  tagTableName,
+  proposalTableName,
+} from '@models/Proposal/Entity';
+import { Role } from '@models/User/Entity';
 import container from '@container';
 import { Request } from 'express';
 import { AuthenticationError, ForbiddenError, UserInputError } from 'apollo-server-express';
@@ -77,6 +86,83 @@ export const UnvoteMutation: GraphQLFieldConfig<any, Request> = {
     if (!proposal) throw new UserInputError('Proposal not found');
 
     await container.model.proposalService().unvote(proposal, currentUser);
+    return true;
+  },
+};
+
+export const TagEnum = new GraphQLEnumType({
+  name: 'ProposalTagEnum',
+  values: Object.values(Tag).reduce((res, type) => ({ ...res, [type]: { value: type } }), {}),
+});
+
+export const TagType = new GraphQLObjectType<Vote>({
+  name: 'ProposalTagType',
+  fields: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+      description: 'Identificator',
+    },
+    user: {
+      type: GraphQLNonNull(UserType),
+      description: 'Voting user',
+      resolve: (vote) => {
+        return container.model.userTable().where('id', vote.user).first();
+      },
+    },
+    tag: {
+      type: GraphQLNonNull(TagEnum),
+      description: 'Tag value',
+    },
+    createdAt: {
+      type: GraphQLNonNull(DateTimeType),
+      description: 'Date of created',
+    },
+  },
+});
+
+export const TagMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLList(GraphQLNonNull(TagType))),
+  args: {
+    proposal: {
+      type: GraphQLNonNull(UuidType),
+    },
+    tag: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(TagEnum))),
+    },
+  },
+  resolve: async (_, { proposal: proposalId, tag }, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const proposal = await container.model.proposalTable().where('id', proposalId).first();
+    if (!proposal) throw new UserInputError('Proposal not found');
+    if (currentUser.role !== Role.Admin && currentUser.id !== proposal.author) {
+      throw new ForbiddenError('FORBIDDEN');
+    }
+
+    const proposalService = container.model.proposalService();
+    return Promise.all(tag.map((t: Tag) => proposalService.tag(proposal, currentUser, t)));
+  },
+};
+
+export const UntagMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLBoolean),
+  args: {
+    proposal: {
+      type: GraphQLNonNull(UuidType),
+    },
+    tag: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(TagEnum))),
+    },
+  },
+  resolve: async (_, { proposal: proposalId, tag }, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const proposal = await container.model.proposalTable().where('id', proposalId).first();
+    if (!proposal) throw new UserInputError('Proposal not found');
+
+    const proposalService = container.model.proposalService();
+    await Promise.all(tag.map((t: Tag) => proposalService.untag(proposal, currentUser, t)));
+
     return true;
   },
 };
@@ -217,6 +303,9 @@ export const ProposalListQuery: GraphQLFieldConfig<any, Request> = {
           status: {
             type: StatusEnum,
           },
+          tag: {
+            type: GraphQLList(GraphQLNonNull(TagEnum)),
+          },
           search: {
             type: GraphQLString,
           },
@@ -232,21 +321,27 @@ export const ProposalListQuery: GraphQLFieldConfig<any, Request> = {
     pagination: PaginationArgument('ProposalListPaginationInputType'),
   },
   resolve: async (root, { filter, sort, pagination }) => {
-    let select = container.model.proposalTable();
-    if (filter.author !== undefined) {
-      select = select.andWhere('author', filter.author);
-    }
-    if (filter.status !== undefined) {
-      select = select.andWhere('status', filter.status);
-    }
-    if (filter.search !== undefined && filter.search !== '') {
-      select = select.andWhere(`title`, 'iLike', `%${filter.search}%`);
+    let select = container.model.proposalTable().where(function () {
+      if (filter.author !== undefined) {
+        this.andWhere(`${proposalTableName}.author`, filter.author);
+      }
+      if (filter.status !== undefined) {
+        this.andWhere(`${proposalTableName}.status`, filter.status);
+      }
+      if (filter.search !== undefined && filter.search !== '') {
+        this.andWhere(`${proposalTableName}.title`, 'iLike', `%${filter.search}%`);
+      }
+    });
+    if (Array.isArray(filter.tag) && filter.tag.length > 0) {
+      select = select
+        .innerJoin(tagTableName, `${tagTableName}.proposal`, `${proposalTableName}.id`)
+        .whereIn(`${tagTableName}.tag`, filter.tag);
     }
 
     return {
       list: await select.clone().orderBy(sort).limit(pagination.limit).offset(pagination.offset),
       pagination: {
-        count: await select.clone().count().first(),
+        count: await select.clone().countDistinct(`${proposalTableName}.id`).first(),
       },
     };
   },
