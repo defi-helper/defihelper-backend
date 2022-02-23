@@ -12,7 +12,7 @@ interface Params {
 
 interface AssetToken {
   id: string;
-  chain: 'movr';
+  chain: 'movr' | 'bsc' | 'eth' | 'matic' | 'avax';
   name: string;
   symbol: string;
   decimals: number;
@@ -34,16 +34,33 @@ export default async (process: Process) => {
     )
     .where(`${walletTableName}.id`, id)
     .first();
-  let chain: 'movr';
+  let chain: 'movr' | 'bsc' | 'eth' | 'matic' | 'avax';
 
   if (!blockchainWallet || blockchainWallet.blockchain !== 'ethereum') {
     throw new Error('wallet not found or unsupported blockchain');
   }
 
   switch (blockchainWallet.network) {
+    case '1':
+      chain = 'eth';
+      break;
+
+    case '56':
+      chain = 'bsc';
+      break;
+
+    case '137':
+      chain = 'matic';
+      break;
+
+    case '43114':
+      chain = 'avax';
+      break;
+
     case '1285':
       chain = 'movr';
       break;
+
     default:
       throw new Error(`unsupported network: ${blockchainWallet.network}`);
   }

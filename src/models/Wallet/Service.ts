@@ -51,7 +51,15 @@ export class WalletService {
   public readonly onExchangeWalletCreated = new Emitter<{
     wallet: Wallet;
     exchangeWallet: WalletExchange;
-  }>();
+  }>(({ wallet }) =>
+    container.model.queueService().push(
+      'metricsWalletBalancesCexBinanceFiller',
+      {
+        id: wallet.id,
+      },
+      { priority: 9 },
+    ),
+  );
 
   public readonly onBlockchainWalletChangeOwner = new Emitter<{ prev: Wallet; current: Wallet }>(
     async ({ prev, current }) => {
