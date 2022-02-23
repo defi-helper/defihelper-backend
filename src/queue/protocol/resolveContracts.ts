@@ -86,7 +86,7 @@ export default async (process: Process) => {
           p.blockchain === pool.blockchain,
       );
       if (duplicate) {
-        return contractService.update({
+        return contractService.updateBlockchain({
           ...duplicate,
           automate: pool.automate,
         });

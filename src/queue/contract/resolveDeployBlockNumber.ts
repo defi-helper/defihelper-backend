@@ -91,7 +91,7 @@ export default async (process: Process) => {
   if (contract.deployBlockNumber !== null) throw new Error('Deploy block already resolved');
 
   const deployBlockNumber = await getEthereumContractCreationBlock(contract);
-  await container.model.contractService().updateBlockchain(contract, {
+  await container.model.contractService().updateBlockchainAndParentLegacy(contract, {
     ...contractBlockchain,
     deployBlockNumber: deployBlockNumber.toString(),
   });

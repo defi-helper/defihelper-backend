@@ -549,7 +549,7 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
       link,
       hidden,
     } = input;
-    const updated = await contractService.updateBlockchain(
+    const updated = await contractService.updateBlockchainAndParentLegacy(
       {
         ...contract,
         layout: typeof layout === 'string' ? layout : contract.layout,

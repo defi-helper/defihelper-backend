@@ -253,7 +253,37 @@ export class ContractService {
     return { ...parentContract, ...childContract };
   }
 
-  async updateBlockchain(contract: Contract, contractBlockchain: ContractBlockchainType) {
+  async updateParent(contract: Contract) {
+    const updatedParent: Contract = {
+      ...contract,
+      updatedAt: new Date(),
+    };
+
+    await this.contractTable().where('id', contract.id).update(updatedParent);
+
+    return updatedParent;
+  }
+
+  async updateBlockchain(contractBlockchain: ContractBlockchainType) {
+    const updatedBlockchain: ContractBlockchainType = {
+      ...contractBlockchain,
+      address:
+        contractBlockchain.blockchain === 'ethereum'
+          ? contractBlockchain.address.toLowerCase()
+          : contractBlockchain.address,
+    };
+
+    await this.contractBlockchainTable()
+      .where('id', updatedBlockchain.id)
+      .update(updatedBlockchain);
+
+    return updatedBlockchain;
+  }
+
+  async updateBlockchainAndParentLegacy(
+    contract: Contract,
+    contractBlockchain: ContractBlockchainType,
+  ) {
     if (contract.id !== contractBlockchain.id) throw new Error('Invalid wallet ID');
 
     const updatedBlockchain: ContractBlockchainType = {

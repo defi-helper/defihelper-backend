@@ -1,4 +1,4 @@
-import { typedTableFactory } from '@services/Database';
+import { tableFactoryLegacy, typedTableFactory } from '@services/Database';
 import { Blockchain } from '@models/types';
 
 export interface ProtocolLink {

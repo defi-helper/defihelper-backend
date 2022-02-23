@@ -4,14 +4,20 @@ import { TokenCreatedBy } from '@models/Token/Entity';
 import dayjs from 'dayjs';
 import { ethers } from 'ethers';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
-import * as Adapters from '@ser
-import { contractBlockchainTableName, contractTableName, Contract, TokenContractLinkType } from '@models/Protocol/Entity';
+import * as Adapters from '@services/Blockchain/Adapter';
+import {
+  contractBlockchainTableName,
+  contractTableName,
+  Contract,
+  TokenContractLinkType,
+  ContractBlockchainType,
+} from '@models/Protocol/Entity';
 
 function getLeafTokens(token: Adapters.ContractTokenData): Adapters.ContractTokenData[] {
   return token.parts ? token.parts.flatMap(getLeafTokens) : [token];
 }
 
-async function getOrCreateToken(contract: Contract, address: string) {
+async function getOrCreateToken(contract: Contract & ContractBlockchainType, address: string) {
   const token = await container.model
     .tokenTable()
     .where({
@@ -43,7 +49,15 @@ export interface ContractMetricsParams {
 
 export async function contractMetrics(process: Process) {
   const { contract: contractId, blockNumber } = process.task.params as ContractMetricsParams;
-  const contract = await container.model.contractTable().where(`id`, contractId).first();
+  const contract = await container.model
+    .contractTable()
+    .innerJoin(
+      contractBlockchainTableName,
+      `${contractBlockchainTableName}.id`,
+      `${contractTableName}.id`,
+    )
+    .where(`id`, contractId)
+    .first();
   const contractBlockchain = await container.model
     .contractBlockchainTable()
     .where(`id`, contractId)
@@ -88,7 +102,7 @@ export async function contractMetrics(process: Process) {
   ) {
     await Promise.all([
       metricService.createContract(contract, contractAdapterData.metrics, date),
-      container.model.contractService().updateBlockchain(contract, {
+      container.model.contractService().updateBlockchainAndParentLegacy(contract, {
         ...contractBlockchain,
         metric: {
           tvl: contractAdapterData.metrics.tvl ?? '0',

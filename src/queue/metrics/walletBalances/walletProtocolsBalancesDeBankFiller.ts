@@ -369,7 +369,7 @@ export default async (process: Process) => {
         return null;
       }
 
-      return walletMetrics.createToken(
+      return walletMetrics.createWalletToken(
         protocolRewardTokenExistingContracts.find((v) => v.debankId === token.protocolId) || null,
         walletByChain,
         tokenRecord,
@@ -425,7 +425,7 @@ export default async (process: Process) => {
         return null;
       }
 
-      return walletMetrics.createToken(
+      return walletMetrics.createWalletToken(
         contracts.find((c) => c.address === token.protocolHashAddress) || null,
         walletByChain,
         tokenRecord,
