@@ -13,7 +13,7 @@ export default async (schema: SchemaBuilder) => {
       table.jsonb('metric').notNullable().defaultTo('{}');
 
       table.primary(['id'], `${contractDebankTableName}_fk_pk`);
-      table.unique(['address']);
+      table.unique(['id', 'address']);
       table
         .foreign('id')
         .references(`${contractTableName}.id`)
@@ -30,7 +30,6 @@ export default async (schema: SchemaBuilder) => {
       table.jsonb('metric').notNullable().defaultTo('{}');
       table.jsonb('automate').notNullable().defaultTo('{"adapters": []}');
       table.string('deployBlockNumber', 64).nullable();
-      table.string('layout', 64).notNullable().defaultTo('');
       table.string('adapter', 512).notNullable().defaultTo('');
 
       table.primary(['id'], `${contractBlockchainTableName}_fk_pk`);
