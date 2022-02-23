@@ -276,13 +276,13 @@ export default async (process: Process) => {
 
   const contracts = await Promise.all(
     stakingContracts
-      // .filter((contract) => {
-      //   const existingContract = existingContracts.find(
-      //     (v) => v.address === contract.hashAddress && contract.protocol === v.debankId,
-      //   );
-      //
-      //   return existingContract?.adapter !== 'debankByApiReadonly';
-      // })
+      .filter((contract) => {
+        const existingContract = existingContracts.find(
+          (v) => v.address === contract.hashAddress && contract.protocol === v.debankId,
+        );
+
+        return existingContract?.adapter !== 'debankByApiReadonly';
+      })
       .map(async (contract) => {
         const existingProtocol = protocols.find(
           (existings) => existings?.debankId === contract.protocol,
