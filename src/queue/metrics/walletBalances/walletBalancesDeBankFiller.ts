@@ -123,7 +123,7 @@ export default async (process: Process) => {
           );
       }
 
-      return walletMetrics.createToken(
+      return walletMetrics.createWalletToken(
         null,
         blockchainWallet,
         tokenRecord,
@@ -142,7 +142,7 @@ export default async (process: Process) => {
         return null;
       }
 
-      return walletMetrics.createToken(
+      return walletMetrics.createWalletToken(
         null,
         blockchainWallet,
         v,

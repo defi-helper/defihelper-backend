@@ -15,7 +15,16 @@ export interface MetricMap {
   [k: string]: string;
 }
 
+export interface ContractTokenData {
+  address: string;
+  decimals: number;
+  priceUSD: string;
+  parts?: ContractTokenData[];
+}
+
 export interface MetricData extends Object {
+  stakeToken?: ContractTokenData;
+  rewardToken?: ContractTokenData;
   metrics?: MetricMap;
 }
 

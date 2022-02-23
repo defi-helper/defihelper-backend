@@ -137,6 +137,27 @@ export const metadataTableFactory = typedTableFactory(metadataTableName);
 
 export type MetadataTable = ReturnType<ReturnType<typeof metadataTableFactory>>;
 
+export enum TokenContractLinkType {
+  Stake = 'stake',
+  Reward = 'reward',
+}
+
+export interface TokenContractLink {
+  id: string;
+  contract: string;
+  token: string;
+  type: TokenContractLinkType;
+  createdAt: Date;
+}
+
+export const tokenContractLinkTableName = 'protocol_contract_token_link';
+
+export const tokenContractLinkTableFactory = tableFactoryLegacy<TokenContractLink>(
+  tokenContractLinkTableName,
+);
+
+export type TokenContractLinkTable = ReturnType<ReturnType<typeof tokenContractLinkTableFactory>>;
+
 declare module 'knex/types/tables' {
   interface Tables {
     [protocolTableName]: Protocol;

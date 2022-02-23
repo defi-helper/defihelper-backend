@@ -99,7 +99,7 @@ export class TokenService {
     decimals: number,
     createdBy: TokenCreatedBy,
   ) {
-    const created = {
+    const created: Token = {
       id: uuid(),
       alias: alias === null ? null : alias.id,
       blockchain,
@@ -108,6 +108,7 @@ export class TokenService {
       name,
       symbol,
       decimals,
+      tradable: false,
       createdBy,
       createdAt: new Date(),
       updatedAt: new Date(),

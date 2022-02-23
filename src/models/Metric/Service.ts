@@ -7,10 +7,15 @@ import { Factory } from '@services/Container';
 import { Wallet } from '@models/Wallet/Entity';
 import { Token } from '@models/Token/Entity';
 import {
+  MetricBlockchain,
   MetricBlockchainTable,
+  MetricContract,
   MetricContractTable,
   MetricMap,
+  MetricProtocol,
   MetricProtocolTable,
+  MetricToken,
+  MetricTokenTable,
   MetricWallet,
   MetricWalletTable,
   MetricWalletToken,
@@ -29,9 +34,9 @@ export class MetricContractService {
     );
   });
 
-  public readonly onTokenCreated = new Emitter<MetricWalletToken>(async (metric) => {
+  public readonly onWalletTokenCreated = new Emitter<MetricWalletToken>(async (metric) => {
     container.cache().publish(
-      'defihelper:channel:onTokenMetricUpdated',
+      'defihelper:channel:onWalletTokenMetricUpdated',
       JSON.stringify({
         id: metric.id,
         wallet: metric.wallet,
@@ -47,10 +52,11 @@ export class MetricContractService {
     readonly metricContractTable: Factory<MetricContractTable>,
     readonly metricWalletTable: Factory<MetricWalletTable>,
     readonly metricWalletTokenTable: Factory<MetricWalletTokenTable>,
+    readonly metricTokenTable: Factory<MetricTokenTable>,
   ) {}
 
   async createBlockchain(blockchain: Blockchain, network: string, data: MetricMap, date: Date) {
-    const created = {
+    const created: MetricBlockchain = {
       id: uuid(),
       blockchain,
       network,
@@ -64,7 +70,7 @@ export class MetricContractService {
   }
 
   async createProtocol(protocol: Protocol, data: MetricMap, date: Date) {
-    const created = {
+    const created: MetricProtocol = {
       id: uuid(),
       protocol: protocol.id,
       data,
@@ -77,7 +83,7 @@ export class MetricContractService {
   }
 
   async createContract(contract: Contract, data: MetricMap, date: Date) {
-    const created = {
+    const created: MetricContract = {
       id: uuid(),
       contract: contract.id,
       data,
@@ -90,7 +96,7 @@ export class MetricContractService {
   }
 
   async createWallet(contract: Contract, wallet: Wallet, data: MetricMap, date: Date) {
-    const created = {
+    const created: MetricWallet = {
       id: uuid(),
       contract: contract.id,
       wallet: wallet.id,
@@ -104,14 +110,14 @@ export class MetricContractService {
     return created;
   }
 
-  async createToken(
+  async createWalletToken(
     contract: Contract | null,
     wallet: Wallet,
     token: Token,
     data: MetricMap,
     date: Date,
   ) {
-    const created = {
+    const created: MetricWalletToken = {
       id: uuid(),
       contract: contract ? contract.id : null,
       wallet: wallet.id,
@@ -121,7 +127,20 @@ export class MetricContractService {
       createdAt: new Date(),
     };
     await this.metricWalletTokenTable().insert(created);
-    this.onTokenCreated.emit(created);
+    this.onWalletTokenCreated.emit(created);
+
+    return created;
+  }
+
+  async createToken(token: Token, data: MetricMap, date: Date) {
+    const created: MetricToken = {
+      id: uuid(),
+      token: token.id,
+      data,
+      date,
+      createdAt: new Date(),
+    };
+    await this.metricTokenTable().insert(created);
 
     return created;
   }

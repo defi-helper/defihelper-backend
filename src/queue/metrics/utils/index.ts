@@ -4,8 +4,37 @@ import { TokenCreatedBy } from '@models/Token/Entity';
 import dayjs from 'dayjs';
 import { ethers } from 'ethers';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
-import * as Adapters from '@services/Blockchain/Adapter';
-import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
+import * as Adapters from '@ser
+import { contractBlockchainTableName, contractTableName, Contract, TokenContractLinkType } from '@models/Protocol/Entity';
+
+function getLeafTokens(token: Adapters.ContractTokenData): Adapters.ContractTokenData[] {
+  return token.parts ? token.parts.flatMap(getLeafTokens) : [token];
+}
+
+async function getOrCreateToken(contract: Contract, address: string) {
+  const token = await container.model
+    .tokenTable()
+    .where({
+      blockchain: contract.blockchain,
+      network: contract.network,
+      address,
+    })
+    .first();
+  if (token) return token;
+
+  return container.model
+    .tokenService()
+    .create(
+      null,
+      contract.blockchain,
+      contract.network,
+      address,
+      '',
+      '',
+      0,
+      TokenCreatedBy.Adapter,
+    );
+}
 
 export interface ContractMetricsParams {
   contract: string;
@@ -70,6 +99,41 @@ export async function contractMetrics(process: Process) {
         },
       }),
     ]);
+
+    const stakeLeafTokens = (
+      contractAdapterData.stakeToken ? getLeafTokens(contractAdapterData.stakeToken) : []
+    ).map((tokenData) => ({ ...tokenData, type: TokenContractLinkType.Stake }));
+    const rewardLeafTokens = (
+      contractAdapterData.rewardToken ? getLeafTokens(contractAdapterData.rewardToken) : []
+    ).map((tokenData) => ({ ...tokenData, type: TokenContractLinkType.Reward }));
+    const leafTokens = Array.from(
+      Object.values(
+        [...stakeLeafTokens, ...rewardLeafTokens].reduce<{
+          [address: string]: Adapters.ContractTokenData & { type: TokenContractLinkType };
+        }>(
+          (result, tokenData) => ({
+            ...result,
+            [tokenData.address.toLowerCase()]: tokenData,
+          }),
+          {},
+        ),
+      ),
+    );
+    const tokenLinks = await Promise.all(
+      leafTokens.map(async ({ address: tokenAddress, priceUSD, type }) => {
+        let address = tokenAddress;
+        if (contract.blockchain === 'ethereum') {
+          address = tokenAddress.toLowerCase();
+        }
+        const token = await getOrCreateToken(contract, address);
+
+        await metricService.createToken(token, { usd: priceUSD }, date);
+
+        return { token, type };
+      }),
+    );
+
+    await container.model.contractService().tokenLink(contract, tokenLinks);
   }
 
   return process.done();
@@ -169,31 +233,9 @@ export async function walletMetrics(process: Process) {
         if (contract.blockchain === 'ethereum') {
           address = tokenAddress.toLowerCase();
         }
+        const token = await getOrCreateToken(contract, address);
 
-        let token = await container.model
-          .tokenTable()
-          .where({
-            blockchain: contract.blockchain,
-            network: contract.network,
-            address,
-          })
-          .first();
-        if (!token) {
-          token = await container.model
-            .tokenService()
-            .create(
-              null,
-              contract.blockchain,
-              contract.network,
-              address,
-              '',
-              '',
-              0,
-              TokenCreatedBy.Adapter,
-            );
-        }
-
-        await metricService.createToken(contract, blockchainWallet, token, metric, date);
+        await metricService.createWalletToken(contract, blockchainWallet, token, metric, date);
       }),
     );
   }

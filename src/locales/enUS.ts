@@ -56,7 +56,7 @@ export default {
     'automate:action:notification:name': 'Send Notification',
     'automate:action:notification:description': 'Send message via email or Telegram',
     'automate:condition:contractMetric:name': 'Contract Metric',
-    'automate:condition:contractMetric:description': 'Contract Metric condition',
+    'automate:condition:contractMetric:description': 'Contract metric condition',
     'automate:condition:contractMetric:paramsDescription': '{{metric}} {{op}} {{value}}',
   },
 };

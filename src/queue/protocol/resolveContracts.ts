@@ -76,17 +76,20 @@ export default async (process: Process) => {
       protocol: protocolId,
     });
 
+  const contractService = container.model.contractService();
   await Promise.all(
     pools.map((pool) => {
-      if (
-        existingPools.some(
-          (p) =>
-            p.address.toLowerCase() === pool.address.toLowerCase() &&
-            p.network === pool.network &&
-            p.blockchain === pool.blockchain,
-        )
-      ) {
-        return null;
+      const duplicate = existingPools.find(
+        (p) =>
+          p.address.toLowerCase() === pool.address.toLowerCase() &&
+          p.network === pool.network &&
+          p.blockchain === pool.blockchain,
+      );
+      if (duplicate) {
+        return contractService.update({
+          ...duplicate,
+          automate: pool.automate,
+        });
       }
 
       return container.model
