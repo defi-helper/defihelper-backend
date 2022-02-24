@@ -90,7 +90,8 @@ export default async (process: Process) => {
     .where({
       user: targetWallet.user,
       blockchain: 'ethereum',
-    });
+    })
+    .orderBy('createdAt', 'desc');
 
   const debankUserProtocolsList = (
     (
@@ -166,8 +167,16 @@ export default async (process: Process) => {
       )
       .map((contract) => {
         const tokens = [
-          ...(contract.detail.supply_token_list || []).map((v) => ({ ...v, type: 'liquidity' })),
-          ...(contract.detail.reward_token_list || []).map((v) => ({ ...v, type: 'reward' })),
+          ...(contract.detail.supply_token_list || []).map((v) => ({
+            ...v,
+            type: 'liquidity',
+            protocolId: protocol.id,
+          })),
+          ...(contract.detail.reward_token_list || []).map((v) => ({
+            ...v,
+            type: 'reward',
+            protocolId: protocol.id,
+          })),
         ];
 
         return {
@@ -216,6 +225,8 @@ export default async (process: Process) => {
     .contractTable()
     .column(`${protocolTableName}.debankId as protocolDebankId`)
     .column(`${protocolTableName}.id as protocolId`)
+    .column(`${contractDebankTableName}.*`)
+    .column(`${contractTableName}.*`)
     .innerJoin(contractDebankTableName, `${contractDebankTableName}.id`, `${contractTableName}.id`)
     .innerJoin(protocolTableName, `${protocolTableName}.id`, `${contractTableName}.protocol`)
     .whereIn(
@@ -366,16 +377,80 @@ export default async (process: Process) => {
       );
 
       if (!walletByChain) {
+        console.warn('no wallet here 11');
         return null;
       }
 
+      const rewardContract = protocolRewardTokenExistingContracts.find(
+        (v) => v.debankId === token.protocolId,
+      );
+      if (!rewardContract) {
+        throw 'Reward contract must be found';
+      }
+
       return walletMetrics.createWalletToken(
-        protocolRewardTokenExistingContracts.find((v) => v.debankId === token.protocolId) || null,
+        rewardContract,
         walletByChain,
         tokenRecord,
         {
           usd: new BN(token.price).multipliedBy(token.amount).toString(10),
           balance: new BN(token.amount).toString(10),
+        },
+        new Date(),
+      );
+    }),
+  );
+
+  await Promise.all(
+    protocolRewardTokenExistingContracts.map((contract) => {
+      const earned = [
+        ...protocolsRewardTokens
+          .filter((rewardToken) => {
+            return rewardToken.protocolId === contract.debankId;
+          })
+          .map(({ amount, price }) => ({ amount, price })),
+
+        ...stakingContracts
+          .flatMap(({ tokens }) =>
+            tokens.filter((token) => {
+              return token.type === 'reward' && token.protocolId === contract.debankId;
+            }),
+          )
+          .map(({ amount, price }) => ({ amount, price })),
+      ];
+
+      const staking = stakingContracts
+        .flatMap(({ tokens }) =>
+          tokens.filter((token) => {
+            return token.type === 'liquidity' && token.protocolId === contract.debankId;
+          }),
+        )
+        .map(({ amount, price }) => ({ amount, price }));
+
+      return container.model.metricService().createWallet(
+        contract,
+        chainsWallets[0],
+        {
+          earned: earned
+            .reduce((prev, cur) => {
+              return prev.plus(cur.amount);
+            }, new BN(0))
+            .toString(10),
+          staking: staking
+            .reduce((prev, cur) => {
+              return prev.plus(cur.amount);
+            }, new BN(0))
+            .toString(10),
+          earnedUSD: earned
+            .reduce((prev, cur) => {
+              return prev.plus(new BN(cur.amount).multipliedBy(cur.price));
+            }, new BN(0))
+            .toString(10),
+          stakingUSD: staking
+            .reduce((prev, cur) => {
+              return prev.plus(new BN(cur.amount).multipliedBy(cur.price));
+            }, new BN(0))
+            .toString(10),
         },
         new Date(),
       );
@@ -422,6 +497,8 @@ export default async (process: Process) => {
 
       if (!walletByChain) {
         // todo maybe should create wallet here
+
+        console.warn('no wallet here 22');
         return null;
       }
 
