@@ -1,10 +1,16 @@
 import { Process } from '@models/Queue/Entity';
 import container from '@container';
 import dayjs from 'dayjs';
+import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 
 export default async (process: Process) => {
   const wallets = await container.model
     .walletTable()
+    .innerJoin(
+      walletBlockchainTableName,
+      `${walletBlockchainTableName}.id`,
+      `${walletTableName}.id`,
+    )
     .where('blockchain', 'ethereum')
     .distinctOn('address');
 

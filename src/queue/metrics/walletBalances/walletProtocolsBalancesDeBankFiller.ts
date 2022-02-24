@@ -388,7 +388,6 @@ export default async (process: Process) => {
       );
 
       if (!walletByChain) {
-        console.warn('no wallet here 11');
         return null;
       }
 
@@ -508,8 +507,6 @@ export default async (process: Process) => {
 
       if (!walletByChain) {
         // todo maybe should create wallet here
-
-        console.warn('no wallet here 22');
         return null;
       }
 
