@@ -250,6 +250,16 @@ export const ProposalType = new GraphQLObjectType<Proposal>({
         };
       },
     },
+    tags: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(TagEnum))),
+      resolve: async (proposal) => {
+        return container.model
+          .proposalTagTable()
+          .distinct('tag')
+          .where('proposal', proposal.id)
+          .then((rows) => rows.map(({ tag }) => tag));
+      },
+    },
     plannedAt: {
       type: DateTimeType,
       description: 'Planned date',
