@@ -251,6 +251,7 @@ export default async (process: Process) => {
     'id',
     protocolsRewardTokens.map((v) => v.protocolId),
   );
+
   const protocolRewardTokenExistingContracts = await Promise.all(
     protocolsRewardTokens.map(async (token) => {
       let protocol = existingTokensProtocols.find((v) => v.id === token.protocolId);
@@ -396,7 +397,7 @@ export default async (process: Process) => {
         (v) => v.debankId === token.protocolId,
       );
       if (!rewardContract) {
-        throw 'Reward contract must be found';
+        throw new Error('Reward contract must be found');
       }
 
       return walletMetrics.createWalletToken(
