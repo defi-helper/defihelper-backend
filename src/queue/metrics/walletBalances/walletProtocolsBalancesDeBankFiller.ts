@@ -183,6 +183,7 @@ export default async (process: Process) => {
             type: 'liquidity',
             protocolId: protocol.id,
           })),
+
           ...(contract.detail.reward_token_list || []).map((v) => ({
             ...v,
             type: 'reward',
