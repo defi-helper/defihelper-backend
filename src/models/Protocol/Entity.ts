@@ -68,6 +68,7 @@ export interface ContractMetric {
   aprWeek?: string;
   aprMonth?: string;
   aprYear?: string;
+  aprWeekReal?: string;
 }
 
 export interface Contract {

@@ -110,6 +110,7 @@ export async function contractMetrics(process: Process) {
       container.model.contractService().update({
         ...contract,
         metric: {
+          ...contract.metric,
           tvl: contractAdapterData.metrics.tvl ?? '0',
           aprDay: contractAdapterData.metrics.aprDay ?? '0',
           aprWeek: contractAdapterData.metrics.aprWeek ?? '0',
