@@ -124,14 +124,25 @@ export default async (process: Process) => {
 
   await Promise.all(
     existingProtocols.map((protocol) =>
-      container.model.protocolService().update({
-        ...protocol,
-        metric: {
-          tvl:
-            debankUserProtocolsList.find((p) => p.id === protocol.debankId)?.tvl.toString(10) ??
-            '0',
-        },
-      }),
+      Promise.all([
+        container.model.protocolService().update({
+          ...protocol,
+          metric: {
+            tvl:
+              debankUserProtocolsList.find((p) => p.id === protocol.debankId)?.tvl.toString(10) ??
+              '0',
+          },
+        }),
+        container.model.metricService().createProtocol(
+          protocol,
+          {
+            tvl:
+              debankUserProtocolsList.find((p) => p.id === protocol.debankId)?.tvl.toString(10) ??
+              '0',
+          },
+          new Date(),
+        ),
+      ]),
     ),
   );
 
