@@ -20,6 +20,7 @@ import {
   TokenContractLinkTable,
   TokenContractLinkType,
   ContractAutomate,
+  TokenContractLink,
 } from './Entity';
 
 export class ProtocolService {
@@ -245,19 +246,26 @@ export class ContractService {
   ) {
     const duplicates = await this.tokenLinkTable()
       .where('contract', contract.id)
-      .then((rows) => new Set(rows.map(({ type, token }) => `${token}:${type}`)));
+      .then(
+        (rows) =>
+          new Map(rows.map((duplicate) => [`${duplicate.token}:${duplicate.type}`, duplicate])),
+      );
 
-    await Promise.all(
-      tokens.map(({ token, type }) => {
-        if (duplicates.has(`${token.id}:${type}`)) return null;
+    return Promise.all(
+      tokens.map(async ({ token, type }) => {
+        const duplicate = duplicates.get(`${token.id}:${type}`);
+        if (duplicate) return duplicate;
 
-        return this.tokenLinkTable().insert({
+        const created: TokenContractLink = {
           id: uuid(),
           contract: contract.id,
           token: token.id,
           type,
           createdAt: new Date(),
-        });
+        };
+        await this.tokenLinkTable().insert(created);
+
+        return created;
       }),
     );
   }

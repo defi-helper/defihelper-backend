@@ -5,6 +5,8 @@ import {
   TokenAliasLiquidity,
   TokenAliasTable,
   TokenCreatedBy,
+  TokenPart,
+  TokenPartTable,
   TokenTable,
 } from '@models/Token/Entity';
 import { Blockchain } from '@models/types';
@@ -87,7 +89,10 @@ export class TokenService {
     );
   });
 
-  constructor(readonly table: Factory<TokenTable>) {}
+  constructor(
+    readonly tokenTable: Factory<TokenTable>,
+    readonly tokenPartTable: Factory<TokenPartTable>,
+  ) {}
 
   async create(
     alias: TokenAlias | null,
@@ -113,7 +118,7 @@ export class TokenService {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    await this.table().insert(created);
+    await this.tokenTable().insert(created);
     this.onCreated.emit(created);
 
     return created;
@@ -124,13 +129,36 @@ export class TokenService {
       ...token,
       updatedAt: new Date(),
     };
-    await this.table().where({ id: token.id }).update(updated);
+    await this.tokenTable().where({ id: token.id }).update(updated);
     this.onUpdated.emit({ prev: token, cur: updated });
 
     return updated;
   }
 
   async delete(token: Token) {
-    await this.table().where({ id: token.id }).delete();
+    await this.tokenTable().where({ id: token.id }).delete();
+  }
+
+  async part(parent: Token, childs: Token[]) {
+    const duplicates = await this.tokenPartTable()
+      .where('parent', parent.id)
+      .then((rows) => new Map(rows.map((duplicate) => [duplicate.child, duplicate])));
+
+    return Promise.all(
+      childs.map(async (child) => {
+        const duplicate = duplicates.get(child.id);
+        if (duplicate) return duplicate;
+
+        const created: TokenPart = {
+          id: uuid(),
+          parent: parent.id,
+          child: child.id,
+          createdAt: new Date(),
+        };
+        await this.tokenPartTable().insert(created);
+
+        return created;
+      }),
+    );
   }
 }

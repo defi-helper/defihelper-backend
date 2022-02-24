@@ -122,7 +122,11 @@ export class ModelContainer extends Container<typeof AppContainer> {
 
   readonly tokenTable = Models.Token.Entity.tokenTableFactory(this.parent.database);
 
-  readonly tokenService = singleton(() => new Models.Token.Service.TokenService(this.tokenTable));
+  readonly tokenPartTable = Models.Token.Entity.tokenPartTableFactory(this.parent.database);
+
+  readonly tokenService = singleton(
+    () => new Models.Token.Service.TokenService(this.tokenTable, this.tokenPartTable),
+  );
 
   readonly proposalTable = Models.Proposal.Entity.proposalTableFactory(this.parent.database);
 

@@ -51,3 +51,16 @@ export const tokenTableName = 'token';
 export const tokenTableFactory = tableFactoryLegacy<Token>(tokenTableName);
 
 export type TokenTable = ReturnType<ReturnType<typeof tokenTableFactory>>;
+
+export interface TokenPart {
+  id: string;
+  parent: string;
+  child: string;
+  createdAt: Date;
+}
+
+export const tokenPartTableName = 'token_part';
+
+export const tokenPartTableFactory = tableFactoryLegacy<TokenPart>(tokenPartTableName);
+
+export type TokenPartTable = ReturnType<ReturnType<typeof tokenPartTableFactory>>;

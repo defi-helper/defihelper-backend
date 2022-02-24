@@ -10,7 +10,7 @@ export default async (process: Process) => {
   const { tokenId } = process.task.params as Params;
 
   const tokenService = container.model.tokenService();
-  const token = await tokenService.table().where('id', tokenId).first();
+  const token = await container.model.tokenTable().where('id', tokenId).first();
   if (!token) throw new Error('Token not found');
   if (token.alias !== null) throw new Error('Token alias already registered');
 
