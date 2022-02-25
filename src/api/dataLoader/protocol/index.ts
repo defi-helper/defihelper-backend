@@ -318,7 +318,6 @@ export const contractLoader = () =>
         .whereIn(`${contractTableName}.id`, contractsId)
         .then((rows) => rows.map((contract) => [contract.id, contract])),
     );
-
     return contractsId.map((id) => map.get(id) ?? null);
   });
 
