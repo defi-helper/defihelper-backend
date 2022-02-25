@@ -70,7 +70,7 @@ export interface Params {
 
 export default async (process: Process) => {
   const { contract: contractId } = process.task.params as Params;
-  const contract = await container.model
+  const contractBlockchain = await container.model
     .contractTable()
     .innerJoin(
       contractBlockchainTableName,
@@ -80,18 +80,14 @@ export default async (process: Process) => {
     .where('id', contractId)
     .first();
 
-  const contractBlockchain = await container.model
-    .contractBlockchainTable()
-    .where('id', contractId)
-    .first();
+  if (!contractBlockchain) throw new Error('Contract not found');
 
-  if (!contract || !contractBlockchain) throw new Error('Contract not found');
+  if (contractBlockchain.blockchain !== 'ethereum') throw new Error('Invalid blockchain');
+  if (contractBlockchain.deployBlockNumber !== null)
+    throw new Error('Deploy block already resolved');
 
-  if (contract.blockchain !== 'ethereum') throw new Error('Invalid blockchain');
-  if (contract.deployBlockNumber !== null) throw new Error('Deploy block already resolved');
-
-  const deployBlockNumber = await getEthereumContractCreationBlock(contract);
-  await container.model.contractService().updateBlockchainAndParentLegacy(contract, {
+  const deployBlockNumber = await getEthereumContractCreationBlock(contractBlockchain);
+  await container.model.contractService().updateBlockchain({
     ...contractBlockchain,
     deployBlockNumber: deployBlockNumber.toString(),
   });

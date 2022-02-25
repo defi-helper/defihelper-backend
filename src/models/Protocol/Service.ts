@@ -273,41 +273,29 @@ export class ContractService {
           : contractBlockchain.address,
     };
 
-    await this.contractBlockchainTable()
-      .where('id', updatedBlockchain.id)
-      .update(updatedBlockchain);
+    await this.database.transaction(async (trx) => {
+      await this.contractTable()
+        .where('id', updatedBlockchain.id)
+        .update({ updatedAt: new Date() })
+        .transacting(trx);
+      await this.contractBlockchainTable()
+        .where('id', updatedBlockchain.id)
+        .update(updatedBlockchain);
+    });
 
     return updatedBlockchain;
   }
 
-  async updateBlockchainAndParentLegacy(
-    contract: Contract,
-    contractBlockchain: ContractBlockchainType,
-  ) {
-    if (contract.id !== contractBlockchain.id) throw new Error('Invalid wallet ID');
-
-    const updatedBlockchain: ContractBlockchainType = {
-      ...contractBlockchain,
-      address:
-        contractBlockchain.blockchain === 'ethereum'
-          ? contractBlockchain.address.toLowerCase()
-          : contractBlockchain.address,
-    };
-
-    const updatedParent: Contract = {
-      ...contract,
-      updatedAt: new Date(),
-    };
-
+  async updateDebank(contractDebank: ContractDebankType) {
     await this.database.transaction(async (trx) => {
-      await this.contractTable().where('id', contract.id).update(updatedParent).transacting(trx);
-      await this.contractBlockchainTable()
-        .where('id', contract.id)
-        .update(updatedBlockchain)
+      await this.contractTable()
+        .where('id', contractDebank.id)
+        .update({ updatedAt: new Date() })
         .transacting(trx);
+      await this.contractDebankTable().where('id', contractDebank.id).update(contractDebank);
     });
 
-    return { ...updatedBlockchain, ...updatedParent };
+    return contractDebank;
   }
 
   async delete(contract: Contract) {

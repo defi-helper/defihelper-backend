@@ -553,8 +553,9 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
       link,
       hidden,
     } = input;
-    const updated = await contractService.updateBlockchainAndParentLegacy(
-      {
+
+    const updated = {
+      ...(await contractService.updateParent({
         ...contract,
         layout: typeof layout === 'string' ? layout : contract.layout,
         name: typeof name === 'string' ? name : contract.name,
@@ -562,8 +563,8 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
         description: typeof description === 'string' ? description : contract.description,
         link: typeof link === 'string' ? link : contract.link,
         hidden: typeof hidden === 'boolean' ? hidden : contract.hidden,
-      },
-      {
+      })),
+      ...(await contractService.updateBlockchain({
         ...contractBlockchain,
         blockchain: (typeof blockchain === 'string'
           ? blockchain
@@ -582,8 +583,8 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
               ? autorestakeAdapter
               : contractBlockchain.automate.autorestakeAdapter,
         },
-      },
-    );
+      })),
+    };
 
     return updated;
   }),
