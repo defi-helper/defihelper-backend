@@ -23,6 +23,7 @@ import {
   GraphQLFieldConfigMap,
 } from 'graphql';
 import { apyBoost } from '@services/RestakeStrategy';
+import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
 import {
   DateTimeType,
   onlyAllowed,
@@ -35,7 +36,6 @@ import * as Actions from '../../../automate/action';
 import * as Conditions from '../../../automate/condition';
 import { WalletBlockchainType } from '../user';
 import { ProtocolType, ContractType as ProtocolContractType } from '../protocol';
-import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
 
 export const ConditionTypeEnum = new GraphQLEnumType({
   name: 'AutomateConditionTypeEnum',
@@ -1251,7 +1251,7 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
             `${contractBlockchainTableName}.id`,
             `${contractTableName}.id`,
           )
-          .where('id', contractId)
+          .where(`${contractTableName}.id`, contractId)
           .first()
       : null;
     if (contract === undefined) throw new UserInputError('Protocol contract not found');

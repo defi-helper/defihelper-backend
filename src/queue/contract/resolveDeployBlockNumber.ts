@@ -77,7 +77,7 @@ export default async (process: Process) => {
       `${contractBlockchainTableName}.id`,
       `${contractTableName}.id`,
     )
-    .where('id', contractId)
+    .where(`${contractTableName}.id`, contractId)
     .first();
 
   if (!contractBlockchain) throw new Error('Contract not found');

@@ -22,8 +22,8 @@ import {
 } from '@models/Notification/Entity';
 import { Role } from '@models/User/Entity';
 import { ContractType } from '@api/schema/protocol';
-import { DateTimeType, PaginateList, PaginationArgument, SortArgument, UuidType } from '../types';
 import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
+import { DateTimeType, PaginateList, PaginationArgument, SortArgument, UuidType } from '../types';
 
 export const UserContactBrokerEnum = new GraphQLEnumType({
   name: 'UserContactBrokerEnum',
@@ -536,7 +536,7 @@ export const UserEventSubscriptionCreateMutation: GraphQLFieldConfig<any, Reques
         `${contractBlockchainTableName}.id`,
         `${contractTableName}.id`,
       )
-      .where('id', contractId)
+      .where(`${contractTableName}.id`, contractId)
       .first();
 
     if (!contract) {
