@@ -19,6 +19,8 @@ import {
   Protocol,
   walletContractLinkTableName,
   ContractAutomate,
+  ContractBlockchainType,
+  contractBlockchainTableName,
 } from '@models/Protocol/Entity';
 import { apyBoost } from '@services/RestakeStrategy';
 import {
@@ -69,6 +71,9 @@ export const ContractMetricType = new GraphQLObjectType({
     aprYear: {
       type: GraphQLNonNull(GraphQLString),
     },
+    aprWeekReal: {
+      type: GraphQLString,
+    },
     myStaked: {
       type: GraphQLNonNull(GraphQLString),
     },
@@ -112,7 +117,7 @@ export const ContractAutomatesType = new GraphQLObjectType<ContractAutomate, Req
   },
 });
 
-export const ContractType = new GraphQLObjectType<Contract, Request>({
+export const ContractType = new GraphQLObjectType<Contract & ContractBlockchainType, Request>({
   name: 'ContractType',
   fields: {
     id: {
@@ -266,6 +271,7 @@ export const ContractType = new GraphQLObjectType<Contract, Request>({
           aprWeek: contract.metric.aprWeek ?? '0',
           aprMonth: contract.metric.aprMonth ?? '0',
           aprYear: contract.metric.aprYear ?? '0',
+          aprWeekReal: contract.metric.aprWeekReal,
           myStaked: '0',
           myEarned: '0',
           myAPYBoost: '0',
@@ -425,7 +431,7 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
         hidden,
         eventsToSubscribe,
       } = input;
-      const created = await container.model.contractService().create(
+      const created = await container.model.contractService().createBlockchain(
         protocol,
         blockchain,
         network,
@@ -522,7 +528,16 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
 
     const contractService = container.model.contractService();
     const contract = await contractService.contractTable().where('id', id).first();
-    if (!contract) throw new UserInputError('Contract not found');
+    const contractBlockchain = await contractService
+      .contractTable()
+      .innerJoin(
+        contractBlockchainTableName,
+        `${contractBlockchainTableName}.id`,
+        `${contractTableName}.id`,
+      )
+      .where(`${contractTableName}.id`, id)
+      .first();
+    if (!contract || !contractBlockchain) throw new UserInputError('Contract not found');
 
     const {
       blockchain,
@@ -538,27 +553,38 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
       link,
       hidden,
     } = input;
-    const updated = await contractService.update({
-      ...contract,
-      blockchain: (typeof blockchain === 'string' ? blockchain : contract.blockchain) as Blockchain,
-      network: typeof network === 'string' ? network : contract.network,
-      address: typeof address === 'string' ? address : contract.address,
-      deployBlockNumber:
-        typeof deployBlockNumber === 'string' ? deployBlockNumber : contract.deployBlockNumber,
-      adapter: typeof adapter === 'string' ? adapter : contract.adapter,
-      layout: typeof layout === 'string' ? layout : contract.layout,
-      automate: {
-        adapters: Array.isArray(automates) ? automates : contract.automate.adapters,
-        autorestakeAdapter:
-          typeof autorestakeAdapter === 'string'
-            ? autorestakeAdapter
-            : contract.automate.autorestakeAdapter,
-      },
-      name: typeof name === 'string' ? name : contract.name,
-      description: typeof description === 'string' ? description : contract.description,
-      link: typeof link === 'string' ? link : contract.link,
-      hidden: typeof hidden === 'boolean' ? hidden : contract.hidden,
-    });
+
+    const updated = {
+      ...(await contractService.updateParent({
+        ...contract,
+        layout: typeof layout === 'string' ? layout : contract.layout,
+        name: typeof name === 'string' ? name : contract.name,
+        protocol: contract.protocol,
+        description: typeof description === 'string' ? description : contract.description,
+        link: typeof link === 'string' ? link : contract.link,
+        hidden: typeof hidden === 'boolean' ? hidden : contract.hidden,
+      })),
+      ...(await contractService.updateBlockchain({
+        ...contractBlockchain,
+        blockchain: (typeof blockchain === 'string'
+          ? blockchain
+          : contractBlockchain.blockchain) as Blockchain,
+        network: typeof network === 'string' ? network : contractBlockchain.network,
+        address: typeof address === 'string' ? address : contractBlockchain.address,
+        deployBlockNumber:
+          typeof deployBlockNumber === 'string'
+            ? deployBlockNumber
+            : contractBlockchain.deployBlockNumber,
+        adapter: typeof adapter === 'string' ? adapter : contractBlockchain.adapter,
+        automate: {
+          adapters: Array.isArray(automates) ? automates : contractBlockchain.automate.adapters,
+          autorestakeAdapter:
+            typeof autorestakeAdapter === 'string'
+              ? autorestakeAdapter
+              : contractBlockchain.automate.autorestakeAdapter,
+        },
+      })),
+    };
 
     return updated;
   }),
@@ -599,7 +625,15 @@ export const ContractWalletLinkMutation: GraphQLFieldConfig<any, Request> = {
   resolve: async (root, { contract: contractId, wallet: walletId }, { currentUser, acl }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
-    const contract = await container.model.contractTable().where('id', contractId).first();
+    const contract = await container.model
+      .contractTable()
+      .innerJoin(
+        contractBlockchainTableName,
+        `${contractBlockchainTableName}.id`,
+        `${contractTableName}.id`,
+      )
+      .where(`${contractTableName}.id`, contractId)
+      .first();
     if (!contract) throw new UserInputError('Contract not found');
 
     const blockchainWallet = await container.model
@@ -644,7 +678,15 @@ export const ContractWalletUnlinkMutation: GraphQLFieldConfig<any, Request> = {
   resolve: async (root, { contract: contractId, wallet: walletId }, { currentUser, acl }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
-    const contract = await container.model.contractTable().where('id', contractId).first();
+    const contract = await container.model
+      .contractTable()
+      .innerJoin(
+        contractBlockchainTableName,
+        `${contractBlockchainTableName}.id`,
+        `${contractTableName}.id`,
+      )
+      .where(`${contractTableName}.id`, contractId)
+      .first();
     if (!contract) throw new UserInputError('Contract not found');
 
     const wallet = await container.model
@@ -854,7 +896,7 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
         },
         sort: SortArgument(
           'ContractListSortInputType',
-          ['id', 'name', 'address', 'createdAt', 'tvl', 'aprYear', 'myStaked'],
+          ['id', 'name', 'address', 'createdAt', 'tvl', 'aprYear', 'aprWeekReal', 'myStaked'],
           [{ column: 'name', order: 'asc' }],
         ),
         pagination: PaginationArgument('ContractListPaginationInputType'),
@@ -862,7 +904,14 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
       resolve: async (protocol, { filter, sort, pagination }, { currentUser }) => {
         const select = container.model
           .contractTable()
+          .innerJoin(
+            contractBlockchainTableName,
+            `${contractBlockchainTableName}.id`,
+            `${contractTableName}.id`,
+          )
           .column(`${contractTableName}.*`)
+          .column(`${contractTableName}.id`)
+          .column(`${contractBlockchainTableName}.*`)
           .where(function () {
             const { id, hidden, search } = filter;
             if (id) {
@@ -918,18 +967,28 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
           } else {
             listSelect = listSelect
               .column(`${contractTableName}.*`)
+              .column(`${contractBlockchainTableName}.*`)
               .column(database.raw(`'0' AS "myStaked"`));
           }
         }
         if (sortColumns.includes('tvl')) {
           listSelect = listSelect.column(
-            database.raw(`(COALESCE(${contractTableName}.metric->>'tvl', '0'))::numeric AS "tvl"`),
+            database.raw(
+              `(COALESCE(${contractBlockchainTableName}.metric->>'tvl', '0'))::numeric AS "tvl"`,
+            ),
           );
         }
         if (sortColumns.includes('aprYear')) {
           listSelect = listSelect.column(
             database.raw(
-              `(COALESCE(${contractTableName}.metric->>'aprYear', '0'))::numeric AS "aprYear"`,
+              `(COALESCE(${contractBlockchainTableName}.metric->>'aprYear', '0'))::numeric AS "aprYear"`,
+            ),
+          );
+        }
+        if (sortColumns.includes('aprWeekReal')) {
+          listSelect = listSelect.column(
+            database.raw(
+              `(COALESCE(${contractTableName}.metric->>'aprWeekReal', '0'))::numeric AS "aprWeekReal"`,
             ),
           );
         }

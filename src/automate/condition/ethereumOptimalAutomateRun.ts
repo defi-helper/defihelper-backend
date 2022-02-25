@@ -5,6 +5,7 @@ import axios from 'axios';
 import BN from 'bignumber.js';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 import dayjs from 'dayjs';
+import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
 
 interface Params {
   id: string;
@@ -50,7 +51,12 @@ export default async function (this: Condition, params: Params) {
 
   const targetContract = await container.model
     .contractTable()
-    .where('id', contract.contract)
+    .innerJoin(
+      contractBlockchainTableName,
+      `${contractBlockchainTableName}.id`,
+      `${contractTableName}.id`,
+    )
+    .where(`${contractTableName}.id`, contract.contract)
     .first();
   if (!targetContract) throw new Error('Target contract not found');
 

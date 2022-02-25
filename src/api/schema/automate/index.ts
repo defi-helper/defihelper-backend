@@ -23,6 +23,7 @@ import {
   GraphQLFieldConfigMap,
 } from 'graphql';
 import { apyBoost } from '@services/RestakeStrategy';
+import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
 import {
   DateTimeType,
   onlyAllowed,
@@ -1243,7 +1244,15 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
     if (!protocol) throw new UserInputError('Protocol not found');
 
     const contract = contractId
-      ? await container.model.contractTable().where('id', contractId).first()
+      ? await container.model
+          .contractTable()
+          .innerJoin(
+            contractBlockchainTableName,
+            `${contractBlockchainTableName}.id`,
+            `${contractTableName}.id`,
+          )
+          .where(`${contractTableName}.id`, contractId)
+          .first()
       : null;
     if (contract === undefined) throw new UserInputError('Protocol contract not found');
     if (contract !== null) {

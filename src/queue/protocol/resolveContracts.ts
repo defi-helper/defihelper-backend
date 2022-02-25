@@ -3,6 +3,7 @@ import { Process } from '@models/Queue/Entity';
 import { Blockchain } from '@models/types';
 import * as Adapters from '@services/Blockchain/Adapter';
 import dayjs from 'dayjs';
+import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
 
 export interface Params {
   protocolId: string;
@@ -64,9 +65,16 @@ export default async (process: Process) => {
     cacheAuth: container.parent.adapters.auth,
   });
 
-  const existingPools = await container.model.contractTable().where({
-    protocol: protocolId,
-  });
+  const existingPools = await container.model
+    .contractTable()
+    .innerJoin(
+      contractBlockchainTableName,
+      `${contractBlockchainTableName}.id`,
+      `${contractTableName}.id`,
+    )
+    .where({
+      protocol: protocolId,
+    });
 
   const contractService = container.model.contractService();
   await Promise.all(
@@ -78,27 +86,30 @@ export default async (process: Process) => {
           p.blockchain === pool.blockchain,
       );
       if (duplicate) {
-        return contractService.update({
+        return contractService.updateBlockchain({
           ...duplicate,
           automate: pool.automate,
         });
       }
 
-      return contractService.create(
-        protocol,
-        protocolBlockchain,
-        protocolNetwork,
-        pool.address.toLowerCase(),
-        null,
-        pool.adapter,
-        pool.layout,
-        pool.automate,
-        pool.name,
-        pool.description,
-        pool.link,
-        true,
-        events,
-      );
+      return container.model
+        .contractService()
+        .createBlockchain(
+          protocol,
+          protocolBlockchain,
+          protocolNetwork,
+          pool.address.toLowerCase(),
+          null,
+          pool.adapter,
+          pool.layout,
+          pool.automate,
+          {},
+          pool.name,
+          pool.description,
+          pool.link,
+          true,
+          events,
+        );
     }),
   );
 

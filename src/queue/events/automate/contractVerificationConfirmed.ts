@@ -6,6 +6,7 @@ import {
   walletTableName,
   WalletBlockchainType,
 } from '@models/Wallet/Entity';
+import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
 
 export interface Params {
   contract: string;
@@ -26,7 +27,12 @@ export default async (process: Process) => {
 
   const targetContract = await container.model
     .contractTable()
-    .where('id', contract.contract)
+    .innerJoin(
+      contractBlockchainTableName,
+      `${contractBlockchainTableName}.id`,
+      `${contractTableName}.id`,
+    )
+    .where(`${contractTableName}.id`, contract.contract)
     .first();
   if (!targetContract) throw new Error('Target contract not found');
 

@@ -6,6 +6,7 @@ import { Wallet, WalletBlockchain } from '@models/Wallet/Entity';
 import { Factory } from '@services/Container';
 import { Emitter } from '@services/Event';
 import { v4 as uuid } from 'uuid';
+import Knex from 'knex';
 import {
   Protocol,
   ProtocolTable,
@@ -17,8 +18,15 @@ import {
   ProtocolUserFavoriteTable,
   MetadataTable,
   MetadataType,
+  ContractBlockchainTable,
+  ContractDebankTable,
+  ContractMetric,
+  ContractDebankType,
+  ContractBlockchainType,
   TokenContractLinkTable,
   TokenContractLinkType,
+  ContractAutomate,
+  TokenContractLink,
 } from './Entity';
 
 export class ProtocolService {
@@ -105,11 +113,12 @@ interface ContractRegisterData {
 }
 
 export class ContractService {
-  public readonly onCreated = new Emitter<ContractRegisterData>((contract) => {
-    if (contract.contract.debankAddress) {
-      return;
-    }
+  public readonly onContractDebankCreated = new Emitter<{
+    contract: Contract;
+    contractDebank: ContractDebankType;
+  }>();
 
+  public readonly onContractBlockchainCreated = new Emitter<ContractRegisterData>((contract) => {
     container.model.queueService().push('eventsContractCreated', {
       contract: contract.contract.id,
       events: contract.eventsToSubscribe,
@@ -117,7 +126,7 @@ export class ContractService {
   });
 
   public readonly onWalletLink = new Emitter<{
-    contract: Contract;
+    contract: Contract & ContractBlockchainType;
     wallet: Wallet;
     link: WalletContractLink;
   }>(({ contract, link }) => {
@@ -140,78 +149,163 @@ export class ContractService {
   });
 
   constructor(
+    readonly database: Knex,
     readonly contractTable: Factory<ContractTable>,
+    readonly contractBlockchainTable: Factory<ContractBlockchainTable>,
+    readonly contractDebankTable: Factory<ContractDebankTable>,
     readonly walletLinkTable: Factory<WalletContractLinkTable>,
     readonly tokenLinkTable: Factory<TokenContractLinkTable>,
   ) {}
 
-  async create(
-    protocol: Protocol,
+  async createDebank(
+    { id: protocol }: Protocol,
+    hashAddress: string,
+    name: string,
+    metric: ContractMetric,
+    description: string = '',
+    link: string | null = null,
+    hidden: boolean = false,
+  ) {
+    const parentContract: Contract = {
+      id: uuid(),
+      description,
+      hidden,
+      layout: 'debank',
+      link,
+      name,
+      protocol,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    const childContract: ContractDebankType = {
+      id: parentContract.id,
+      address: hashAddress,
+      metric,
+    };
+
+    await this.database.transaction(async (trx) => {
+      await this.contractTable().insert(parentContract).transacting(trx);
+      await this.contractDebankTable().insert(childContract).transacting(trx);
+    });
+
+    this.onContractDebankCreated.emit({
+      contract: parentContract,
+      contractDebank: childContract,
+    });
+
+    return { ...parentContract, ...childContract };
+  }
+
+  async createBlockchain(
+    { id: protocol }: Protocol,
     blockchain: Blockchain,
     network: string,
     address: string,
     deployBlockNumber: string | null,
     adapter: string,
     layout: string,
-    automate: {
-      adapters: string[];
-      autorestakeAdapter?: string;
-    },
+    automate: ContractAutomate,
+    metric: ContractMetric,
     name: string,
     description: string = '',
     link: string | null = null,
     hidden: boolean = false,
     eventsToSubscribe?: string[],
-    debankAddress: string | null = null,
   ) {
-    const created: Contract = {
+    const parentContract: Contract = {
       id: uuid(),
-      protocol: protocol.id,
-      blockchain,
-      network,
-      address: blockchain === 'ethereum' ? address.toLowerCase() : address,
-      deployBlockNumber,
-      adapter,
-      layout,
-      debankAddress,
-      automate: {
-        adapters: automate.adapters,
-        autorestakeAdapter: automate.autorestakeAdapter,
-      },
-      name,
       description,
-      link,
       hidden,
-      metric: {},
+      layout,
+      link,
+      name,
+      protocol,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    await this.contractTable().insert(created);
-    this.onCreated.emit({
-      contract: created,
+
+    const childContract: ContractBlockchainType = {
+      id: parentContract.id,
+      adapter,
+      address: blockchain === 'ethereum' ? address.toLowerCase() : address,
+
+      automate: {
+        adapters: automate.adapters,
+        autorestakeAdapter: automate.autorestakeAdapter,
+        buyLiquidity: automate.buyLiquidity,
+      },
+      blockchain,
+      deployBlockNumber,
+      metric,
+      network,
+    };
+
+    await this.database.transaction(async (trx) => {
+      await this.contractTable().insert(parentContract).transacting(trx);
+      await this.contractBlockchainTable().insert(childContract).transacting(trx);
+    });
+
+    this.onContractBlockchainCreated.emit({
+      contract: { ...parentContract, ...childContract },
       eventsToSubscribe,
     });
 
-    return created;
+    return { ...parentContract, ...childContract };
   }
 
-  async update(contract: Contract) {
-    const updated: Contract = {
+  async updateParent(contract: Contract) {
+    const updatedParent: Contract = {
       ...contract,
-      address:
-        contract.blockchain === 'ethereum' ? contract.address.toLowerCase() : contract.address,
       updatedAt: new Date(),
     };
-    await this.contractTable().where({ id: contract.id }).update(updated);
 
-    return updated;
+    await this.contractTable().where('id', contract.id).update(updatedParent);
+
+    return updatedParent;
+  }
+
+  async updateBlockchain(contractBlockchain: ContractBlockchainType) {
+    const updatedBlockchain: ContractBlockchainType = {
+      ...contractBlockchain,
+      address:
+        contractBlockchain.blockchain === 'ethereum'
+          ? contractBlockchain.address.toLowerCase()
+          : contractBlockchain.address,
+    };
+
+    await this.database.transaction(async (trx) => {
+      await this.contractTable()
+        .where('id', updatedBlockchain.id)
+        .update({ updatedAt: new Date() })
+        .transacting(trx);
+      await this.contractBlockchainTable()
+        .where('id', updatedBlockchain.id)
+        .update(updatedBlockchain);
+    });
+
+    return updatedBlockchain;
+  }
+
+  async updateDebank(contractDebank: ContractDebankType) {
+    await this.database.transaction(async (trx) => {
+      await this.contractTable()
+        .where('id', contractDebank.id)
+        .update({ updatedAt: new Date() })
+        .transacting(trx);
+      await this.contractDebankTable().where('id', contractDebank.id).update(contractDebank);
+    });
+
+    return contractDebank;
   }
 
   async delete(contract: Contract) {
     await this.contractTable().where({ id: contract.id }).delete();
   }
 
-  async walletLink(contract: Contract, blockchainWallet: Wallet & WalletBlockchain) {
+  async walletLink(
+    contract: Contract & ContractBlockchainType,
+    blockchainWallet: Wallet & WalletBlockchain,
+  ) {
     const duplicate = await this.walletLinkTable()
       .where('contract', contract.id)
       .andWhere('wallet', blockchainWallet.id)
@@ -246,19 +340,26 @@ export class ContractService {
   ) {
     const duplicates = await this.tokenLinkTable()
       .where('contract', contract.id)
-      .then((rows) => new Set(rows.map(({ type, token }) => `${token}:${type}`)));
+      .then(
+        (rows) =>
+          new Map(rows.map((duplicate) => [`${duplicate.token}:${duplicate.type}`, duplicate])),
+      );
 
-    await Promise.all(
-      tokens.map(({ token, type }) => {
-        if (duplicates.has(`${token.id}:${type}`)) return null;
+    return Promise.all(
+      tokens.map(async ({ token, type }) => {
+        const duplicate = duplicates.get(`${token.id}:${type}`);
+        if (duplicate) return duplicate;
 
-        return this.tokenLinkTable().insert({
+        const created: TokenContractLink = {
           id: uuid(),
           contract: contract.id,
           token: token.id,
           type,
           createdAt: new Date(),
-        });
+        };
+        await this.tokenLinkTable().insert(created);
+
+        return created;
       }),
     );
   }

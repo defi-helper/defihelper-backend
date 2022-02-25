@@ -97,6 +97,14 @@ export class ModelContainer extends Container<typeof AppContainer> {
 
   readonly contractTable = Models.Protocol.Entity.contractTableFactory(this.parent.database);
 
+  readonly contractBlockchainTable = Models.Protocol.Entity.contractBlockchainTableFactory(
+    this.parent.database,
+  );
+
+  readonly contractDebankTable = Models.Protocol.Entity.contractDebankTableFactory(
+    this.parent.database,
+  );
+
   readonly walletContractLinkTable = Models.Protocol.Entity.walletContractLinkTableFactory(
     this.parent.database,
   );
@@ -108,7 +116,10 @@ export class ModelContainer extends Container<typeof AppContainer> {
   readonly contractService = singleton(
     () =>
       new Models.Protocol.Service.ContractService(
+        this.parent.database(),
         this.contractTable,
+        this.contractBlockchainTable,
+        this.contractDebankTable,
         this.walletContractLinkTable,
         this.tokenContractLinkTable,
       ),
@@ -122,14 +133,25 @@ export class ModelContainer extends Container<typeof AppContainer> {
 
   readonly tokenTable = Models.Token.Entity.tokenTableFactory(this.parent.database);
 
-  readonly tokenService = singleton(() => new Models.Token.Service.TokenService(this.tokenTable));
+  readonly tokenPartTable = Models.Token.Entity.tokenPartTableFactory(this.parent.database);
+
+  readonly tokenService = singleton(
+    () => new Models.Token.Service.TokenService(this.tokenTable, this.tokenPartTable),
+  );
 
   readonly proposalTable = Models.Proposal.Entity.proposalTableFactory(this.parent.database);
 
   readonly voteTable = Models.Proposal.Entity.voteTableFactory(this.parent.database);
 
+  readonly proposalTagTable = Models.Proposal.Entity.tagTableFactory(this.parent.database);
+
   readonly proposalService = singleton(
-    () => new Models.Proposal.Service.ProposalService(this.proposalTable, this.voteTable),
+    () =>
+      new Models.Proposal.Service.ProposalService(
+        this.proposalTable,
+        this.voteTable,
+        this.proposalTagTable,
+      ),
   );
 
   readonly metricBlockchainTable = Models.Metric.Entity.metricBlockchainTableFactory(
