@@ -27,9 +27,12 @@ export default async (process: Process) => {
     .column(database.raw(`data->>'aprDay' AS "aprDay"`))
     .where('contract', contract.id)
     .where('date', '>=', periodStart.startOf('day').toDate())
+    .where(database.raw(`data->>'aprDay' IS NOT NULL`))
     .orderBy('date', 'asc')
     .orderBy(`${metricContractTableName}.date`, 'DESC')
     .then((rows) => rows as unknown as Array<{ date: Date; aprDay: string }>);
+  if (contractMetricRows.length === 0) throw new Error('Contract metrics not found');
+
   const apr = contractMetricRows.reduce<{ [date: string]: string }>(
     (result, { date, aprDay }) => ({
       ...result,
@@ -58,6 +61,8 @@ export default async (process: Process) => {
     .orderBy('date')
     .orderBy(`${metricTokenTableName}.date`, 'DESC')
     .then((rows) => rows as unknown as Array<{ date: Date; usd: string }>);
+  if (tokenPrices.length === 0) throw new Error('Staking token prices not found');
+
   const price = tokenPrices.reduce<{ [date: string]: string }>(
     (result, { date, usd }) => ({
       ...result,

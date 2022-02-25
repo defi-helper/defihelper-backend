@@ -895,7 +895,7 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
         },
         sort: SortArgument(
           'ContractListSortInputType',
-          ['id', 'name', 'address', 'createdAt', 'tvl', 'aprYear', 'myStaked'],
+          ['id', 'name', 'address', 'createdAt', 'tvl', 'aprYear', 'aprWeekReal', 'myStaked'],
           [{ column: 'name', order: 'asc' }],
         ),
         pagination: PaginationArgument('ContractListPaginationInputType'),
@@ -981,6 +981,13 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
           listSelect = listSelect.column(
             database.raw(
               `(COALESCE(${contractBlockchainTableName}.metric->>'aprYear', '0'))::numeric AS "aprYear"`,
+            ),
+          );
+        }
+        if (sortColumns.includes('aprWeekReal')) {
+          listSelect = listSelect.column(
+            database.raw(
+              `(COALESCE(${contractTableName}.metric->>'aprWeekReal', '0'))::numeric AS "aprWeekReal"`,
             ),
           );
         }
