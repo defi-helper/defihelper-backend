@@ -13,10 +13,6 @@ import {
   ContractBlockchainType,
 } from '@models/Protocol/Entity';
 
-function getLeafTokens(token: Adapters.ContractTokenData): Adapters.ContractTokenData[] {
-  return token.parts ? token.parts.flatMap(getLeafTokens) : [token];
-}
-
 async function getOrCreateToken(contract: Contract & ContractBlockchainType, address: string) {
   const token = await container.model
     .tokenTable()

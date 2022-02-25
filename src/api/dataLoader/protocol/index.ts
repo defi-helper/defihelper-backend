@@ -103,7 +103,7 @@ export const protocolLastMetricLoader = ({ metric }: { metric: MetricContractFie
         .innerJoin(
           contractBlockchainTableName,
           `${contractBlockchainTableName}.id`,
-          `${contractTableName}.contract`,
+          `${contractTableName}.id`,
         )
         .column(`${contractTableName}.protocol`)
         .column(database.raw(`(${contractBlockchainTableName}.metric->>'${metric}')::numeric AS v`))
@@ -315,7 +315,7 @@ export const contractLoader = () =>
           `${contractBlockchainTableName}.id`,
           `${contractTableName}.id`,
         )
-        .whereIn('id', contractsId)
+        .whereIn(`${contractTableName}.id`, contractsId)
         .then((rows) => rows.map((contract) => [contract.id, contract])),
     );
 

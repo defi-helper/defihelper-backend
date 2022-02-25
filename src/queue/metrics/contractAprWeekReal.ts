@@ -1,7 +1,11 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import { metricContractTableName, metricTokenTableName } from '@models/Metric/Entity';
-import { TokenContractLinkType } from '@models/Protocol/Entity';
+import {
+  contractBlockchainTableName,
+  contractTableName,
+  TokenContractLinkType,
+} from '@models/Protocol/Entity';
 import BN from 'bignumber.js';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
@@ -14,7 +18,15 @@ export interface Params {
 
 export default async (process: Process) => {
   const { contract: contractId, period, investing } = process.task.params as Params;
-  const contract = await container.model.contractTable().where('id', contractId).first();
+  const contract = await container.model
+    .contractTable()
+    .innerJoin(
+      contractBlockchainTableName,
+      `${contractBlockchainTableName}.id`,
+      `${contractTableName}.id`,
+    )
+    .where('id', contractId)
+    .first();
   if (!contract) throw new Error('Contract not found');
 
   const periodStart = dayjs().add(-period, 'days');
@@ -104,7 +116,7 @@ export default async (process: Process) => {
 
   const realApr = endInvestingUSD.plus(cumulativeEarned).minus(investing).div(investing);
 
-  await container.model.contractService().update({
+  await container.model.contractService().updateBlockchain({
     ...contract,
     metric: {
       ...contract.metric,
