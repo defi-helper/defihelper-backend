@@ -105,6 +105,8 @@ export function route({ express, server }: { express: Express; server: Server })
           proposalDelete: proposalSchemas.ProposalDeleteMutation,
           vote: proposalSchemas.VoteMutation,
           unvote: proposalSchemas.UnvoteMutation,
+          proposalTag: proposalSchemas.TagMutation,
+          proposalUntag: proposalSchemas.UntagMutation,
           userContactCreate: notificationSchemas.UserContactCreateMutation,
           userContactUpdate: notificationSchemas.UserContactUpdateMutation,
           userContactEmailConfirm: notificationSchemas.UserContactEmailConfirmMutation,

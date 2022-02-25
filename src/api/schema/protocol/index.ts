@@ -71,6 +71,9 @@ export const ContractMetricType = new GraphQLObjectType({
     aprYear: {
       type: GraphQLNonNull(GraphQLString),
     },
+    aprWeekReal: {
+      type: GraphQLString,
+    },
     myStaked: {
       type: GraphQLNonNull(GraphQLString),
     },
@@ -268,6 +271,7 @@ export const ContractType = new GraphQLObjectType<Contract & ContractBlockchainT
           aprWeek: contract.metric.aprWeek ?? '0',
           aprMonth: contract.metric.aprMonth ?? '0',
           aprYear: contract.metric.aprYear ?? '0',
+          aprWeekReal: contract.metric.aprWeekReal,
           myStaked: '0',
           myEarned: '0',
           myAPYBoost: '0',
