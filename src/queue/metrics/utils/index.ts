@@ -79,7 +79,7 @@ export async function contractMetrics(process: Process) {
       `${contractBlockchainTableName}.id`,
       `${contractTableName}.id`,
     )
-    .where(`id`, contractId)
+    .where(`${contractTableName}.id`, contractId)
     .first();
   if (!contract) throw new Error('Contract not found');
 
