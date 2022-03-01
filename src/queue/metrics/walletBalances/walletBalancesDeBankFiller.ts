@@ -12,7 +12,7 @@ interface Params {
 
 interface AssetToken {
   id: string;
-  chain: 'movr' | 'bsc' | 'eth' | 'matic' | 'avax';
+  chain: 'movr' | 'bsc' | 'eth' | 'matic' | 'avax' | 'ftm' | 'arb' | 'op';
   name: string;
   symbol: string;
   decimals: number;
@@ -34,7 +34,7 @@ export default async (process: Process) => {
     )
     .where(`${walletTableName}.id`, id)
     .first();
-  let chain: 'movr' | 'bsc' | 'eth' | 'matic' | 'avax';
+  let chain: 'movr' | 'bsc' | 'eth' | 'matic' | 'avax' | 'ftm' | 'arb' | 'op';
 
   if (!blockchainWallet || blockchainWallet.blockchain !== 'ethereum') {
     throw new Error('wallet not found or unsupported blockchain');
@@ -59,6 +59,18 @@ export default async (process: Process) => {
 
     case '1285':
       chain = 'movr';
+      break;
+
+    case '250':
+      chain = 'ftm';
+      break;
+
+    case '42161':
+      chain = 'arb';
+      break;
+
+    case '10':
+      chain = 'op';
       break;
 
     default:

@@ -71,6 +71,15 @@ export default async (process: Process) => {
           case 'movr':
             return '1285';
 
+          case 'op':
+            return '10';
+
+          case 'ftm':
+            return '250';
+
+          case 'arb':
+            return '42161';
+
           default:
             return null;
         }

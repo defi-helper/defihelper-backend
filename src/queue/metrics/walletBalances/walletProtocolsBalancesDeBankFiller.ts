@@ -46,7 +46,7 @@ interface ProtocolListResponse {
   }[];
 }
 
-type NamedChain = 'eth' | 'matic' | 'bsc' | 'avax' | 'movr';
+type NamedChain = 'eth' | 'matic' | 'bsc' | 'avax' | 'movr' | 'ftm' | 'arb' | 'op';
 const namedChainToNumbered = (namedChain: NamedChain): string => {
   const chains = {
     eth: '1',
@@ -54,6 +54,9 @@ const namedChainToNumbered = (namedChain: NamedChain): string => {
     matic: '137',
     movr: '1285',
     avax: '43114',
+    ftm: '250',
+    arb: '42161',
+    op: '10',
   };
 
   if (chains[namedChain]) {

@@ -165,10 +165,22 @@ function debankPriceFeed(network: string): { usd: TokenPriceFeedUSD } {
     usd: async (address: string) => {
       const key = `ethereum:${network}:${address}:price`;
 
-      let chain: 'movr' | 'bsc' | 'eth' | 'matic' | 'avax';
+      let chain: 'movr' | 'bsc' | 'eth' | 'matic' | 'avax' | 'ftm' | 'arb' | 'op';
       switch (network) {
         case '1':
           chain = 'eth';
+          break;
+
+        case '10':
+          chain = 'op';
+          break;
+
+        case '250':
+          chain = 'ftm';
+          break;
+
+        case '42161':
+          chain = 'arb';
           break;
 
         case '56':
@@ -186,6 +198,7 @@ function debankPriceFeed(network: string): { usd: TokenPriceFeedUSD } {
         case '1285':
           chain = 'movr';
           break;
+
         default:
           throw new Error(`unsupported network: ${network}`);
       }
@@ -306,6 +319,25 @@ export class BlockchainContainer extends Container<Config> {
       tokenPriceResolver: debankPriceFeed('137'),
       network: this.parent.polygon,
     }),
+
+    '250': networkFactory({
+      id: '250',
+      testnet: false,
+      name: 'Fantom',
+      txExplorerURL: new URL('https://ftmscan.com/tx'),
+      walletExplorerURL: new URL('https://ftmscan.com/address'),
+      getContractAbi: useEtherscanContractAbi('https://api.ftmscan.com/api'),
+      getAvgGasPrice: avgGasPriceFeedManual('60000000'),
+      nativeTokenPrice: coingeckoPriceFeedUSD('fantom'),
+      nativeTokenDetails: {
+        decimals: 18,
+        symbol: 'FTM',
+        name: 'Fantom',
+      },
+      tokenPriceResolver: debankPriceFeed('250'),
+      network: this.parent.polygon,
+    }),
+
     '1285': networkFactory({
       id: '1285',
       testnet: false,
