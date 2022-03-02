@@ -46,7 +46,7 @@ interface ProtocolListResponse {
   }[];
 }
 
-type NamedChain = 'eth' | 'matic' | 'bsc' | 'avax' | 'movr' | 'ftm' | 'arb' | 'op';
+type NamedChain = 'eth' | 'matic' | 'bsc' | 'avax' | 'movr' | 'ftm' | 'arb' | 'op' | 'cro';
 const namedChainToNumbered = (namedChain: NamedChain): string => {
   const chains = {
     eth: '1',
@@ -57,6 +57,7 @@ const namedChainToNumbered = (namedChain: NamedChain): string => {
     ftm: '250',
     arb: '42161',
     op: '10',
+    cro: '25',
   };
 
   if (chains[namedChain]) {
@@ -225,7 +226,6 @@ export default async (process: Process) => {
             detail_types.toString() === ['reward'].toString() && detail.token_list,
         )
         .flatMap(({ detail }) =>
-          // todo prettify
           (detail.token_list || []).map((v) => ({
             ...v,
             type: 'reward',
@@ -421,18 +421,36 @@ export default async (process: Process) => {
             .create(token.name, token.symbol, TokenAliasLiquidity.Unstable, token.logo_url || null);
         }
 
-        tokenRecord = await container.model
-          .tokenService()
-          .create(
-            tokenRecordAlias,
-            'ethereum',
-            namedChainToNumbered(token.chain as NamedChain),
-            token.id.toLowerCase(),
-            token.name,
-            token.symbol,
-            token.decimals,
-            TokenCreatedBy.Scanner,
-          );
+        try {
+          tokenRecord = await container.model
+            .tokenService()
+            .create(
+              tokenRecordAlias,
+              'ethereum',
+              namedChainToNumbered(token.chain as NamedChain),
+              token.id.toLowerCase(),
+              token.name,
+              token.symbol,
+              token.decimals,
+              TokenCreatedBy.Scanner,
+            );
+        } catch (e) {
+          // uniq violation
+          if (e.code !== '23505') {
+            throw e;
+          }
+
+          tokenRecord = await container.model
+            .tokenTable()
+            .where('ethereum', 'blockchain')
+            .andWhere('network', namedChainToNumbered(token.chain as NamedChain))
+            .andWhere('address', token.id.toLowerCase())
+            .first();
+
+          if (!tokenRecord) {
+            throw new Error('[1] can`t find token on fly, seems like a bug');
+          }
+        }
       }
 
       const walletByChain = chainsWallets.find(
@@ -490,18 +508,36 @@ export default async (process: Process) => {
             .create(token.name, token.symbol, TokenAliasLiquidity.Unstable, token.logo_url || null);
         }
 
-        tokenRecord = await container.model
-          .tokenService()
-          .create(
-            tokenRecordAlias,
-            'ethereum',
-            namedChainToNumbered(token.chain as NamedChain),
-            token.id.toLowerCase(),
-            token.name,
-            token.symbol,
-            token.decimals,
-            TokenCreatedBy.Scanner,
-          );
+        try {
+          tokenRecord = await container.model
+            .tokenService()
+            .create(
+              tokenRecordAlias,
+              'ethereum',
+              namedChainToNumbered(token.chain as NamedChain),
+              token.id.toLowerCase(),
+              token.name,
+              token.symbol,
+              token.decimals,
+              TokenCreatedBy.Scanner,
+            );
+        } catch (e) {
+          // uniq violation
+          if (e.code !== '23505') {
+            throw e;
+          }
+
+          tokenRecord = await container.model
+            .tokenTable()
+            .where('ethereum', 'blockchain')
+            .andWhere('network', namedChainToNumbered(token.chain as NamedChain))
+            .andWhere('address', token.id.toLowerCase())
+            .first();
+
+          if (!tokenRecord) {
+            throw new Error('[2] can`t find token on fly, seems like a bug');
+          }
+        }
       }
 
       const walletByChain = chainsWallets.find(

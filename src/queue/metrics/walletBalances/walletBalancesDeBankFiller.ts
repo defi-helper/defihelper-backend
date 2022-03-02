@@ -12,7 +12,7 @@ interface Params {
 
 interface AssetToken {
   id: string;
-  chain: 'movr' | 'bsc' | 'eth' | 'matic' | 'avax' | 'ftm' | 'arb' | 'op';
+  chain: 'movr' | 'bsc' | 'eth' | 'matic' | 'avax' | 'ftm' | 'arb' | 'op' | 'cro';
   name: string;
   symbol: string;
   decimals: number;
@@ -34,7 +34,7 @@ export default async (process: Process) => {
     )
     .where(`${walletTableName}.id`, id)
     .first();
-  let chain: 'movr' | 'bsc' | 'eth' | 'matic' | 'avax' | 'ftm' | 'arb' | 'op';
+  let chain: 'movr' | 'bsc' | 'eth' | 'matic' | 'avax' | 'ftm' | 'arb' | 'op' | 'cro';
 
   if (!blockchainWallet || blockchainWallet.blockchain !== 'ethereum') {
     throw new Error('wallet not found or unsupported blockchain');
@@ -73,6 +73,10 @@ export default async (process: Process) => {
       chain = 'op';
       break;
 
+    case '25':
+      chain = 'cro';
+      break;
+
     default:
       throw new Error(`unsupported network: ${blockchainWallet.network}`);
   }
@@ -90,6 +94,8 @@ export default async (process: Process) => {
         tokenAsset.id === tokenAsset.chain
           ? '0x0000000000000000000000000000000000000000'
           : tokenAsset.id,
+      name: tokenAsset.name.replace(/\0/g, '').trim(),
+      symbol: tokenAsset.symbol.replace(/\0/g, '').trim(),
     };
   });
 
@@ -122,10 +128,22 @@ export default async (process: Process) => {
       );
 
       if (!tokenRecord) {
-        let tokenRecordAlias = await container.model
-          .tokenAliasTable()
-          .where('name', 'ilike', tokenAsset.name)
-          .first();
+        let tokenRecordAlias;
+
+        try {
+          tokenRecordAlias = await container.model
+            .tokenAliasTable()
+            .where('name', 'ilike', tokenAsset.name)
+            .first();
+        } catch (e) {
+          console.warn(e);
+          console.warn(`asset name${tokenAsset.name}`);
+          console.log(
+            container.model.tokenAliasTable().where('name', 'ilike', tokenAsset.name).toQuery(),
+          );
+          console.log(tokenAsset);
+          console.log(`${blockchainWallet.address}&chain_id=${chain}&is_all=true`);
+        }
 
         if (!tokenRecordAlias) {
           tokenRecordAlias = await container.model

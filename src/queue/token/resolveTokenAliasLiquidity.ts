@@ -24,7 +24,7 @@ export default async (process: Process) => {
     throw new Error('token alias not found');
   }
 
-  let chain: 'movr' | 'eth' | 'bsc' | 'matic' | 'avax' | 'ftm' | 'arb' | 'op';
+  let chain: 'movr' | 'eth' | 'bsc' | 'matic' | 'avax' | 'ftm' | 'arb' | 'op' | 'cro';
   switch (params.network) {
     case '1':
       chain = 'eth';

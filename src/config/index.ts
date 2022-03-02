@@ -93,6 +93,39 @@ export default {
         consumers: array(process.env.POLYGON_CONSUMERS ?? '[]'),
         avgBlockTime: 2.5,
       },
+
+      optimisticEthereum: {
+        node: array(process.env.OPTIMISTIC_ETHEREUM_NODE ?? '[]'),
+        historicalNode: array(process.env.OPTIMISTIC_ETHEREUM_NODE_HISTORICAL ?? '[]'),
+        inspectors: array(process.env.OPTIMISTIC_ETHEREUM_INSPECTORS ?? '[]'),
+        consumers: array(process.env.OPTIMISTIC_ETHEREUM_CONSUMERS ?? '[]'),
+        avgBlockTime: 10, // todo check me
+      },
+
+      fantom: {
+        node: array(process.env.PANTOM_NODE ?? '[]'),
+        historicalNode: array(process.env.PANTOM_NODE_HISTORICAL ?? '[]'),
+        inspectors: array(process.env.PANTOM_INSPECTORS ?? '[]'),
+        consumers: array(process.env.PANTOM_CONSUMERS ?? '[]'),
+        avgBlockTime: 1.0,
+      },
+
+      cronos: {
+        node: array(process.env.CRONOS_NODE ?? '[]'),
+        historicalNode: array(process.env.CRONOS_NODE_HISTORICAL ?? '[]'),
+        inspectors: array(process.env.CRONOS_INSPECTORS ?? '[]'),
+        consumers: array(process.env.CRONOS_CONSUMERS ?? '[]'),
+        avgBlockTime: 6.5,
+      },
+
+      arbitrum: {
+        node: array(process.env.ARBITRUM_NODE ?? '[]'),
+        historicalNode: array(process.env.ARBITRUM_NODE_HISTORICAL ?? '[]'),
+        inspectors: array(process.env.ARBITRUM_INSPECTORS ?? '[]'),
+        consumers: array(process.env.ARBITRUM_CONSUMERS ?? '[]'),
+        avgBlockTime: 0.5,
+      },
+
       // Moonriver
       moonriver: {
         node: array(process.env.MOONRIVER_NODE ?? '[]'),
