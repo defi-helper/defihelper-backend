@@ -87,17 +87,17 @@ export default async (process: Process) => {
         `https://openapi.debank.com/v1/user/token_list?id=${blockchainWallet.address}&chain_id=${chain}&is_all=true`,
       )
     ).data as AssetToken[]
-  ).map((tokenAsset) => {
-    return {
-      ...tokenAsset,
-      id:
-        tokenAsset.id === tokenAsset.chain
-          ? '0x0000000000000000000000000000000000000000'
-          : tokenAsset.id,
-      name: tokenAsset.name.replace(/\0/g, '').trim(),
-      symbol: tokenAsset.symbol.replace(/\0/g, '').trim(),
-    };
-  });
+  ).map((tokenAsset) => ({
+    ...tokenAsset,
+    id:
+      tokenAsset.id === tokenAsset.chain
+        ? '0x0000000000000000000000000000000000000000'
+        : tokenAsset.id,
+    name: tokenAsset.name.replace(/\0/g, '').trim(),
+    symbol: tokenAsset.symbol.replace(/\0/g, '').trim(),
+  }));
+
+  console.warn(debankUserTokenList);
 
   const existingTokensRecords = await container.model
     .tokenTable()
@@ -128,22 +128,10 @@ export default async (process: Process) => {
       );
 
       if (!tokenRecord) {
-        let tokenRecordAlias;
-
-        try {
-          tokenRecordAlias = await container.model
-            .tokenAliasTable()
-            .where('name', 'ilike', tokenAsset.name)
-            .first();
-        } catch (e) {
-          console.warn(e);
-          console.warn(`asset name${tokenAsset.name}`);
-          console.log(
-            container.model.tokenAliasTable().where('name', 'ilike', tokenAsset.name).toQuery(),
-          );
-          console.log(tokenAsset);
-          console.log(`${blockchainWallet.address}&chain_id=${chain}&is_all=true`);
-        }
+        let tokenRecordAlias = await container.model
+          .tokenAliasTable()
+          .where('name', 'ilike', tokenAsset.name)
+          .first();
 
         if (!tokenRecordAlias) {
           tokenRecordAlias = await container.model
