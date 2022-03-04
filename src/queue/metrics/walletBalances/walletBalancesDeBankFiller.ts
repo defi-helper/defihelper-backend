@@ -97,8 +97,6 @@ export default async (process: Process) => {
     symbol: tokenAsset.symbol.replace(/\0/g, '').trim(),
   }));
 
-  console.warn(debankUserTokenList);
-
   const existingTokensRecords = await container.model
     .tokenTable()
     .whereIn(
