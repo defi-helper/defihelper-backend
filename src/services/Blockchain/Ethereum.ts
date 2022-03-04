@@ -374,7 +374,7 @@ export class BlockchainContainer extends Container<Config> {
       txExplorerURL: new URL('https://arbiscan.io/tx'),
       walletExplorerURL: new URL('https://arbiscan.io/address'),
       getContractAbi: useEtherscanContractAbi('https://api.arbiscan.io/api'),
-      getAvgGasPrice: avgGasPriceFeedManual('412827114120000'), // todo checkme
+      getAvgGasPrice: avgGasPriceFeedManual('600000000'),
       nativeTokenPrice: coingeckoPriceFeedUSD('ethereum'),
       nativeTokenDetails: {
         decimals: 18,
