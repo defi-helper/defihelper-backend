@@ -80,6 +80,9 @@ export default async (process: Process) => {
           case 'arb':
             return '42161';
 
+          case 'cro':
+            return '25';
+
           default:
             return null;
         }
