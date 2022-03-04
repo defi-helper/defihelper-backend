@@ -55,17 +55,20 @@ export default async (process: Process) => {
       throw new Error(`unsupported network: ${params.network}`);
   }
 
-  const token: ApiTokenResponse = (
+  const token: ApiTokenResponse | null = (
     await axios.get(`https://openapi.debank.com/v1/token?chain_id=${chain}&id=${params.address}`)
   ).data;
 
-  // todo crash sometimes here
+  if (!token) {
+    return process.done();
+  }
+
   const isLiquid =
     token?.is_verified === true || token?.is_core === true || token?.is_wallet === true;
   await container.model.tokenAliasService().update({
     ...tokenAlias,
     liquidity: isLiquid ? TokenAliasLiquidity.Unstable : TokenAliasLiquidity.Trash,
-    logoUrl: token.logo_url || null,
+    logoUrl: token?.logo_url || null,
   });
 
   return process.done();
