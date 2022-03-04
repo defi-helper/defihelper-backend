@@ -24,7 +24,7 @@ export default async (process: Process) => {
     throw new Error('token alias not found');
   }
 
-  let chain: 'movr' | 'eth' | 'bsc' | 'matic' | 'avax';
+  let chain: 'movr' | 'eth' | 'bsc' | 'matic' | 'avax' | 'ftm' | 'arb' | 'op' | 'cro';
   switch (params.network) {
     case '1':
       chain = 'eth';
@@ -41,19 +41,34 @@ export default async (process: Process) => {
     case '1285':
       chain = 'movr';
       break;
+    case '10':
+      chain = 'op';
+      break;
+    case '250':
+      chain = 'ftm';
+      break;
+    case '42161':
+      chain = 'arb';
+      break;
+
     default:
       throw new Error(`unsupported network: ${params.network}`);
   }
 
-  const token: ApiTokenResponse = (
+  const token: ApiTokenResponse | null = (
     await axios.get(`https://openapi.debank.com/v1/token?chain_id=${chain}&id=${params.address}`)
   ).data;
 
-  const isLiquid = token.is_verified === true || token.is_core === true || token.is_wallet === true;
+  if (!token) {
+    return process.done();
+  }
+
+  const isLiquid =
+    token?.is_verified === true || token?.is_core === true || token?.is_wallet === true;
   await container.model.tokenAliasService().update({
     ...tokenAlias,
     liquidity: isLiquid ? TokenAliasLiquidity.Unstable : TokenAliasLiquidity.Trash,
-    logoUrl: token.logo_url || null,
+    logoUrl: token?.logo_url || null,
   });
 
   return process.done();
