@@ -20,7 +20,7 @@
     "billing": "node ./dist/cli.js billing",
     "prepare": "husky install"
   },
-  "devDependencies": {
+  "dependencies": {
     "@types/amqplib": "^0.8.2",
     "@types/callback-to-async-iterator": "^1.1.4",
     "@types/command-line-args": "^5.0.0",
@@ -46,9 +46,7 @@
     "prettier": "^2.2.1",
     "pretty-js": "^0.2.1",
     "tsc-watch": "^4.2.9",
-    "typescript": "^4.2.3"
-  },
-  "dependencies": {
+    "typescript": "^4.2.3",
     "@defihelper/ethers-multicall": "^0.3.2",
     "@defihelper/networks": "^1.0.2",
     "@types/crypto-js": "^4.1.0",
