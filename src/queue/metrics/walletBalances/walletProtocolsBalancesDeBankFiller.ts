@@ -442,7 +442,7 @@ export default async (process: Process) => {
 
           tokenRecord = await container.model
             .tokenTable()
-            .where('ethereum', 'blockchain')
+            .where('blockchain', 'ethereum')
             .andWhere('network', namedChainToNumbered(token.chain as NamedChain))
             .andWhere('address', token.id.toLowerCase())
             .first();
@@ -529,7 +529,7 @@ export default async (process: Process) => {
 
           tokenRecord = await container.model
             .tokenTable()
-            .where('ethereum', 'blockchain')
+            .where('blockchain', 'ethereum')
             .andWhere('network', namedChainToNumbered(token.chain as NamedChain))
             .andWhere('address', token.id.toLowerCase())
             .first();

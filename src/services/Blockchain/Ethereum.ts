@@ -338,7 +338,7 @@ export class BlockchainContainer extends Container<Config> {
       txExplorerURL: new URL('https://ftmscan.com/tx'),
       walletExplorerURL: new URL('https://ftmscan.com/address'),
       getContractAbi: useEtherscanContractAbi('https://api.ftmscan.com/api'),
-      getAvgGasPrice: avgGasPriceFeedManual('60000000'),
+      getAvgGasPrice: avgGasPriceFeedManual('300000000000'),
       nativeTokenPrice: coingeckoPriceFeedUSD('fantom'),
       nativeTokenDetails: {
         decimals: 18,
@@ -356,7 +356,7 @@ export class BlockchainContainer extends Container<Config> {
       txExplorerURL: new URL('https://cronoscan.com/tx'),
       walletExplorerURL: new URL('https://cronoscan.com/address'),
       getContractAbi: useEtherscanContractAbi('https://api.cronoscan.com/api'),
-      getAvgGasPrice: avgGasPriceFeedManual('60000000'), // todo check me
+      getAvgGasPrice: avgGasPriceFeedManual('5000000000000'),
       nativeTokenPrice: coingeckoPriceFeedUSD('crypto-com-chain'),
       nativeTokenDetails: {
         decimals: 8,
@@ -392,7 +392,7 @@ export class BlockchainContainer extends Container<Config> {
       txExplorerURL: new URL('https://optimistic.etherscan.io/tx'),
       walletExplorerURL: new URL('https://optimistic.etherscan.io/address'),
       getContractAbi: useEtherscanContractAbi('https://api-optimistic.etherscan.io/api'),
-      getAvgGasPrice: avgGasPriceFeedManual('253254751890000'), // todo checkme
+      getAvgGasPrice: avgGasPriceFeedManual('1000000'),
       nativeTokenPrice: coingeckoPriceFeedUSD('ethereum'),
       nativeTokenDetails: {
         decimals: 18,
