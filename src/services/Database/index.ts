@@ -1,6 +1,7 @@
 import knex from 'knex';
 import { Factory } from '@services/Container';
 import { Tables } from 'knex/types/tables';
+import fs from 'fs';
 
 export interface ConnectFactoryConfig {
   readonly host?: string;
@@ -23,7 +24,7 @@ export function pgConnectFactory(config: ConnectFactoryConfig) {
         database: config.database,
         ssl: config.ssl
           ? {
-              capath: config.ssl,
+              ca: fs.readFileSync(config.ssl),
             }
           : undefined,
       },
