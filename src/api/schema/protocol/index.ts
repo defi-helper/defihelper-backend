@@ -534,7 +534,7 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
         `${contractBlockchainTableName}.id`,
         `${contractTableName}.id`,
       )
-      .where('id', id)
+      .where(`${contractTableName}.id`, id)
       .first();
     if (!contractBlockchain) throw new UserInputError('Contract not found');
 
