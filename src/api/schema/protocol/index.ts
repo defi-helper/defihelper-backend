@@ -527,12 +527,16 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
     const contractService = container.model.contractService();
-    const contract = await contractService.contractTable().where('id', id).first();
     const contractBlockchain = await contractService
-      .contractBlockchainTable()
+      .contractTable()
+      .innerJoin(
+        contractBlockchainTableName,
+        `${contractBlockchainTableName}.id`,
+        `${contractTableName}.id`,
+      )
       .where('id', id)
       .first();
-    if (!contract || !contractBlockchain) throw new UserInputError('Contract not found');
+    if (!contractBlockchain) throw new UserInputError('Contract not found');
 
     const {
       blockchain,
@@ -549,37 +553,34 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
       hidden,
     } = input;
 
-    const updated = {
-      ...(await contractService.updateParent({
-        ...contract,
-        layout: typeof layout === 'string' ? layout : contract.layout,
-        name: typeof name === 'string' ? name : contract.name,
-        protocol: contract.protocol,
-        description: typeof description === 'string' ? description : contract.description,
-        link: typeof link === 'string' ? link : contract.link,
-        hidden: typeof hidden === 'boolean' ? hidden : contract.hidden,
-      })),
-      ...(await contractService.updateBlockchain({
-        ...contractBlockchain,
-        blockchain: (typeof blockchain === 'string'
-          ? blockchain
-          : contractBlockchain.blockchain) as Blockchain,
-        network: typeof network === 'string' ? network : contractBlockchain.network,
-        address: typeof address === 'string' ? address : contractBlockchain.address,
-        deployBlockNumber:
-          typeof deployBlockNumber === 'string'
-            ? deployBlockNumber
-            : contractBlockchain.deployBlockNumber,
-        adapter: typeof adapter === 'string' ? adapter : contractBlockchain.adapter,
-        automate: {
-          adapters: Array.isArray(automates) ? automates : contractBlockchain.automate.adapters,
-          autorestakeAdapter:
-            typeof autorestakeAdapter === 'string'
-              ? autorestakeAdapter
-              : contractBlockchain.automate.autorestakeAdapter,
-        },
-      })),
-    };
+    const updated = await contractService.updateBlockchain({
+      ...contractBlockchain,
+
+      layout: typeof layout === 'string' ? layout : contractBlockchain.layout,
+      name: typeof name === 'string' ? name : contractBlockchain.name,
+      protocol: contractBlockchain.protocol,
+      description: typeof description === 'string' ? description : contractBlockchain.description,
+      link: typeof link === 'string' ? link : contractBlockchain.link,
+      hidden: typeof hidden === 'boolean' ? hidden : contractBlockchain.hidden,
+
+      blockchain: (typeof blockchain === 'string'
+        ? blockchain
+        : contractBlockchain.blockchain) as Blockchain,
+      network: typeof network === 'string' ? network : contractBlockchain.network,
+      address: typeof address === 'string' ? address : contractBlockchain.address,
+      deployBlockNumber:
+        typeof deployBlockNumber === 'string'
+          ? deployBlockNumber
+          : contractBlockchain.deployBlockNumber,
+      adapter: typeof adapter === 'string' ? adapter : contractBlockchain.adapter,
+      automate: {
+        adapters: Array.isArray(automates) ? automates : contractBlockchain.automate.adapters,
+        autorestakeAdapter:
+          typeof autorestakeAdapter === 'string'
+            ? autorestakeAdapter
+            : contractBlockchain.automate.autorestakeAdapter,
+      },
+    });
 
     return updated;
   }),

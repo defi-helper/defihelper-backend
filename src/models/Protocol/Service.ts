@@ -253,18 +253,7 @@ export class ContractService {
     return { ...parentContract, ...childContract };
   }
 
-  async updateParent(contract: Contract) {
-    const updatedParent: Contract = {
-      ...contract,
-      updatedAt: new Date(),
-    };
-
-    await this.contractTable().where('id', contract.id).update(updatedParent);
-
-    return updatedParent;
-  }
-
-  async updateBlockchain(contractBlockchain: ContractBlockchainType) {
+  async updateBlockchain(contractBlockchain: ContractBlockchainType & Contract) {
     const updatedBlockchain: ContractBlockchainType = {
       ...contractBlockchain,
       address:
@@ -276,7 +265,7 @@ export class ContractService {
     await this.database.transaction(async (trx) => {
       await this.contractTable()
         .where('id', updatedBlockchain.id)
-        .update({ updatedAt: new Date() })
+        .update({ ...contractBlockchain, updatedAt: new Date() })
         .transacting(trx);
       await this.contractBlockchainTable()
         .where('id', updatedBlockchain.id)
@@ -286,11 +275,11 @@ export class ContractService {
     return updatedBlockchain;
   }
 
-  async updateDebank(contractDebank: ContractDebankType) {
+  async updateDebank(contractDebank: ContractDebankType & Contract) {
     await this.database.transaction(async (trx) => {
       await this.contractTable()
         .where('id', contractDebank.id)
-        .update({ updatedAt: new Date() })
+        .update({ ...contractDebank, updatedAt: new Date() })
         .transacting(trx);
       await this.contractDebankTable().where('id', contractDebank.id).update(contractDebank);
     });
