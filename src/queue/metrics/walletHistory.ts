@@ -1,6 +1,7 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import BN from 'bignumber.js';
+import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
 
 export interface Params {
   contract: string;
@@ -9,7 +10,15 @@ export interface Params {
 
 export default async (process: Process) => {
   const { contract: contractId, wallet } = process.task.params as Params;
-  const contract = await container.model.contractTable().where('id', contractId).first();
+  const contract = await container.model
+    .contractTable()
+    .innerJoin(
+      contractBlockchainTableName,
+      `${contractBlockchainTableName}.id`,
+      `${contractTableName}.id`,
+    )
+    .where(`${contractTableName}.id`, contractId)
+    .first();
   if (!contract) throw new Error('Contract not found');
   if (contract.blockchain !== 'ethereum') {
     return process.info('No ethereum').done();

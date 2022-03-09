@@ -1,6 +1,7 @@
 import { Process } from '@models/Queue/Entity';
 import container from '@container';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
+import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
 
 interface Event {
   address: string;
@@ -32,7 +33,15 @@ export default async (process: Process) => {
     throw new Error(`WebHook is not found ${eventNotificationParams.webHookId}`);
   }
 
-  const contract = await container.model.contractTable().where('id', webHook.contract).first();
+  const contract = await container.model
+    .contractTable()
+    .innerJoin(
+      contractBlockchainTableName,
+      `${contractBlockchainTableName}.id`,
+      `${contractTableName}.id`,
+    )
+    .where(`${contractTableName}.id`, webHook.contract)
+    .first();
   if (!contract) {
     throw new Error(`Contract ${webHook.contract} is not found for WebHook ${webHook.contract}`);
   }

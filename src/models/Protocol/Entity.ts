@@ -1,4 +1,4 @@
-import { tableFactoryLegacy } from '@services/Database';
+import { tableFactoryLegacy, typedTableFactory } from '@services/Database';
 import { Blockchain } from '@models/types';
 
 export interface ProtocolLink {
@@ -32,7 +32,7 @@ export interface Protocol {
 
 export const protocolTableName = 'protocol';
 
-export const protocolTableFactory = tableFactoryLegacy<Protocol>(protocolTableName);
+export const protocolTableFactory = typedTableFactory(protocolTableName);
 
 export type ProtocolTable = ReturnType<ReturnType<typeof protocolTableFactory>>;
 
@@ -45,9 +45,7 @@ export interface ProtocolUserFavorite {
 
 export const protocolUserFavoriteTableName = 'protocol_user_favorite';
 
-export const protocolUserFavoriteTableFactory = tableFactoryLegacy<ProtocolUserFavorite>(
-  protocolUserFavoriteTableName,
-);
+export const protocolUserFavoriteTableFactory = typedTableFactory(protocolUserFavoriteTableName);
 
 export type ProtocolUserFavoriteTable = ReturnType<
   ReturnType<typeof protocolUserFavoriteTableFactory>
@@ -74,28 +72,43 @@ export interface ContractMetric {
 export interface Contract {
   id: string;
   protocol: string;
+  layout: string;
+  name: string;
+  description: string;
+  link: string | null;
+  hidden: boolean;
+  updatedAt: Date;
+  createdAt: Date;
+}
+
+export interface ContractDebankType {
+  id: string;
+  address: string;
+  metric: ContractMetric;
+}
+
+export interface ContractBlockchainType {
+  id: string;
   blockchain: Blockchain;
   network: string;
   address: string;
   deployBlockNumber: string | null;
   adapter: string;
-  layout: string;
   automate: ContractAutomate;
-  name: string;
-  description: string;
-  link: string | null;
-  hidden: boolean;
-  debankAddress: string | null;
   metric: ContractMetric;
-  updatedAt: Date;
-  createdAt: Date;
 }
 
 export const contractTableName = 'protocol_contract';
-
-export const contractTableFactory = tableFactoryLegacy<Contract>(contractTableName);
-
+export const contractTableFactory = typedTableFactory(contractTableName);
 export type ContractTable = ReturnType<ReturnType<typeof contractTableFactory>>;
+
+export const contractDebankTableName = 'protocol_contract_debank';
+export const contractDebankTableFactory = typedTableFactory(contractDebankTableName);
+export type ContractDebankTable = ReturnType<ReturnType<typeof contractDebankTableFactory>>;
+
+export const contractBlockchainTableName = 'protocol_contract_blockchain';
+export const contractBlockchainTableFactory = typedTableFactory(contractBlockchainTableName);
+export type ContractBlockchainTable = ReturnType<ReturnType<typeof contractBlockchainTableFactory>>;
 
 export interface WalletContractLink {
   id: string;
@@ -105,11 +118,7 @@ export interface WalletContractLink {
 }
 
 export const walletContractLinkTableName = 'protocol_contract_wallet_link';
-
-export const walletContractLinkTableFactory = tableFactoryLegacy<WalletContractLink>(
-  walletContractLinkTableName,
-);
-
+export const walletContractLinkTableFactory = typedTableFactory(walletContractLinkTableName);
 export type WalletContractLinkTable = ReturnType<ReturnType<typeof walletContractLinkTableFactory>>;
 
 export enum MetadataType {
@@ -125,7 +134,7 @@ export interface Metadata {
 
 export const metadataTableName = 'protocol_contract_metadata';
 
-export const metadataTableFactory = tableFactoryLegacy<Metadata>(metadataTableName);
+export const metadataTableFactory = typedTableFactory(metadataTableName);
 
 export type MetadataTable = ReturnType<ReturnType<typeof metadataTableFactory>>;
 
@@ -149,3 +158,15 @@ export const tokenContractLinkTableFactory = tableFactoryLegacy<TokenContractLin
 );
 
 export type TokenContractLinkTable = ReturnType<ReturnType<typeof tokenContractLinkTableFactory>>;
+
+declare module 'knex/types/tables' {
+  interface Tables {
+    [protocolTableName]: Protocol;
+    [metadataTableName]: Metadata;
+    [contractTableName]: Contract;
+    [walletContractLinkTableName]: WalletContractLink;
+    [protocolUserFavoriteTableName]: ProtocolUserFavorite;
+    [contractDebankTableName]: ContractDebankType;
+    [contractBlockchainTableName]: ContractBlockchainType;
+  }
+}

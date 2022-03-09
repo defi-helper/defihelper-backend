@@ -5,9 +5,15 @@ import dayjs from 'dayjs';
 import { ethers } from 'ethers';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 import * as Adapters from '@services/Blockchain/Adapter';
-import { Contract, TokenContractLinkType } from '@models/Protocol/Entity';
+import {
+  contractBlockchainTableName,
+  contractTableName,
+  Contract,
+  TokenContractLinkType,
+  ContractBlockchainType,
+} from '@models/Protocol/Entity';
 
-async function getOrCreateToken(contract: Contract, address: string) {
+async function getOrCreateToken(contract: Contract & ContractBlockchainType, address: string) {
   const token = await container.model
     .tokenTable()
     .where({
@@ -33,7 +39,7 @@ async function getOrCreateToken(contract: Contract, address: string) {
 }
 
 async function registerToken(
-  contract: Contract,
+  contract: Contract & ContractBlockchainType,
   date: Date,
   tokenData: Adapters.ContractTokenData,
   linkType: TokenContractLinkType | null,
@@ -66,7 +72,15 @@ export interface ContractMetricsParams {
 
 export async function contractMetrics(process: Process) {
   const { contract: contractId, blockNumber } = process.task.params as ContractMetricsParams;
-  const contract = await container.model.contractTable().where('id', contractId).first();
+  const contract = await container.model
+    .contractTable()
+    .innerJoin(
+      contractBlockchainTableName,
+      `${contractBlockchainTableName}.id`,
+      `${contractTableName}.id`,
+    )
+    .where(`${contractTableName}.id`, contractId)
+    .first();
   if (!contract) throw new Error('Contract not found');
 
   const protocol = await container.model.protocolTable().where('id', contract.protocol).first();
@@ -107,7 +121,7 @@ export async function contractMetrics(process: Process) {
   ) {
     await Promise.all([
       metricService.createContract(contract, contractAdapterData.metrics, date),
-      container.model.contractService().update({
+      container.model.contractService().updateBlockchain({
         ...contract,
         metric: {
           ...contract.metric,
@@ -155,7 +169,15 @@ export async function walletMetrics(process: Process) {
     wallet: walletId,
     blockNumber,
   } = process.task.params as WalletMetricsParams;
-  const contract = await container.model.contractTable().where('id', contractId).first();
+  const contract = await container.model
+    .contractTable()
+    .innerJoin(
+      contractBlockchainTableName,
+      `${contractBlockchainTableName}.id`,
+      `${contractTableName}.id`,
+    )
+    .where(`${contractTableName}.id`, contractId)
+    .first();
   if (!contract) throw new Error('Contract not found');
 
   const protocol = await container.model.protocolTable().where('id', contract.protocol).first();

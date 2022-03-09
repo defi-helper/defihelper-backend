@@ -1,5 +1,10 @@
 import container from '@container';
-import { Contract } from '@models/Protocol/Entity';
+import {
+  Contract,
+  ContractBlockchainType,
+  contractBlockchainTableName,
+  contractTableName,
+} from '@models/Protocol/Entity';
 import { Process } from '@models/Queue/Entity';
 import axios from 'axios';
 import { parse } from 'node-html-parser';
@@ -23,7 +28,7 @@ const oneYearInSeconds = 60 * 60 * 24 * 365;
 const getEthereumContractCreationBlock = async ({
   network,
   address,
-}: Contract): Promise<number> => {
+}: Contract & ContractBlockchainType): Promise<number> => {
   const { walletExplorerURL } = container.blockchain.ethereum.byNetwork(network);
   try {
     const res = await axios.get(`${walletExplorerURL}/${address}`, {
@@ -65,15 +70,25 @@ export interface Params {
 
 export default async (process: Process) => {
   const { contract: contractId } = process.task.params as Params;
-  const contract = await container.model.contractTable().where('id', contractId).first();
-  if (!contract) throw new Error('Contract not found');
+  const contractBlockchain = await container.model
+    .contractTable()
+    .innerJoin(
+      contractBlockchainTableName,
+      `${contractBlockchainTableName}.id`,
+      `${contractTableName}.id`,
+    )
+    .where(`${contractTableName}.id`, contractId)
+    .first();
 
-  if (contract.blockchain !== 'ethereum') throw new Error('Invalid blockchain');
-  if (contract.deployBlockNumber !== null) throw new Error('Deploy block already resolved');
+  if (!contractBlockchain) throw new Error('Contract not found');
 
-  const deployBlockNumber = await getEthereumContractCreationBlock(contract);
-  await container.model.contractService().update({
-    ...contract,
+  if (contractBlockchain.blockchain !== 'ethereum') throw new Error('Invalid blockchain');
+  if (contractBlockchain.deployBlockNumber !== null)
+    throw new Error('Deploy block already resolved');
+
+  const deployBlockNumber = await getEthereumContractCreationBlock(contractBlockchain);
+  await container.model.contractService().updateBlockchain({
+    ...contractBlockchain,
     deployBlockNumber: deployBlockNumber.toString(),
   });
 

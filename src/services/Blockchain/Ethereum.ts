@@ -135,17 +135,20 @@ function useEtherscanContractAbi(host: string): ContractABIResolver {
   };
 }
 
-function coingeckoPriceFeedUSD(coinId: string): NativePriceFeedUSD {
+/**
+ * @param {string} coinApiId - Api coin identifier(not from url of the coingecko website).
+ */
+function coingeckoPriceFeedUSD(coinApiId: string): NativePriceFeedUSD {
   return async () => {
-    const key = `ethereum:native:${coinId}:price`;
+    const key = `ethereum:native:${coinApiId}:price`;
     const chainNativeUSD = await cacheGet(key);
     if (!chainNativeUSD) {
       const {
         data: {
-          [coinId]: { usd },
+          [coinApiId]: { usd },
         },
       } = await axios.get(
-        `https://api.coingecko.com/api/v3/simple/price?ids=${coinId}&vs_currencies=usd`,
+        `https://api.coingecko.com/api/v3/simple/price?ids=${coinApiId}&vs_currencies=usd`,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -165,10 +168,26 @@ function debankPriceFeed(network: string): { usd: TokenPriceFeedUSD } {
     usd: async (address: string) => {
       const key = `ethereum:${network}:${address}:price`;
 
-      let chain: 'movr' | 'bsc' | 'eth' | 'matic' | 'avax';
+      let chain: 'movr' | 'bsc' | 'eth' | 'matic' | 'avax' | 'ftm' | 'arb' | 'op' | 'cro';
       switch (network) {
         case '1':
           chain = 'eth';
+          break;
+
+        case '10':
+          chain = 'op';
+          break;
+
+        case '25':
+          chain = 'cro';
+          break;
+
+        case '250':
+          chain = 'ftm';
+          break;
+
+        case '42161':
+          chain = 'arb';
           break;
 
         case '56':
@@ -186,6 +205,7 @@ function debankPriceFeed(network: string): { usd: TokenPriceFeedUSD } {
         case '1285':
           chain = 'movr';
           break;
+
         default:
           throw new Error(`unsupported network: ${network}`);
       }
@@ -228,6 +248,10 @@ export interface Config {
   ethRopsten: NetworkConfig;
   bsc: NetworkConfig;
   polygon: NetworkConfig;
+  cronos: NetworkConfig;
+  fantom: NetworkConfig;
+  arbitrum: NetworkConfig;
+  optimisticEthereum: NetworkConfig;
   moonriver: NetworkConfig;
   avalanche: NetworkConfig;
   avalancheTestnet: NetworkConfig;
@@ -306,6 +330,79 @@ export class BlockchainContainer extends Container<Config> {
       tokenPriceResolver: debankPriceFeed('137'),
       network: this.parent.polygon,
     }),
+
+    '250': networkFactory({
+      id: '250',
+      testnet: false,
+      name: 'Fantom',
+      txExplorerURL: new URL('https://ftmscan.com/tx'),
+      walletExplorerURL: new URL('https://ftmscan.com/address'),
+      getContractAbi: useEtherscanContractAbi('https://api.ftmscan.com/api'),
+      getAvgGasPrice: avgGasPriceFeedManual('300000000000'),
+      nativeTokenPrice: coingeckoPriceFeedUSD('fantom'),
+      nativeTokenDetails: {
+        decimals: 18,
+        symbol: 'FTM',
+        name: 'Fantom',
+      },
+      tokenPriceResolver: debankPriceFeed('250'),
+      network: this.parent.fantom,
+    }),
+
+    '25': networkFactory({
+      id: '25',
+      testnet: false,
+      name: 'Cronos',
+      txExplorerURL: new URL('https://cronoscan.com/tx'),
+      walletExplorerURL: new URL('https://cronoscan.com/address'),
+      getContractAbi: useEtherscanContractAbi('https://api.cronoscan.com/api'),
+      getAvgGasPrice: avgGasPriceFeedManual('5000000000000'),
+      nativeTokenPrice: coingeckoPriceFeedUSD('crypto-com-chain'),
+      nativeTokenDetails: {
+        decimals: 8,
+        symbol: 'CRO',
+        name: 'Cronos',
+      },
+      tokenPriceResolver: debankPriceFeed('25'),
+      network: this.parent.cronos,
+    }),
+
+    '42161': networkFactory({
+      id: '42161',
+      testnet: false,
+      name: 'Arbitrum',
+      txExplorerURL: new URL('https://arbiscan.io/tx'),
+      walletExplorerURL: new URL('https://arbiscan.io/address'),
+      getContractAbi: useEtherscanContractAbi('https://api.arbiscan.io/api'),
+      getAvgGasPrice: avgGasPriceFeedManual('600000000'),
+      nativeTokenPrice: coingeckoPriceFeedUSD('ethereum'),
+      nativeTokenDetails: {
+        decimals: 18,
+        symbol: 'ETH',
+        name: 'Ethereum',
+      },
+      tokenPriceResolver: debankPriceFeed('42161'),
+      network: this.parent.arbitrum,
+    }),
+
+    '10': networkFactory({
+      id: '10',
+      testnet: false,
+      name: 'Optimistic Ethereum',
+      txExplorerURL: new URL('https://optimistic.etherscan.io/tx'),
+      walletExplorerURL: new URL('https://optimistic.etherscan.io/address'),
+      getContractAbi: useEtherscanContractAbi('https://api-optimistic.etherscan.io/api'),
+      getAvgGasPrice: avgGasPriceFeedManual('1000000'),
+      nativeTokenPrice: coingeckoPriceFeedUSD('ethereum'),
+      nativeTokenDetails: {
+        decimals: 18,
+        symbol: 'ETH',
+        name: 'Ethereum',
+      },
+      tokenPriceResolver: debankPriceFeed('10'),
+      network: this.parent.optimisticEthereum,
+    }),
+
     '1285': networkFactory({
       id: '1285',
       testnet: false,

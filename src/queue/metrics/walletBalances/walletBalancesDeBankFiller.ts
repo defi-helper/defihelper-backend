@@ -12,7 +12,7 @@ interface Params {
 
 interface AssetToken {
   id: string;
-  chain: 'movr' | 'bsc' | 'eth' | 'matic' | 'avax';
+  chain: 'movr' | 'bsc' | 'eth' | 'matic' | 'avax' | 'ftm' | 'arb' | 'op' | 'cro';
   name: string;
   symbol: string;
   decimals: number;
@@ -34,7 +34,7 @@ export default async (process: Process) => {
     )
     .where(`${walletTableName}.id`, id)
     .first();
-  let chain: 'movr' | 'bsc' | 'eth' | 'matic' | 'avax';
+  let chain: 'movr' | 'bsc' | 'eth' | 'matic' | 'avax' | 'ftm' | 'arb' | 'op' | 'cro';
 
   if (!blockchainWallet || blockchainWallet.blockchain !== 'ethereum') {
     throw new Error('wallet not found or unsupported blockchain');
@@ -61,6 +61,22 @@ export default async (process: Process) => {
       chain = 'movr';
       break;
 
+    case '250':
+      chain = 'ftm';
+      break;
+
+    case '42161':
+      chain = 'arb';
+      break;
+
+    case '10':
+      chain = 'op';
+      break;
+
+    case '25':
+      chain = 'cro';
+      break;
+
     default:
       throw new Error(`unsupported network: ${blockchainWallet.network}`);
   }
@@ -71,15 +87,15 @@ export default async (process: Process) => {
         `https://openapi.debank.com/v1/user/token_list?id=${blockchainWallet.address}&chain_id=${chain}&is_all=true`,
       )
     ).data as AssetToken[]
-  ).map((tokenAsset) => {
-    return {
-      ...tokenAsset,
-      id:
-        tokenAsset.id === tokenAsset.chain
-          ? '0x0000000000000000000000000000000000000000'
-          : tokenAsset.id,
-    };
-  });
+  ).map((tokenAsset) => ({
+    ...tokenAsset,
+    id:
+      tokenAsset.id === tokenAsset.chain
+        ? '0x0000000000000000000000000000000000000000'
+        : tokenAsset.id,
+    name: tokenAsset.name.replace(/\0/g, '').trim(),
+    symbol: tokenAsset.symbol.replace(/\0/g, '').trim(),
+  }));
 
   const existingTokensRecords = await container.model
     .tokenTable()

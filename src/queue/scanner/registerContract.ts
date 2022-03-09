@@ -1,7 +1,11 @@
 import { Process } from '@models/Queue/Entity';
 import container from '@container';
 import dayjs from 'dayjs';
-import { MetadataType } from '@models/Protocol/Entity';
+import {
+  contractBlockchainTableName,
+  contractTableName,
+  MetadataType,
+} from '@models/Protocol/Entity';
 import * as Scanner from '@services/Scanner';
 
 export interface ContractRegisterParams {
@@ -13,7 +17,15 @@ export default async (process: Process) => {
   const { contract: contractId, events: eventsToSubscribe } = process.task
     .params as ContractRegisterParams;
 
-  const contract = await container.model.contractTable().where('id', contractId).first();
+  const contract = await container.model
+    .contractTable()
+    .innerJoin(
+      contractBlockchainTableName,
+      `${contractBlockchainTableName}.id`,
+      `${contractTableName}.id`,
+    )
+    .where(`${contractTableName}.id`, contractId)
+    .first();
   if (!contract) {
     throw new Error('Contract is not found');
   }

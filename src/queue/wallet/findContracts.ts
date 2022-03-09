@@ -1,6 +1,7 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
+import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
 
 export interface Params {
   walletId: string;
@@ -51,6 +52,11 @@ export default async (process: Process) => {
     chainablePromise = chainablePromise.then(() => {
       return container.model
         .contractTable()
+        .innerJoin(
+          contractBlockchainTableName,
+          `${contractBlockchainTableName}.id`,
+          `${contractTableName}.id`,
+        )
         .andWhere('blockchain', blockchainWallet.blockchain)
         .andWhere('network', blockchainWallet.network)
         .whereIn('address', group)

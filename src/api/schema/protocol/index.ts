@@ -19,6 +19,8 @@ import {
   Protocol,
   walletContractLinkTableName,
   ContractAutomate,
+  ContractBlockchainType,
+  contractBlockchainTableName,
 } from '@models/Protocol/Entity';
 import { apyBoost } from '@services/RestakeStrategy';
 import {
@@ -115,7 +117,7 @@ export const ContractAutomatesType = new GraphQLObjectType<ContractAutomate, Req
   },
 });
 
-export const ContractType = new GraphQLObjectType<Contract, Request>({
+export const ContractType = new GraphQLObjectType<Contract & ContractBlockchainType, Request>({
   name: 'ContractType',
   fields: {
     id: {
@@ -429,7 +431,7 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
         hidden,
         eventsToSubscribe,
       } = input;
-      const created = await container.model.contractService().create(
+      const created = await container.model.contractService().createBlockchain(
         protocol,
         blockchain,
         network,
@@ -525,8 +527,16 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
     const contractService = container.model.contractService();
-    const contract = await contractService.contractTable().where('id', id).first();
-    if (!contract) throw new UserInputError('Contract not found');
+    const contractBlockchain = await contractService
+      .contractTable()
+      .innerJoin(
+        contractBlockchainTableName,
+        `${contractBlockchainTableName}.id`,
+        `${contractTableName}.id`,
+      )
+      .where(`${contractTableName}.id`, id)
+      .first();
+    if (!contractBlockchain) throw new UserInputError('Contract not found');
 
     const {
       blockchain,
@@ -542,26 +552,34 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
       link,
       hidden,
     } = input;
-    const updated = await contractService.update({
-      ...contract,
-      blockchain: (typeof blockchain === 'string' ? blockchain : contract.blockchain) as Blockchain,
-      network: typeof network === 'string' ? network : contract.network,
-      address: typeof address === 'string' ? address : contract.address,
+
+    const updated = await contractService.updateBlockchain({
+      ...contractBlockchain,
+
+      layout: typeof layout === 'string' ? layout : contractBlockchain.layout,
+      name: typeof name === 'string' ? name : contractBlockchain.name,
+      protocol: contractBlockchain.protocol,
+      description: typeof description === 'string' ? description : contractBlockchain.description,
+      link: typeof link === 'string' ? link : contractBlockchain.link,
+      hidden: typeof hidden === 'boolean' ? hidden : contractBlockchain.hidden,
+
+      blockchain: (typeof blockchain === 'string'
+        ? blockchain
+        : contractBlockchain.blockchain) as Blockchain,
+      network: typeof network === 'string' ? network : contractBlockchain.network,
+      address: typeof address === 'string' ? address : contractBlockchain.address,
       deployBlockNumber:
-        typeof deployBlockNumber === 'string' ? deployBlockNumber : contract.deployBlockNumber,
-      adapter: typeof adapter === 'string' ? adapter : contract.adapter,
-      layout: typeof layout === 'string' ? layout : contract.layout,
+        typeof deployBlockNumber === 'string'
+          ? deployBlockNumber
+          : contractBlockchain.deployBlockNumber,
+      adapter: typeof adapter === 'string' ? adapter : contractBlockchain.adapter,
       automate: {
-        adapters: Array.isArray(automates) ? automates : contract.automate.adapters,
+        adapters: Array.isArray(automates) ? automates : contractBlockchain.automate.adapters,
         autorestakeAdapter:
           typeof autorestakeAdapter === 'string'
             ? autorestakeAdapter
-            : contract.automate.autorestakeAdapter,
+            : contractBlockchain.automate.autorestakeAdapter,
       },
-      name: typeof name === 'string' ? name : contract.name,
-      description: typeof description === 'string' ? description : contract.description,
-      link: typeof link === 'string' ? link : contract.link,
-      hidden: typeof hidden === 'boolean' ? hidden : contract.hidden,
     });
 
     return updated;
@@ -603,7 +621,15 @@ export const ContractWalletLinkMutation: GraphQLFieldConfig<any, Request> = {
   resolve: async (root, { contract: contractId, wallet: walletId }, { currentUser, acl }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
-    const contract = await container.model.contractTable().where('id', contractId).first();
+    const contract = await container.model
+      .contractTable()
+      .innerJoin(
+        contractBlockchainTableName,
+        `${contractBlockchainTableName}.id`,
+        `${contractTableName}.id`,
+      )
+      .where(`${contractTableName}.id`, contractId)
+      .first();
     if (!contract) throw new UserInputError('Contract not found');
 
     const blockchainWallet = await container.model
@@ -648,7 +674,15 @@ export const ContractWalletUnlinkMutation: GraphQLFieldConfig<any, Request> = {
   resolve: async (root, { contract: contractId, wallet: walletId }, { currentUser, acl }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
-    const contract = await container.model.contractTable().where('id', contractId).first();
+    const contract = await container.model
+      .contractTable()
+      .innerJoin(
+        contractBlockchainTableName,
+        `${contractBlockchainTableName}.id`,
+        `${contractTableName}.id`,
+      )
+      .where(`${contractTableName}.id`, contractId)
+      .first();
     if (!contract) throw new UserInputError('Contract not found');
 
     const wallet = await container.model
@@ -866,7 +900,14 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
       resolve: async (protocol, { filter, sort, pagination }, { currentUser }) => {
         const select = container.model
           .contractTable()
+          .innerJoin(
+            contractBlockchainTableName,
+            `${contractBlockchainTableName}.id`,
+            `${contractTableName}.id`,
+          )
           .column(`${contractTableName}.*`)
+          .column(`${contractTableName}.id`)
+          .column(`${contractBlockchainTableName}.*`)
           .where(function () {
             const { id, hidden, search } = filter;
             if (id) {
@@ -922,18 +963,21 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
           } else {
             listSelect = listSelect
               .column(`${contractTableName}.*`)
+              .column(`${contractBlockchainTableName}.*`)
               .column(database.raw(`'0' AS "myStaked"`));
           }
         }
         if (sortColumns.includes('tvl')) {
           listSelect = listSelect.column(
-            database.raw(`(COALESCE(${contractTableName}.metric->>'tvl', '0'))::numeric AS "tvl"`),
+            database.raw(
+              `(COALESCE(${contractBlockchainTableName}.metric->>'tvl', '0'))::numeric AS "tvl"`,
+            ),
           );
         }
         if (sortColumns.includes('aprYear')) {
           listSelect = listSelect.column(
             database.raw(
-              `(COALESCE(${contractTableName}.metric->>'aprYear', '0'))::numeric AS "aprYear"`,
+              `(COALESCE(${contractBlockchainTableName}.metric->>'aprYear', '0'))::numeric AS "aprYear"`,
             ),
           );
         }
