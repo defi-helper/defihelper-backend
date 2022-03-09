@@ -265,11 +265,28 @@ export class ContractService {
     await this.database.transaction(async (trx) => {
       await this.contractTable()
         .where('id', updatedBlockchain.id)
-        .update({ ...contractBlockchain, updatedAt: new Date() })
+        .update({
+          id: contractBlockchain.id,
+          protocol: contractBlockchain.protocol,
+          layout: contractBlockchain.layout,
+          name: contractBlockchain.name,
+          description: contractBlockchain.description,
+          link: contractBlockchain.link,
+          hidden: contractBlockchain.hidden,
+          updatedAt: new Date(),
+          createdAt: contractBlockchain.createdAt,
+        })
         .transacting(trx);
-      await this.contractBlockchainTable()
-        .where('id', updatedBlockchain.id)
-        .update(updatedBlockchain);
+      await this.contractBlockchainTable().where('id', updatedBlockchain.id).update({
+        id: updatedBlockchain.id,
+        blockchain: updatedBlockchain.blockchain,
+        network: updatedBlockchain.network,
+        address: updatedBlockchain.address,
+        deployBlockNumber: updatedBlockchain.deployBlockNumber,
+        adapter: updatedBlockchain.adapter,
+        automate: updatedBlockchain.automate,
+        metric: updatedBlockchain.metric,
+      });
     });
 
     return updatedBlockchain;
@@ -279,9 +296,23 @@ export class ContractService {
     await this.database.transaction(async (trx) => {
       await this.contractTable()
         .where('id', contractDebank.id)
-        .update({ ...contractDebank, updatedAt: new Date() })
+        .update({
+          id: contractDebank.id,
+          protocol: contractDebank.protocol,
+          layout: contractDebank.layout,
+          name: contractDebank.name,
+          description: contractDebank.description,
+          link: contractDebank.link,
+          hidden: contractDebank.hidden,
+          updatedAt: new Date(),
+          createdAt: contractDebank.createdAt,
+        })
         .transacting(trx);
-      await this.contractDebankTable().where('id', contractDebank.id).update(contractDebank);
+      await this.contractDebankTable().where('id', contractDebank.id).update({
+        id: contractDebank.id,
+        address: contractDebank.address,
+        metric: contractDebank.metric,
+      });
     });
 
     return contractDebank;
