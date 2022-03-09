@@ -64,7 +64,7 @@ export class UserContactService {
         await container.model.queueService().push('sendEmail', {
           email: contact.address,
           template: 'confirmEmailTemplate',
-          subject: 'Please confirm your email',
+          subject: 'Confirm your email ✅',
           params: {
             confirmationCode: contact.confirmationCode,
           },
