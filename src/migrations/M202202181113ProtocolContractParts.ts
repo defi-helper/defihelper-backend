@@ -14,6 +14,7 @@ export default async (schema: SchemaBuilder) => {
 
       table.primary(['id'], `${contractDebankTableName}_fk_pk`);
       table.unique(['address']);
+
       table
         .foreign('id')
         .references(`${contractTableName}.id`)
