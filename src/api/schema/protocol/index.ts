@@ -529,13 +529,8 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
     const contractService = container.model.contractService();
     const contract = await contractService.contractTable().where('id', id).first();
     const contractBlockchain = await contractService
-      .contractTable()
-      .innerJoin(
-        contractBlockchainTableName,
-        `${contractBlockchainTableName}.id`,
-        `${contractTableName}.id`,
-      )
-      .where(`${contractTableName}.id`, id)
+      .contractBlockchainTable()
+      .where('id', id)
       .first();
     if (!contract || !contractBlockchain) throw new UserInputError('Contract not found');
 

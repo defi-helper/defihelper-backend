@@ -2,7 +2,7 @@ import container from '@container';
 import { Token } from '@models/Token/Entity';
 import { Blockchain } from '@models/types';
 import { User } from '@models/User/Entity';
-import { Wallet, WalletBlockchain } from '@models/Wallet/Entity';
+import { WalletBlockchain } from '@models/Wallet/Entity';
 import { Factory } from '@services/Container';
 import { Emitter } from '@services/Event';
 import { v4 as uuid } from 'uuid';
@@ -119,7 +119,7 @@ export class ContractService {
   }>();
 
   public readonly onContractBlockchainCreated = new Emitter<ContractRegisterData>((contract) => {
-    container.model.queueService().push('eventsContractCreated', {
+    container.model.queueService().push('eventsContractBlockchainCreated', {
       contract: contract.contract.id,
       events: contract.eventsToSubscribe,
     });
@@ -127,7 +127,7 @@ export class ContractService {
 
   public readonly onWalletLink = new Emitter<{
     contract: Contract & ContractBlockchainType;
-    wallet: Wallet;
+    wallet: WalletBlockchain;
     link: WalletContractLink;
   }>(({ contract, link }) => {
     if (
@@ -304,7 +304,7 @@ export class ContractService {
 
   async walletLink(
     contract: Contract & ContractBlockchainType,
-    blockchainWallet: Wallet & WalletBlockchain,
+    blockchainWallet: WalletBlockchain,
   ) {
     const duplicate = await this.walletLinkTable()
       .where('contract', contract.id)
@@ -324,7 +324,7 @@ export class ContractService {
     return created;
   }
 
-  async walletUnlink(contract: Contract, wallet: Wallet) {
+  async walletUnlink(contract: Contract, wallet: WalletBlockchain) {
     const duplicate = await this.walletLinkTable()
       .where('contract', contract.id)
       .andWhere('wallet', wallet.id)
