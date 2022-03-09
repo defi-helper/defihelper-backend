@@ -69,7 +69,7 @@ export * as notificationAutomateWalletsNotEnoughFundsNotify from './notification
 export * as notificationAutomateWalletsNotEnoughFundsBroker from './notifications/AutomateWalletsNotEnoughFunds/broker';
 
 /* events */
-export * as eventsContractCreated from './events/contractCreated';
+export * as eventsContractBlockchainCreated from './events/contractBlockchainCreated';
 export * as eventsUserCreated from './events/userCreated';
 export * as eventsWalletCreated from './events/walletCreated';
 export * as eventsWalletChangeOwner from './events/walletChangeOwner';

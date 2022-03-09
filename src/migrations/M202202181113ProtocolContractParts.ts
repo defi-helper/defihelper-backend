@@ -13,7 +13,8 @@ export default async (schema: SchemaBuilder) => {
       table.jsonb('metric').notNullable().defaultTo('{}');
 
       table.primary(['id'], `${contractDebankTableName}_fk_pk`);
-      table.unique(['id', 'address']);
+      table.unique(['address']);
+
       table
         .foreign('id')
         .references(`${contractTableName}.id`)
