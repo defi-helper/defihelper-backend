@@ -13,6 +13,12 @@ export default {
     'hello world': 'привет мир',
     'dollar': ['доллар', 'доллара', 'долларов'],
     'Confirm': 'Подтвердить',
+    'Any questions? Drop us a reply!': 'Остались вопросы? Отправьте их в ответ на это письмо!',
+    'DeFiHelper team': 'Команда DeFiHelper',
+    'We are excited to see you join the DeFiHelper community!':
+      'Мы рады видеть тебя в рядах сообщества DeFiHelper!',
+    'Please confirm your E-Mail address <b>{{email}}</b> by clicking on the following link:':
+      'Пожалуйста, подтвердите свой E-Mail адрес <b>{{email}}</b>, нажатием на ссылку ниже:',
     'New {{eventName}} events in {{contractAddress}} on {{network}}:':
       'Новое событие {{eventName}} в контракте {{contractAddress}} сети {{network}}:',
     'Your portfolio: total stacked ${{totalStackedUSD}}, total earned ${{totalEarnedUSD}}':
