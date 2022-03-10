@@ -1606,23 +1606,27 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
               type: GraphQLNonNull(GraphQLString),
               description: 'Signed message',
             },
+            merge: {
+              type: GraphQLBoolean,
+              description: 'Merged target account to current account',
+              defaultValue: false,
+            },
           },
         }),
       ),
     },
   },
   resolve: async (root, { input }, { currentUser }) => {
-    const { network, address, message, publicKey, signature } = input;
+    const { network, address, message, publicKey, signature, merge } = input;
     if (typeof message !== 'string' || message.length < 5) return null;
 
-    const serializer = WavesMarshall.binary.serializerFromSchema(
-      WavesMarshall.schemas.txFields.data[1],
-    );
     const isValidSignature = WavesCrypto.verifySignature(
       publicKey,
       WavesCrypto.concat(
-        [255, 255, 255, 2],
-        serializer([{ type: 'string', key: 'name', value: message }]),
+        [255, 255, 255, 1],
+        WavesMarshall.serializePrimitives.BASE64_STRING(
+          `base64:${Buffer.from(message).toString('base64')}`,
+        ),
       ),
       signature,
     );
@@ -1646,6 +1650,14 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
     if (duplicate) {
       const user = await container.model.userTable().where('id', duplicate.user).first();
       if (!user) return null;
+
+      if (merge) {
+        if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+        await container.model.walletService().changeOwner(duplicate, currentUser);
+
+        const sid = container.model.sessionService().generate(currentUser);
+        return { user: currentUser, sid };
+      }
 
       const sid = container.model.sessionService().generate(user);
       return { user, sid };

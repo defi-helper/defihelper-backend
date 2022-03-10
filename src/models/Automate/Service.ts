@@ -71,6 +71,10 @@ export class AutomateService {
       container.model.queueService().push('automateContractEthereumVerify', {
         id: contract.id,
       });
+    } else if (blockchainWallet.blockchain === 'waves') {
+      container.model.queueService().push('automateContractWavesVerify', {
+        id: contract.id,
+      });
     }
   });
 

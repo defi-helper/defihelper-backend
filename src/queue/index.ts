@@ -38,6 +38,7 @@ export * as billingClaimScan from './billing/claimScan';
 export * as billingFeeOracle from './billing/feeOracle';
 export * as billingStoreScan from './billing/storeScan';
 export * as automateContractEthereumVerify from './automate/contractEthereumVerify';
+export * as automateContractWavesVerify from './automate/contractWavesVerify';
 export * as automateTransactionEthereumConfirm from './automate/transactionEthereumConfirm';
 export * as automateTriggerRun from './automate/run';
 export * as automateTriggerByTime from './automate/trigger/byTime';

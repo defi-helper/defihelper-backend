@@ -100,6 +100,23 @@ function isEthereumAutomateArtifact(data: any): data is EthereumAutomateArtifact
   );
 }
 
+export interface WavesAutomateArtifact {
+  contractName: string;
+  base64: string;
+  size: number;
+  complexity: number;
+}
+
+function isWavesAutomateArtifact(data: any): data is WavesAutomateArtifact {
+  return (
+    typeof data === 'object' &&
+    typeof data.contractName === 'string' &&
+    typeof data.base64 === 'string' &&
+    typeof data.size === 'number' &&
+    typeof data.complexity === 'number'
+  );
+}
+
 export class AdapterService {
   constructor(readonly host: string) {}
 
@@ -123,11 +140,7 @@ export class AdapterService {
     return context.module.exports;
   }
 
-  async loadEthereumAutomateArtifact(
-    network: string,
-    protocol: string,
-    contract: string,
-  ): Promise<EthereumAutomateArtifact> {
+  async loadEthereumAutomateArtifact(network: string, protocol: string, contract: string) {
     const artifactResponse = await axios
       .get(`${this.host}/automates/ethereum/${protocol}/${contract}/${network}`)
       .catch((e) => {
@@ -136,6 +149,19 @@ export class AdapterService {
       });
     const artifact = artifactResponse.data;
     if (!isEthereumAutomateArtifact(artifact)) throw new Error('Invalid artifact response');
+
+    return artifact;
+  }
+
+  async loadWavesAutomateArtifact(protocol: string, contract: string) {
+    const artifactResponse = await axios
+      .get(`${this.host}/automates/waves/${protocol}/${contract}`)
+      .catch((e) => {
+        if (e.response?.code === 503) throw new TemporaryOutOfService();
+        throw new Error(`Undefined error in adapters: ${e.message}`);
+      });
+    const artifact = artifactResponse.data;
+    if (!isWavesAutomateArtifact(artifact)) throw new Error('Invalid artifact response');
 
     return artifact;
   }
