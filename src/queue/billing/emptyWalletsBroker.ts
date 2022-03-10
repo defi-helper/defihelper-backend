@@ -35,7 +35,7 @@ export default async (process: Process) => {
         await container.blockchain.ethereum.byNetwork(v.walletNetwork).nativeTokenPrice(),
       ).toNumber();
 
-      if (v.funds * chainNativeUSD > 3) {
+      if (v.funds * chainNativeUSD - (1 + chainNativeUSD * 0.1) > 0) {
         return container.model.walletService().suspense(v.walletId, null);
       }
 

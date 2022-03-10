@@ -8,6 +8,12 @@ export default {
     'hello world': 'hello world',
     'dollar': ['dollar', 'dollars'],
     'Confirm': 'Confirm',
+    'Any questions? Drop us a reply!': 'Any questions? Drop us a reply!',
+    'DeFiHelper team': 'DeFiHelper team',
+    'We are excited to see you join the DeFiHelper community!':
+      'We are excited to see you join the DeFiHelper community!',
+    'Please confirm your E-Mail address <b>{{email}}</b> by clicking on the following link:':
+      'Please confirm your E-Mail address <b>{{email}}</b> by clicking on the following link:',
     'New {{eventName}} events in {{contractAddress}} on {{network}}:':
       'New {{eventName}} events in {{contractAddress}} on {{network}}:',
     'Your portfolio: total stacked ${{totalStackedUSD}}, total earned ${{totalEarnedUSD}}':
