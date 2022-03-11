@@ -6,7 +6,7 @@ import {
   transactionTableName,
 } from '@models/Automate/Entity';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
-import { EthereumAutomateAdapter } from '@services/Blockchain/Adapter';
+import { EthereumProtocolAdapter } from '@services/Blockchain/Adapter';
 import { Wallet } from 'ethers';
 
 interface Params {
@@ -33,14 +33,17 @@ export default async (params: Params) => {
     .where(`${walletTableName}.id`, contract.wallet)
     .first();
   if (!wallet) throw new Error('Wallet not found');
+  if (wallet.blockchain !== 'ethereum') throw new Error('Invalid blockchain');
 
   const protocol = await container.model.protocolTable().where('id', contract.protocol).first();
   if (!protocol) throw new Error('Protocol not found');
 
-  const { automates } = await container.blockchainAdapter.loadAdapter(protocol.adapter);
-  if (!automates || typeof automates !== 'object') throw new Error('Automates adapters not found');
-  const adapter = automates[contract.adapter] as EthereumAutomateAdapter;
-  if (typeof adapter !== 'function') throw new Error('Automate adapter not found');
+  const { automates } = await container.blockchainAdapter.loadAdapter<EthereumProtocolAdapter>(
+    protocol.adapter,
+  );
+  if (!automates) throw new Error('Automates adapters not found');
+  const adapter = automates[contract.adapter];
+  if (adapter === undefined) throw new Error('Automate adapter not found');
 
   const network = container.blockchain.ethereum.byNetwork(wallet.network);
   const consumers = network.consumers();
@@ -87,13 +90,14 @@ export default async (params: Params) => {
     const tx = await run();
     if (tx instanceof Error) throw tx;
 
-    const data: EthereumAutomateTransaction = {
-      hash: tx.hash,
-      from: tx.from,
-      to: tx.to,
-      nonce: tx.nonce,
-    };
-    await container.model.automateService().createTransaction(contract, consumer.address, data);
+    await container.model
+      .automateService()
+      .createTransaction<EthereumAutomateTransaction>(contract, consumer.address, {
+        hash: tx.hash,
+        from: tx.from,
+        to: tx.to,
+        nonce: tx.nonce,
+      });
   } catch (e) {
     await container
       .semafor()

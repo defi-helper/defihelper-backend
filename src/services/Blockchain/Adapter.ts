@@ -4,6 +4,8 @@ import { BigNumber } from 'bignumber.js';
 import { ethers } from 'ethers';
 import ethersMulticall from '@defihelper/ethers-multicall';
 import vm from 'vm';
+import { Blockchain } from '@models/types';
+import { ContractAutomate } from '@models/Protocol/Entity';
 
 export class TemporaryOutOfService extends Error {
   constructor(m = 'wait a bit, usually it means that we updating our infrastructure') {
@@ -74,13 +76,50 @@ export interface WavesAutomateAdapter {
   }>;
 }
 
-export interface ProtocolAdapter {
-  [k: string]:
-    | ContractAdapter
-    | {
-        [k: string]: EthereumAutomateAdapter | WavesAutomateAdapter;
-      };
+interface ContractsResolver {
+  default?: (
+    provider: any,
+    options: { cacheAuth?: string },
+  ) => Promise<
+    Array<{
+      name: string;
+      address: string;
+      blockchain: Blockchain;
+      network: string;
+      layout: string;
+      adapter: string;
+      description: string;
+      automate: ContractAutomate;
+      link: string;
+    }>
+  >;
 }
+
+interface WavesAutomates {
+  [k: string]: WavesAutomateAdapter | undefined;
+}
+
+interface WavesContractAdapters {
+  [k: string]: ContractAdapter | undefined;
+}
+
+export type WavesProtocolAdapter = {
+  automates: ({ contractsResolver?: ContractsResolver } & WavesAutomates) | undefined;
+} & WavesContractAdapters;
+
+interface EthereumAutomates {
+  [k: string]: EthereumAutomateAdapter | undefined;
+}
+
+interface EthereumContractAdapters {
+  [k: string]: ContractAdapter | undefined;
+}
+
+export type EthereumProtocolAdapter = {
+  automates: ({ contractsResolver?: ContractsResolver } & EthereumAutomates) | undefined;
+} & EthereumContractAdapters;
+
+export type ProtocolAdapter = EthereumProtocolAdapter | WavesProtocolAdapter;
 
 export interface EthereumAutomateArtifact {
   contractName: string;
@@ -120,7 +159,7 @@ function isWavesAutomateArtifact(data: any): data is WavesAutomateArtifact {
 export class AdapterService {
   constructor(readonly host: string) {}
 
-  async loadAdapter(protocol: string): Promise<ProtocolAdapter> {
+  async loadAdapter<T extends ProtocolAdapter = ProtocolAdapter>(protocol: string): Promise<T> {
     const adapterResponse = await axios.get(`${this.host}/${protocol}.js`).catch((e) => {
       if (e.response?.code === 503) throw new TemporaryOutOfService();
       throw new Error(`Undefined error in adapters: ${e.message}`);

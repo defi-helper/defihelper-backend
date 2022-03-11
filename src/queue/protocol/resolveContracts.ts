@@ -12,22 +12,6 @@ export interface Params {
   events: string[];
 }
 
-export interface Pool {
-  name: string;
-  address: string;
-  deployBlockNumber: number;
-  blockchain: Blockchain;
-  network: string;
-  layout: 'staking';
-  adapter: string;
-  description: string;
-  automate: {
-    adapters: string[];
-    autorestakeAdapter?: string | undefined;
-  };
-  link: string;
-}
-
 export default async (process: Process) => {
   const { protocolId, protocolBlockchain, protocolNetwork, events } = process.task.params as Params;
 
@@ -36,8 +20,7 @@ export default async (process: Process) => {
 
   let protocolDefaultResolver;
   try {
-    // todo introduce type
-    const protocolAdapters: any = await container.blockchainAdapter.loadAdapter(protocol.adapter);
+    const protocolAdapters = await container.blockchainAdapter.loadAdapter(protocol.adapter);
 
     if (
       !protocolAdapters.automates ||
@@ -61,7 +44,7 @@ export default async (process: Process) => {
   const blockchain = container.blockchain[protocolBlockchain];
   const network = blockchain.byNetwork(protocolNetwork);
 
-  const pools: Pool[] = await protocolDefaultResolver(network.provider(), {
+  const pools = await protocolDefaultResolver(network.provider(), {
     cacheAuth: container.parent.adapters.auth,
   });
 

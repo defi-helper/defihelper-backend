@@ -12,7 +12,6 @@ import { TemplateContainer } from '@services/Template/container';
 import { emailServiceFactory } from '@services/Email';
 import { telegramServiceFactory } from '@services/Telegram';
 import { scannerServiceFactory } from '@services/Scanner';
-import { moralisServiceFactory } from '@services/Moralis';
 import { rabbitmqFactory } from '@services/Rabbitmq';
 import { cryptographyServiceFactory } from '@services/Cryptography';
 import { cexServicesProviderFactory } from '@services/Cex';
@@ -37,8 +36,6 @@ class AppContainer extends Container<typeof config> {
 
   readonly cexServicesProvider = singleton(cexServicesProviderFactory());
 
-  readonly moralis = singleton(moralisServiceFactory(this.parent.moralis));
-
   readonly scanner = singleton(scannerServiceFactory(this.parent.scanner));
 
   readonly cryptography = singleton(cryptographyServiceFactory(this.parent.cryptography.key));
@@ -47,10 +44,7 @@ class AppContainer extends Container<typeof config> {
 
   readonly blockchain = {
     ethereum: new Blockchain.Ethereum.BlockchainContainer(this.parent.blockchain.ethereum),
-    waves: new Blockchain.Waves.BlockchainContainer({
-      mainNode: '',
-      testNode: '',
-    }),
+    waves: new Blockchain.Waves.BlockchainContainer(this.parent.blockchain.waves),
   };
 
   readonly blockchainAdapter = new Blockchain.Adapter.AdapterService(this.parent.adapters.host);

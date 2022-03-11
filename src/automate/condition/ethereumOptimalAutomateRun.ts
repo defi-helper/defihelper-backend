@@ -1,6 +1,6 @@
 import container from '@container';
 import { ActionParams, Condition, ContractVerificationStatus } from '@models/Automate/Entity';
-import { EthereumAutomateAdapter } from '@services/Blockchain/Adapter';
+import { EthereumAutomateAdapter, EthereumProtocolAdapter } from '@services/Blockchain/Adapter';
 import axios from 'axios';
 import BN from 'bignumber.js';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
@@ -68,8 +68,10 @@ export default async function (this: Condition, params: Params) {
     throw new Error('Consumer not found');
   }
 
-  const adapters = await container.blockchainAdapter.loadAdapter(protocol.adapter);
-  if (!adapters.automates || typeof adapters.automates !== 'object') {
+  const adapters = await container.blockchainAdapter.loadAdapter<EthereumProtocolAdapter>(
+    protocol.adapter,
+  );
+  if (!adapters.automates) {
     throw new Error('Automates adapters not found');
   }
 

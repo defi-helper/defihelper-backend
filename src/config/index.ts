@@ -1,6 +1,6 @@
 import { Config as EthereumConfig } from '@services/Blockchain/Ethereum';
+import { Config as WavesConfig } from '@services/Blockchain/Waves';
 import dotenv from 'dotenv';
-import Moralis from 'moralis/node';
 
 dotenv.config();
 
@@ -160,6 +160,16 @@ export default {
         avgBlockTime: 0.1,
       },
     } as EthereumConfig,
+    waves: {
+      main: {
+        node: process.env.WAVES_MAIN_NODE ?? '',
+        consumers: array(process.env.WAVES_MAIN_CONSUMERS ?? '[]'),
+      },
+      test: {
+        node: process.env.WAVES_TEST_NODE ?? '',
+        consumers: array(process.env.WAVES_TEST_CONSUMERS ?? '[]'),
+      },
+    } as WavesConfig,
   },
   email: {
     from: process.env.EMAIL_FROM ?? '',
@@ -173,10 +183,6 @@ export default {
   telegram: {
     token: process.env.TELEGRAM_TOKEN ?? '',
   },
-  moralis: {
-    moralisSecret: process.env.MORALIS_API_KEY ?? '',
-    serverUrl: process.env.MORALIS_SERVER_URL ?? '',
-  } as Moralis.StartOptions,
   session: {
     ttl: int(process.env.SESSION_TTL ?? '600'),
   },

@@ -73,7 +73,6 @@
     "knex": "^0.21.0",
     "lint-staged": "^10.5.4",
     "module-alias": "^2.2.2",
-    "moralis": "^0.0.143",
     "mustache": "^4.2.0",
     "node-html-parser": "^4.0.0",
     "node-telegram-bot-api": "^0.53.0",

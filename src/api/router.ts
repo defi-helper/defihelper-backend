@@ -19,7 +19,7 @@ import * as restakeStrategySchemas from '@api/schema/restakeStrategy';
 import * as treasurySchemas from '@api/schema/treasury';
 import Jimp from 'jimp';
 import { metricContractTableName } from '@models/Metric/Entity';
-import { contractTableName } from '@models/Protocol/Entity';
+import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
 import { apyBoost } from '@services/RestakeStrategy';
 import BN from 'bignumber.js';
 import { Blockchain } from '@models/types';
@@ -211,14 +211,19 @@ export function route({ express, server }: { express: Express; server: Server })
     const aprMetrics: AprMetric[] = await container.model
       .metricContractTable()
       .distinctOn(`${metricContractTableName}.contract`)
-      .column(`${contractTableName}.blockchain`)
-      .column(`${contractTableName}.network`)
+      .column(`${contractBlockchainTableName}.blockchain`)
+      .column(`${contractBlockchainTableName}.network`)
       .column(`${metricContractTableName}.contract`)
       .column(database.raw(`(${metricContractTableName}.data->>'aprYear')::numeric AS apr`))
       .innerJoin(
         contractTableName,
         `${contractTableName}.id`,
         `${metricContractTableName}.contract`,
+      )
+      .innerJoin(
+        contractBlockchainTableName,
+        `${contractTableName}.id`,
+        `${contractBlockchainTableName}.id`,
       )
       .where(`${contractTableName}.protocol`, protocol.id)
       .andWhere(database.raw(`${metricContractTableName}.data->>'aprYear' IS NOT NULL`))

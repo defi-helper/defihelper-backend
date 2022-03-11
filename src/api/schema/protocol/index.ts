@@ -1197,15 +1197,20 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
             `${contractTableName}.id`,
             `${metricContractTableName}.contract`,
           )
+          .innerJoin(
+            contractBlockchainTableName,
+            `${contractTableName}.id`,
+            `${contractBlockchainTableName}.id`,
+          )
           .where(function () {
             this.where(`${contractTableName}.protocol`, protocol.id).andWhere(
               database.raw(`${metricContractTableName}.data->>'${metric}' IS NOT NULL`),
             );
             if (filter.blockchain) {
               const { protocol: blockchain, network } = filter.blockchain;
-              this.andWhere(`${contractTableName}.blockchain`, blockchain);
+              this.andWhere(`${contractBlockchainTableName}.blockchain`, blockchain);
               if (network !== undefined) {
-                this.andWhere(`${contractTableName}.network`, network);
+                this.andWhere(`${contractBlockchainTableName}.network`, network);
               }
             }
             if (filter.dateAfter) {
@@ -1291,6 +1296,11 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
             `${contractTableName}.id`,
             `${metricWalletTableName}.contract`,
           )
+          .innerJoin(
+            contractBlockchainTableName,
+            `${contractTableName}.id`,
+            `${contractBlockchainTableName}.id`,
+          )
           .innerJoin(walletTableName, `${walletTableName}.id`, `${metricWalletTableName}.wallet`)
           .where(function () {
             this.where(`${contractTableName}.protocol`, protocol.id).andWhere(
@@ -1301,9 +1311,9 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
             }
             if (filter.blockchain) {
               const { protocol: blockchain, network } = filter.blockchain;
-              this.andWhere(`${contractTableName}.blockchain`, blockchain);
+              this.andWhere(`${contractBlockchainTableName}.blockchain`, blockchain);
               if (network !== undefined) {
-                this.andWhere(`${contractTableName}.network`, network);
+                this.andWhere(`${contractBlockchainTableName}.network`, network);
               }
             }
             if (filter.dateAfter) {

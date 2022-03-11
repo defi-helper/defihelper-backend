@@ -3,6 +3,12 @@ import { Process } from '@models/Queue/Entity';
 import { getActionHandler, getConditionHandler, triggerTableName } from '@models/Automate/Entity';
 import { walletTableName } from '@models/Wallet/Entity';
 
+function isError(e: any): e is Error {
+  return (
+    e instanceof Error || (e !== null && typeof e === 'object' && typeof e.message === 'string')
+  );
+}
+
 export interface Params {
   id: string;
 }
@@ -33,7 +39,9 @@ export default async (process: Process) => {
         try {
           return await getConditionHandler(condition).call(condition, condition.params);
         } catch (e) {
-          throw new Error(`Condition "${condition.id}": ${e instanceof Error ? e.stack : e}`);
+          throw new Error(
+            `Condition "${condition.id}": ${isError(e) ? e.stack ?? e.message : String(e)}`,
+          );
         }
       }, Promise.resolve(true));
 
@@ -51,7 +59,9 @@ export default async (process: Process) => {
         try {
           return await Promise.resolve(getActionHandler(action).call(action, action.params));
         } catch (e) {
-          throw new Error(`Action "${action.id}": ${e instanceof Error ? e.stack : e}`);
+          throw new Error(
+            `Action "${action.id}": ${isError(e) ? e.stack ?? e.message : String(e)}`,
+          );
         }
       }, Promise.resolve(null));
 
@@ -63,12 +73,10 @@ export default async (process: Process) => {
     }
   } catch (e) {
     await automateService.incrementTriggerRetries(trigger);
-    await automateService.createTriggerCallHistory(
-      trigger,
-      e instanceof Error ? e : new Error(`${e}`),
-    );
+    const error = isError(e) ? e : new Error(`${e}`);
+    await automateService.createTriggerCallHistory(trigger, error);
 
-    return process.info(`crashed, retry #${trigger.retries}`).done();
+    return process.info(`crashed, retry #${trigger.retries}`).error(error).done();
   }
 
   await automateService.resetTriggerRetries(trigger);

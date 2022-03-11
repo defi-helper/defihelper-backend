@@ -1,6 +1,8 @@
 import { Container, singleton } from '@services/Container';
 import { isKey } from '@services/types';
 import { fetchScriptInfo } from '@waves/node-api-js/cjs/api-node/addresses';
+import { Signer } from '@waves/signer';
+import { ProviderSeed } from '@waves/provider-seed/cjs';
 
 function nodeGatewayFactory(url: string) {
   return {
@@ -10,33 +12,66 @@ function nodeGatewayFactory(url: string) {
   };
 }
 
+export interface NetworkConfig {
+  node: string;
+  consumers: string[];
+}
+
+function networkFactory(
+  config: {
+    name: string;
+    nodeGatewayURL: string;
+    avgBlockTime: number;
+    txExplorerURL: string;
+    walletExplorerURL: string;
+  } & NetworkConfig,
+) {
+  return {
+    name: config.name,
+    provider: singleton(() => config.node),
+    providerHistorical: singleton(() => config.node),
+    node: nodeGatewayFactory(config.nodeGatewayURL),
+    avgBlockTime: config.avgBlockTime,
+    txExplorerURL: new URL(config.txExplorerURL),
+    walletExplorerURL: new URL(config.walletExplorerURL),
+    consumers: () =>
+      config.consumers.map((seed) => {
+        const signer = new Signer({ NODE_URL: config.node });
+        signer.setProvider(new ProviderSeed(seed));
+        return signer;
+      }),
+    network: {
+      node: config.node,
+      consumers: config.consumers,
+    },
+  };
+}
+
 export interface Config {
-  mainNode: string;
-  testNode: string;
+  main: NetworkConfig;
+  test: NetworkConfig;
 }
 
 export type Networks = keyof BlockchainContainer['networks'];
 
 export class BlockchainContainer extends Container<Config> {
   readonly networks = {
-    main: {
+    main: networkFactory({
+      ...this.parent.main,
       name: 'Waves',
-      provider: singleton(() => this.parent.mainNode),
-      providerHistorical: singleton(() => this.parent.mainNode),
-      node: nodeGatewayFactory('https://nodes.wavesnodes.com'),
+      nodeGatewayURL: 'https://nodes.wavesnodes.com',
       avgBlockTime: 60,
-      txExplorerURL: new URL('https://wavesexplorer.com/tx'),
-      walletExplorerURL: new URL('https://wavesexplorer.com/address'),
-    },
-    test: {
+      txExplorerURL: 'https://wavesexplorer.com/tx',
+      walletExplorerURL: 'https://wavesexplorer.com/address',
+    }),
+    test: networkFactory({
+      ...this.parent.test,
       name: 'Waves Test',
-      provider: singleton(() => this.parent.testNode),
-      providerHistorical: singleton(() => this.parent.testNode),
-      node: nodeGatewayFactory('https://nodes-testnet.wavesnodes.com'),
+      nodeGatewayURL: 'https://nodes-testnet.wavesnodes.com',
       avgBlockTime: 60,
-      txExplorerURL: new URL('https://testnet.wavesexplorer.com/tx'),
-      walletExplorerURL: new URL('https://testnet.wavesexplorer.com/address'),
-    },
+      txExplorerURL: 'https://testnet.wavesexplorer.com/tx',
+      walletExplorerURL: 'https://testnet.wavesexplorer.com/address',
+    }),
   } as const;
 
   readonly isNetwork = (network: string | number): network is Networks => {
