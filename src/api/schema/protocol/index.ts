@@ -984,7 +984,7 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
         if (sortColumns.includes('aprWeekReal')) {
           listSelect = listSelect.column(
             database.raw(
-              `(COALESCE(${contractTableName}.metric->>'aprWeekReal', '0'))::numeric AS "aprWeekReal"`,
+              `(COALESCE(${contractBlockchainTableName}.metric->>'aprWeekReal', '0'))::numeric AS "aprWeekReal"`,
             ),
           );
         }
