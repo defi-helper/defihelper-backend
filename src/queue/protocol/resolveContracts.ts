@@ -78,7 +78,7 @@ export default async (process: Process) => {
 
   const contractService = container.model.contractService();
   await Promise.all(
-    pools.map(async (pool) => {
+    pools.map((pool): Promise<unknown> => {
       const duplicate = existingPools.find(
         (p) =>
           p.address.toLowerCase() === pool.address.toLowerCase() &&
@@ -86,7 +86,7 @@ export default async (process: Process) => {
           p.blockchain === pool.blockchain,
       );
       if (duplicate) {
-        await Promise.all([
+        return Promise.all([
           container.model
             .queueService()
             .push('registerContractInScanner', { contract: duplicate.id, events }),
@@ -96,10 +96,9 @@ export default async (process: Process) => {
             automate: pool.automate,
           }),
         ]);
-        return;
       }
 
-      await container.model
+      return container.model
         .contractService()
         .createBlockchain(
           protocol,
