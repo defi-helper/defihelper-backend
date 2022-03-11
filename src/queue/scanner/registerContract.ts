@@ -82,12 +82,12 @@ export default async (process: Process) => {
       .map(({ name }: any) => name);
 
     await Promise.all(
-      events.map(async (event) => {
-        await container
-          .scanner()
-          .registerListener(contractFromScanner.id, event, deployBlockNumber);
-        await container.model.contractEventWebHookService().create(contract, event);
-      }),
+      events.map((event) =>
+        Promise.all([
+          container.scanner().registerListener(contractFromScanner.id, event, deployBlockNumber),
+          container.model.contractEventWebHookService().create(contract, event),
+        ]),
+      ),
     );
   } catch (e) {
     if (e instanceof Scanner.TemporaryOutOfService) {
