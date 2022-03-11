@@ -96,6 +96,7 @@ export default async (process: Process) => {
             automate: pool.automate,
           }),
         ]);
+        return;
       }
 
       await container.model
