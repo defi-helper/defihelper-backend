@@ -156,7 +156,9 @@ export default async (process: Process) => {
     ...(await Promise.all(
       debankUserProtocolsList.map(async (protocol) => {
         const exising = existingProtocols.some((existing) => existing.debankId === protocol.id);
-        if (exising) return null;
+        if (exising) {
+          return null;
+        }
 
         return container.model
           .protocolService()
@@ -252,13 +254,13 @@ export default async (process: Process) => {
     .andWhere(`${contractDebankTableName}.address`, 'reward');
 
   const existingTokensProtocols = await container.model.protocolTable().whereIn(
-    'id',
+    'debankId',
     protocolsRewardTokens.map((v) => v.protocolId),
   );
 
   const protocolRewardTokenExistingContracts = await Promise.all(
     protocolsRewardTokens.map(async (token) => {
-      let protocol = existingTokensProtocols.find((v) => v.id === token.protocolId);
+      let protocol = existingTokensProtocols.find((v) => v.debankId === token.protocolId);
       if (!protocol) {
         protocol = await container.model
           .protocolService()
