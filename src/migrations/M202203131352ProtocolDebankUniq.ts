@@ -10,7 +10,7 @@ export default async (schema: SchemaBuilder) => {
     WHERE
         T1."createdAt" < T2."createdAt"
             AND
-        T1."debankId" IS NOT NULL;
+        T1."adapter" = 'debankByApiReadonly';
   `);
 
   return schema.alterTable(protocolTableName, (table) => {
