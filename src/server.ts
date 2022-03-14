@@ -1,4 +1,5 @@
 import 'source-map-support/register';
+import 'pretty-error/start';
 import 'module-alias/register';
 import { createServer } from 'http';
 import Express from 'express';
