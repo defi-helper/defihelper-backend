@@ -160,7 +160,7 @@ export function route({ express, server }: { express: Express; server: Server })
     apollo.getMiddleware({ path: '/' }),
   ]);
 
-  express.route('/callback/event/:webHookId').post(json(), async (req, res) => {
+  express.route('/callback/event/:webHookId').post(json({ limit: '256kb' }), async (req, res) => {
     const { secret } = req.query;
     if (secret !== container.parent.api.secret) {
       res.sendStatus(403);
