@@ -4,8 +4,8 @@
     "strict": true,
     "outDir": "./dist",
     "baseUrl": "./src",
-    "sourceMap": true,
     "declaration": true,
+    "inlineSourceMap": true,
     "paths": {
       "@container": ["./container"],
       "@api/*": ["./api/*"],

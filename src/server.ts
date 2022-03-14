@@ -1,8 +1,11 @@
+import 'source-map-support/register';
 import 'module-alias/register';
 import { createServer } from 'http';
 import Express from 'express';
 import { route } from '@api/router';
 import container from './container';
+
+throw new Error('hello!');
 
 container.model
   .migrationService()

@@ -1,3 +1,4 @@
+import 'source-map-support/register';
 import 'module-alias/register';
 import cla from 'command-line-args';
 import * as router from '@api/cli/index';
