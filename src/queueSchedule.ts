@@ -1,3 +1,4 @@
+import 'source-map-support/register';
 import 'module-alias/register';
 import cli from 'command-line-args';
 import container from './container';

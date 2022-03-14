@@ -1,3 +1,4 @@
+import 'source-map-support/register';
 import 'module-alias/register';
 import container from './container';
 
