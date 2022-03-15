@@ -1,9 +1,10 @@
 import 'source-map-support/register';
-import 'pretty-error/start';
 import 'module-alias/register';
 import cli from 'command-line-args';
+import PrettyError from 'pretty-error';
 import container from './container';
 
+new PrettyError().withoutColors().start();
 container.model
   .migrationService()
   .up()
