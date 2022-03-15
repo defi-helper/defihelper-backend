@@ -1,6 +1,5 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
-import dayjs from 'dayjs';
 import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
 
 export interface Params {
@@ -32,15 +31,7 @@ export default async (process: Process) => {
 
   const scanner = container.scanner();
   const scannerContract = await scanner.findContract(contract.network, contract.address);
-  if (!scannerContract) {
-    await container.model
-      .queueService()
-      .push('registerContractInScanner', { contract: contract.id, events: [] });
-
-    return process
-      .later(dayjs().add(10, 'minute').toDate())
-      .info('postponed due to contract registration');
-  }
+  if (!scannerContract) throw new Error('Contract not register on scanner');
 
   const { uniqueWalletsCount } = await scanner.getContractStatistics(scannerContract.id);
   await container.model.metricService().createContract(
