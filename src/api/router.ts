@@ -17,6 +17,7 @@ import * as governanceSchemas from '@api/schema/governance';
 import * as Automate from '@api/schema/automate';
 import * as restakeStrategySchemas from '@api/schema/restakeStrategy';
 import * as treasurySchemas from '@api/schema/treasury';
+import * as landingSchemas from '@api/schema/landing';
 import Jimp from 'jimp';
 import { metricContractTableName } from '@models/Metric/Entity';
 import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
@@ -50,6 +51,7 @@ export function route({ express, server }: { express: Express; server: Server })
           protocols: protocolSchemas.ProtocolListQuery,
           proposal: proposalSchemas.ProposalQuery,
           proposals: proposalSchemas.ProposalListQuery,
+          landingMediumPosts: landingSchemas.LandingMediumPostsQuery,
           userContact: notificationSchemas.UserContactQuery,
           userContacts: notificationSchemas.UserContactListQuery,
           userNotifications: userNotificationSchemas.UserNotificationListQuery,
