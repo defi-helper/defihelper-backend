@@ -36,9 +36,6 @@ export const LandingMediumPostType = new GraphQLObjectType<MediumPostType>({
     createdAt: {
       type: GraphQLNonNull(DateTimeType),
       description: 'Posted at',
-      resolve: (v) => {
-        return v.createdAt;
-      },
     },
   },
 });
