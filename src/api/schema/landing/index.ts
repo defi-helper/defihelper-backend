@@ -76,13 +76,18 @@ export const LandingMediumPostsQuery: GraphQLFieldConfig<any, Request> = {
     }
 
     (async () => {
-      const postsList = (await container.socialStats().post(PostProvider.Medium, 'defihelper')).map(
-        (v) => ({
+      try {
+        const postsList = (
+          await container.socialStats().post(PostProvider.Medium, 'defihelper')
+        ).map((v) => ({
           ...v,
           createdAt: dayjs.unix(v.createdAt),
-        }),
-      );
-      await cacheSet(postsList);
+        }));
+        await cacheSet(postsList);
+      } catch (e) {
+        console.error(e);
+      }
+
       await container.semafor().unlock(`defihelper:landing:posts-collecting`);
     })();
 
