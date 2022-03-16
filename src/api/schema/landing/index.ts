@@ -1,6 +1,5 @@
 import container from '@container';
 import { Request } from 'express';
-import { Proposal } from '@models/Governance/Entity';
 import {
   GraphQLFieldConfig,
   GraphQLList,
@@ -9,9 +8,17 @@ import {
   GraphQLString,
 } from 'graphql';
 import { PostProvider } from '@services/SocialStats';
+import dayjs, { Dayjs } from 'dayjs';
 import { DateTimeType } from '../types';
 
-export const LandingMediumPostType = new GraphQLObjectType<Proposal>({
+interface MediumPostType {
+  title: string;
+  link: string;
+  text: string;
+  createdAt: Dayjs;
+}
+
+export const LandingMediumPostType = new GraphQLObjectType<MediumPostType>({
   name: 'LandingMediumPostType',
   fields: {
     title: {
@@ -29,6 +36,9 @@ export const LandingMediumPostType = new GraphQLObjectType<Proposal>({
     createdAt: {
       type: GraphQLNonNull(DateTimeType),
       description: 'Posted at',
+      resolve: (v) => {
+        return v.createdAt;
+      },
     },
   },
 });
@@ -36,51 +46,51 @@ export const LandingMediumPostType = new GraphQLObjectType<Proposal>({
 export const LandingMediumPostsQuery: GraphQLFieldConfig<any, Request> = {
   type: GraphQLNonNull(GraphQLList(GraphQLNonNull(LandingMediumPostType))),
   resolve: async () => {
-    // const cacheGet = (): Promise<Array<{
-    //   title: string;
-    //   createdAt: Date;
-    // }> | null> => {
-    //   return new Promise((resolve) =>
-    //     container.cache().get(`defihelper:landing:posts-collecting`, (err, result) => {
-    //       if (err || !result) return resolve(null);
-    //       return resolve(JSON.parse(result));
-    //     }),
-    //   );
-    // };
-    //
-    // const cacheSet = (
-    //   value: Array<{
-    //     title: string;
-    //     createdAt: Date;
-    //   }>,
-    // ): void => {
-    //   container.cache().setex(`defihelper:landing:posts-collecting`, 86400, JSON.stringify(value)); //1 day
-    // };
-    //
-    // const cached = await cacheGet();
-    // if (cached) {
-    //   return cached;
-    // }
-    //
-    // const locked = await container
-    //   .semafor()
-    //   .lock(`defihelper:landing:posts-collecting`)
-    //   .then(() => true)
-    //   .catch(() => false);
-    //
-    // if (!locked) {
-    //   return [];
-    // }
+    const cacheGet = (): Promise<Array<MediumPostType> | null> => {
+      return new Promise((resolve) =>
+        container.cache().get(`defihelper:landing:posts-collecting`, (err, result) => {
+          if (err || !result) return resolve(null);
+          const list: Array<MediumPostType> = JSON.parse(result);
 
-    const postsList = (await container.socialStats().post(PostProvider.Medium, 'defihelper')).map(
-      (v) => ({
-        ...v,
-        createdAt: new Date(v.createdAt * 1000),
-      }),
-    );
-    // await cacheSet(postsList);
-    //
-    // await container.semafor().unlock(`defihelper:landing:posts-collecting`);
-    return postsList;
+          return resolve(list.map((v) => ({ ...v, createdAt: dayjs(v.createdAt) })));
+        }),
+      );
+    };
+
+    const cacheSet = (value: Array<MediumPostType>): void => {
+      container
+        .cache()
+        .setex(`defihelper:landing:posts-collecting`, 86400, JSON.stringify(value, undefined, 0)); // 1 day
+    };
+
+    const cached = await cacheGet();
+    if (cached) {
+      return cached;
+    }
+
+    const locked = await container
+      .semafor()
+      .lock(`defihelper:landing:posts-collecting`)
+      .then(() => true)
+      .catch(() => false);
+
+    if (!locked) {
+      return [];
+    }
+
+    (async () => {
+      const postsList = (await container.socialStats().post(PostProvider.Medium, 'defihelper')).map(
+        (v) => {
+          return {
+            ...v,
+            createdAt: dayjs.unix(v.createdAt),
+          };
+        },
+      );
+      await cacheSet(postsList);
+    })();
+
+    await container.semafor().unlock(`defihelper:landing:posts-collecting`);
+    return [];
   },
 };
