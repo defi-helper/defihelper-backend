@@ -86,9 +86,9 @@ export const LandingMediumPostsQuery: GraphQLFieldConfig<any, Request> = {
         }),
       );
       await cacheSet(postsList);
+      await container.semafor().unlock(`defihelper:landing:posts-collecting`);
     })();
 
-    await container.semafor().unlock(`defihelper:landing:posts-collecting`);
     return [];
   },
 };
