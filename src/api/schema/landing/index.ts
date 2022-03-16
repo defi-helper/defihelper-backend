@@ -36,9 +36,6 @@ export const LandingMediumPostType = new GraphQLObjectType<MediumPostType>({
     createdAt: {
       type: GraphQLNonNull(DateTimeType),
       description: 'Posted at',
-      resolve: (v) => {
-        return v.createdAt;
-      },
     },
   },
 });
@@ -84,16 +81,28 @@ export const LandingMediumPostsQuery: GraphQLFieldConfig<any, Request> = {
     if (!locked) return [];
 
     (async () => {
-      const postsList = await container
-        .socialStats()
-        .post(PostProvider.Medium, 'defihelper')
-        .then((rows) =>
-          rows.map((v) => ({
-            ...v,
-            createdAt: dayjs.unix(v.createdAt),
-          })),
-        );
-      await cacheSet(postsList);
+      try {
+        const postsList = await container
+          .socialStats()
+          .post(PostProvider.Medium, 'defihelper')
+          .then((rows) =>
+            rows.map((v) => ({
+              ...v,
+              text: v.text
+                .replace(/(<([^>]+)>)/gi, '')
+                .slice(0, 300)
+                .split(' ')
+                .slice(0, -1)
+                .concat('...')
+                .join(' '),
+              createdAt: dayjs.unix(v.createdAt),
+            })),
+          );
+        await cacheSet(postsList);
+      } catch (e) {
+        console.error(e);
+      }
+
       await container.semafor().unlock(`defihelper:landing:posts-collecting:lock`);
     })();
 
