@@ -80,12 +80,10 @@ export const LandingMediumPostsQuery: GraphQLFieldConfig<any, Request> = {
 
     (async () => {
       const postsList = (await container.socialStats().post(PostProvider.Medium, 'defihelper')).map(
-        (v) => {
-          return {
-            ...v,
-            createdAt: dayjs.unix(v.createdAt),
-          };
-        },
+        (v) => ({
+          ...v,
+          createdAt: dayjs.unix(v.createdAt),
+        }),
       );
       await cacheSet(postsList);
     })();
