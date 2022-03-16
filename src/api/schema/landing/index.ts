@@ -87,6 +87,13 @@ export const LandingMediumPostsQuery: GraphQLFieldConfig<any, Request> = {
         .then((rows) =>
           rows.map((v) => ({
             ...v,
+            text: v.text
+              .replace(/(<([^>]+)>)/gi, '')
+              .slice(0, 300)
+              .split(' ')
+              .slice(0, -1)
+              .concat('...')
+              .join(' '),
             createdAt: dayjs.unix(v.createdAt),
           })),
         );
