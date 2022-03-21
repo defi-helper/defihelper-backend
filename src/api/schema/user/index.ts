@@ -10,6 +10,7 @@ import {
   GraphQLString,
 } from 'graphql';
 import { withFilter } from 'graphql-subscriptions';
+import ccxt, { AuthenticationError as ccxtAuthenticationError } from 'ccxt';
 import container from '@container';
 import { utils } from 'ethers';
 import { Request } from 'express';
@@ -19,7 +20,6 @@ import * as Wallet from '@models/Wallet/Entity';
 import {
   walletExchangeTableName,
   walletTableName,
-  WalletExchangeType as WalletExchangeModelType,
   walletBlockchainTableName,
 } from '@models/Wallet/Entity';
 import { Blockchain } from '@models/types';
@@ -1680,21 +1680,25 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
   },
 };
 
-export const IntegrationBinanceConnectMutation: GraphQLFieldConfig<any, Request> = {
+export const IntegrationExchangeApiConnectMutation: GraphQLFieldConfig<any, Request> = {
   type: GraphQLNonNull(WalletExchangeType),
   args: {
     input: {
       type: GraphQLNonNull(
         new GraphQLInputObjectType({
-          name: 'IntegrationBinanceConnectInputType',
+          name: 'IntegrationExchangeApiConnectInputType',
           fields: {
-            apiKey: {
-              type: GraphQLNonNull(GraphQLString),
-              description: 'Api key',
+            objectKeys: {
+              type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString))),
+              description: 'Exchange object keys',
             },
-            apiSecret: {
-              type: GraphQLNonNull(GraphQLString),
-              description: 'Api secret',
+            objectValues: {
+              type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString))),
+              description: 'Exchange object values',
+            },
+            type: {
+              type: GraphQLNonNull(WalletExchangeTypeEnum),
+              description: 'Exchange',
             },
           },
         }),
@@ -1706,12 +1710,41 @@ export const IntegrationBinanceConnectMutation: GraphQLFieldConfig<any, Request>
       throw new AuthenticationError('UNAUTHENTICATED');
     }
 
-    if (!(await container.cexServicesProvider().binance().validateAccount(input))) {
-      throw new UserInputError('Invalid api key pair');
+    const keys: string[] = input.objectKeys;
+    const values: string[] = input.objectValues;
+
+    if (keys.length !== values.length) {
+      throw new UserInputError('Looks like a bug, keys and values must be the same length');
     }
+
+    const inputObject: Record<string, string> = {};
+    keys.map((_, i) =>
+      Object.assign(inputObject, {
+        [keys[i]]: values[i],
+      }),
+    );
+
+    const exchangeInstance = new ccxt[input.type as Wallet.WalletExchangeType]({
+      ...inputObject,
+
+      options: {
+        adjustForTimeDifference: true,
+      },
+    });
+
+    try {
+      await exchangeInstance.fetchBalance();
+    } catch (e) {
+      if (e instanceof ccxtAuthenticationError) {
+        throw new UserInputError('Invalid api key pair');
+      }
+
+      throw new UserInputError('Unknown exchange-side error');
+    }
+
     const exchangeWallet = await container.model
       .walletService()
-      .createExchangeWallet(currentUser, WalletExchangeModelType.Binance, input);
+      .createExchangeWallet(currentUser, input.type, inputObject);
 
     return exchangeWallet;
   }),
