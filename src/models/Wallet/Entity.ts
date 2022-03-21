@@ -33,6 +33,9 @@ export enum WalletExchangeType {
   Binance = 'binance',
   Huobi = 'huobi',
   Okex = 'okex',
+  Ascendex = 'ascendex',
+  Mexc = 'mexc',
+  Aax = 'aax',
 }
 
 export interface WalletExchange {

@@ -55,7 +55,7 @@ export default async (process: Process) => {
     const tokensPrices = Object.values(await exchangeInstance.fetchTickers()).map((v) => {
       return {
         symbol: v.symbol,
-        price: new BN(v.ask),
+        price: new BN(v.ask ?? v.last ?? v.average),
       };
     });
     const resolveTokenPriceUSD = (symbol: string) =>
