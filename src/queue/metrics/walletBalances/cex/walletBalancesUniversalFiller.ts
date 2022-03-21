@@ -30,8 +30,7 @@ export default async (process: Process) => {
 
   const keyPair = container.cryptography().decryptJson(exchangeWallet.payload);
   const exchangeInstance = new ccxt[exchangeWallet.exchange]({
-    apiKey: keyPair?.apiKey,
-    secret: keyPair?.apiSecret,
+    ...keyPair,
 
     options: {
       adjustForTimeDifference: true,

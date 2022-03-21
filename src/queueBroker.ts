@@ -23,16 +23,14 @@ function wait(time: number) {
 
 const broker = (): any => handle().then((r) => wait(r ? 0 : 1000).then(() => broker()));
 
-setTimeout(() => {
-  container.model
-    .migrationService()
-    .up()
-    .then(async () => {
-      broker();
-      container.logger().info(`Handle queue tasks`);
-    })
-    .catch((e) => {
-      container.logger().error(e);
-      process.exit(1);
-    });
-}, 5000);
+container.model
+  .migrationService()
+  .up()
+  .then(async () => {
+    broker();
+    container.logger().info(`Handle queue tasks`);
+  })
+  .catch((e) => {
+    container.logger().error(e);
+    process.exit(1);
+  });
