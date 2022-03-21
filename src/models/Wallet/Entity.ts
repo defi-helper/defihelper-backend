@@ -31,6 +31,8 @@ export interface WalletBlockchain {
 
 export enum WalletExchangeType {
   Binance = 'binance',
+  Huobi = 'huobi',
+  Okex = 'okex',
 }
 
 export interface WalletExchange {
