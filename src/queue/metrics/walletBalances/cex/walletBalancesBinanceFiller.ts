@@ -1,6 +1,6 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
-import ccxt, { AuthenticationError } from 'ccxt';
+import Binance, { AssetBalance } from 'binance-api-node';
 import {
   walletExchangeTableName,
   WalletSuspenseReason,
@@ -29,13 +29,31 @@ export default async (process: Process) => {
   }
 
   const keyPair = container.cryptography().decryptJson(exchangeWallet.payload);
-  const exchangeInstance = new ccxt[exchangeWallet.exchange]({
-    ...keyPair,
-
-    options: {
-      adjustForTimeDifference: true,
-    },
+  const binance = Binance({
+    apiKey: keyPair?.apiKey,
+    apiSecret: keyPair?.apiSecret,
   });
+
+  let spotAssetsList: AssetBalance[];
+  let prices: { [key: string]: string };
+  try {
+    spotAssetsList = (await binance.accountInfo()).balances;
+    prices = await binance.prices();
+  } catch (e) {
+    if (!(e instanceof Error) || e.message !== 'Invalid API-key, IP, or permissions for action.') {
+      throw e;
+    }
+
+    await container.model
+      .walletService()
+      .suspense(exchangeWallet.id, WalletSuspenseReason.CexUnableToAuthorize);
+
+    return process.done();
+  }
+
+  const resolveTokenPrice = (symbol: string) => {
+    return ['USDT', 'BUSD'].map((bridge) => prices[symbol + bridge]).find((v) => v) || 1;
+  };
 
   const database = container.database();
   const walletTokenBalances = await container.model
@@ -50,38 +68,21 @@ export default async (process: Process) => {
     .orderBy(`${metricWalletTokenTableName}.date`, 'DESC')
     .then((rows) => new Map(rows.map(({ token, balance }) => [token, balance])));
 
-  let assetsOnBalance: { amount: BN; symbol: string; amountUsd: BN }[];
-  try {
-    const tokensPrices = Object.values(await exchangeInstance.fetchTickers()).map((v) => {
+  const assetsOnBalance = spotAssetsList
+    .filter(({ asset, free, locked }) => {
+      const metricBalance = walletTokenBalances.get(asset);
+
+      return !new BN(free).plus(locked).isZero() || (metricBalance && metricBalance !== '0');
+    })
+    .map(({ asset, free, locked }) => {
+      const bridgedPrice = resolveTokenPrice(asset);
+
       return {
-        symbol: v.symbol,
-        price: new BN(v.ask),
+        symbol: asset,
+        balance: new BN(free).plus(locked).toString(10),
+        usd: new BN(free).plus(locked).multipliedBy(bridgedPrice).toString(10),
       };
     });
-    const resolveTokenPriceUSD = (symbol: string) =>
-      tokensPrices.find((v) => v.symbol === `${symbol}/USDT`)?.price ?? new BN(1);
-
-    assetsOnBalance = Object.entries((await exchangeInstance.fetchBalance()).total)
-      .map(([symbol, amount]) => ({ symbol, amount: new BN(amount) }))
-      .filter(({ amount, symbol }) => {
-        const metricBalance = walletTokenBalances.get(symbol);
-
-        return !amount.isZero() || (metricBalance && metricBalance !== '0');
-      })
-      .map((token) => ({
-        ...token,
-        amountUsd: token.amount.multipliedBy(resolveTokenPriceUSD(token.symbol)),
-      }));
-  } catch (e) {
-    if (e instanceof AuthenticationError) {
-      await container.model
-        .walletService()
-        .suspense(exchangeWallet.id, WalletSuspenseReason.CexUnableToAuthorize);
-      return process.done();
-    }
-
-    return process.error(e);
-  }
 
   const existingTokens = await container.model
     .tokenTable()
@@ -94,7 +95,7 @@ export default async (process: Process) => {
     .then((rows) => new Map(rows.map((token) => [token.symbol, token])));
 
   const { found, notFound } = assetsOnBalance.reduce<{
-    found: Array<{ symbol: string; amount: BN; amountUsd: BN; token: Token }>;
+    found: Array<{ symbol: string; balance: string; usd: string; token: Token }>;
     notFound: string[];
   }>(
     (result, v) => {
@@ -109,14 +110,14 @@ export default async (process: Process) => {
   );
 
   await Promise.all(
-    found.map(({ token, amount, amountUsd }) =>
+    found.map(({ token, balance, usd }) =>
       walletMetrics.createWalletToken(
         null,
         exchangeWallet,
         token,
         {
-          usd: amountUsd.toString(10),
-          balance: amount.toString(10),
+          usd,
+          balance,
         },
         new Date(),
       ),
