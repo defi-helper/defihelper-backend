@@ -19,7 +19,6 @@ import {
 import container from '@container';
 import { Request } from 'express';
 import { ForbiddenError } from 'apollo-server-express';
-import { WalletExchangeType } from '@models/Wallet/Entity';
 
 export class GraphQLParseError extends GraphQLError {
   constructor(type: string, value: any) {
@@ -146,14 +145,6 @@ export const UuidType = new GraphQLScalarType({
   serialize: (value: string) => {
     return value;
   },
-});
-
-export const CentralizedExchangeEnum = new GraphQLEnumType({
-  name: 'CentralizedExchangeEnum',
-  values: Object.keys(WalletExchangeType).reduce(
-    (prev, name) => ({ ...prev, [name]: { value: name } }),
-    {},
-  ),
 });
 
 export const BlockchainEnum = new GraphQLEnumType({

@@ -9,12 +9,12 @@ export default async (process: Process) => {
     .innerJoin(walletExchangeTableName, `${walletExchangeTableName}.id`, `${walletTableName}.id`)
     .andWhere(`${walletTableName}.suspendReason`, null);
 
-  const lag = 1800 / wallets.length;
+  const lag = 600 / wallets.length;
   await wallets.reduce<Promise<dayjs.Dayjs>>(async (prev, wallet) => {
     const startAt = await prev;
 
     await container.model.queueService().push(
-      'walletBalancesCentralizedExchangeFillSelector',
+      'metricsWalletBalancesCexBinanceFiller',
       {
         id: wallet.id,
       },
