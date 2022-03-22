@@ -37,6 +37,7 @@ export enum WalletExchangeType {
   Mexc = 'mexc',
   Aax = 'aax',
   Bitmart = 'bitmart',
+  Coinex = 'coinex',
 }
 
 export interface WalletExchange {
