@@ -53,7 +53,7 @@ export class WalletService {
     exchangeWallet: WalletExchange;
   }>(({ wallet }) =>
     container.model.queueService().push(
-      'walletBalancesCentralizedExchangeFillSelector',
+      'metricsWalletBalancesCexUniversalFiller',
       {
         id: wallet.id,
       },

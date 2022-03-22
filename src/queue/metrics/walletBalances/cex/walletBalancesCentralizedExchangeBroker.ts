@@ -14,7 +14,7 @@ export default async (process: Process) => {
     const startAt = await prev;
 
     await container.model.queueService().push(
-      'walletBalancesCentralizedExchangeFillSelector',
+      'metricsWalletBalancesCexUniversalFiller',
       {
         id: wallet.id,
       },

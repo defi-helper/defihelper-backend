@@ -57,7 +57,6 @@ export * as metricsWalletBalancesFillSelector from './metrics/walletBalances/wal
 export * as metricsWalletBalancesBroker from './metrics/walletBalances/walletBalancesBroker';
 
 export * as metricsWalletBalancesCexUniversalFiller from './metrics/walletBalances/cex/walletBalancesUniversalFiller';
-export * as walletBalancesCentralizedExchangeFillSelector from './metrics/walletBalances/cex/walletBalancesCentralizedExchangeFillSelector';
 export * as walletBalancesCentralizedExchangeBroker from './metrics/walletBalances/cex/walletBalancesCentralizedExchangeBroker';
 
 /* protocol */
