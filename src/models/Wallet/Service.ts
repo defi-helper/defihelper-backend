@@ -53,7 +53,7 @@ export class WalletService {
     exchangeWallet: WalletExchange;
   }>(({ wallet }) =>
     container.model.queueService().push(
-      'metricsWalletBalancesCexBinanceFiller',
+      'walletBalancesCentralizedExchangeFillSelector',
       {
         id: wallet.id,
       },
@@ -112,7 +112,7 @@ export class WalletService {
   async createExchangeWallet(
     user: User,
     exchange: WalletExchangeType,
-    payload: { apiKey: string; apiSecret: string },
+    payload: Record<string, string>,
   ): Promise<Wallet & WalletExchange> {
     const wallet: Wallet = {
       id: uuid(),
