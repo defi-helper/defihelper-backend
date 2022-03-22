@@ -60,16 +60,15 @@ export default async (process: Process) => {
     const result = await prev;
     if (result !== null) return result;
 
-    const walletFunds = walletsFunds.find((w) => w.id === t.walletId);
-    if (walletFunds?.suspendReason) {
+    const walletFunds = walletsFunds.find((w) => {
+      return w.id === t.walletId;
+    });
+
+    if (walletFunds?.suspendReason || !walletFunds) {
       return null;
     }
 
-    let funds = 0;
-    if (walletFunds) {
-      funds = walletFunds.funds;
-    }
-
+    const { funds } = walletFunds;
     const chainNativeUSD = new BN(
       await container.blockchain.ethereum.byNetwork(t.walletNetwork).nativeTokenPrice(),
     ).toNumber();
