@@ -1717,11 +1717,9 @@ export const IntegrationExchangeApiConnectMutation: GraphQLFieldConfig<any, Requ
       throw new UserInputError('Looks like a bug, keys and values must be the same length');
     }
 
-    const inputObject: Record<string, string> = {};
-    keys.map((_, i) =>
-      Object.assign(inputObject, {
-        [keys[i]]: values[i],
-      }),
+    const inputObject = keys.reduce<Record<string, string>>(
+      (res, _, i) => ({ ...res, [keys[i]]: values[i] }),
+      {},
     );
 
     const exchangeInstance = new ccxt[input.type as Wallet.WalletExchangeType]({
