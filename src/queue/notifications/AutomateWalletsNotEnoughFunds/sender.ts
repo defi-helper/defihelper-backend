@@ -68,12 +68,11 @@ export default async (process: Process) => {
       return null;
     }
 
-    const { funds } = walletFunds;
     const chainNativeUSD = new BN(
       await container.blockchain.ethereum.byNetwork(t.walletNetwork).nativeTokenPrice(),
     ).toNumber();
 
-    return funds * chainNativeUSD - (1 + chainNativeUSD * 0.1) <= 0 ? t : null;
+    return walletFunds.funds * chainNativeUSD - (1 + chainNativeUSD * 0.1) <= 0 ? t : null;
   }, Promise.resolve(null));
   if (notifyBy === null) {
     return process.done();
