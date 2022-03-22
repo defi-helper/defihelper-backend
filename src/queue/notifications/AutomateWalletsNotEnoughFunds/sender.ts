@@ -60,21 +60,19 @@ export default async (process: Process) => {
     const result = await prev;
     if (result !== null) return result;
 
-    const walletFunds = walletsFunds.find((w) => w.id === t.walletId);
-    if (walletFunds?.suspendReason) {
-      return null;
-    }
+    const walletFunds = walletsFunds.find((w) => {
+      return w.id === t.walletId;
+    });
 
-    let funds = 0;
-    if (walletFunds) {
-      funds = walletFunds.funds;
+    if (walletFunds?.suspendReason || !walletFunds) {
+      return null;
     }
 
     const chainNativeUSD = new BN(
       await container.blockchain.ethereum.byNetwork(t.walletNetwork).nativeTokenPrice(),
     ).toNumber();
 
-    return funds * chainNativeUSD - (1 + chainNativeUSD * 0.1) <= 0 ? t : null;
+    return walletFunds.funds * chainNativeUSD - (1 + chainNativeUSD * 0.1) <= 0 ? t : null;
   }, Promise.resolve(null));
   if (notifyBy === null) {
     return process.done();
