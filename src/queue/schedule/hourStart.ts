@@ -10,6 +10,7 @@ export default async (process: Process) => {
     queue.push('metricsWalletBroker', {}),
     queue.push('automateTriggerByTime', { type: TriggerType.EveryHour }),
     queue.push('billingBroker', {}),
+    queue.push('walletBalancesCentralizedExchangeBroker'),
   ]);
 
   return process.done();
