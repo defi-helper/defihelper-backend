@@ -50,6 +50,7 @@
     "body-parser": "^1.19.0",
     "build-url": "^6.0.1",
     "callback-to-async-iterator": "^1.1.1",
+    "ccxt": "^1.76.67",
     "command-line-args": "^5.1.1",
     "crypto-js": "^4.1.1",
     "dataloader": "^2.0.0",
