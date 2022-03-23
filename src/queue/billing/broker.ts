@@ -47,7 +47,6 @@ export default async (process: Process) => {
                 lag: ['43114'].includes(network) ? 4 : 1,
               },
               {
-                collisionSign: `billingTransferScan:ethereum:${network}`,
                 scanner: true,
               },
             ),
@@ -65,7 +64,6 @@ export default async (process: Process) => {
                 lag: ['43114'].includes(network) ? 4 : 1,
               },
               {
-                collisionSign: `billingClaimScan:ethereum:${network}`,
                 scanner: true,
               },
             ),
@@ -88,7 +86,6 @@ export default async (process: Process) => {
                 lag: ['43114'].includes(network) ? 4 : 1,
               },
               {
-                collisionSign: `billingStoreScan:ethereum:${network}`,
                 scanner: true,
               },
             ),
@@ -105,7 +102,6 @@ export default async (process: Process) => {
               network,
             },
             {
-              collisionSign: `billingFeeOracle:ethereum:${network}`,
               scanner: true,
             },
           ),

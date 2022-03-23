@@ -25,7 +25,6 @@ export default async ([network = '1']: string[]) => {
         from: balanceFrom,
       },
       {
-        collisionSign: `billingTransferScan:ethereum:${network}`,
         scanner: true,
       },
     ),
@@ -38,7 +37,6 @@ export default async ([network = '1']: string[]) => {
         from: balanceFrom,
       },
       {
-        collisionSign: `billingClaimScan:ethereum:${network}`,
         scanner: true,
       },
     ),
@@ -49,7 +47,6 @@ export default async ([network = '1']: string[]) => {
         network,
       },
       {
-        collisionSign: `billingFeeOracle:ethereum:${network}`,
         scanner: true,
       },
     ),
@@ -62,7 +59,6 @@ export default async ([network = '1']: string[]) => {
         from: storeFrom,
       },
       {
-        collisionSign: `billingStoreScan:ethereum:${network}`,
         scanner: true,
       },
     ),

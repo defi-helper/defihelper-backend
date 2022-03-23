@@ -65,7 +65,6 @@ export interface Task {
   status: TaskStatus;
   info: string;
   error: string;
-  collisionSign: string | null;
   priority: number;
   topic: string;
   scanner: boolean;
