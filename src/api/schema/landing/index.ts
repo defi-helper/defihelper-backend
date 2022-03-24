@@ -43,7 +43,7 @@ export const LandingMediumPostType = new GraphQLObjectType<MediumPostType>({
 
 const cacheGet = (): Promise<Array<MediumPostType> | null> => {
   return new Promise((resolve) =>
-    container.cache().get('defihelper:landing:posts-collecting2', (err, result) => {
+    container.cache().get('defihelper:landing:posts-collecting', (err, result) => {
       if (err || !result) return resolve(null);
       const list: Array<MediumPostType> = JSON.parse(result);
 
@@ -55,7 +55,7 @@ const cacheGet = (): Promise<Array<MediumPostType> | null> => {
 const cacheSet = (value: Array<MediumPostType>): Promise<string> => {
   return new Promise((resolve, reject) =>
     container.cache().setex(
-      'defihelper:landing:posts-collecting2',
+      'defihelper:landing:posts-collecting',
       86400, // 1 day
       JSON.stringify(value),
       (err, reply) => {
