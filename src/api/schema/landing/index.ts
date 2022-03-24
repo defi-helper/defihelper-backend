@@ -9,6 +9,7 @@ import {
 } from 'graphql';
 import { PostProvider } from '@services/SocialStats';
 import dayjs, { Dayjs } from 'dayjs';
+import LanguageDetect from 'languagedetect';
 import { DateTimeType } from '../types';
 
 interface MediumPostType {
@@ -42,7 +43,7 @@ export const LandingMediumPostType = new GraphQLObjectType<MediumPostType>({
 
 const cacheGet = (): Promise<Array<MediumPostType> | null> => {
   return new Promise((resolve) =>
-    container.cache().get('defihelper:landing:posts-collecting', (err, result) => {
+    container.cache().get('defihelper:landing:posts-collecting2', (err, result) => {
       if (err || !result) return resolve(null);
       const list: Array<MediumPostType> = JSON.parse(result);
 
@@ -54,7 +55,7 @@ const cacheGet = (): Promise<Array<MediumPostType> | null> => {
 const cacheSet = (value: Array<MediumPostType>): Promise<string> => {
   return new Promise((resolve, reject) =>
     container.cache().setex(
-      'defihelper:landing:posts-collecting',
+      'defihelper:landing:posts-collecting2',
       86400, // 1 day
       JSON.stringify(value),
       (err, reply) => {
@@ -86,17 +87,19 @@ export const LandingMediumPostsQuery: GraphQLFieldConfig<any, Request> = {
           .socialStats()
           .post(PostProvider.Medium, 'defihelper')
           .then((rows) =>
-            rows.map((v) => ({
-              ...v,
-              text: v.text
-                .replace(/(<([^>]+)>)/gi, '')
-                .slice(0, 300)
-                .split(' ')
-                .slice(0, -1)
-                .concat('...')
-                .join(' '),
-              createdAt: dayjs.unix(v.createdAt),
-            })),
+            rows
+              .map((v) => ({
+                ...v,
+                text: v.text
+                  .replace(/(<([^>]+)>)/gi, '')
+                  .slice(0, 300)
+                  .split(' ')
+                  .slice(0, -1)
+                  .concat('...')
+                  .join(' '),
+                createdAt: dayjs.unix(v.createdAt),
+              }))
+              .filter((v) => new LanguageDetect().detect(v.text)[0][0] === 'english'),
           );
         await cacheSet(postsList);
       } catch (e) {
