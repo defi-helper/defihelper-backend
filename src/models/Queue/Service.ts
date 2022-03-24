@@ -11,9 +11,9 @@ type Handler = keyof typeof Handlers;
 
 export interface PushOptions {
   startAt?: Date;
-  collisionSign?: string;
   scanner?: boolean;
   priority?: number;
+  collisionSign?: string;
   topic?: string;
 }
 
@@ -49,6 +49,7 @@ export class QueueService {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
+
     if (typeof options.collisionSign === 'string') {
       const duplicate = await this.queueTable()
         .where({
