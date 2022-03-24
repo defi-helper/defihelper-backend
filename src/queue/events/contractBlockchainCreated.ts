@@ -23,9 +23,13 @@ export default async (process: Process) => {
 
   if (contract.blockchain !== 'ethereum') return process.done();
   if (contract.deployBlockNumber === null) {
-    await container.model
-      .queueService()
-      .push('contractResolveDeployBlockNumber', { contract: contract.id });
+    await container.model.queueService().push(
+      'contractResolveDeployBlockNumber',
+      { contract: contract.id },
+      {
+        collisionSign: `contractResolveDeployBlockNumber:${contract.id}`,
+      },
+    );
     return process.later(dayjs().add(300, 'seconds').toDate());
   }
 

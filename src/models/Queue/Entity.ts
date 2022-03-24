@@ -68,6 +68,7 @@ export interface Task {
   priority: number;
   topic: string;
   scanner: boolean;
+  collisionSign: string | null;
   updatedAt: Date;
   createdAt: Date;
 }
