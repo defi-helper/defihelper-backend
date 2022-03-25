@@ -59,7 +59,9 @@ export default async (process: Process) => {
       };
     });
     const resolveTokenPriceUSD = (symbol: string) =>
-      tokensPrices.find((v) => v.symbol === `${symbol}/USDT`)?.price ?? new BN(1);
+      tokensPrices.find((v) => v.symbol === `${symbol}/USDT`)?.price ??
+      tokensPrices.find((v) => v.symbol === `${symbol}/USD`)?.price ??
+      new BN(1);
 
     assetsOnBalance = Object.entries((await exchangeInstance.fetchBalance()).total)
       .map(([symbol, amount]) => ({ symbol, amount: new BN(amount) }))
