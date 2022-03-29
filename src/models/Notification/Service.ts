@@ -226,6 +226,13 @@ export class ContractEventWebHookService {
       .first();
 
     if (duplicate) {
+      this.onCreated.emit({
+        network: contract.network,
+        address: contract.address,
+        event,
+        webHookId: duplicate.id,
+      });
+
       return duplicate;
     }
 
