@@ -181,9 +181,9 @@ export class WalletService {
 
   async updateExchangeWallet(
     wallet: Wallet,
-    blockchainExchange: WalletExchange,
+    walletExchange: WalletExchange,
   ): Promise<Wallet & WalletExchange> {
-    if (wallet.id !== blockchainExchange.id) throw new Error('Invalid wallet ID');
+    if (wallet.id !== walletExchange.id) throw new Error('Invalid wallet ID');
 
     const walletUpdated: Wallet = {
       ...wallet,
@@ -194,11 +194,11 @@ export class WalletService {
       await this.walletTable().where('id', wallet.id).update(wallet).transacting(trx);
       await this.walletExchangeTable()
         .where('id', wallet.id)
-        .update(blockchainExchange)
+        .update(walletExchange)
         .transacting(trx);
     });
 
-    return { ...walletUpdated, ...blockchainExchange };
+    return { ...walletUpdated, ...walletExchange };
   }
 
   async changeOwner(wallet: Wallet & WalletBlockchain, user: User) {
