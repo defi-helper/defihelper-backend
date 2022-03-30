@@ -179,6 +179,28 @@ export class WalletService {
     return { ...walletUpdated, ...walletBlockchainUpdated };
   }
 
+  async updateExchangeWallet(
+    wallet: Wallet,
+    blockchainExchange: WalletExchange,
+  ): Promise<Wallet & WalletExchange> {
+    if (wallet.id !== blockchainExchange.id) throw new Error('Invalid wallet ID');
+
+    const walletUpdated: Wallet = {
+      ...wallet,
+      updatedAt: new Date(),
+    };
+
+    await this.database.transaction(async (trx) => {
+      await this.walletTable().where('id', wallet.id).update(wallet).transacting(trx);
+      await this.walletExchangeTable()
+        .where('id', wallet.id)
+        .update(blockchainExchange)
+        .transacting(trx);
+    });
+
+    return { ...walletUpdated, ...blockchainExchange };
+  }
+
   async changeOwner(wallet: Wallet & WalletBlockchain, user: User) {
     if (wallet.user === user.id) return wallet;
 
