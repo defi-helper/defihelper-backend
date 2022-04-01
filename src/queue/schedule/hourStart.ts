@@ -11,6 +11,7 @@ export default async (process: Process) => {
     queue.push('automateTriggerByTime', { type: TriggerType.EveryHour }),
     queue.push('billingBroker', {}),
     queue.push('walletBalancesCentralizedExchangeBroker'),
+    queue.push('regularContractsWalletLink'),
   ]);
 
   return process.done();
