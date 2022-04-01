@@ -78,9 +78,11 @@ export * as eventsAutomateContractVerificationConfirmed from './events/automate/
 
 /* wallets */
 export * as findWalletContracts from './wallet/findContracts';
+export * as findWalletContractsBulk from './wallet/findContractsBulk';
 export * as findWalletAppliedNetworks from './wallet/findAppliedNetworks';
 export * as linkContractsFromEvents from './wallet/linkContractsFromEvents';
 export * as regularFindUnknownAppliedNetworks from './wallet/regularFindUnknownAppliedNetworks';
+export * as regularContractsWalletLink from './wallet/regularContractsWalletLink';
 
 /* token */
 export * as tokenAlias from './token/alias';

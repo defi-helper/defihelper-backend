@@ -54,6 +54,10 @@ export interface CallBack {
   createdAt: Date;
 }
 
+export interface WalletsInteractedWith {
+  [wallet: string]: { [network: string]: string[] };
+}
+
 export class ScannerService {
   protected client: AxiosInstance;
 
@@ -210,6 +214,10 @@ export class ScannerService {
         `/api/address/${address.toLowerCase()}?networkId=${networkId}`,
       )
     ).data;
+  }
+
+  async getWalletsInteractedContracts(walletList: string[]): Promise<WalletsInteractedWith> {
+    return (await this.client.post<WalletsInteractedWith>('/api/address/bulk', walletList)).data;
   }
 }
 
