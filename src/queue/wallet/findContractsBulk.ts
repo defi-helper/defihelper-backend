@@ -47,10 +47,7 @@ export default async (process: Process) => {
                 (v) => v.address === contract && v.network === network,
               );
 
-              if (!localContract) return null; // we shouldn't watch this contract if it doesn't exists in db
-              if (!localWallet) {
-                throw new Error('Local wallet must be found here');
-              }
+              if (!localContract || !localWallet) return null;
 
               linked.push(localWallet.id);
               return container.model.contractService().walletLink(localContract, localWallet);
