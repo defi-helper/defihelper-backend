@@ -60,47 +60,46 @@ export default async (process: Process) => {
     });
 
   const contractService = container.model.contractService();
-  await Promise.all(
-    pools.map((pool): Promise<unknown> => {
-      const duplicate = existingPools.find(
-        (p) =>
-          p.address.toLowerCase() === pool.address.toLowerCase() &&
-          p.network === pool.network &&
-          p.blockchain === pool.blockchain,
+  pools.reduce<Promise<unknown>>(async (prev, pool) => {
+    await prev;
+
+    const duplicate = existingPools.find(
+      (p) =>
+        p.address.toLowerCase() === pool.address.toLowerCase() &&
+        p.network === pool.network &&
+        p.blockchain === pool.blockchain,
+    );
+    if (duplicate) {
+      return Promise.all([
+        container.model
+          .queueService()
+          .push('registerContractInScanner', { contract: duplicate.id, events }),
+        contractService.updateBlockchain({
+          ...duplicate,
+          automate: pool.automate,
+        }),
+      ]);
+    }
+
+    return container.model
+      .contractService()
+      .createBlockchain(
+        protocol,
+        protocolBlockchain,
+        protocolNetwork,
+        pool.address.toLowerCase(),
+        null,
+        pool.adapter,
+        pool.layout,
+        pool.automate,
+        {},
+        pool.name,
+        pool.description,
+        pool.link,
+        true,
+        events,
       );
-      if (duplicate) {
-        return Promise.all([
-          container.model
-            .queueService()
-            .push('registerContractInScanner', { contract: duplicate.id, events }),
-
-          contractService.updateBlockchain({
-            ...duplicate,
-            automate: pool.automate,
-          }),
-        ]);
-      }
-
-      return container.model
-        .contractService()
-        .createBlockchain(
-          protocol,
-          protocolBlockchain,
-          protocolNetwork,
-          pool.address.toLowerCase(),
-          null,
-          pool.adapter,
-          pool.layout,
-          pool.automate,
-          {},
-          pool.name,
-          pool.description,
-          pool.link,
-          true,
-          events,
-        );
-    }),
-  );
+  }, Promise.resolve(null));
 
   return process.done();
 };
