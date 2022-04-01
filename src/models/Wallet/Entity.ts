@@ -31,6 +31,15 @@ export interface WalletBlockchain {
 
 export enum WalletExchangeType {
   Binance = 'binance',
+  Huobi = 'huobi',
+  Okex = 'okex',
+  Ascendex = 'ascendex',
+  Mexc = 'mexc',
+  Aax = 'aax',
+  Bitmart = 'bitmart',
+  Coinex = 'coinex',
+  Poloniex = 'poloniex',
+  Ftx = 'ftx',
 }
 
 export interface WalletExchange {

@@ -53,7 +53,7 @@ export class WalletService {
     exchangeWallet: WalletExchange;
   }>(({ wallet }) =>
     container.model.queueService().push(
-      'metricsWalletBalancesCexBinanceFiller',
+      'metricsWalletBalancesCexUniversalFiller',
       {
         id: wallet.id,
       },
@@ -112,7 +112,7 @@ export class WalletService {
   async createExchangeWallet(
     user: User,
     exchange: WalletExchangeType,
-    payload: { apiKey: string; apiSecret: string },
+    payload: Record<string, string>,
   ): Promise<Wallet & WalletExchange> {
     const wallet: Wallet = {
       id: uuid(),
@@ -177,6 +177,28 @@ export class WalletService {
     });
 
     return { ...walletUpdated, ...walletBlockchainUpdated };
+  }
+
+  async updateExchangeWallet(
+    wallet: Wallet,
+    walletExchange: WalletExchange,
+  ): Promise<Wallet & WalletExchange> {
+    if (wallet.id !== walletExchange.id) throw new Error('Invalid wallet ID');
+
+    const walletUpdated: Wallet = {
+      ...wallet,
+      updatedAt: new Date(),
+    };
+
+    await this.database.transaction(async (trx) => {
+      await this.walletTable().where('id', wallet.id).update(wallet).transacting(trx);
+      await this.walletExchangeTable()
+        .where('id', wallet.id)
+        .update(walletExchange)
+        .transacting(trx);
+    });
+
+    return { ...walletUpdated, ...walletExchange };
   }
 
   async changeOwner(wallet: Wallet & WalletBlockchain, user: User) {

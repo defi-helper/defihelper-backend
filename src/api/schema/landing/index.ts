@@ -9,6 +9,7 @@ import {
 } from 'graphql';
 import { PostProvider } from '@services/SocialStats';
 import dayjs, { Dayjs } from 'dayjs';
+import LanguageDetect from 'languagedetect';
 import { DateTimeType } from '../types';
 
 interface MediumPostType {
@@ -86,17 +87,19 @@ export const LandingMediumPostsQuery: GraphQLFieldConfig<any, Request> = {
           .socialStats()
           .post(PostProvider.Medium, 'defihelper')
           .then((rows) =>
-            rows.map((v) => ({
-              ...v,
-              text: v.text
-                .replace(/(<([^>]+)>)/gi, '')
-                .slice(0, 300)
-                .split(' ')
-                .slice(0, -1)
-                .concat('...')
-                .join(' '),
-              createdAt: dayjs.unix(v.createdAt),
-            })),
+            rows
+              .map((v) => ({
+                ...v,
+                text: v.text
+                  .replace(/(<([^>]+)>)/gi, '')
+                  .slice(0, 300)
+                  .split(' ')
+                  .slice(0, -1)
+                  .concat('...')
+                  .join(' '),
+                createdAt: dayjs.unix(v.createdAt),
+              }))
+              .filter((v) => new LanguageDetect().detect(v.text)[0][0] === 'english'),
           );
         await cacheSet(postsList);
       } catch (e) {
