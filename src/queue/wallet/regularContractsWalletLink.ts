@@ -17,7 +17,7 @@ export default async (process: Process) => {
     95,
   );
 
-  const lag = 86400 / wallets.length; // seconds in day
+  const lag = 3600 / wallets.length; // seconds in day
   await wallets.reduce<Promise<dayjs.Dayjs>>(async (prev, wallet) => {
     const startAt = await prev;
     await container.model.queueService().push(
