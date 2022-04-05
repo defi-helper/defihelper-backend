@@ -16,6 +16,7 @@ import {
 } from '@models/Wallet/Entity';
 import DataLoader from 'dataloader';
 import { TokenAliasLiquidity, tokenAliasTableName, tokenTableName } from '@models/Token/Entity';
+import { triggerTableName } from '@models/Automate/Entity';
 
 export const userBlockchainLoader = () =>
   new DataLoader<string, Array<Pick<Wallet & WalletBlockchain, 'user' | 'blockchain' | 'network'>>>(
@@ -320,3 +321,17 @@ export const walletTokenLastMetricLoader = (filter: {
       return walletsId.map((id) => map.get(id) ?? { wallet: id, usd: '0', balance: '0' });
     },
   );
+
+export const walletTriggersCountLoader = () =>
+  new DataLoader<string, number>(async (walletsId) => {
+    const map = await container.model
+      .automateTriggerTable()
+      .column({ wallet: `${walletTableName}.id` })
+      .count({ count: `${triggerTableName}.id` })
+      .innerJoin(walletTableName, `${triggerTableName}.wallet`, `${walletTableName}.id`)
+      .whereIn('wallet', walletsId)
+      .groupBy(`${walletTableName}.id`)
+      .then((rows) => new Map(rows.map(({ wallet, count }) => [wallet, Number(count)])));
+
+    return walletsId.map((id) => map.get(id) ?? 0);
+  });

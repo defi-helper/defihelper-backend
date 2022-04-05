@@ -273,15 +273,8 @@ export const WalletBlockchainType = new GraphQLObjectType<
     },
     triggersCount: {
       type: GraphQLNonNull(GraphQLInt),
-      resolve: async (wallet) => {
-        const row = await container.model
-          .automateTriggerTable()
-          .count()
-          .where('wallet', wallet.id)
-          .first();
-        if (!row) return 0;
-
-        return row.count;
+      resolve: ({ id }, args, { dataLoader }) => {
+        return dataLoader.walletTriggersCount().load(id);
       },
     },
     tokenAliases: {
