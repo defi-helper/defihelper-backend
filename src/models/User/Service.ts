@@ -20,6 +20,7 @@ export class UserService {
       id: uuid(),
       role,
       locale,
+      isPorfolioCollected: false,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -35,6 +36,17 @@ export class UserService {
       updatedAt: new Date(),
     };
     await this.table().where({ id: user.id }).update(updated);
+
+    return updated;
+  }
+
+  async portfolioCollectedSuccessful(user: User) {
+    if (user.isPorfolioCollected) return user;
+
+    const updated = await this.update({
+      ...user,
+      isPorfolioCollected: true,
+    });
 
     return updated;
   }

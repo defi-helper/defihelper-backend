@@ -188,5 +188,11 @@ export default async (process: Process) => {
     }),
   );
 
+  const owner = await container.model.userTable().where('id', blockchainWallet.user).first();
+  if (!owner) {
+    throw new Error('Onwer must be accesible here');
+  }
+  container.model.userService().portfolioCollectedSuccessful(owner);
+
   return process.done();
 };
