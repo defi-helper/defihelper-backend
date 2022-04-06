@@ -307,32 +307,29 @@ export const protocolUserLastAPRLoader = ({
 
 export const contractLoader = () =>
   new DataLoader<string, (Contract & ContractBlockchainType) | null>(async (contractsId) => {
-    const map = new Map(
-      await container.model
-        .contractTable()
-        .innerJoin(
-          contractBlockchainTableName,
-          `${contractBlockchainTableName}.id`,
-          `${contractTableName}.id`,
-        )
-        .whereIn(`${contractTableName}.id`, contractsId)
-        .then((rows) => rows.map((contract) => [contract.id, contract])),
-    );
+    const map = await container.model
+      .contractTable()
+      .innerJoin(
+        contractBlockchainTableName,
+        `${contractBlockchainTableName}.id`,
+        `${contractTableName}.id`,
+      )
+      .whereIn(`${contractTableName}.id`, contractsId)
+      .then((rows) => new Map(rows.map((contract) => [contract.id, contract])));
+
     return contractsId.map((id) => map.get(id) ?? null);
   });
 
 export const contractLastMetricLoader = () =>
   new DataLoader<string, MetricContract | null>(async (contractsId) => {
-    const map = new Map(
-      await container.model
-        .metricContractTable()
-        .distinctOn(`${metricContractTableName}.contract`)
-        .column(`${metricContractTableName}.*`)
-        .whereIn(`${metricContractTableName}.contract`, contractsId)
-        .orderBy(`${metricContractTableName}.contract`)
-        .orderBy(`${metricContractTableName}.date`, 'DESC')
-        .then((rows) => rows.map((row) => [row.contract, row])),
-    );
+    const map = await container.model
+      .metricContractTable()
+      .distinctOn(`${metricContractTableName}.contract`)
+      .column(`${metricContractTableName}.*`)
+      .whereIn(`${metricContractTableName}.contract`, contractsId)
+      .orderBy(`${metricContractTableName}.contract`)
+      .orderBy(`${metricContractTableName}.date`, 'DESC')
+      .then((rows) => new Map(rows.map((row) => [row.contract, row])));
 
     return contractsId.map((id) => map.get(id) ?? null);
   });
@@ -346,45 +343,47 @@ export const contractUserLastMetricLoader = ({
 }) =>
   new DataLoader<string, { stakingUSD: string; earnedUSD: string }>(async (contractsId) => {
     const database = container.database();
-    const map = new Map(
-      await container
-        .database()
-        .column('contract')
-        .sum('stakingUSD AS stakingUSD')
-        .sum('earnedUSD AS earnedUSD')
-        .from(
-          container.model
-            .metricWalletTable()
-            .distinctOn(`${metricWalletTableName}.contract`, `${metricWalletTableName}.wallet`)
-            .column(`${metricWalletTableName}.contract`)
-            .column(
-              database.raw(
-                `(${metricWalletTableName}.data->>'stakingUSD')::numeric AS "stakingUSD"`,
-              ),
-            )
-            .column(
-              database.raw(`(${metricWalletTableName}.data->>'earnedUSD')::numeric AS "earnedUSD"`),
-            )
-            .innerJoin(walletTableName, `${walletTableName}.id`, `${metricWalletTableName}.wallet`)
-            .innerJoin(
-              walletBlockchainTableName,
-              `${walletTableName}.id`,
-              `${walletBlockchainTableName}.id`,
-            )
-            .where(function () {
-              this.where(`${walletTableName}.user`, userId);
-              this.whereIn(`${walletBlockchainTableName}.type`, walletType);
-            })
-            .orderBy(`${metricWalletTableName}.contract`)
-            .orderBy(`${metricWalletTableName}.wallet`)
-            .orderBy(`${metricWalletTableName}.date`, 'DESC')
-            .as('metric'),
-        )
-        .groupBy('contract')
-        .then((rows) =>
-          rows.map(({ contract, stakingUSD, earnedUSD }) => [contract, { stakingUSD, earnedUSD }]),
-        ),
-    );
+    const map = await container
+      .database()
+      .column('contract')
+      .sum('stakingUSD AS stakingUSD')
+      .sum('earnedUSD AS earnedUSD')
+      .from(
+        container.model
+          .metricWalletTable()
+          .distinctOn(`${metricWalletTableName}.contract`, `${metricWalletTableName}.wallet`)
+          .column(`${metricWalletTableName}.contract`)
+          .column(
+            database.raw(`(${metricWalletTableName}.data->>'stakingUSD')::numeric AS "stakingUSD"`),
+          )
+          .column(
+            database.raw(`(${metricWalletTableName}.data->>'earnedUSD')::numeric AS "earnedUSD"`),
+          )
+          .innerJoin(walletTableName, `${walletTableName}.id`, `${metricWalletTableName}.wallet`)
+          .innerJoin(
+            walletBlockchainTableName,
+            `${walletTableName}.id`,
+            `${walletBlockchainTableName}.id`,
+          )
+          .where(function () {
+            this.where(`${walletTableName}.user`, userId);
+            this.whereIn(`${walletBlockchainTableName}.type`, walletType);
+          })
+          .orderBy(`${metricWalletTableName}.contract`)
+          .orderBy(`${metricWalletTableName}.wallet`)
+          .orderBy(`${metricWalletTableName}.date`, 'DESC')
+          .as('metric'),
+      )
+      .groupBy('contract')
+      .then(
+        (rows) =>
+          new Map(
+            rows.map(({ contract, stakingUSD, earnedUSD }) => [
+              contract,
+              { stakingUSD, earnedUSD },
+            ]),
+          ),
+      );
 
     return contractsId.map((id) => map.get(id) ?? { stakingUSD: '0', earnedUSD: '0' });
   });
