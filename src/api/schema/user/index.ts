@@ -955,6 +955,10 @@ export const UserType = new GraphQLObjectType<User, Request>({
       type: GraphQLNonNull(LocaleEnum),
       description: 'Current user locale',
     },
+    isPorfolioCollected: {
+      type: GraphQLNonNull(GraphQLBoolean),
+      description: 'Is portfolio collected',
+    },
     tokenAliases: {
       type: GraphQLNonNull(PaginateList('UserTokenAliasListType', GraphQLNonNull(TokenAliasType))),
       args: {
