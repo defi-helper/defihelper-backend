@@ -2,23 +2,11 @@ import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import { TokenAliasLiquidity, TokenCreatedBy, tokenTableName } from '@models/Token/Entity';
 import BN from 'bignumber.js';
-import axios from 'axios';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 import { metricWalletTokenTableName } from '@models/Metric/Entity';
 
 interface Params {
   id: string;
-}
-
-interface AssetToken {
-  id: string;
-  chain: 'movr' | 'bsc' | 'eth' | 'matic' | 'avax' | 'ftm' | 'arb' | 'op' | 'cro';
-  name: string;
-  symbol: string;
-  decimals: number;
-  logo_url: string | null;
-  price: number;
-  amount: number;
 }
 
 export default async (process: Process) => {
@@ -34,59 +22,15 @@ export default async (process: Process) => {
     )
     .where(`${walletTableName}.id`, id)
     .first();
-  let chain: 'movr' | 'bsc' | 'eth' | 'matic' | 'avax' | 'ftm' | 'arb' | 'op' | 'cro';
 
   if (!blockchainWallet || blockchainWallet.blockchain !== 'ethereum') {
     throw new Error('wallet not found or unsupported blockchain');
   }
 
-  switch (blockchainWallet.network) {
-    case '1':
-      chain = 'eth';
-      break;
-
-    case '56':
-      chain = 'bsc';
-      break;
-
-    case '137':
-      chain = 'matic';
-      break;
-
-    case '43114':
-      chain = 'avax';
-      break;
-
-    case '1285':
-      chain = 'movr';
-      break;
-
-    case '250':
-      chain = 'ftm';
-      break;
-
-    case '42161':
-      chain = 'arb';
-      break;
-
-    case '10':
-      chain = 'op';
-      break;
-
-    case '25':
-      chain = 'cro';
-      break;
-
-    default:
-      throw new Error(`unsupported network: ${blockchainWallet.network}`);
-  }
-
   const debankUserTokenList = (
-    (
-      await axios.get(
-        `https://openapi.debank.com/v1/user/token_list?id=${blockchainWallet.address}&chain_id=${chain}&is_all=true`,
-      )
-    ).data as AssetToken[]
+    await container
+      .debank()
+      .getTokensOnWalletNetwork(blockchainWallet.address, blockchainWallet.network)
   ).map((tokenAsset) => ({
     ...tokenAsset,
     id:

@@ -1,6 +1,5 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
-import axios from 'axios';
 import { Wallet, walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 import {
   Contract,
@@ -14,58 +13,6 @@ import BN from 'bignumber.js';
 interface Params {
   id: string;
 }
-
-interface AssetToken {
-  id: string;
-  chain: string;
-  symbol: string;
-  amount: number;
-  protocol_id: string;
-  logo_url: string | null;
-  name: string;
-  price: number;
-  type: 'liquidity' | 'reward';
-  decimals: number;
-}
-
-interface ProtocolListResponse {
-  id: string;
-  chain: string;
-  name: string;
-  site_url: string;
-  logo_url: string;
-  tvl: number;
-  portfolio_item_list: {
-    detail_types: string[];
-    detail: {
-      supply_token_list?: AssetToken[];
-      borrow_token_list?: AssetToken[];
-      reward_token_list?: AssetToken[];
-      token_list?: AssetToken[];
-    };
-  }[];
-}
-
-type NamedChain = 'eth' | 'matic' | 'bsc' | 'avax' | 'movr' | 'ftm' | 'arb' | 'op' | 'cro';
-const namedChainToNumbered = (namedChain: NamedChain): string => {
-  const chains = {
-    eth: '1',
-    bsc: '56',
-    matic: '137',
-    movr: '1285',
-    avax: '43114',
-    ftm: '250',
-    arb: '42161',
-    op: '10',
-    cro: '25',
-  };
-
-  if (chains[namedChain]) {
-    return chains[namedChain];
-  }
-
-  throw new Error(`unknown chain: ${namedChain}`);
-};
 
 export default async (process: Process) => {
   const { id } = process.task.params as Params;
@@ -99,11 +46,7 @@ export default async (process: Process) => {
     .orderBy('createdAt', 'desc');
 
   const debankUserProtocolsList = (
-    (
-      await axios.get(
-        `https://openapi.debank.com/v1/user/complex_protocol_list?id=${targetWallet.address}`,
-      )
-    ).data as ProtocolListResponse[]
+    await container.debank().getProtocolListWallet(targetWallet.address)
   )
     .map((protocol) => {
       const pureProtocolId = protocol.id.replace(`${protocol.chain}_`, '');
@@ -113,14 +56,7 @@ export default async (process: Process) => {
         id: pureProtocolId,
       };
     })
-    .filter((v) => {
-      try {
-        namedChainToNumbered(v.chain as NamedChain);
-        return true;
-      } catch {
-        return false;
-      }
-    });
+    .filter((v) => Boolean(container.debank().chainResolver(v.chain)));
 
   const existingProtocols = await container.model.protocolTable().whereIn(
     'debankId',
@@ -258,40 +194,47 @@ export default async (process: Process) => {
     protocolsRewardTokens.map((v) => v.protocolId),
   );
 
-  const protocolRewardTokenExistingContracts = await Promise.all(
-    protocolsRewardTokens.map(async (token) => {
-      let protocol = existingTokensProtocols.find((v) => v.debankId === token.protocolId);
-      if (!protocol) {
-        protocol = await container.model
-          .protocolService()
-          .create(
-            'debankByApiReadonly',
-            token.protocolName,
-            '',
-            token.protocolLogo,
-            token.protocolLogo,
-            null,
-            undefined,
-            true,
-            { tvl: token.protocolTvl.toString(10) },
-            token.protocolId,
-          );
-      }
-      const existing = existingRewardProtocolsContracts.find(
-        (v) => token.protocolId === v.protocolDebankId,
-      );
-      if (existing) {
-        return { ...existing, debankId: protocol.debankId };
-      }
+  const protocolRewardTokenExistingContracts = (
+    await Promise.all(
+      protocolsRewardTokens.map(async (token) => {
+        let protocol = existingTokensProtocols.find((v) => v.debankId === token.protocolId);
+        if (!protocol) {
+          protocol = await container.model
+            .protocolService()
+            .create(
+              'debankByApiReadonly',
+              token.protocolName,
+              '',
+              token.protocolLogo,
+              token.protocolLogo,
+              null,
+              undefined,
+              true,
+              { tvl: token.protocolTvl.toString(10) },
+              token.protocolId,
+            );
+        }
 
-      return {
-        debankId: protocol.debankId,
-        ...(await container.model
-          .contractService()
-          .createDebank(protocol, 'reward', '', {}, '', null, true)),
-      };
-    }),
-  );
+        if (protocol.adapter !== 'debankByApiReadonly') {
+          return null;
+        }
+
+        const existing = existingRewardProtocolsContracts.find(
+          (v) => token.protocolId === v.protocolDebankId,
+        );
+        if (existing) {
+          return { ...existing, debankId: protocol.debankId };
+        }
+
+        return {
+          debankId: protocol.debankId,
+          ...(await container.model
+            .contractService()
+            .createDebank(protocol, 'reward', '', {}, '', null, true)),
+        };
+      }),
+    )
+  ).filter((v) => v);
 
   const existingContracts = await container.model
     .contractTable()
@@ -408,7 +351,7 @@ export default async (process: Process) => {
       let tokenRecord = existingTokens.find(
         (exstng) =>
           exstng.address.toLowerCase() === token.id.toLowerCase() &&
-          exstng.network === namedChainToNumbered(token.chain as NamedChain),
+          exstng.network === container.debank().chainResolver(token.chain)?.numbered,
       );
 
       if (!tokenRecord) {
@@ -429,7 +372,7 @@ export default async (process: Process) => {
             .create(
               tokenRecordAlias,
               'ethereum',
-              namedChainToNumbered(token.chain as NamedChain),
+              container.debank().chainResolver(token.chain)?.numbered ?? '',
               token.id.toLowerCase(),
               token.name,
               token.symbol,
@@ -445,7 +388,7 @@ export default async (process: Process) => {
           tokenRecord = await container.model
             .tokenTable()
             .where('blockchain', 'ethereum')
-            .andWhere('network', namedChainToNumbered(token.chain as NamedChain))
+            .andWhere('network', container.debank().chainResolver(token.chain)?.numbered)
             .andWhere('address', token.id.toLowerCase())
             .first();
 
@@ -456,7 +399,7 @@ export default async (process: Process) => {
       }
 
       const walletByChain = chainsWallets.find(
-        (wallet) => wallet.network === namedChainToNumbered(token.chain as NamedChain),
+        (wallet) => wallet.network === container.debank().chainResolver(token.chain)?.numbered,
       );
 
       if (!walletByChain) {
@@ -495,7 +438,7 @@ export default async (process: Process) => {
       let tokenRecord = existingTokens.find(
         (exstng) =>
           exstng.address.toLowerCase() === token.id.toLowerCase() &&
-          exstng.network === namedChainToNumbered(token.chain as NamedChain),
+          exstng.network === container.debank().chainResolver(token.chain)?.numbered,
       );
 
       if (!tokenRecord) {
@@ -516,7 +459,7 @@ export default async (process: Process) => {
             .create(
               tokenRecordAlias,
               'ethereum',
-              namedChainToNumbered(token.chain as NamedChain),
+              container.debank().chainResolver(token.chain)?.numbered ?? '',
               token.id.toLowerCase(),
               token.name,
               token.symbol,
@@ -532,7 +475,7 @@ export default async (process: Process) => {
           tokenRecord = await container.model
             .tokenTable()
             .where('blockchain', 'ethereum')
-            .andWhere('network', namedChainToNumbered(token.chain as NamedChain))
+            .andWhere('network', container.debank().chainResolver(token.chain)?.numbered)
             .andWhere('address', token.id.toLowerCase())
             .first();
 
@@ -543,7 +486,7 @@ export default async (process: Process) => {
       }
 
       const walletByChain = chainsWallets.find(
-        (wallet) => wallet.network === namedChainToNumbered(token.chain as NamedChain),
+        (wallet) => wallet.network === container.debank().chainResolver(token.chain)?.numbered,
       );
 
       if (!walletByChain) {
