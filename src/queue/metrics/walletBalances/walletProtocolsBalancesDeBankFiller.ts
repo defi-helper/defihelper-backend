@@ -194,40 +194,47 @@ export default async (process: Process) => {
     protocolsRewardTokens.map((v) => v.protocolId),
   );
 
-  const protocolRewardTokenExistingContracts = await Promise.all(
-    protocolsRewardTokens.map(async (token) => {
-      let protocol = existingTokensProtocols.find((v) => v.debankId === token.protocolId);
-      if (!protocol) {
-        protocol = await container.model
-          .protocolService()
-          .create(
-            'debankByApiReadonly',
-            token.protocolName,
-            '',
-            token.protocolLogo,
-            token.protocolLogo,
-            null,
-            undefined,
-            true,
-            { tvl: token.protocolTvl.toString(10) },
-            token.protocolId,
-          );
-      }
-      const existing = existingRewardProtocolsContracts.find(
-        (v) => token.protocolId === v.protocolDebankId,
-      );
-      if (existing) {
-        return { ...existing, debankId: protocol.debankId };
-      }
+  const protocolRewardTokenExistingContracts = (
+    await Promise.all(
+      protocolsRewardTokens.map(async (token) => {
+        let protocol = existingTokensProtocols.find((v) => v.debankId === token.protocolId);
+        if (!protocol) {
+          protocol = await container.model
+            .protocolService()
+            .create(
+              'debankByApiReadonly',
+              token.protocolName,
+              '',
+              token.protocolLogo,
+              token.protocolLogo,
+              null,
+              undefined,
+              true,
+              { tvl: token.protocolTvl.toString(10) },
+              token.protocolId,
+            );
+        }
 
-      return {
-        debankId: protocol.debankId,
-        ...(await container.model
-          .contractService()
-          .createDebank(protocol, 'reward', '', {}, '', null, true)),
-      };
-    }),
-  );
+        if (protocol.adapter !== 'debankByApiReadonly') {
+          return null;
+        }
+
+        const existing = existingRewardProtocolsContracts.find(
+          (v) => token.protocolId === v.protocolDebankId,
+        );
+        if (existing) {
+          return { ...existing, debankId: protocol.debankId };
+        }
+
+        return {
+          debankId: protocol.debankId,
+          ...(await container.model
+            .contractService()
+            .createDebank(protocol, 'reward', '', {}, '', null, true)),
+        };
+      }),
+    )
+  ).filter((v) => v);
 
   const existingContracts = await container.model
     .contractTable()
