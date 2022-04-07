@@ -95,5 +95,3 @@ export * as treasuryStatsCache from './treasury/cache';
 
 /* utils */
 export * as utilsTokensLogoBroker from './utils/tokensLogoBroker';
-export * as utilsDebankProtocolsTvlHistoryBroker from './utils/debankProtocolsTvlHistoryBroker';
-export * as utilsDebankProtocolsTvlHistoryFiller from './utils/debankProtocolsTvlHistoryFiller';

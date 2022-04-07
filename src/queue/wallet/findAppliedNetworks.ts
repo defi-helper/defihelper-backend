@@ -1,6 +1,5 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
-import axios from 'axios';
 import {
   walletBlockchainTableName,
   walletTableName,
@@ -9,11 +8,6 @@ import {
 
 export interface Params {
   walletId: string;
-}
-
-interface Asset {
-  chain: string;
-  amount: number;
 }
 
 export default async (process: Process) => {
@@ -44,73 +38,39 @@ export default async (process: Process) => {
       `${walletTableName}.id`,
     )
     .where('user', inheritWallet.user);
-  const assetsList: Asset[] = (
-    await axios.get(
-      `https://openapi.debank.com/v1/user/token_list?id=${inheritWallet.address}&is_all=true`,
-    )
-  ).data;
-
+  const assetsList = await container.debank().getTokensOnWallet(inheritWallet.address);
   const chainsList = [...new Set(assetsList.map((v) => v.chain))];
 
   await Promise.all(
-    chainsList
-      .map((debankChain) => {
-        switch (debankChain) {
-          case 'bsc':
-            return '56';
+    chainsList.map(async (namedChain) => {
+      const numberedNetwork = container.debank().chainResolver(namedChain as string);
+      if (!numberedNetwork) {
+        return;
+      }
 
-          case 'eth':
-            return '1';
+      const existing = existingWallets.some(
+        (w) =>
+          w.network === numberedNetwork.numbered &&
+          w.blockchain === inheritWallet.blockchain &&
+          w.address.toLowerCase() === inheritWallet.address.toLowerCase(),
+      );
 
-          case 'matic':
-            return '137';
+      if (existing || numberedNetwork.numbered === null) {
+        return;
+      }
 
-          case 'avax':
-            return '43114';
-
-          case 'movr':
-            return '1285';
-
-          case 'op':
-            return '10';
-
-          case 'ftm':
-            return '250';
-
-          case 'arb':
-            return '42161';
-
-          case 'cro':
-            return '25';
-
-          default:
-            return null;
-        }
-      })
-      .map(async (network) => {
-        const existing = existingWallets.some(
-          (w) =>
-            w.network === network &&
-            w.blockchain === inheritWallet.blockchain &&
-            w.address.toLowerCase() === inheritWallet.address.toLowerCase(),
+      await container.model
+        .walletService()
+        .createBlockchainWallet(
+          walletOwner,
+          inheritWallet.blockchain,
+          numberedNetwork.numbered,
+          WalletBlockchainType.Wallet,
+          inheritWallet.address,
+          inheritWallet.publicKey,
+          '',
         );
-
-        if (existing || network === null) {
-          return;
-        }
-
-        await container.model
-          .walletService()
-          .createBlockchainWallet(
-            walletOwner,
-            inheritWallet.blockchain,
-            network,
-            WalletBlockchainType.Wallet,
-            inheritWallet.address,
-            inheritWallet.publicKey,
-            '',
-          );
-      }),
+    }),
   );
 
   return process.done();

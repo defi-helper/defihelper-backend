@@ -15,6 +15,7 @@ import { scannerServiceFactory } from '@services/Scanner';
 import { rabbitmqFactory } from '@services/Rabbitmq';
 import { cryptographyServiceFactory } from '@services/Cryptography';
 import { cexServicesProviderFactory } from '@services/Cex';
+import { debankServiceFactory } from '@services/Debank';
 import config from './config';
 
 class AppContainer extends Container<typeof config> {
@@ -39,6 +40,8 @@ class AppContainer extends Container<typeof config> {
   readonly scanner = singleton(scannerServiceFactory(this.parent.scanner));
 
   readonly cryptography = singleton(cryptographyServiceFactory(this.parent.cryptography.key));
+
+  readonly debank = singleton(debankServiceFactory());
 
   readonly socialStats = singleton(() => new SocialStatsGateway(this.parent.socilaStats));
 

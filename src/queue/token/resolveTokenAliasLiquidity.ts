@@ -1,7 +1,6 @@
 import { Process } from '@models/Queue/Entity';
 import container from '@container';
 import { TokenAliasLiquidity } from '@models/Token/Entity';
-import axios from 'axios';
 
 export interface Params {
   aliasId: string;
@@ -24,41 +23,7 @@ export default async (process: Process) => {
     throw new Error('token alias not found');
   }
 
-  let chain: 'movr' | 'eth' | 'bsc' | 'matic' | 'avax' | 'ftm' | 'arb' | 'op' | 'cro';
-  switch (params.network) {
-    case '1':
-      chain = 'eth';
-      break;
-    case '56':
-      chain = 'bsc';
-      break;
-    case '137':
-      chain = 'matic';
-      break;
-    case '43114':
-      chain = 'avax';
-      break;
-    case '1285':
-      chain = 'movr';
-      break;
-    case '10':
-      chain = 'op';
-      break;
-    case '250':
-      chain = 'ftm';
-      break;
-    case '42161':
-      chain = 'arb';
-      break;
-
-    default:
-      throw new Error(`unsupported network: ${params.network}`);
-  }
-
-  const token: ApiTokenResponse | null = (
-    await axios.get(`https://openapi.debank.com/v1/token?chain_id=${chain}&id=${params.address}`)
-  ).data;
-
+  const token = await container.debank().getToken(params.network, params.address);
   if (!token) {
     return process.done();
   }
