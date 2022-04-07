@@ -168,60 +168,15 @@ function debankPriceFeed(network: string): { usd: TokenPriceFeedUSD } {
     usd: async (address: string) => {
       const key = `ethereum:${network}:${address}:price`;
 
-      let chain: 'movr' | 'bsc' | 'eth' | 'matic' | 'avax' | 'ftm' | 'arb' | 'op' | 'cro';
-      switch (network) {
-        case '1':
-          chain = 'eth';
-          break;
-
-        case '10':
-          chain = 'op';
-          break;
-
-        case '25':
-          chain = 'cro';
-          break;
-
-        case '250':
-          chain = 'ftm';
-          break;
-
-        case '42161':
-          chain = 'arb';
-          break;
-
-        case '56':
-          chain = 'bsc';
-          break;
-
-        case '137':
-          chain = 'matic';
-          break;
-
-        case '43113':
-        case '43114':
-          chain = 'avax';
-          break;
-
-        case '1285':
-          chain = 'movr';
-          break;
-
-        default:
-          throw new Error(`unsupported network: ${network}`);
-      }
-
       const cachedPrice = await cacheGet(key);
       if (cachedPrice) {
         return cachedPrice;
       }
 
-      const { price } = (
-        await axios.get(`https://openapi.debank.com/v1/token?chain_id=${chain}&id=${address}`)
-      ).data;
+      const { price } = await container.debank().getToken(network, address);
+      cacheSet(key, price.toString());
 
-      cacheSet(key, price.toString(10));
-      return price.toString(10);
+      return price.toString();
     },
   };
 }
