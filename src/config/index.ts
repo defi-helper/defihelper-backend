@@ -62,7 +62,6 @@ export default {
   },
   blockchain: {
     ethereum: {
-      // Main
       eth: {
         node: array(process.env.ETH_NODE ?? '[]'),
         historicalNode: array(process.env.ETH_NODE_HISTORICAL ?? '[]'),
@@ -70,7 +69,6 @@ export default {
         consumers: array(process.env.ETH_CONSUMERS ?? '[]'),
         avgBlockTime: 13.2,
       },
-      // Ropsten
       ethRopsten: {
         node: array(process.env.ETH_ROPSTEN_NODE ?? '[]'),
         historicalNode: array(process.env.ETH_ROPSTEN_NODE_HISTORICAL ?? '[]'),
@@ -78,7 +76,6 @@ export default {
         consumers: array(process.env.ETH_ROPSTEN_CONSUMERS ?? '[]'),
         avgBlockTime: 13.2,
       },
-      // BSC
       bsc: {
         node: array(process.env.BSC_NODE ?? '[]'),
         historicalNode: array(process.env.BSC_NODE_HISTORICAL ?? '[]'),
@@ -86,7 +83,6 @@ export default {
         consumers: array(process.env.BSC_CONSUMERS ?? '[]'),
         avgBlockTime: 3,
       },
-      // Polygon
       polygon: {
         node: array(process.env.POLYGON_NODE ?? '[]'),
         historicalNode: array(process.env.POLYGON_NODE_HISTORICAL ?? '[]'),
@@ -94,15 +90,13 @@ export default {
         consumers: array(process.env.POLYGON_CONSUMERS ?? '[]'),
         avgBlockTime: 2.5,
       },
-
-      optimisticEthereum: {
-        node: array(process.env.OPTIMISTIC_ETHEREUM_NODE ?? '[]'),
-        historicalNode: array(process.env.OPTIMISTIC_ETHEREUM_NODE_HISTORICAL ?? '[]'),
-        inspectors: array(process.env.OPTIMISTIC_ETHEREUM_INSPECTORS ?? '[]'),
-        consumers: array(process.env.OPTIMISTIC_ETHEREUM_CONSUMERS ?? '[]'),
-        avgBlockTime: 10, // todo check me
+      optimistic: {
+        node: array(process.env.OPTIMISTIC_NODE ?? '[]'),
+        historicalNode: array(process.env.OPTIMISTIC_NODE_HISTORICAL ?? '[]'),
+        inspectors: array(process.env.OPTIMISTIC_INSPECTORS ?? '[]'),
+        consumers: array(process.env.OPTIMISTIC_CONSUMERS ?? '[]'),
+        avgBlockTime: 10,
       },
-
       fantom: {
         node: array(process.env.PANTOM_NODE ?? '[]'),
         historicalNode: array(process.env.PANTOM_NODE_HISTORICAL ?? '[]'),
@@ -110,7 +104,6 @@ export default {
         consumers: array(process.env.PANTOM_CONSUMERS ?? '[]'),
         avgBlockTime: 1.0,
       },
-
       cronos: {
         node: array(process.env.CRONOS_NODE ?? '[]'),
         historicalNode: array(process.env.CRONOS_NODE_HISTORICAL ?? '[]'),
@@ -118,7 +111,6 @@ export default {
         consumers: array(process.env.CRONOS_CONSUMERS ?? '[]'),
         avgBlockTime: 6.5,
       },
-
       arbitrum: {
         node: array(process.env.ARBITRUM_NODE ?? '[]'),
         historicalNode: array(process.env.ARBITRUM_NODE_HISTORICAL ?? '[]'),
@@ -126,8 +118,6 @@ export default {
         consumers: array(process.env.ARBITRUM_CONSUMERS ?? '[]'),
         avgBlockTime: 0.5,
       },
-
-      // Moonriver
       moonriver: {
         node: array(process.env.MOONRIVER_NODE ?? '[]'),
         historicalNode: array(process.env.MOONRIVER_NODE_HISTORICAL ?? '[]'),
@@ -135,7 +125,6 @@ export default {
         consumers: array(process.env.MOONRIVER_CONSUMERS ?? '[]'),
         avgBlockTime: 13,
       },
-      // Avalanche
       avalanche: {
         node: array(process.env.AVALANCHE_NODE ?? '[]'),
         historicalNode: array(process.env.AVALANCHE_NODE_HISTORICAL ?? '[]'),
@@ -143,7 +132,6 @@ export default {
         consumers: array(process.env.AVALANCHE_CONSUMERS ?? '[]'),
         avgBlockTime: 1,
       },
-      // Avalanche Testnet
       avalancheTestnet: {
         node: array(process.env.AVALANCHE_TESTNET_NODE ?? '[]'),
         historicalNode: array(process.env.AVALANCHE_TESTNET_NODE_HISTORICAL ?? '[]'),
@@ -151,7 +139,6 @@ export default {
         consumers: array(process.env.AVALANCHE__TESTNET_CONSUMERS ?? '[]'),
         avgBlockTime: 1,
       },
-      // Local
       local: {
         node: array(process.env.ETH_LOCAL_NODE ?? '[]'),
         historicalNode: array(process.env.ETH_LOCAL_NODE_HISTORICAL ?? '[]'),

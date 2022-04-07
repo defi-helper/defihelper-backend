@@ -198,6 +198,7 @@ function debankPriceFeed(network: string): { usd: TokenPriceFeedUSD } {
           chain = 'matic';
           break;
 
+        case '43113':
         case '43114':
           chain = 'avax';
           break;
@@ -251,7 +252,7 @@ export interface Config {
   cronos: NetworkConfig;
   fantom: NetworkConfig;
   arbitrum: NetworkConfig;
-  optimisticEthereum: NetworkConfig;
+  optimistic: NetworkConfig;
   moonriver: NetworkConfig;
   avalanche: NetworkConfig;
   avalancheTestnet: NetworkConfig;
@@ -330,7 +331,6 @@ export class BlockchainContainer extends Container<Config> {
       tokenPriceResolver: debankPriceFeed('137'),
       network: this.parent.polygon,
     }),
-
     '250': networkFactory({
       id: '250',
       testnet: false,
@@ -348,7 +348,6 @@ export class BlockchainContainer extends Container<Config> {
       tokenPriceResolver: debankPriceFeed('250'),
       network: this.parent.fantom,
     }),
-
     '25': networkFactory({
       id: '25',
       testnet: false,
@@ -366,7 +365,6 @@ export class BlockchainContainer extends Container<Config> {
       tokenPriceResolver: debankPriceFeed('25'),
       network: this.parent.cronos,
     }),
-
     '42161': networkFactory({
       id: '42161',
       testnet: false,
@@ -384,11 +382,10 @@ export class BlockchainContainer extends Container<Config> {
       tokenPriceResolver: debankPriceFeed('42161'),
       network: this.parent.arbitrum,
     }),
-
     '10': networkFactory({
       id: '10',
       testnet: false,
-      name: 'Optimistic Ethereum',
+      name: 'Optimistic',
       txExplorerURL: new URL('https://optimistic.etherscan.io/tx'),
       walletExplorerURL: new URL('https://optimistic.etherscan.io/address'),
       getContractAbi: useEtherscanContractAbi('https://api-optimistic.etherscan.io/api'),
@@ -396,13 +393,12 @@ export class BlockchainContainer extends Container<Config> {
       nativeTokenPrice: coingeckoPriceFeedUSD('ethereum'),
       nativeTokenDetails: {
         decimals: 18,
-        symbol: 'ETH',
-        name: 'Ethereum',
+        symbol: 'OETH',
+        name: 'Optimism Ethereum',
       },
       tokenPriceResolver: debankPriceFeed('10'),
-      network: this.parent.optimisticEthereum,
+      network: this.parent.optimistic,
     }),
-
     '1285': networkFactory({
       id: '1285',
       testnet: false,
@@ -451,7 +447,7 @@ export class BlockchainContainer extends Container<Config> {
         symbol: 'AVAX',
         name: 'Avalanche',
       },
-      tokenPriceResolver: debankPriceFeed('43113'),
+      tokenPriceResolver: debankPriceFeed('43114'),
       network: this.parent.avalanche,
     }),
     '31337': networkFactory({
