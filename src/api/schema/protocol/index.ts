@@ -443,6 +443,7 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
           adapters: automates ?? [],
           autorestakeAdapter,
         },
+        {},
         name,
         description,
         link,

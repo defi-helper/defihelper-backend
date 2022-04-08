@@ -228,7 +228,6 @@ export class ContractService {
       id: parentContract.id,
       adapter,
       address: blockchain === 'ethereum' ? address.toLowerCase() : address,
-
       automate: {
         adapters: automate.adapters,
         autorestakeAdapter: automate.autorestakeAdapter,
@@ -239,6 +238,7 @@ export class ContractService {
       metric,
       network,
     };
+    console.log(childContract);
 
     await this.database.transaction(async (trx) => {
       await this.contractTable().insert(parentContract).transacting(trx);
