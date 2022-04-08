@@ -95,3 +95,5 @@ export * as treasuryStatsCache from './treasury/cache';
 
 /* utils */
 export * as utilsTokensLogoBroker from './utils/tokensLogoBroker';
+
+export * as sendTelegramNews from './sendTelegramNews';
