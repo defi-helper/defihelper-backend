@@ -92,9 +92,14 @@ export class Debank {
     wallet: string,
     chainId: string,
   ): Promise<(Token & { amount: number })[]> => {
+    const chain = this.chainResolver(chainId);
+    if (!chain) {
+      throw new Error(`Unknown chain: ${chainId}`);
+    }
+
     return this.apiRequest('user/token_list', {
       id: wallet,
-      chain_id: chainId,
+      chain_id: chain.named,
       is_all: 'true',
     });
   };
