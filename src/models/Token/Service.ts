@@ -54,13 +54,18 @@ export class TokenAliasService {
 }
 
 export class TokenService {
-  public readonly onCreated = new Emitter<Token>((token) => {
+  public readonly onCreated = new Emitter<Token>(async (token) => {
     if (token.blockchain === 'ethereum') {
       if (token.name === '' || token.symbol === '' || token.decimals === 0) {
         container.model.queueService().push('tokenInfoEth', { token: token.id });
       }
 
       if (token.alias) {
+        const tokenAlias = await container.model.tokenAliasTable().where(`id`, token.alias).first();
+        if (tokenAlias?.liquidity !== TokenAliasLiquidity.Unknown) {
+          return;
+        }
+
         container.model.queueService().push('resolveTokenAliasLiquidity', {
           aliasId: token.alias,
           network: token.network,

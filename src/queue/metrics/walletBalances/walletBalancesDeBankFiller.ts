@@ -39,7 +39,7 @@ export default async (process: Process) => {
         : tokenAsset.id,
     name: tokenAsset.name.replace(/\0/g, '').trim(),
     symbol: tokenAsset.symbol.replace(/\0/g, '').trim(),
-  }));
+  })).filter(v => v.is_wallet === true);
 
   const existingTokensRecords = await container.model
     .tokenTable()

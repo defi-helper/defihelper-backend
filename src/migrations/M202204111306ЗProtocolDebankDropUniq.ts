@@ -7,6 +7,6 @@ export default async () => {
         ON protocol_contract_debank (address);
 
       ALTER TABLE protocol_contract_debank
-        DROP CONSTRAINT protocol_contract_debank_address_unique;
+        DROP CONSTRAINT IF EXISTS protocol_contract_debank_address_unique;
   `);
 };
