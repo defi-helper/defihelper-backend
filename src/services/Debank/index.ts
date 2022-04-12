@@ -1,3 +1,4 @@
+import container from '@container';
 import { Factory } from '@services/Container';
 import axios from 'axios';
 import buildUrl from 'build-url';
@@ -67,7 +68,7 @@ export class Debank {
       }
 
       return r;
-    });
+    })
   };
 
   getToken = async (chainId: string, address: string): Promise<Token> => {
@@ -77,7 +78,9 @@ export class Debank {
     }
 
     return this.apiRequest('token', {
-      id: address,
+      id: address === '0x0000000000000000000000000000000000000000'
+        ? chain.named : address
+      ,
       chain_id: chain.named,
     });
   };
@@ -107,7 +110,7 @@ export class Debank {
   getProtocolListWallet = async (wallet: string): Promise<ProtocolListItem[]> => {
     return this.apiRequest('user/complex_protocol_list', {
       id: wallet,
-    });
+    }) ?? [];
   };
 }
 
