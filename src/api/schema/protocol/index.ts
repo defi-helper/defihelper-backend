@@ -1869,3 +1869,36 @@ export const ProtocolFavoriteMutation: GraphQLFieldConfig<any, Request> = {
     return true;
   }),
 };
+
+export const ContractMetricsScanMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLBoolean),
+  args: {
+    contract: {
+      type: GraphQLNonNull(UuidType),
+      description: 'Contract id',
+    },
+  },
+  resolve: onlyAllowed(
+    'protocol.create',
+    async (root, { contract: contractId }, { currentUser }) => {
+      if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+      const contract = await container.model
+        .contractTable()
+        .innerJoin(
+          contractBlockchainTableName,
+          `${contractBlockchainTableName}.id`,
+          `${contractTableName}.id`,
+        )
+        .where(`${contractTableName}.id`, contractId)
+        .first();
+      if (!contract) throw new UserInputError('Contract not found');
+
+      await container.model.queueService().push('metricsContractCurrent', {
+        contract: contract.id,
+      });
+
+      return true;
+    },
+  ),
+};

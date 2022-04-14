@@ -97,6 +97,7 @@ export function route({ express, server }: { express: Express; server: Server })
           contractDelete: protocolSchemas.ContractDeleteMutation,
           contractWalletLink: protocolSchemas.ContractWalletLinkMutation,
           contractWalletUnlink: protocolSchemas.ContractWalletUnlinkMutation,
+          contractMetricScan: protocolSchemas.ContractMetricsScanMutation,
           userNotificationToggle: userNotificationSchemas.UserNotificationToggleMutation,
           tokenUpdate: tokenSchemas.TokenUpdateMutation,
           tokenAliasCreate: tokenSchemas.TokenAliasCreateMutation,
