@@ -1894,9 +1894,13 @@ export const ContractMetricsScanMutation: GraphQLFieldConfig<any, Request> = {
         .first();
       if (!contract) throw new UserInputError('Contract not found');
 
-      await container.model.queueService().push('metricsContractCurrent', {
-        contract: contract.id,
-      });
+      await container.model.queueService().push(
+        'metricsContractCurrent',
+        {
+          contract: contract.id,
+        },
+        { priority: 7 },
+      );
 
       return true;
     },
