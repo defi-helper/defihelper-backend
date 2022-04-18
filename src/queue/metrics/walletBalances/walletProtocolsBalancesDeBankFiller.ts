@@ -496,7 +496,6 @@ export default async (process: Process) => {
       );
 
       if (!walletByChain) {
-        // todo maybe should create wallet here
         return null;
       }
 
