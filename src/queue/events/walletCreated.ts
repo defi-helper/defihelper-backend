@@ -1,6 +1,10 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
-import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
+import {
+  walletBlockchainTableName,
+  walletTableName,
+  WalletBlockchainType,
+} from '@models/Wallet/Entity';
 
 export interface Params {
   id: string;
@@ -34,13 +38,17 @@ export default async (process: Process) => {
     container.model.queueService().push('findWalletContracts', {
       walletId: blockchainWallet.id,
     }),
-    container.model.queueService().push(
-      'metricsWalletBalancesDeBankFiller',
-      {
-        id: blockchainWallet.id,
-      },
-      { topic: 'metricCurrent' },
-    ),
+    new Promise(() => {
+      if (blockchainWallet.type === WalletBlockchainType.Contract) return;
+
+      container.model.queueService().push(
+        'metricsWalletBalancesDeBankFiller',
+        {
+          id: blockchainWallet.id,
+        },
+        { topic: 'metricCurrent' },
+      );
+    }),
   ]);
 
   return process.done();

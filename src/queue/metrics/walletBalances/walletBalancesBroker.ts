@@ -15,7 +15,7 @@ export default async (process: Process) => {
       `${walletBlockchainTableName}.id`,
       `${walletTableName}.id`,
     )
-    .where(`${walletBlockchainTableName}.type`, WalletBlockchainType.Wallet)
+    .andWhere(`${walletBlockchainTableName}.type`, WalletBlockchainType.Wallet)
     .andWhere(`${walletBlockchainTableName}.blockchain`, 'ethereum');
 
   const lag = 86400 / wallets.length;

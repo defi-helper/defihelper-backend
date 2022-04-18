@@ -10,6 +10,7 @@ import {
 export default async (process: Process) => {
   const wallets = await container.model
     .walletTable()
+    .distinct(`${walletBlockchainTableName}.address`, `${walletBlockchainTableName}.id`)
     .innerJoin(
       walletBlockchainTableName,
       `${walletBlockchainTableName}.id`,
