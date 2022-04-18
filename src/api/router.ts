@@ -188,7 +188,6 @@ export function route({ express, server }: { express: Express; server: Server })
     };
 
     await container.model.queueService().push('sendEventsNotifications', eventQueueParam);
-    await container.model.queueService().push('linkContractsFromEvents', eventQueueParam);
 
     res.sendStatus(200);
   });
