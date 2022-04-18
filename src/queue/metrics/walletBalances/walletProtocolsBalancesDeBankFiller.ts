@@ -1,6 +1,11 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
-import { Wallet, walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
+import {
+  Wallet,
+  walletBlockchainTableName,
+  WalletBlockchainType,
+  walletTableName,
+} from '@models/Wallet/Entity';
 import {
   Contract,
   contractDebankTableName,
@@ -40,8 +45,9 @@ export default async (process: Process) => {
       `${walletTableName}.id`,
     )
     .where({
-      user: targetWallet.user,
+      address: targetWallet.address,
       blockchain: 'ethereum',
+      type: WalletBlockchainType.Wallet,
     })
     .orderBy('createdAt', 'desc');
 
@@ -490,7 +496,6 @@ export default async (process: Process) => {
       );
 
       if (!walletByChain) {
-        // todo maybe should create wallet here
         return null;
       }
 
