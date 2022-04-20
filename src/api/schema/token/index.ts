@@ -16,6 +16,11 @@ import {
 } from 'graphql';
 import { metricWalletTokenTableName } from '@models/Metric/Entity';
 import {
+  contractBlockchainTableName,
+  contractTableName,
+  protocolTableName,
+} from '@models/Protocol/Entity';
+import {
   BlockchainEnum,
   BlockchainFilterInputType,
   onlyAllowed,
@@ -208,7 +213,7 @@ export const TokenAliasMetricType = new GraphQLObjectType({
   },
 });
 
-export const TokenAliasType = new GraphQLObjectType<TokenAlias>({
+export const TokenAliasType = new GraphQLObjectType<TokenAlias & { onlyInteracted?: string }>({
   name: 'TokenAlias',
   fields: {
     id: {
@@ -272,6 +277,18 @@ export const TokenAliasType = new GraphQLObjectType<TokenAlias>({
               )
               .andWhere('t.alias', tokenAlias.id)
               .andWhere('wlt.user', currentUser.id)
+              .andWhere(function () {
+                if (typeof tokenAlias.onlyInteracted !== 'string') return;
+
+                this.innerJoin(
+                  `${contractTableName} AS ct`,
+                  `${metricWalletTokenTableName}.contract`,
+                  'ct.id',
+                )
+                  .innerJoin(`${contractBlockchainTableName} AS ctb`, `ctb.id`, 'ct.id')
+                  .innerJoin(`${protocolTableName} AS pt`, 'ct.protocol', 'pt.id')
+                  .andWhere('pt.id', tokenAlias.onlyInteracted);
+              })
               .orderBy(`${metricWalletTokenTableName}.wallet`)
               .orderBy(`${metricWalletTokenTableName}.contract`)
               .orderBy(`${metricWalletTokenTableName}.token`)

@@ -1002,11 +1002,13 @@ export const UserType = new GraphQLObjectType<User, Request>({
         }
 
         return {
-          list: await select
-            .clone()
-            .orderBy('createdAt', 'desc')
-            .limit(pagination.limit)
-            .offset(pagination.offset),
+          list: (
+            await select
+              .clone()
+              .orderBy('createdAt', 'desc')
+              .limit(pagination.limit)
+              .offset(pagination.offset)
+          ).map((row) => ({ ...row, onlyInteracted: filter.protocol })),
           pagination: {
             count: await select.clone().countDistinct(`${tokenAliasTableName}.id`).first(),
           },
