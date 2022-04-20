@@ -213,6 +213,161 @@ export const TokenAliasMetricType = new GraphQLObjectType({
   },
 });
 
+export const TokenAliasStakedStatisticsType = new GraphQLObjectType<
+  TokenAlias & { protocol: string }
+>({
+  name: 'TokenAliasStakedStatistics',
+  fields: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+      description: 'Identificator',
+    },
+    name: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Name',
+    },
+    symbol: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Symbol',
+    },
+    logoUrl: {
+      type: GraphQLString,
+      description: 'Logo url',
+    },
+    liquidity: {
+      type: GraphQLNonNull(TokenAliasLiquidityEnum),
+      description: 'Token liquidity',
+    },
+    metric: {
+      type: GraphQLNonNull(TokenAliasMetricType),
+      resolve: async (tokenAlias, args, { currentUser }) => {
+        const emptyMetric = {
+          myBalance: '0',
+          myUSD: '0',
+          myPortfolioPercent: '0',
+        };
+        if (!currentUser) {
+          return emptyMetric;
+        }
+
+        const database = container.database();
+        const metric = await container
+          .database()
+          .sum({ myBalance: 'balance', myUSD: 'usd' })
+          .from(
+            container.model
+              .metricWalletTokenTable()
+              .distinctOn(
+                `${metricWalletTokenTableName}.wallet`,
+                `${metricWalletTokenTableName}.contract`,
+                `${metricWalletTokenTableName}.token`,
+              )
+              .columns([
+                database.raw(`(${metricWalletTokenTableName}.data->>'usd')::numeric AS usd`),
+                database.raw(
+                  `(${metricWalletTokenTableName}.data->>'balance')::numeric AS balance`,
+                ),
+              ])
+              .innerJoin(`${tokenTableName} AS t`, 't.id', `${metricWalletTokenTableName}.token`)
+              .innerJoin(
+                `${walletTableName} AS wlt`,
+                `${metricWalletTokenTableName}.wallet`,
+                'wlt.id',
+              )
+              .innerJoin(
+                `${contractTableName} AS ct`,
+                `${metricWalletTokenTableName}.contract`,
+                'ct.id',
+              )
+              .innerJoin(`${contractBlockchainTableName} AS ctb`, `ctb.id`, 'ct.id')
+              .innerJoin(`${protocolTableName} AS pt`, 'ct.protocol', 'pt.id')
+              .whereRaw(
+                `(${metricWalletTokenTableName}.data->>'usd' IS NOT NULL OR ${metricWalletTokenTableName}.data->>'balance' IS NOT NULL)`,
+              )
+              .andWhere('t.alias', tokenAlias.id)
+              .andWhere('wlt.user', currentUser.id)
+              .andWhere('pt.id', tokenAlias.protocol)
+              .orderBy(`${metricWalletTokenTableName}.wallet`)
+              .orderBy(`${metricWalletTokenTableName}.contract`)
+              .orderBy(`${metricWalletTokenTableName}.token`)
+              .orderBy(`${metricWalletTokenTableName}.date`, 'DESC')
+              .as('metric'),
+          )
+          .first();
+
+        if (!metric) {
+          return emptyMetric;
+        }
+
+        return {
+          myBalance: metric.myBalance || '0',
+          myUSD: metric.myUSD || '0',
+          myPortfolioPercent: 0,
+        };
+      },
+    },
+    tokens: {
+      type: GraphQLNonNull(PaginateList('TokenListInteractedType', GraphQLNonNull(TokenType))),
+      args: {
+        filter: {
+          type: new GraphQLInputObjectType({
+            name: 'TokenListInteractedFilterInputType',
+            fields: {
+              blockchain: {
+                type: BlockchainFilterInputType,
+              },
+              address: {
+                type: GraphQLList(GraphQLNonNull(GraphQLString)),
+              },
+              search: {
+                type: GraphQLString,
+              },
+            },
+          }),
+          defaultValue: {},
+        },
+        sort: SortArgument(
+          'TokenListInteractedSortInputType',
+          ['id', 'name', 'symbol', 'address', 'createdAt'],
+          [{ column: 'name', order: 'asc' }],
+        ),
+        pagination: PaginationArgument('TokenListInteractedPaginationInputType'),
+      },
+      resolve: async (alias, { filter, sort, pagination }) => {
+        const select = container.model
+          .tokenTable()
+          .where('alias', alias.id)
+          .andWhere(function () {
+            if (filter.blockchain !== undefined) {
+              const { protocol: blockchain, network } = filter.blockchain;
+              this.andWhere('blockchain', blockchain);
+              if (network !== undefined) {
+                this.andWhere('network', network);
+              }
+            }
+            if (Array.isArray(filter.address) && filter.address.length > 0) {
+              this.whereIn('address', filter.address);
+            }
+            if (filter.search !== undefined && filter.search !== '') {
+              this.andWhere('name', 'iLike', `%${filter.search}%`);
+            }
+          });
+
+        return {
+          list: await select
+            .clone()
+            .orderBy(sort)
+            .limit(pagination.limit)
+            .offset(pagination.offset),
+          pagination: {
+            count: await select.clone().count().first(),
+          },
+        };
+      },
+    },
+  },
+});
+
 export const TokenAliasType = new GraphQLObjectType<TokenAlias & { onlyInteracted?: string }>({
   name: 'TokenAlias',
   fields: {

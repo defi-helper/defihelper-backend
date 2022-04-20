@@ -27,7 +27,11 @@ import BN from 'bignumber.js';
 import * as WavesCrypto from '@waves/ts-lib-crypto';
 import * as WavesMarshall from '@waves/marshall';
 import { AuthenticationError, UserInputError } from 'apollo-server-express';
-import { TokenAliasLiquidityEnum, TokenAliasType } from '@api/schema/token';
+import {
+  TokenAliasLiquidityEnum,
+  TokenAliasStakedStatisticsType,
+  TokenAliasType,
+} from '@api/schema/token';
 import { metricWalletTableName, metricWalletTokenTableName } from '@models/Metric/Entity';
 import {
   TokenAlias,
@@ -952,6 +956,68 @@ export const UserType = new GraphQLObjectType<User, Request>({
       type: GraphQLNonNull(GraphQLBoolean),
       description: 'Is portfolio collected',
     },
+    tokenAliasesStakedMetrics: {
+      type: GraphQLNonNull(
+        PaginateList(
+          'UserTokenAliasesStakedMetricsListType',
+          GraphQLNonNull(TokenAliasStakedStatisticsType),
+        ),
+      ),
+      args: {
+        filter: {
+          type: new GraphQLInputObjectType({
+            name: 'UserTokenAliasesStakedMetricsListFilterInputType',
+            fields: {
+              liquidity: {
+                type: GraphQLList(GraphQLNonNull(TokenAliasLiquidityEnum)),
+                description: 'Liquidity token',
+              },
+              protocol: {
+                type: GraphQLNonNull(UuidType),
+                description: 'Target protocol',
+              },
+            },
+          }),
+          defaultValue: {},
+        },
+        pagination: PaginationArgument('UserTokenAliasesStakedMetricsListPaginationInputType'),
+      },
+      resolve: async (user, { filter, pagination }) => {
+        let select = container.model
+          .metricWalletTokenTable()
+          .column(`${tokenAliasTableName}.*`)
+          .innerJoin(tokenTableName, `${tokenTableName}.id`, `${metricWalletTokenTableName}.token`)
+          .innerJoin(tokenAliasTableName, `${tokenAliasTableName}.id`, `${tokenTableName}.alias`)
+          .innerJoin(
+            walletTableName,
+            `${walletTableName}.id`,
+            `${metricWalletTokenTableName}.wallet`,
+          )
+          .innerJoin(
+            protocolContractTableName,
+            `${protocolContractTableName}.id`,
+            `${metricWalletTokenTableName}.contract`,
+          )
+          .andWhere(`${protocolContractTableName}.protocol`, filter.protocol)
+          .andWhere(`${walletTableName}.user`, user.id)
+          .groupBy(`${tokenAliasTableName}.id`);
+
+        if (Array.isArray(filter.liquidity) && filter.liquidity.length > 0) {
+          select = select.whereIn(`${tokenAliasTableName}.liquidity`, filter.liquidity);
+        }
+
+        return {
+          list: await select
+            .clone()
+            .orderBy('createdAt', 'desc')
+            .limit(pagination.limit)
+            .offset(pagination.offset),
+          pagination: {
+            count: await select.clone().countDistinct(`${tokenAliasTableName}.id`).first(),
+          },
+        };
+      },
+    },
     tokenAliases: {
       type: GraphQLNonNull(PaginateList('UserTokenAliasListType', GraphQLNonNull(TokenAliasType))),
       args: {
@@ -1002,13 +1068,11 @@ export const UserType = new GraphQLObjectType<User, Request>({
         }
 
         return {
-          list: (
-            await select
-              .clone()
-              .orderBy('createdAt', 'desc')
-              .limit(pagination.limit)
-              .offset(pagination.offset)
-          ).map((row) => ({ ...row, onlyInteracted: filter.protocol })),
+          list: await select
+            .clone()
+            .orderBy('createdAt', 'desc')
+            .limit(pagination.limit)
+            .offset(pagination.offset),
           pagination: {
             count: await select.clone().countDistinct(`${tokenAliasTableName}.id`).first(),
           },
