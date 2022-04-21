@@ -31,13 +31,13 @@ export const TreasuryQuery: GraphQLFieldConfig<any, Request> = {
   resolve: () => {
     return new Promise((resolve) => {
       container.cache().get('defihelper:treasury:stats', (err, reply) => {
-        if (err) {
-          return {
+        if (err || reply === null) {
+          return resolve({
             protocolsCount: '0',
             contractsCount: '0',
             portfoliosCount: '0',
             trackedUSD: '0',
-          };
+          });
         }
 
         return resolve(JSON.parse(reply as string));
