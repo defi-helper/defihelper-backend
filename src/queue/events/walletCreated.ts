@@ -38,17 +38,15 @@ export default async (process: Process) => {
     container.model.queueService().push('findWalletContracts', {
       walletId: blockchainWallet.id,
     }),
-    new Promise(() => {
-      if (blockchainWallet.type === WalletBlockchainType.Contract) return;
-
-      container.model.queueService().push(
-        'metricsWalletBalancesDeBankFiller',
-        {
-          id: blockchainWallet.id,
-        },
-        { topic: 'metricCurrent' },
-      );
-    }),
+    blockchainWallet.type !== WalletBlockchainType.Contract
+      ? container.model.queueService().push(
+          'metricsWalletBalancesDeBankFiller',
+          {
+            id: blockchainWallet.id,
+          },
+          { topic: 'metricCurrent' },
+        )
+      : null,
   ]);
 
   return process.done();
