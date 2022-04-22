@@ -77,7 +77,7 @@ export interface WavesAutomateAdapter {
 }
 
 interface ContractsResolver {
-  default?: (
+  [methodName: string]: (
     provider: any,
     options: { cacheAuth?: string },
   ) => Promise<
