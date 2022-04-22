@@ -999,7 +999,7 @@ export const UserType = new GraphQLObjectType<User, Request>({
             `${metricWalletTokenTableName}.contract`,
           )
           .andWhere(`${protocolContractTableName}.protocol`, filter.protocol)
-          .andWhere(`${walletTableName}.user`, user.id)
+          .where(`${walletTableName}.user`, user.id)
           .groupBy(`${tokenAliasTableName}.id`);
 
         if (Array.isArray(filter.liquidity) && filter.liquidity.length > 0) {

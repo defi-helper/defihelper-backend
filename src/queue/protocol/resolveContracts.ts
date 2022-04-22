@@ -9,11 +9,13 @@ export interface Params {
   protocolId: string;
   protocolBlockchain: Blockchain;
   protocolNetwork: string;
+  resolver: string;
   events: string[];
 }
 
 export default async (process: Process) => {
-  const { protocolId, protocolBlockchain, protocolNetwork, events } = process.task.params as Params;
+  const { protocolId, protocolBlockchain, protocolNetwork, events, resolver } = process.task
+    .params as Params;
 
   const protocol = await container.model.protocolTable().where('id', protocolId).first();
   if (!protocol) throw new Error('Protocol not found');
@@ -25,12 +27,12 @@ export default async (process: Process) => {
     if (
       !protocolAdapters.automates ||
       !protocolAdapters.automates.contractsResolver ||
-      !protocolAdapters.automates.contractsResolver.default
+      !protocolAdapters.automates.contractsResolver[resolver]
     ) {
       throw new Error('Adapter have no pools resolver, u should implement it first');
     }
 
-    protocolDefaultResolver = protocolAdapters.automates.contractsResolver.default;
+    protocolDefaultResolver = protocolAdapters.automates.contractsResolver[resolver];
   } catch (e) {
     if (e instanceof Adapters.TemporaryOutOfService) {
       return process
