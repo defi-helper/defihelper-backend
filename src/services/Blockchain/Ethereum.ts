@@ -1,4 +1,5 @@
 import { Container, Factory, singleton } from '@services/Container';
+import { URL } from 'url';
 import dfhContracts from '@defihelper/networks/contracts.json';
 import { isKey } from '@services/types';
 import axios from 'axios';
@@ -15,8 +16,13 @@ import uniswapV2PairABI from './abi/ethereum/uniswapPair.json';
 import pancakeSmartChefInitializable from './abi/ethereum/pancakeSmartChefInitializableABI.json';
 import synthetixStaking from './abi/ethereum/synthetixStakingABI.json';
 
-function providerFactory(host: string) {
-  return () => new ethers.providers.JsonRpcProvider(host);
+function providerFactory(url: URL) {
+  return () =>
+    new ethers.providers.JsonRpcProvider({
+      url: `${url.protocol}//${url.hostname}${url.pathname}`,
+      user: url.username ? url.username : undefined,
+      password: url.password ? url.password : undefined,
+    });
 }
 
 function providerRandomizerFactory(factories: Array<Factory<ethers.providers.JsonRpcProvider>>) {
@@ -88,14 +94,16 @@ function networkFactory({
   tokenPriceResolver: { usd: TokenPriceFeedUSD };
   network: NetworkConfig;
 }) {
-  const provider = providerRandomizerFactory(node.map((host) => singleton(providerFactory(host))));
+  const provider = providerRandomizerFactory(
+    node.map((host) => singleton(providerFactory(new URL(host)))),
+  );
 
   return {
     name,
     testnet,
     provider,
     providerHistorical: providerRandomizerFactory(
-      historicalNode.map((host) => singleton(providerFactory(host))),
+      historicalNode.map((host) => singleton(providerFactory(new URL(host)))),
     ),
     avgBlockTime,
     txExplorerURL,
