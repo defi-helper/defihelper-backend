@@ -1,11 +1,11 @@
-# Default values for scanner.
+# Default values for backend.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
 replicaCount: 1
 
 image:
-  repository: scanner
+  repository: backend
   pullPolicy: IfNotPresent
   tag: ""
   dockerconfigjson: ""
@@ -20,14 +20,14 @@ ingress:
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-production"
   hosts:
-    - host: scanner-dev.defihelper.info
+    - host: backend-dev.defihelper.info
       paths:
         - path: /
           pathType: ImplementationSpecific
   tls:
-    - secretName: scanner-tls
+    - secretName: backend-tls
       hosts:
-        - scanner-dev.defihelper.info
+        - backend-dev.defihelper.info
 
 resources: {}
 autoscaling:
