@@ -332,4 +332,5 @@ export function route({ express, server }: { express: Express; server: Server })
       })
       .end(await templateInstance.getBufferAsync(Jimp.MIME_PNG));
   });
+  express.get('/', (_, res) => res.status(200).send(''));
 }
