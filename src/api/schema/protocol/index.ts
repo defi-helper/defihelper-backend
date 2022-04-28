@@ -213,10 +213,15 @@ export const ContractType = new GraphQLObjectType<Contract & ContractBlockchainT
           .distinctOn('date')
           .column(database.raw(`(${metricContractTableName}.data->>'${metric}')::numeric AS value`))
           .column(database.raw(`DATE_TRUNC('${group}', ${metricContractTableName}.date) AS "date"`))
+          .innerJoin(
+            contractTableName,
+            `${contractTableName}.id`,
+            `${metricContractTableName}.contract`,
+          )
           .where(function () {
-            this.where(`${metricContractTableName}.contract`, contract.id).andWhere(
-              database.raw(`${metricContractTableName}.data->>'${metric}' IS NOT NULL`),
-            );
+            this.where(`${metricContractTableName}.contract`, contract.id)
+              .andWhere(database.raw(`${metricContractTableName}.data->>'${metric}' IS NOT NULL`))
+              .where(`${contractTableName}.hidden`, false);
             if (filter.dateAfter) {
               this.andWhere(`${metricContractTableName}.date`, '>=', filter.dateAfter.toDate());
             }
