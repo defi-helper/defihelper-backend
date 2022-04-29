@@ -21,6 +21,7 @@ import {
   ContractAutomate,
   ContractBlockchainType,
   contractBlockchainTableName,
+  MetadataType,
 } from '@models/Protocol/Entity';
 import { apyBoost } from '@services/RestakeStrategy';
 import {
@@ -319,16 +320,16 @@ export const ContractType = new GraphQLObjectType<Contract & ContractBlockchainT
       resolve: async (contract) => {
         if (contract.blockchain !== 'ethereum') return [];
 
-        const contractFromScanner = await container
-          .scanner()
-          .findContract(contract.network, contract.address);
-        if (!contractFromScanner || !contractFromScanner.abi) {
-          return [];
-        }
+        const abi: Array<{ type: string; name: string }> = await container.model
+          .metadataTable()
+          .where({
+            contract: contract.id,
+            type: MetadataType.EthereumContractAbi,
+          })
+          .first()
+          .then((row) => row?.value?.value ?? []);
 
-        return contractFromScanner.abi
-          .filter(({ type }: any) => type === 'event')
-          .map(({ name }: any) => name);
+        return abi.filter(({ type }) => type === 'event').map(({ name }) => name);
       },
     },
     createdAt: {
