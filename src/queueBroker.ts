@@ -23,17 +23,6 @@ function wait(time: number) {
 
 const broker = (): any => handle().then((r) => wait(r ? 0 : 1000).then(() => broker()));
 
-const database = container.database();
-console.warn(
-  container.model
-    .userTable()
-    .column(database.raw('count(distinct id)'))
-    .column(database.raw(`date_trunc('day', "user"."createdAt") "day"`))
-    .orderBy('day', 'desc')
-    .groupBy('day')
-    .toQuery(),
-);
-
 container.model
   .migrationService()
   .up()
