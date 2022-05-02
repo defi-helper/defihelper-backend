@@ -35,6 +35,7 @@ export class ACLContainer extends Container<typeof AppContainer> {
       product: ['create', 'update', 'delete'],
       token: ['update'],
       tokenAlias: ['create', 'update', 'delete'],
+      monitoring: ['view'],
     }),
   );
 
