@@ -28,6 +28,7 @@ export * as sendEmail from './email/send';
 export * as sendTelegram from './telegram/send';
 export * as subscribeToEventFromScanner from './scanner/subscribeToEvent';
 export * as registerContractInScanner from './scanner/registerContract';
+export * as scannerSyncContractFid from './scanner/syncContractFid';
 export * as sendEventsNotifications from './notifications/webHook';
 export * as notificationSend from './notifications/send';
 export * as contractResolveDeployBlockNumber from './contract/resolveDeployBlockNumber';

@@ -34,9 +34,7 @@ export default async (process: Process) => {
     contract.deployBlockNumber === null ? undefined : parseInt(contract.deployBlockNumber, 10);
 
   try {
-    const contractFromScanner = await container
-      .scanner()
-      .findContract(contract.network, contract.address);
+    const contractFromScanner = await container.scanner().getContractByFid(contract.id);
 
     if (!contractFromScanner) {
       const servedAbi = await container.model
@@ -65,6 +63,7 @@ export default async (process: Process) => {
           servedAbi.value.value,
           contract.name,
           deployBlockNumber,
+          contract.id,
         );
 
       return process.later(dayjs().add(1, 'minutes').toDate());

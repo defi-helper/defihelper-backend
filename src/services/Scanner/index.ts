@@ -1,4 +1,4 @@
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosError, AxiosInstance } from 'axios';
 
 export class TemporaryOutOfService extends Error {
   constructor(m = 'wait a bit, usually it means that we updating our infrastructure') {
@@ -94,8 +94,24 @@ export class ScannerService {
     return contracts[0];
   }
 
-  async getContract(id: string): Promise<Contract | undefined> {
-    return (await this.client.get<Contract>(`/api/contract/${id}`)).data;
+  getContract(id: string): Promise<Contract | null> {
+    return this.client
+      .get<Contract>(`/api/contract/${id}`)
+      .then(({ data }) => data)
+      .catch((e: AxiosError) => {
+        if (e.response?.status === 404) return null;
+        throw e;
+      });
+  }
+
+  getContractByFid(fid: string): Promise<Contract | null> {
+    return this.client
+      .get<Contract>(`/api/contract/fid/${fid}`)
+      .then(({ data }) => data)
+      .catch((e: AxiosError) => {
+        if (e.response?.status === 404) return null;
+        throw e;
+      });
   }
 
   async getContractStatistics(id: string): Promise<ContractStatistics> {
@@ -115,6 +131,7 @@ export class ScannerService {
     abi: object,
     name?: string,
     startHeight?: number,
+    fid?: string,
   ): Promise<Contract> {
     const contract = await this.client
       .post<Contract>(`/api/contract`, {
@@ -123,6 +140,7 @@ export class ScannerService {
         address: address.toLowerCase(),
         startHeight: startHeight || (await this.currentBlock(network)) - 10,
         abi: JSON.stringify(abi),
+        fid: fid ?? '',
       })
       .catch((e) => {
         if (e.response?.code === 503) throw new TemporaryOutOfService();
@@ -130,6 +148,26 @@ export class ScannerService {
       });
 
     return contract.data;
+  }
+
+  updateContract(
+    id: string,
+    state: {
+      network?: string;
+      address?: string;
+      abi?: object;
+      name?: string;
+      startHeight?: number;
+      fid?: string;
+    },
+  ) {
+    return this.client
+      .put<Contract>(`/api/contract/${id}`, state)
+      .then(({ data }) => data)
+      .catch((e) => {
+        if (e.response?.code === 503) throw new TemporaryOutOfService();
+        throw new Error(`Undefined error in scanner: ${e.message}`);
+      });
   }
 
   async findListener(contractId: string, event: string): Promise<EventListener | undefined> {
