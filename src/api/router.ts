@@ -73,12 +73,15 @@ export function route({ express, server }: { express: Express; server: Server })
           govToken: governanceSchemas.GovTokenQuery,
           restakeStrategy: restakeStrategySchemas.RestakeStrategyQuery,
           treasury: treasurySchemas.TreasuryQuery,
-          usersRegisteringHistory: monitoringSchemas.UsersRegisteringHistoryQuery,
-          automateRunHistory: monitoringSchemas.AutomateRunHistoryQuery,
-          automatesCreationHistory: monitoringSchemas.AutomatesCreationHistoryQuery,
-          autoRestakeAutomatesCreationHistory:
-            monitoringSchemas.AutoRestakeAutomatesCreationHistoryQuery,
-          protocolEarningsHistory: monitoringSchemas.ProtocolEarningsHistoryQuery,
+          monitoringUsersRegisteringHistory:
+            monitoringSchemas.MonitoringUsersRegisteringHistoryQuery,
+          monitoringAutomateRunHistory: monitoringSchemas.MonitoringAutomateRunHistoryQuery,
+          monitoringAutomatesCreationHistory:
+            monitoringSchemas.MonitoringAutomatesCreationHistoryQuery,
+          monitoringAutoRestakeAutomatesCreationHistory:
+            monitoringSchemas.MonitoringAutoRestakeAutomatesCreationHistoryQuery,
+          monitoringProtocolEarningsHistory:
+            monitoringSchemas.MonitoringProtocolEarningsHistoryQuery,
         },
       }),
       mutation: new GraphQLObjectType({

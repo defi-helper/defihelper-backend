@@ -21,8 +21,8 @@ import { billTableName } from '@models/Billing/Entity';
 import { AuthenticationError } from 'apollo-server-express';
 import { DateTimeType, onlyAllowed } from '../types';
 
-export const StatisticsPointType = new GraphQLObjectType({
-  name: 'StatisticsPointType',
+export const MonitoringStatisticsPointType = new GraphQLObjectType({
+  name: 'MonitoringStatisticsPointType',
   fields: {
     date: {
       type: GraphQLNonNull(DateTimeType),
@@ -33,8 +33,8 @@ export const StatisticsPointType = new GraphQLObjectType({
   },
 });
 
-export const StatisticsEarningsPointType = new GraphQLObjectType({
-  name: 'StatisticsEarningsPointType',
+export const MonitoringStatisticsEarningsPointType = new GraphQLObjectType({
+  name: 'MonitoringStatisticsEarningsPointType',
   fields: {
     date: {
       type: GraphQLNonNull(DateTimeType),
@@ -45,8 +45,8 @@ export const StatisticsEarningsPointType = new GraphQLObjectType({
   },
 });
 
-export const UsersRegisteringHistoryQuery: GraphQLFieldConfig<any, Request> = {
-  type: GraphQLNonNull(GraphQLList(GraphQLNonNull(StatisticsPointType))),
+export const MonitoringUsersRegisteringHistoryQuery: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLList(GraphQLNonNull(MonitoringStatisticsPointType))),
   resolve: onlyAllowed('monitoring.view', async (root, _, { currentUser }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
@@ -71,8 +71,8 @@ export const UsersRegisteringHistoryQuery: GraphQLFieldConfig<any, Request> = {
   }),
 };
 
-export const AutomatesCreationHistoryQuery: GraphQLFieldConfig<any, Request> = {
-  type: GraphQLNonNull(GraphQLList(GraphQLNonNull(StatisticsPointType))),
+export const MonitoringAutomatesCreationHistoryQuery: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLList(GraphQLNonNull(MonitoringStatisticsPointType))),
   resolve: onlyAllowed('monitoring.view', async (root, _, { currentUser }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
@@ -97,35 +97,36 @@ export const AutomatesCreationHistoryQuery: GraphQLFieldConfig<any, Request> = {
   }),
 };
 
-export const AutoRestakeAutomatesCreationHistoryQuery: GraphQLFieldConfig<any, Request> = {
-  type: GraphQLNonNull(GraphQLList(GraphQLNonNull(StatisticsPointType))),
-  resolve: onlyAllowed('monitoring.view', async (root, _, { currentUser }) => {
-    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+export const MonitoringAutoRestakeAutomatesCreationHistoryQuery: GraphQLFieldConfig<any, Request> =
+  {
+    type: GraphQLNonNull(GraphQLList(GraphQLNonNull(MonitoringStatisticsPointType))),
+    resolve: onlyAllowed('monitoring.view', async (root, _, { currentUser }) => {
+      if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
-    const database = container.database();
-    const rows: { date: Date; number: number }[] = await container.model
-      .automateActionTable()
-      .column(database.raw('count(distinct id) as number'))
-      .column(database.raw(`date_trunc('day', "${actionTableName}"."createdAt") "date"`))
-      .where('type', 'ethereumAutomateRun')
-      .orderBy('date')
-      .groupBy('date');
+      const database = container.database();
+      const rows: { date: Date; number: number }[] = await container.model
+        .automateActionTable()
+        .column(database.raw('count(distinct id) as number'))
+        .column(database.raw(`date_trunc('day', "${actionTableName}"."createdAt") "date"`))
+        .where('type', 'ethereumAutomateRun')
+        .orderBy('date')
+        .groupBy('date');
 
-    return rows.reduce<{ date: Date; number: number }[]>(
-      (prev, cur) => [
-        ...prev,
-        {
-          ...cur,
-          number: new BigNumber(cur.number).plus(prev.pop()?.number ?? 0).toNumber(),
-        },
-      ],
-      [],
-    );
-  }),
-};
+      return rows.reduce<{ date: Date; number: number }[]>(
+        (prev, cur) => [
+          ...prev,
+          {
+            ...cur,
+            number: new BigNumber(cur.number).plus(prev.pop()?.number ?? 0).toNumber(),
+          },
+        ],
+        [],
+      );
+    }),
+  };
 
-export const ProtocolEarningsHistoryQuery: GraphQLFieldConfig<any, Request> = {
-  type: GraphQLNonNull(GraphQLList(GraphQLNonNull(StatisticsEarningsPointType))),
+export const MonitoringProtocolEarningsHistoryQuery: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLList(GraphQLNonNull(MonitoringStatisticsEarningsPointType))),
   args: {
     network: {
       type: GraphQLNonNull(GraphQLString),
@@ -156,8 +157,8 @@ export const ProtocolEarningsHistoryQuery: GraphQLFieldConfig<any, Request> = {
   }),
 };
 
-export const AutomateRunHistoryFilterEnum = new GraphQLEnumType({
-  name: 'AutomateRunHistoryFilterEnum',
+export const MonitoringAutomateRunHistoryFilterEnum = new GraphQLEnumType({
+  name: 'MonitoringAutomateRunHistoryFilterEnum',
   values: {
     onlySuccessful: {
       description: 'Only successful',
@@ -170,11 +171,11 @@ export const AutomateRunHistoryFilterEnum = new GraphQLEnumType({
     },
   },
 });
-export const AutomateRunHistoryQuery: GraphQLFieldConfig<any, Request> = {
-  type: GraphQLNonNull(GraphQLList(GraphQLNonNull(StatisticsPointType))),
+export const MonitoringAutomateRunHistoryQuery: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLList(GraphQLNonNull(MonitoringStatisticsPointType))),
   args: {
     filter: {
-      type: GraphQLNonNull(AutomateRunHistoryFilterEnum),
+      type: GraphQLNonNull(MonitoringAutomateRunHistoryFilterEnum),
     },
   },
   resolve: onlyAllowed('monitoring.view', async (root, { filter }, { currentUser }) => {
