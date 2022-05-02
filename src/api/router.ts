@@ -17,6 +17,7 @@ import * as governanceSchemas from '@api/schema/governance';
 import * as Automate from '@api/schema/automate';
 import * as restakeStrategySchemas from '@api/schema/restakeStrategy';
 import * as treasurySchemas from '@api/schema/treasury';
+import * as monitoringSchemas from '@api/schema/monitoring';
 import * as landingSchemas from '@api/schema/landing';
 import Jimp from 'jimp';
 import { metricContractTableName } from '@models/Metric/Entity';
@@ -72,6 +73,15 @@ export function route({ express, server }: { express: Express; server: Server })
           govToken: governanceSchemas.GovTokenQuery,
           restakeStrategy: restakeStrategySchemas.RestakeStrategyQuery,
           treasury: treasurySchemas.TreasuryQuery,
+          monitoringUsersRegisteringHistory:
+            monitoringSchemas.MonitoringUsersRegisteringHistoryQuery,
+          monitoringAutomateRunHistory: monitoringSchemas.MonitoringAutomateRunHistoryQuery,
+          monitoringAutomatesCreationHistory:
+            monitoringSchemas.MonitoringAutomatesCreationHistoryQuery,
+          monitoringAutoRestakeAutomatesCreationHistory:
+            monitoringSchemas.MonitoringAutoRestakeAutomatesCreationHistoryQuery,
+          monitoringProtocolEarningsHistory:
+            monitoringSchemas.MonitoringProtocolEarningsHistoryQuery,
         },
       }),
       mutation: new GraphQLObjectType({
