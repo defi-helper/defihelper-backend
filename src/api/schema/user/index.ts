@@ -1574,6 +1574,10 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
               type: GraphQLNonNull(GraphQLString),
               description: 'Signed message',
             },
+            code: {
+              type: GraphQLString,
+              description: 'Code',
+            },
             merge: {
               type: GraphQLBoolean,
               description: 'Merged target account to current account',
@@ -1585,7 +1589,7 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
     },
   },
   resolve: async (root, { input }, { currentUser }) => {
-    const { network, address, message, signature, merge } = input;
+    const { network, address, message, signature, merge, code } = input;
     if (typeof message !== 'string' || message.length < 5) return null;
 
     const hash = utils.hashMessage(message);
@@ -1623,7 +1627,13 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
       const sid = container.model.sessionService().generate(user);
       return { user, sid };
     }
-    const user = currentUser ?? (await container.model.userService().create(Role.User));
+
+    let codeRecord;
+    if (code) {
+      codeRecord = await container.model.referrerCodeTable().where({ code }).first();
+    }
+
+    const user = currentUser ?? (await container.model.userService().create(Role.User, codeRecord));
     await container.model
       .walletService()
       .createBlockchainWallet(
@@ -1669,6 +1679,10 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
               type: GraphQLNonNull(GraphQLString),
               description: 'Signed message',
             },
+            code: {
+              type: GraphQLString,
+              description: 'Code',
+            },
             merge: {
               type: GraphQLBoolean,
               description: 'Merged target account to current account',
@@ -1680,7 +1694,7 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
     },
   },
   resolve: async (root, { input }, { currentUser }) => {
-    const { network, address, message, publicKey, signature, merge } = input;
+    const { network, address, message, publicKey, signature, merge, code } = input;
     if (typeof message !== 'string' || message.length < 5) return null;
 
     const isValidSignature = WavesCrypto.verifySignature(
@@ -1725,7 +1739,12 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
       const sid = container.model.sessionService().generate(user);
       return { user, sid };
     }
-    const user = currentUser ?? (await container.model.userService().create(Role.User));
+
+    let codeRecord;
+    if (code) {
+      codeRecord = await container.model.referrerCodeTable().where({ code }).first();
+    }
+    const user = currentUser ?? (await container.model.userService().create(Role.User, codeRecord));
     await container.model
       .walletService()
       .createBlockchainWallet(

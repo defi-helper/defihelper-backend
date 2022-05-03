@@ -4,6 +4,7 @@ import { RedisClient } from 'redis';
 import { v4 as uuid } from 'uuid';
 import { Emitter } from '@services/Event';
 import container from '@container';
+import { ReferrerCode } from '@models/ReferrerCode/Entity';
 import { User, Table as UserTable, Role } from './Entity';
 
 export class UserService {
@@ -15,11 +16,12 @@ export class UserService {
 
   constructor(readonly table: Factory<UserTable>) {}
 
-  async create(role: Role, locale: Locale = 'enUS') {
+  async create(role: Role, codeRecord?: ReferrerCode, locale: Locale = 'enUS') {
     const created = {
       id: uuid(),
       role,
       locale,
+      referrer: codeRecord?.id,
       isPorfolioCollected: false,
       createdAt: new Date(),
       updatedAt: new Date(),

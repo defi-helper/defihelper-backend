@@ -19,6 +19,14 @@ export class ModelContainer extends Container<typeof AppContainer> {
 
   readonly logService = singleton(() => new Models.Log.Service.LogService(this.logTable));
 
+  readonly referrerCodeTable = Models.ReferrerCode.Entity.referrerCodeTableFactory(
+    this.parent.database,
+  );
+
+  readonly referrerCodeService = singleton(
+    () => new Models.ReferrerCode.Service.ReferrerCodeService(this.referrerCodeTable),
+  );
+
   readonly queueTable = Models.Queue.Entity.tableFactory(this.parent.database);
 
   readonly queueService = singleton(
