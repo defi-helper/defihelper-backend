@@ -9,6 +9,7 @@ export enum Role {
 export interface User {
   id: string;
   role: Role;
+  referrer: string | null;
   isPorfolioCollected: boolean;
   locale: Locale;
   updatedAt: Date;

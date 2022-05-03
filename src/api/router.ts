@@ -174,6 +174,20 @@ export function route({ express, server }: { express: Express; server: Server })
     apollo.getMiddleware({ path: '/' }),
   ]);
 
+  express.route('/p/:code').get(async (req, res) => {
+    const { code } = req.params;
+    const codeRecord = await container.model.referrerCodeTable().where({ code }).first();
+    if (!codeRecord) {
+      return res.redirect('https://app.defihelper.io');
+    }
+
+    return res
+      .cookie('dfh-parent-code', codeRecord.code, {
+        maxAge: 1000 * 60 * 60 * 24 * 365, // 1 year
+        domain: 'app.defihelper.io',
+      })
+      .redirect(codeRecord.redirectTo);
+  });
   express.route('/callback/event/:webHookId').post(json({ limit: '512kb' }), async (req, res) => {
     const { secret } = req.query;
     if (secret !== container.parent.api.secret) {
