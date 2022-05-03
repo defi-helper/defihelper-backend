@@ -21,7 +21,7 @@ export class UserService {
       id: uuid(),
       role,
       locale,
-      referrer: codeRecord?.id,
+      referrer: codeRecord?.id ?? null,
       isPorfolioCollected: false,
       createdAt: new Date(),
       updatedAt: new Date(),
