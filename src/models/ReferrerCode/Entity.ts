@@ -9,7 +9,7 @@ export interface ReferrerCode {
   createdAt: Date;
 }
 
-export const referrerCodeTableName = 'referrer_code';
+export const referrerCodeTableName = 'user_referrer_code';
 
 export const referrerCodeTableFactory = tableFactoryLegacy<ReferrerCode>(referrerCodeTableName);
 
