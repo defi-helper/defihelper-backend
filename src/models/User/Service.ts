@@ -26,6 +26,7 @@ export class UserService {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
+
     await this.table().insert(created);
     this.onCreated.emit(created);
 
