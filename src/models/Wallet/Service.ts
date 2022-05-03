@@ -170,7 +170,7 @@ export class WalletService {
     };
     await this.database.transaction(async (trx) => {
       await this.walletTable().where('id', wallet.id).update(wallet).transacting(trx);
-      await this.walletExchangeTable()
+      await this.walletBlockchainTable()
         .where('id', wallet.id)
         .update(walletBlockchainUpdated)
         .transacting(trx);
