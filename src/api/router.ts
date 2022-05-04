@@ -182,9 +182,9 @@ export function route({ express, server }: { express: Express; server: Server })
     }
 
     return res
-      .cookie('dfh-parent-code', codeRecord.code, {
+      .cookie('dfh-parent-code', codeRecord.id, {
         maxAge: 1000 * 60 * 60 * 24 * 365, // 1 year
-        domain: 'app.defihelper.io',
+        domain: 'defihelper.io',
       })
       .redirect(codeRecord.redirectTo);
   });
