@@ -135,7 +135,12 @@ export default async function (this: Condition, params: Params) {
   if (typeof automateAdapterFactory !== 'function') throw new Error('Automate adapter not found');
   const automateAdapter = await automateAdapterFactory(signer, contract.address);
   const automateRunParams = await automateAdapter.runParams();
-  if (automateRunParams instanceof Error) throw automateRunParams;
+  if (automateRunParams instanceof Error) {
+    if (automateRunParams.message === 'No earned') {
+      return false;
+    }
+    throw automateRunParams;
+  }
   const {
     calldata: [gasFee],
   } = automateRunParams;
