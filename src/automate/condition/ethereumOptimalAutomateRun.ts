@@ -5,10 +5,20 @@ import axios from 'axios';
 import BN from 'bignumber.js';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 import dayjs from 'dayjs';
+import * as uuid from 'uuid';
 import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
 
-interface Params {
+export interface Params {
   id: string;
+}
+
+export function paramsVerify(params: any): params is Params {
+  const { id } = params;
+  if (typeof id !== 'string' || !uuid.validate(id)) {
+    throw new Error('Invalid action identifier');
+  }
+
+  return true;
 }
 
 export default async function (this: Condition, params: Params) {

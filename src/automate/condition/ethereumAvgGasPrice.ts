@@ -2,9 +2,21 @@ import container from '@container';
 import BN from 'bignumber.js';
 import dayjs from 'dayjs';
 
-interface Params {
+export interface Params {
   network: string;
   tolerance: number;
+}
+
+export function paramsVerify(params: any): params is Params {
+  const { network, tolerance } = params;
+  if (typeof network !== 'string' || !container.blockchain.ethereum.isNetwork(network)) {
+    throw new Error('Invalid network');
+  }
+  if (typeof tolerance !== 'number') {
+    throw new Error('Invalid tolerance multiplier');
+  }
+
+  return true;
 }
 
 export default async (params: Params) => {

@@ -1,9 +1,22 @@
 import container from '@container';
 import { ContactStatus, NotificationType } from '@models/Notification/Entity';
+import * as uuid from 'uuid';
 
-interface Params {
+export interface Params {
   contactId: string;
   message: string;
+}
+
+export function paramsVerify(params: any): params is Params {
+  const { contactId, message } = params;
+  if (typeof contactId !== 'string' || !uuid.validate(contactId)) {
+    throw new Error('Invalid contract');
+  }
+  if (typeof message !== 'string' || message === '') {
+    throw new Error('Invalid message');
+  }
+
+  return true;
 }
 
 export default async (params: Params) => {

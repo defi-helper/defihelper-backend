@@ -48,12 +48,33 @@ export namespace Predicat {
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-interface Params {
+export interface Params {
   weeks: string;
   months: string;
   days: string;
   hours: string;
   tz?: string;
+}
+
+export function paramsVerify(params: any): params is Params {
+  const { weeks, months, days, hours, tz } = params;
+  if (typeof weeks !== 'string') {
+    throw new Error('Invalid weeks');
+  }
+  if (typeof months !== 'string') {
+    throw new Error('Invalid montsh');
+  }
+  if (typeof days !== 'string') {
+    throw new Error('Invalid days');
+  }
+  if (typeof hours !== 'string') {
+    throw new Error('Invalid hours');
+  }
+  if (typeof tz !== 'string' && tz !== undefined) {
+    throw new Error('Invalid timezone');
+  }
+
+  return true;
 }
 
 export default (params: Params) => {
