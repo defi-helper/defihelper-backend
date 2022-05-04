@@ -1,9 +1,7 @@
 import 'source-map-support/register';
-import PrettyError from 'pretty-error';
 import 'module-alias/register';
 import container from './container';
 
-new PrettyError().withoutColors().start();
 async function handle() {
   const queue = container.model.queueService();
 
