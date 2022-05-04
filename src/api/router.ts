@@ -25,6 +25,8 @@ import { contractBlockchainTableName, contractTableName } from '@models/Protocol
 import { apyBoost } from '@services/RestakeStrategy';
 import BN from 'bignumber.js';
 import { Blockchain } from '@models/types';
+import { triggerTableName } from '@models/Automate/Entity';
+import { walletTableName } from '@models/Wallet/Entity';
 
 interface AprMetric {
   contract: string;
@@ -219,7 +221,16 @@ export function route({ express, server }: { express: Express; server: Server })
     const { secret } = req.query;
     if (secret !== container.parent.api.secret) return res.sendStatus(403);
 
-    await container.model.queueService().push('automateTriggerRun', { id: req.params.triggerId });
+    const trigger = await container.model
+      .automateTriggerTable()
+      .columns(`${triggerTableName}.*`)
+      .innerJoin(walletTableName, `${walletTableName}.id`, `${triggerTableName}.wallet`)
+      .whereNull(`${walletTableName}.suspendReason`)
+      .where(`${triggerTableName}.id`, req.params.triggerId)
+      .first();
+    if (trigger) {
+      await container.model.queueService().push('automateTriggerRun', { id: trigger.id });
+    }
 
     return res.sendStatus(200);
   });
