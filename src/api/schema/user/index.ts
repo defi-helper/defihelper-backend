@@ -39,7 +39,11 @@ import {
   tokenAliasTableName,
   tokenTableName,
 } from '@models/Token/Entity';
-import { contractTableName as protocolContractTableName } from '@models/Protocol/Entity';
+import {
+  contractBlockchainTableName,
+  contractTableName,
+  contractTableName as protocolContractTableName,
+} from '@models/Protocol/Entity';
 import { ContractType } from '../protocol';
 import {
   BlockchainEnum,
@@ -234,34 +238,45 @@ export const WalletBlockchainType = new GraphQLObjectType<
         pagination: PaginationArgument('WalletContractListPaginationInputType'),
       },
       resolve: async (wallet, { filter, sort, pagination }) => {
-        const select = container.model.contractTable().where(function () {
-          this.whereIn(
-            'id',
-            container.model
-              .walletContractLinkTable()
-              .columns('contract')
-              .where('wallet', wallet.id),
-          );
-          if (filter.blockchain !== undefined) {
-            const { protocol, network } = filter.blockchain;
-            this.andWhere('blockchain', protocol);
-            if (network !== undefined) {
-              this.andWhere('network', network);
+        const select = container.model
+          .contractTable()
+          .innerJoin(
+            contractBlockchainTableName,
+            `${contractBlockchainTableName}.id`,
+            `${contractTableName}.id`,
+          )
+          .where(function () {
+            this.whereIn(
+              `${contractTableName}.id`,
+              container.model
+                .walletContractLinkTable()
+                .columns('contract')
+                .where('wallet', wallet.id),
+            );
+            if (filter.blockchain !== undefined) {
+              const { protocol, network } = filter.blockchain;
+              this.andWhere(`${contractBlockchainTableName}.blockchain`, protocol);
+              if (network !== undefined) {
+                this.andWhere(`${contractBlockchainTableName}.network`, network);
+              }
             }
-          }
-          if (filter.protocol !== undefined) {
-            this.whereIn('protocol', filter.protocol);
-          }
-          if (filter.hidden !== undefined) {
-            this.andWhere('hidden', filter.hidden);
-          }
-          if (filter.search !== undefined && filter.search !== '') {
-            this.andWhere(function () {
-              this.where('name', 'iLike', `%${filter.search}%`);
-              this.orWhere('address', 'iLike', `%${filter.search}%`);
-            });
-          }
-        });
+            if (filter.protocol !== undefined) {
+              this.whereIn(`${contractTableName}.protocol`, filter.protocol);
+            }
+            if (filter.hidden !== undefined) {
+              this.andWhere(`${contractTableName}.hidden`, filter.hidden);
+            }
+            if (filter.search !== undefined && filter.search !== '') {
+              this.andWhere(function () {
+                this.where(`${contractTableName}.name`, 'iLike', `%${filter.search}%`);
+                this.orWhere(
+                  `${contractBlockchainTableName}.address`,
+                  'iLike',
+                  `%${filter.search}%`,
+                );
+              });
+            }
+          });
 
         return {
           list: await select
@@ -270,7 +285,7 @@ export const WalletBlockchainType = new GraphQLObjectType<
             .limit(pagination.limit)
             .offset(pagination.offset),
           pagination: {
-            count: await select.clone().count().first(),
+            count: await select.clone().clearSelect().count().first(),
           },
         };
       },
