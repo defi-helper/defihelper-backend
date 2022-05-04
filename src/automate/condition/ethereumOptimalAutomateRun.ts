@@ -56,9 +56,6 @@ export default async function (this: Condition, params: Params) {
   const protocol = await container.model.protocolTable().where('id', contract.protocol).first();
   if (!protocol) throw new Error('Protocol not found');
 
-  const condition = await container.model.automateConditionTable().where('id', this.id).first();
-  if (!condition) throw new Error('Condition not found');
-
   const targetContract = await container.model
     .contractTable()
     .innerJoin(
@@ -69,6 +66,26 @@ export default async function (this: Condition, params: Params) {
     .where(`${contractTableName}.id`, contract.contract)
     .first();
   if (!targetContract) throw new Error('Target contract not found');
+
+  const condition = await container.model.automateConditionTable().where('id', this.id).first();
+  if (!condition) throw new Error('Condition not found');
+  if (protocol.hidden || targetContract.hidden) {
+    return false;
+  }
+  // Disable trigger if target contract deprecated
+  if (targetContract.deprecated) {
+    const trigger = await container.model
+      .automateTriggerTable()
+      .where('id', condition.trigger)
+      .first();
+    if (!trigger) return false;
+
+    await container.model.automateService().updateTrigger({
+      ...trigger,
+      active: false,
+    });
+    return false;
+  }
 
   const network = container.blockchain.ethereum.byNetwork(wallet.network);
   const provider = network.provider();
