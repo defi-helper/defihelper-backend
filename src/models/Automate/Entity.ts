@@ -65,6 +65,13 @@ export interface Condition {
   createdAt: Date;
 }
 
+export function conditionParamsVerify<T extends ConditionType>(
+  type: T,
+  params: any,
+): params is ConditionParams<T> {
+  return Conditions[type].paramsVerify(params);
+}
+
 export function getConditionHandler(condition: Condition) {
   return Conditions[condition.type].default as (
     this: Condition,
@@ -90,6 +97,13 @@ export interface Action {
   priority: number;
   updatedAt: Date;
   createdAt: Date;
+}
+
+export function actionParamsVerify<T extends ActionType>(
+  type: T,
+  params: any,
+): params is ActionParams<T> {
+  return Actions[type].paramsVerify(params);
 }
 
 export function getActionHandler(action: Action) {

@@ -71,7 +71,7 @@ export class QueueService {
         ...task,
         status: TaskStatus.Process,
       });
-      return this.rabbitmq()
+      await this.rabbitmq()
         .publishTopic(`tasks.${task.handler}.${task.topic}`, task, {
           priority: task.priority,
         })
@@ -83,9 +83,11 @@ export class QueueService {
             })
             .where('id', task.id),
         );
+      return task;
     }
 
-    return this.queueTable().insert(task);
+    await this.queueTable().insert(task);
+    return task;
   }
 
   async getCandidates(limit: number) {

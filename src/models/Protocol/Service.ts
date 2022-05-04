@@ -170,6 +170,7 @@ export class ContractService {
       id: uuid(),
       description,
       hidden,
+      deprecated: false,
       layout: 'debank',
       link,
       name,
@@ -216,6 +217,7 @@ export class ContractService {
       id: uuid(),
       description,
       hidden,
+      deprecated: false,
       layout,
       link,
       name,
@@ -238,7 +240,6 @@ export class ContractService {
       metric,
       network,
     };
-    console.log(childContract);
 
     await this.database.transaction(async (trx) => {
       await this.contractTable().insert(parentContract).transacting(trx);
@@ -273,6 +274,7 @@ export class ContractService {
           description: contractBlockchain.description,
           link: contractBlockchain.link,
           hidden: contractBlockchain.hidden,
+          deprecated: contractBlockchain.deprecated,
           updatedAt: new Date(),
           createdAt: contractBlockchain.createdAt,
         })

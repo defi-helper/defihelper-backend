@@ -77,6 +77,7 @@ export interface Contract {
   description: string;
   link: string | null;
   hidden: boolean;
+  deprecated: boolean;
   updatedAt: Date;
   createdAt: Date;
 }

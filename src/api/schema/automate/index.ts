@@ -713,11 +713,17 @@ export const ConditionCreateMutation: GraphQLFieldConfig<any, Request> = {
       priority = conditionCountRow?.count || 0;
     }
 
-    const created = await container.model
-      .automateService()
-      .createCondition(trigger, type, JSON.parse(params), priority);
+    const paramsObject = JSON.parse(params);
+    try {
+      Automate.conditionParamsVerify(type, paramsObject);
+      const created = await container.model
+        .automateService()
+        .createCondition(trigger, type, paramsObject, priority);
 
-    return created;
+      return created;
+    } catch (e) {
+      throw new UserInputError(`Invalid params: ${e instanceof Error ? e.message : e}`);
+    }
   }),
 };
 
@@ -763,13 +769,19 @@ export const ConditionUpdateMutation: GraphQLFieldConfig<any, Request> = {
     if (!wallet) throw new UserInputError('Wallet not found');
     if (wallet.user !== currentUser.id) throw new UserInputError('Foreign wallet');
 
-    const updated = await container.model.automateService().updateCondition({
-      ...condition,
-      params: typeof params === 'string' ? JSON.parse(params) : condition.params,
-      priority: typeof priority === 'number' ? priority : condition.priority,
-    });
+    const paramsObject = typeof params === 'string' ? JSON.parse(params) : condition.params;
+    try {
+      Automate.conditionParamsVerify(condition.type, paramsObject);
+      const updated = await container.model.automateService().updateCondition({
+        ...condition,
+        params: paramsObject,
+        priority: typeof priority === 'number' ? priority : condition.priority,
+      });
 
-    return updated;
+      return updated;
+    } catch (e) {
+      throw new UserInputError(`Invalid params: ${e instanceof Error ? e.message : e}`);
+    }
   }),
 };
 
@@ -852,11 +864,17 @@ export const ActionCreateMutation: GraphQLFieldConfig<any, Request> = {
       priority = actionCountRow?.count || 0;
     }
 
-    const created = await container.model
-      .automateService()
-      .createAction(trigger, type, JSON.parse(params), priority);
+    const paramsObject = JSON.parse(params);
+    try {
+      Automate.actionParamsVerify(type, paramsObject);
+      const created = await container.model
+        .automateService()
+        .createAction(trigger, type, paramsObject, priority);
 
-    return created;
+      return created;
+    } catch (e) {
+      throw new UserInputError(`Invalid params: ${e instanceof Error ? e.message : e}`);
+    }
   }),
 };
 
@@ -902,13 +920,20 @@ export const ActionUpdateMutation: GraphQLFieldConfig<any, Request> = {
     if (!wallet) throw new UserInputError('Wallet not found');
     if (wallet.user !== currentUser.id) throw new UserInputError('Foreign wallet');
 
-    const updated = await container.model.automateService().updateAction({
-      ...action,
-      params: typeof params === 'string' ? JSON.parse(params) : action.params,
-      priority: typeof priority === 'number' ? priority : action.priority,
-    });
+    const paramsObject = typeof params === 'string' ? JSON.parse(params) : action.params;
+    try {
+      Automate.actionParamsVerify(action.type, paramsObject);
 
-    return updated;
+      const updated = await container.model.automateService().updateAction({
+        ...action,
+        params: paramsObject,
+        priority: typeof priority === 'number' ? priority : action.priority,
+      });
+
+      return updated;
+    } catch (e) {
+      throw new UserInputError(`Invalid params: ${e instanceof Error ? e.message : e}`);
+    }
   }),
 };
 

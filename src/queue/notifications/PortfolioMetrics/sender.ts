@@ -1,16 +1,33 @@
-import { Process } from '@models/Queue/Entity';
+import { Process, TaskStatus } from '@models/Queue/Entity';
 import container from '@container';
 import { ContactBroker, ContactStatus } from '@models/Notification/Entity';
 import { DataLoaderContainer } from '@api/dataLoader/container';
 import BN from 'bignumber.js';
 import { TokenAliasLiquidity } from '@models/Token/Entity';
+import dayjs from 'dayjs';
+
+interface Params {
+  userId: string;
+  wait: string[];
+}
 
 export default async (process: Process) => {
-  const { userId } = process.task.params as { userId: string };
+  const { userId, wait } = process.task.params as Params;
 
   const user = await container.model.userTable().where({ id: userId }).first();
   if (!user) {
     throw new Error('User not found');
+  }
+
+  const completedTasksCount = await container.model
+    .queueTable()
+    .count()
+    .whereIn('id', wait)
+    .andWhere('status', TaskStatus.Done)
+    .first()
+    .then((row) => Number(row?.count ?? '0'));
+  if (completedTasksCount < wait.length) {
+    return process.later(dayjs().add(5, 'minutes').toDate());
   }
 
   const dataLoader = new DataLoaderContainer({});

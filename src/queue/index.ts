@@ -49,6 +49,9 @@ export * as logBilling from './log/billingLogger';
 export * as emptyWalletsBroker from './billing/emptyWalletsBroker';
 
 /* metrics */
+export * as metricsUserBalancesBroker from './metrics/walletBalances/userBalancesBroker';
+export * as metricsUserBalancesFiller from './metrics/walletBalances/userBalancesFiller';
+
 export * as metricsWalletBalancesDeBankFiller from './metrics/walletBalances/walletBalancesDeBankFiller';
 
 export * as metricsWalletProtocolsBalancesDeBankFiller from './metrics/walletBalances/walletProtocolsBalancesDeBankFiller';
@@ -65,7 +68,6 @@ export * as protocolContractsResolver from './protocol/resolveContracts';
 
 /* regular notifications */
 export * as notificationPortfolioMetricsNotify from './notifications/PortfolioMetrics/sender';
-export * as notificationPortfolioMetricsBroker from './notifications/PortfolioMetrics/broker';
 
 export * as notificationAutomateWalletsNotEnoughFundsNotify from './notifications/AutomateWalletsNotEnoughFunds/sender';
 export * as notificationAutomateWalletsNotEnoughFundsBroker from './notifications/AutomateWalletsNotEnoughFunds/broker';

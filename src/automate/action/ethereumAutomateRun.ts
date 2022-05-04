@@ -8,9 +8,19 @@ import {
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 import { EthereumProtocolAdapter } from '@services/Blockchain/Adapter';
 import { Wallet } from 'ethers';
+import * as uuid from 'uuid';
 
-interface Params {
+export interface Params {
   id: string;
+}
+
+export function paramsVerify(params: any): params is Params {
+  const { id } = params;
+  if (typeof id !== 'string' || !uuid.validate(id)) {
+    throw new Error('Invalid automate contract identifier');
+  }
+
+  return true;
 }
 
 export default async (params: Params) => {

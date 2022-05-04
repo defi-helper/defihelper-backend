@@ -173,6 +173,10 @@ export const ContractType = new GraphQLObjectType<Contract & ContractBlockchainT
       type: GraphQLNonNull(GraphQLBoolean),
       description: 'Is hidden',
     },
+    deprecated: {
+      type: GraphQLNonNull(GraphQLBoolean),
+      description: 'Is deprecated',
+    },
     metricChart: {
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(MetricChartType))),
       args: {
@@ -525,6 +529,11 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
               description: 'Is hidden',
               defaultValue: false,
             },
+            deprecated: {
+              type: GraphQLBoolean,
+              description: 'Is deprecated',
+              defaultValue: false,
+            },
           },
         }),
       ),
@@ -558,6 +567,7 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
       description,
       link,
       hidden,
+      deprecated,
     } = input;
 
     const updated = await contractService.updateBlockchain({
@@ -569,6 +579,7 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
       description: typeof description === 'string' ? description : contractBlockchain.description,
       link: typeof link === 'string' ? link : contractBlockchain.link,
       hidden: typeof hidden === 'boolean' ? hidden : contractBlockchain.hidden,
+      deprecated: typeof deprecated === 'boolean' ? deprecated : contractBlockchain.deprecated,
 
       blockchain: (typeof blockchain === 'string'
         ? blockchain
