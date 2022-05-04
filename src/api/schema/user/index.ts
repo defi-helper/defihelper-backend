@@ -937,6 +937,21 @@ export const UserMetricType = new GraphQLObjectType({
   },
 });
 
+export const UserReferrerCodeType = new GraphQLObjectType({
+  name: 'UserReferrerCodeType',
+  fields: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+    },
+    code: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    redirectTo: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+  },
+});
+
 export const UserType = new GraphQLObjectType<User, Request>({
   name: 'UserType',
   fields: {
@@ -1498,6 +1513,21 @@ export const UserType = new GraphQLObjectType<User, Request>({
   },
 });
 
+export const UserReferrerCodeQuery: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(UserReferrerCodeType),
+  args: {
+    code: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+  },
+  resolve: async (root, { code }) => {
+    const codeRecord = await container.model.referrerCodeTable().where({ code }).first();
+    if (!codeRecord) throw new UserInputError('Code not found');
+
+    return codeRecord;
+  },
+};
+
 export const UserListQuery: GraphQLFieldConfig<any, Request> = {
   type: GraphQLNonNull(PaginateList('UserListQuery', GraphQLNonNull(UserType))),
   args: {
@@ -1526,7 +1556,6 @@ export const UserListQuery: GraphQLFieldConfig<any, Request> = {
         this.andWhere('role', role);
       }
     });
-
     return {
       list: await select.clone().orderBy(sort).limit(pagination.limit).offset(pagination.offset),
       pagination: {
