@@ -49,6 +49,7 @@ export function route({ express, server }: { express: Express; server: Server })
             type: userSchemas.UserType,
             resolve: (root, args, { currentUser }) => currentUser,
           },
+          userReferrer: userSchemas.UserReferrerCodeQuery,
           users: userSchemas.UserListQuery,
           protocol: protocolSchemas.ProtocolQuery,
           protocols: protocolSchemas.ProtocolListQuery,
