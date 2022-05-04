@@ -1630,7 +1630,7 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
 
     let codeRecord;
     if (code) {
-      codeRecord = await container.model.referrerCodeTable().where({ code }).first();
+      codeRecord = await container.model.referrerCodeTable().where({ id: code }).first();
     }
 
     const user = currentUser ?? (await container.model.userService().create(Role.User, codeRecord));
@@ -1681,7 +1681,7 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
             },
             code: {
               type: GraphQLString,
-              description: 'Code',
+              description: 'Promo id',
             },
             merge: {
               type: GraphQLBoolean,
@@ -1742,7 +1742,12 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
 
     let codeRecord;
     if (code) {
-      codeRecord = await container.model.referrerCodeTable().where({ code }).first();
+      codeRecord = await container.model
+        .referrerCodeTable()
+        .where({
+          id: code.id,
+        })
+        .first();
     }
     const user = currentUser ?? (await container.model.userService().create(Role.User, codeRecord));
     await container.model
