@@ -12,7 +12,7 @@ export default async (schema: SchemaBuilder) => {
     table.dateTime('createdAt').notNullable();
 
     table.primary(['id'], `${referrerCodeTableName}_pkey`);
-    table.foreign('user').references(`${userTableName}.id`).onUpdate('CASCADE').onDelete('CASCADE');
+    table.foreign('user').references(`${userTableName}`).onUpdate('CASCADE').onDelete('CASCADE');
   });
 
   return schema.alterTable(userTableName, (table) => {
