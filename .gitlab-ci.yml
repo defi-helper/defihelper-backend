@@ -19,8 +19,21 @@ stages:
   - build
   - deploy
 
-build:
+build:app:
   stage: build
+  variables:
+    APP_NAME: "app"
+  extends: .build_image
+  rules:
+    - if: $CI_COMMIT_REF_NAME == "master"
+      variables:
+        BUILD_ARGS: "--build-arg NODE_ENV=development"
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_COMMIT_BRANCH'
+
+build:nginx:
+  stage: build
+  variables:
+    APP_NAME: "nginx"
   extends: .build_image
   rules:
     - if: $CI_COMMIT_REF_NAME == "master"
