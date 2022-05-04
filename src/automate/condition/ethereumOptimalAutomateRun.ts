@@ -69,9 +69,6 @@ export default async function (this: Condition, params: Params) {
 
   const condition = await container.model.automateConditionTable().where('id', this.id).first();
   if (!condition) throw new Error('Condition not found');
-  if (protocol.hidden || targetContract.hidden) {
-    return false;
-  }
   // Disable trigger if target contract deprecated
   if (targetContract.deprecated) {
     const trigger = await container.model
@@ -84,6 +81,9 @@ export default async function (this: Condition, params: Params) {
       ...trigger,
       active: false,
     });
+    return false;
+  }
+  if (protocol.hidden || targetContract.hidden) {
     return false;
   }
 
