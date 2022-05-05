@@ -226,8 +226,9 @@ export function route({ express, server }: { express: Express; server: Server })
       .automateTriggerTable()
       .columns(`${triggerTableName}.*`)
       .innerJoin(walletTableName, `${walletTableName}.id`, `${triggerTableName}.wallet`)
+      .andWhere(`${triggerTableName}.id`, req.params.triggerId)
       .whereNull(`${walletTableName}.suspendReason`)
-      .where(`${triggerTableName}.id`, req.params.triggerId)
+      .andWhere(`${triggerTableName}.active`, true)
       .first();
     if (trigger) {
       await container.model.queueService().push('automateTriggerRun', { id: trigger.id });

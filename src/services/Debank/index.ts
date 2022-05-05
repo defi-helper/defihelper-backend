@@ -1,4 +1,3 @@
-import container from '@container';
 import { Factory } from '@services/Container';
 import axios from 'axios';
 import buildUrl from 'build-url';
@@ -6,8 +5,8 @@ import buildUrl from 'build-url';
 export interface Token {
   id: string;
   chain: string;
-  name: string;
-  symbol: string;
+  name: string | null;
+  symbol: string | null;
   decimals: number;
   price: number;
   is_verified?: boolean;
@@ -68,7 +67,7 @@ export class Debank {
       }
 
       return r;
-    })
+    });
   };
 
   getToken = async (chainId: string, address: string): Promise<Token> => {
@@ -78,9 +77,7 @@ export class Debank {
     }
 
     return this.apiRequest('token', {
-      id: address === '0x0000000000000000000000000000000000000000'
-        ? chain.named : address
-      ,
+      id: address === '0x0000000000000000000000000000000000000000' ? chain.named : address,
       chain_id: chain.named,
     });
   };
@@ -108,9 +105,11 @@ export class Debank {
   };
 
   getProtocolListWallet = async (wallet: string): Promise<ProtocolListItem[]> => {
-    return this.apiRequest('user/complex_protocol_list', {
-      id: wallet,
-    }) ?? [];
+    return (
+      this.apiRequest('user/complex_protocol_list', {
+        id: wallet,
+      }) ?? []
+    );
   };
 }
 

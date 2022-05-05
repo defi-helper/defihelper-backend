@@ -369,7 +369,12 @@ export default async (process: Process) => {
         if (!tokenRecordAlias) {
           tokenRecordAlias = await container.model
             .tokenAliasService()
-            .create(token.name, token.symbol, TokenAliasLiquidity.Unstable, token.logo_url || null);
+            .create(
+              token.name ?? '',
+              token.symbol ?? '',
+              TokenAliasLiquidity.Unstable,
+              token.logo_url || null,
+            );
         }
 
         try {
@@ -380,8 +385,8 @@ export default async (process: Process) => {
               'ethereum',
               container.debank().chainResolver(token.chain)?.numbered ?? '',
               token.id.toLowerCase(),
-              token.name,
-              token.symbol,
+              token.name ?? '',
+              token.symbol ?? '',
               token.decimals,
               TokenCreatedBy.Scanner,
             );
@@ -456,7 +461,12 @@ export default async (process: Process) => {
         if (!tokenRecordAlias) {
           tokenRecordAlias = await container.model
             .tokenAliasService()
-            .create(token.name, token.symbol, TokenAliasLiquidity.Unstable, token.logo_url || null);
+            .create(
+              token.name ?? '',
+              token.symbol ?? '',
+              TokenAliasLiquidity.Unstable,
+              token.logo_url || null,
+            );
         }
 
         try {
@@ -467,8 +477,8 @@ export default async (process: Process) => {
               'ethereum',
               container.debank().chainResolver(token.chain)?.numbered ?? '',
               token.id.toLowerCase(),
-              token.name,
-              token.symbol,
+              token.name ?? '',
+              token.symbol ?? '',
               token.decimals,
               TokenCreatedBy.Scanner,
             );

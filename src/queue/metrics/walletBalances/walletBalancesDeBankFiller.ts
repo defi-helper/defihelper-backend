@@ -38,8 +38,8 @@ export default async (process: Process) => {
         tokenAsset.id === tokenAsset.chain
           ? '0x0000000000000000000000000000000000000000'
           : tokenAsset.id,
-      name: tokenAsset.name.replace(/\0/g, '').trim(),
-      symbol: tokenAsset.symbol.replace(/\0/g, '').trim(),
+      name: (tokenAsset.name ?? '').replace(/\0/g, '').trim(),
+      symbol: (tokenAsset.symbol ?? '').replace(/\0/g, '').trim(),
     }))
     .filter((v) => v.is_wallet === true);
 

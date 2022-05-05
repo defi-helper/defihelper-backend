@@ -77,8 +77,6 @@ export class TokenService {
     if (token.blockchain === 'waves') {
       container.model.queueService().push('tokenInfoWaves', { token: token.id });
     }
-
-    return null;
   });
 
   public readonly onUpdated = new Emitter<{ prev: Token; cur: Token }>(({ cur }) => {
