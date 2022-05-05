@@ -26,14 +26,13 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: {{ .Chart.Name }}
-          securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ $.Values.image.repository }}/{{ .Values.images.app.name }}:{{ $.Values.image.tag }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+        - name: nginx
+          imagePullPolicy: Always
+          image: "{{ $.Values.image.repository }}/{{ .Values.images.nginx.name }}:{{ $.Values.image.tag }}"
+          terminationMessagePolicy: FallbackToLogsOnError
           ports:
             - name: http
-              containerPort: 8080
+              containerPort: 80
               protocol: TCP
           livenessProbe:
             httpGet:
@@ -47,12 +46,35 @@ spec:
               port: http
             initialDelaySeconds: 15
             timeoutSeconds: 1
+          resources:
+            {{- toYaml .Values.images.nginx.resources | nindent 12 }}
+        - name: app
+          imagePullPolicy: Always
+          image: "{{ $.Values.image.repository }}/{{ .Values.images.app.name }}:{{ $.Values.image.tag }}"
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 15
+            timeoutSeconds: 1
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 15
+            timeoutSeconds: 1
           volumeMounts:
             - mountPath: /app/configuration
               name: configuration
               readOnly: true
           resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+            {{- toYaml .Values.images.app.resources | nindent 12 }}
       volumes:
         - name: configuration
           secret:
