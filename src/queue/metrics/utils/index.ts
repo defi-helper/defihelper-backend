@@ -109,6 +109,7 @@ export async function contractMetrics(process: Process) {
   let date = new Date();
   if (provider instanceof ethers.providers.JsonRpcProvider && blockNumber !== 'latest') {
     const block = await provider.getBlock(parseInt(blockNumber, 10));
+    if (block === null) throw new Error('Invalid block number');
     date = dayjs.unix(block.timestamp).toDate();
   }
 
