@@ -71,7 +71,9 @@ export interface ContractMetricsParams {
 }
 
 export async function contractMetrics(process: Process) {
-  const { contract: contractId, blockNumber } = process.task.params as ContractMetricsParams;
+  const params = process.task.params as ContractMetricsParams;
+  const { contract: contractId } = params;
+  const blockNumber = params.blockNumber === 'latest' ? 'latest' : Number(params.blockNumber);
   const contract = await container.model
     .contractTable()
     .innerJoin(
@@ -108,7 +110,7 @@ export async function contractMetrics(process: Process) {
 
   let date = new Date();
   if (provider instanceof ethers.providers.JsonRpcProvider && blockNumber !== 'latest') {
-    const block = await provider.getBlock(parseInt(blockNumber, 10));
+    const block = await provider.getBlock(blockNumber);
     if (block === null) throw new Error('Invalid block number');
     date = dayjs.unix(block.timestamp).toDate();
   }
@@ -165,11 +167,9 @@ export interface WalletMetricsParams {
 }
 
 export async function walletMetrics(process: Process) {
-  const {
-    contract: contractId,
-    wallet: walletId,
-    blockNumber,
-  } = process.task.params as WalletMetricsParams;
+  const params = process.task.params as WalletMetricsParams;
+  const { contract: contractId, wallet: walletId } = params;
+  const blockNumber = params.blockNumber === 'latest' ? 'latest' : Number(params.blockNumber);
   const contract = await container.model
     .contractTable()
     .innerJoin(
@@ -224,7 +224,7 @@ export async function walletMetrics(process: Process) {
 
   let date = new Date();
   if (provider instanceof ethers.providers.JsonRpcProvider && blockNumber !== 'latest') {
-    const block = await provider.getBlock(parseInt(blockNumber, 10));
+    const block = await provider.getBlock(blockNumber);
     if (block === null) throw new Error('Invalid block number');
     date = dayjs.unix(block.timestamp).toDate();
   }
