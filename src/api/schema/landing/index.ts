@@ -95,8 +95,8 @@ export const LandingMediumPostsQuery: GraphQLFieldConfig<any, Request> = {
                   .slice(0, 300)
                   .split(' ')
                   .slice(0, -1)
-                  .concat('...')
-                  .join(' '),
+                  .join(' ')
+                  .concat('...'),
                 createdAt: dayjs.unix(v.createdAt),
               }))
               .filter((v) => new LanguageDetect().detect(v.text)[0][0] === 'english'),
