@@ -6,7 +6,11 @@ export default async (process: Process) => {
   const queue = container.model.queueService();
   const contracts = await container.model
     .contractTable()
-    .innerJoin(contractBlockchainTableName, `${contractTableName}.id`, `${contractTableName}.id`)
+    .innerJoin(
+      contractBlockchainTableName,
+      `${contractTableName}.id`,
+      `${contractBlockchainTableName}.id`,
+    )
     .andWhere(`${contractTableName}.deprecated`, false);
   await Promise.all(
     contracts.map((contract) =>
