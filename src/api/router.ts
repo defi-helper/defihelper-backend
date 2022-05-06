@@ -2,6 +2,7 @@ import container from '@container';
 import { Express, Request } from 'express';
 import { Server } from 'http';
 import { ApolloServer } from 'apollo-server-express';
+import { formatApolloErrors } from 'apollo-server-errors';
 import { json } from 'body-parser';
 import { GraphQLNonNull, GraphQLObjectType, GraphQLSchema, GraphQLString } from 'graphql';
 import * as middlewares from '@api/middlewares';
@@ -163,7 +164,13 @@ export function route({ express, server }: { express: Express; server: Server })
     introspection: true,
     context: ({ req }) => req,
     formatError: (err) => {
-      container.logger().error(err.toString());
+      container.model
+        .logService()
+        .create(
+          `graphql:${err.extensions?.code ?? 'UNKNOWN'}`,
+          JSON.stringify(formatApolloErrors([err]), null, 4),
+        );
+      container.logger().error(`${err}`);
       return err;
     },
   });
