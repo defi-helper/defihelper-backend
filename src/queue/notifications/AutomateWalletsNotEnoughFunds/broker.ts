@@ -26,6 +26,7 @@ export default async (process: Process) => {
       `${userNotificationTableName}.user`,
     )
     .where(`${triggerTableName}.active`, true)
+    .whereNull(`${walletTableName}.deletedAt`)
     .andWhere(`${walletBlockchainTableName}.blockchain`, 'ethereum')
     .having(database.raw(`count(distinct ${triggerTableName}.id) > 0`))
     .andWhere(`${userNotificationTableName}.type`, UserNotificationType.AutomateCallNotEnoughFunds)

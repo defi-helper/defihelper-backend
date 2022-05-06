@@ -175,6 +175,7 @@ export const protocolUserLastMetricLoader = ({ userId }: { userId: string }) =>
                   )
                   .whereIn(`${contractTableName}.protocol`, protocolsId)
                   .andWhere(`${walletTableName}.user`, userId)
+                  .whereNull(`${walletTableName}.deletedAt`)
                   .orderBy(`${metricWalletTableName}.contract`)
                   .orderBy(`${metricWalletTableName}.wallet`)
                   .orderBy(`${metricWalletTableName}.date`, 'DESC')
@@ -264,6 +265,7 @@ export const protocolUserLastAPRLoader = ({
             .innerJoin(walletTableName, `${walletTableName}.id`, `${metricWalletTableName}.wallet`)
             .whereIn(`${contractTableName}.protocol`, protocolsId)
             .andWhere(`${walletTableName}.user`, userId)
+            .whereNull(`${walletTableName}.deletedAt`)
             .andWhere(database.raw(`${metricWalletTableName}.data->>'stakingUSD' IS NOT NULL`))
             .orderBy(`${metricWalletTableName}.contract`)
             .orderBy(`${metricWalletTableName}.date`, 'DESC')
@@ -366,8 +368,9 @@ export const contractUserLastMetricLoader = ({
             `${walletBlockchainTableName}.id`,
           )
           .where(function () {
-            this.where(`${walletTableName}.user`, userId);
-            this.whereIn(`${walletBlockchainTableName}.type`, walletType);
+            this.where(`${walletTableName}.user`, userId)
+              .whereNull(`${walletTableName}.deletedAt`)
+              .whereIn(`${walletBlockchainTableName}.type`, walletType);
           })
           .orderBy(`${metricWalletTableName}.contract`)
           .orderBy(`${metricWalletTableName}.wallet`)

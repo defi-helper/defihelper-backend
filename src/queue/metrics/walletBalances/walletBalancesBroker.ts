@@ -16,7 +16,8 @@ export default async (process: Process) => {
       `${walletTableName}.id`,
     )
     .andWhere(`${walletBlockchainTableName}.type`, WalletBlockchainType.Wallet)
-    .andWhere(`${walletBlockchainTableName}.blockchain`, 'ethereum');
+    .andWhere(`${walletBlockchainTableName}.blockchain`, 'ethereum')
+    .whereNotNull(`${walletTableName}.deletedAt`);
 
   const lag = 86400 / wallets.length;
   await wallets.reduce<Promise<dayjs.Dayjs>>(async (prev, wallet) => {

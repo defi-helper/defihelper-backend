@@ -24,6 +24,7 @@ export default async (process: Process) => {
     .where(`${triggerTableName}.id`, id)
     .andWhere(`${triggerTableName}.active`, true)
     .whereNull(`${walletTableName}.suspendReason`)
+    .whereNull(`${walletTableName}.deletedAt`)
     .first();
   if (!trigger) throw new Error('Trigger not found');
 
