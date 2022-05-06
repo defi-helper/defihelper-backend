@@ -92,7 +92,7 @@ export const LandingMediumPostsQuery: GraphQLFieldConfig<any, Request> = {
                 ...v,
                 text: `${v.text
                   .replace(/(<([^>]+)>)/gi, '')
-                  .slice(0, 30)
+                  .slice(0, 300)
                   .split(' ')
                   .slice(0, -1)
                   .concat('...')
