@@ -324,15 +324,9 @@ export function route({ express, server }: { express: Express; server: Server })
 
     if (isDebank) {
       await Promise.all(
-        protocol.name.split(' ').map(async (word, i) =>
-          templateInstance.print(
-            totalApyFont,
-            117,
-            170 + i * 135,
-            word,
-            // word[0].toUpperCase() + word.slice(1).toLowerCase(),
-          ),
-        ),
+        protocol.name
+          .split(' ')
+          .map(async (word, i) => templateInstance.print(totalApyFont, 117, 170 + i * 135, word)),
       );
     }
 
