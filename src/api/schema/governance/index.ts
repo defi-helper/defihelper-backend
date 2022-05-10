@@ -156,6 +156,9 @@ export const GovReceiptType = new GraphQLObjectType<Receipt>({
 export const GovVoteType = new GraphQLObjectType({
   name: 'GovVoteType',
   fields: {
+    balance: {
+      type: GraphQLNonNull(GraphQLString),
+    },
     votes: {
       type: GraphQLNonNull(GraphQLString),
     },

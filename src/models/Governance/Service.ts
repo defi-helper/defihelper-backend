@@ -38,10 +38,12 @@ export class GovernanceService {
       blockchainContainer.abi.governanceTokenABI,
       provider,
     );
+    const balance = await governanceToken.balanceOf(wallet);
     const votes = await governanceToken.getCurrentVotes(wallet);
     const delegates = await governanceToken.delegates(wallet);
 
     return {
+      balance: new BN(balance.toString()).div(1e18).toString(),
       votes: new BN(votes.toString()).div(1e18).toString(),
       delegates: delegates.toLowerCase(),
     };
