@@ -88,6 +88,7 @@ export class WalletService {
       user: user.id,
       name,
       suspendReason: null,
+      deletedAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -119,6 +120,7 @@ export class WalletService {
       user: user.id,
       name: '',
       suspendReason: null,
+      deletedAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -137,11 +139,10 @@ export class WalletService {
     return { ...wallet, ...exchangeWallet };
   }
 
-  deleteBlockchainWallet({ id }: Wallet) {
-    return this.database.transaction(async (trx) => {
-      await this.walletTable().where('id', id).delete().transacting(trx);
-      await this.walletBlockchainTable().where('id', id).delete().transacting(trx);
-    });
+  deleteBlockchainWallet(wallet: Wallet) {
+    return this.walletTable()
+      .where('id', wallet.id)
+      .update({ ...wallet, deletedAt: new Date() });
   }
 
   deleteExchangeWallet({ id }: Wallet) {

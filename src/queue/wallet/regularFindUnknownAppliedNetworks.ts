@@ -12,6 +12,7 @@ export default async (process: Process) => {
       `${walletTableName}.id`,
     )
     .where('blockchain', 'ethereum')
+    .whereNull(`${walletTableName}.deletedAt`)
     .distinctOn('address');
 
   const lag = 86400 / wallets.length; // seconds in day

@@ -27,7 +27,8 @@ export default async (process: Process) => {
     )
     .andWhere(`${walletTableName}.user`, user.id)
     .andWhere(`${walletBlockchainTableName}.type`, WalletBlockchainType.Wallet)
-    .andWhere(`${walletBlockchainTableName}.blockchain`, 'ethereum');
+    .andWhere(`${walletBlockchainTableName}.blockchain`, 'ethereum')
+    .whereNull(`${walletTableName}.deletedAt`);
 
   const tasks = await wallets.reduce<Promise<Task[]>>(async (addedTasksPromise, wallet) => {
     const addedTasks = await addedTasksPromise;

@@ -488,9 +488,11 @@ export const WalletBlockchainType = new GraphQLObjectType<
             `${metricWalletTokenTableName}.wallet`,
           )
           .where(function () {
-            this.where(`${metricWalletTokenTableName}.wallet`, wallet.id).andWhere(
-              database.raw(`${metricWalletTokenTableName}.data->>'${metric}' IS NOT NULL`),
-            );
+            this.where(`${metricWalletTokenTableName}.wallet`, wallet.id)
+              .whereNull(`${walletTableName}.deletedAt`)
+              .andWhere(
+                database.raw(`${metricWalletTokenTableName}.data->>'${metric}' IS NOT NULL`),
+              );
             if (Array.isArray(filter.contract)) {
               if (filter.contract.length > 0) {
                 this.whereIn(`${metricWalletTokenTableName}.contract`, filter.contract);
@@ -595,9 +597,13 @@ export const WalletBlockchainType = new GraphQLObjectType<
       type: GraphQLNonNull(WalletBillingType),
       resolve: (wallet) => wallet,
     },
+    deletedAt: {
+      type: DateTimeType,
+      description: 'Date of deleted wallet',
+    },
     createdAt: {
       type: GraphQLNonNull(DateTimeType),
-      description: 'Date of created account',
+      description: 'Date of created wallet',
     },
   },
 });
@@ -699,6 +705,10 @@ export const WalletExchangeType = new GraphQLObjectType<
         return `${payload.apiKey.slice(0, 10)}...${payload.apiKey.slice(-4)}`;
       },
     },
+    deletedAt: {
+      type: DateTimeType,
+      description: 'Date of deleted wallet',
+    },
     createdAt: {
       type: GraphQLNonNull(DateTimeType),
       description: 'Date of created account',
@@ -736,9 +746,15 @@ export const UserBlockchainType = new GraphQLObjectType<{
               search: {
                 type: GraphQLString,
               },
+              deleted: {
+                type: GraphQLBoolean,
+                description: 'Is wallet deleted',
+              },
             },
           }),
-          defaultValue: {},
+          defaultValue: {
+            deleted: false,
+          },
         },
         sort: SortArgument(
           'UserBlockchainWalletListSortInputType',
@@ -761,6 +777,10 @@ export const UserBlockchainType = new GraphQLObjectType<{
               .andWhere(`${walletExchangeTableName}.network`, network);
             if (filter.search !== undefined && filter.search !== '') {
               this.andWhere(`${walletExchangeTableName}.address`, 'iLike', `%${filter.search}%`);
+            }
+            if (typeof filter.deleted === 'boolean') {
+              if (filter.deleted) this.whereNotNull(`${walletTableName}.deletedAt`);
+              else this.whereNull(`${walletTableName}.deletedAt`);
             }
           });
 
@@ -845,6 +865,7 @@ export const UserBlockchainType = new GraphQLObjectType<{
             this.where(`${walletTableName}.user`, user.id)
               .andWhere(`${walletBlockchainTableName}.blockchain`, blockchain)
               .andWhere(`${walletBlockchainTableName}.network`, network)
+              .whereNull(`${walletTableName}.deletedAt`)
               .andWhere(
                 database.raw(`${metricWalletTokenTableName}.data->>'${metric}' IS NOT NULL`),
               );
@@ -1030,6 +1051,7 @@ export const UserType = new GraphQLObjectType<User, Request>({
           )
           .andWhere(`${protocolContractTableName}.protocol`, filter.protocol)
           .andWhere(`${walletTableName}.user`, user.id)
+          .whereNull(`${walletTableName}.deletedAt`)
           .groupBy(`${tokenAliasTableName}.id`);
 
         if (Array.isArray(filter.liquidity) && filter.liquidity.length > 0) {
@@ -1081,6 +1103,7 @@ export const UserType = new GraphQLObjectType<User, Request>({
             `${metricWalletTokenTableName}.wallet`,
           )
           .where(`${walletTableName}.user`, user.id)
+          .whereNull(`${walletTableName}.deletedAt`)
           .groupBy(`${tokenAliasTableName}.id`);
 
         if (Array.isArray(filter.liquidity) && filter.liquidity.length > 0) {
@@ -1128,9 +1151,15 @@ export const UserType = new GraphQLObjectType<User, Request>({
               search: {
                 type: GraphQLString,
               },
+              deleted: {
+                type: GraphQLBoolean,
+                description: 'Is wallet deleted',
+              },
             },
           }),
-          defaultValue: {},
+          defaultValue: {
+            deleted: false,
+          },
         },
         sort: SortArgument(
           'WalletListSortInputType',
@@ -1149,7 +1178,7 @@ export const UserType = new GraphQLObjectType<User, Request>({
           )
           .where(function () {
             this.where(`${walletTableName}.user`, user.id);
-            const { id, blockchain, type, search } = filter;
+            const { id, blockchain, type, search, deleted } = filter;
             if (id) {
               this.andWhere(`${walletTableName}.id`, id);
             }
@@ -1165,6 +1194,10 @@ export const UserType = new GraphQLObjectType<User, Request>({
             }
             if (search !== undefined && search !== '') {
               this.andWhere(`${walletBlockchainTableName}.address`, 'iLike', `%${search}%`);
+            }
+            if (typeof deleted === 'boolean') {
+              if (deleted) this.whereNotNull(`${walletTableName}.deletedAt`);
+              else this.whereNull(`${walletTableName}.deletedAt`);
             }
           });
 
@@ -1304,9 +1337,9 @@ export const UserType = new GraphQLObjectType<User, Request>({
           .column(database.raw(`DATE_TRUNC('${group}', ${metricWalletTableName}.date) AS "date"`))
           .innerJoin(walletTableName, `${walletTableName}.id`, `${metricWalletTableName}.wallet`)
           .where(function () {
-            this.where(`${walletTableName}.user`, user.id).andWhere(
-              database.raw(`${metricWalletTableName}.data->>'${metric}' IS NOT NULL`),
-            );
+            this.where(`${walletTableName}.user`, user.id)
+              .whereNull(`${walletTableName}.deletedAt`)
+              .andWhere(database.raw(`${metricWalletTableName}.data->>'${metric}' IS NOT NULL`));
             if (filter.blockchain) {
               const { protocol, network } = filter.blockchain;
               this.andWhere(`${walletBlockchainTableName}.blockchain`, protocol);
@@ -1418,9 +1451,11 @@ export const UserType = new GraphQLObjectType<User, Request>({
             `${metricWalletTokenTableName}.wallet`,
           )
           .where(function () {
-            this.where(`${walletTableName}.user`, user.id).andWhere(
-              database.raw(`${metricWalletTokenTableName}.data->>'${metric}' IS NOT NULL`),
-            );
+            this.where(`${walletTableName}.user`, user.id)
+              .whereNull(`${walletTableName}.deletedAt`)
+              .andWhere(
+                database.raw(`${metricWalletTokenTableName}.data->>'${metric}' IS NOT NULL`),
+              );
             if (filter.blockchain) {
               const { protocol, network } = filter.blockchain;
               this.andWhere(`${walletBlockchainTableName}.blockchain`, protocol);

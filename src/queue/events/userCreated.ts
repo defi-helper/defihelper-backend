@@ -30,6 +30,7 @@ export default async (process: Process) => {
         `${walletTableName}.id`,
       )
       .where(`${walletTableName}.user`, user.id)
+      .whereNull(`${walletTableName}.deletedAt`)
       .first();
     if (firstBlockchainWallet) {
       await container.model

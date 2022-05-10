@@ -18,6 +18,7 @@ export default async (process: Process) => {
     .where(`${triggerTableName}.active`, true)
     .andWhere(`${triggerTableName}.type`, type)
     .whereNull(`${walletTableName}.suspendReason`)
+    .whereNull(`${walletTableName}.deletedAt`)
     .orderBy(`${triggerTableName}.id`, 'asc');
   const lag = 3600 / triggers.length;
   const queue = container.model.queueService();
