@@ -5,6 +5,7 @@ import {
   GraphQLBoolean,
   GraphQLEnumType,
   GraphQLFieldConfig,
+  GraphQLFieldConfigMap,
   GraphQLInputObjectType,
   GraphQLList,
   GraphQLNonNull,
@@ -22,6 +23,8 @@ import {
   ContractBlockchainType,
   contractBlockchainTableName,
   MetadataType,
+  TokenContractLinkType,
+  tokenContractLinkTableName,
 } from '@models/Protocol/Entity';
 import { apyBoost } from '@services/RestakeStrategy';
 import {
@@ -38,6 +41,7 @@ import { AuthenticationError, ForbiddenError, UserInputError } from 'apollo-serv
 import BN from 'bignumber.js';
 import { Blockchain } from '@models/types';
 import { Post } from '@models/Protocol/Social/Entity';
+import { tokenPartTableName, tokenTableName } from '@models/Token/Entity';
 import { PostProvider } from '@services/SocialStats';
 import {
   BlockchainEnum,
@@ -53,6 +57,7 @@ import {
   UuidType,
   WalletBlockchainTypeEnum,
 } from '../types';
+import { TokenType } from '../token';
 
 export const ContractMetricType = new GraphQLObjectType({
   name: 'ContractMetricType',
@@ -116,6 +121,43 @@ export const ContractAutomatesType = new GraphQLObjectType<ContractAutomate, Req
       description: 'Buy liquidity automate config',
     },
   },
+});
+
+export const ContractTokenLinkType = new GraphQLObjectType<
+  Contract & ContractBlockchainType,
+  Request
+>({
+  name: 'ContractTokenLinkType',
+  fields: Object.values(TokenContractLinkType).reduce(
+    (result, linkType) => ({
+      ...result,
+      [linkType]: {
+        type: GraphQLNonNull(GraphQLList(GraphQLNonNull(TokenType))),
+        resolve: async (contract) => {
+          const token = await container.model
+            .tokenTable()
+            .column(`${tokenTableName}.*`)
+            .innerJoin(
+              tokenContractLinkTableName,
+              `${tokenTableName}.id`,
+              `${tokenContractLinkTableName}.token`,
+            )
+            .where(`${tokenContractLinkTableName}.contract`, contract.id)
+            .andWhere(`${tokenContractLinkTableName}.type`, linkType)
+            .first();
+          if (!token) return [];
+
+          const childTokens = await container.model
+            .tokenTable()
+            .innerJoin(tokenPartTableName, `${tokenTableName}.id`, `${tokenPartTableName}.child`)
+            .where(`${tokenPartTableName}.parent`, token.id);
+
+          return childTokens.length > 0 ? childTokens : [token];
+        },
+      },
+    }),
+    {} as GraphQLFieldConfigMap<Contract & ContractBlockchainType, Request>,
+  ),
 });
 
 export const ContractType = new GraphQLObjectType<Contract & ContractBlockchainType, Request>({
@@ -335,6 +377,10 @@ export const ContractType = new GraphQLObjectType<Contract & ContractBlockchainT
 
         return abi.filter(({ type }) => type === 'event').map(({ name }) => name);
       },
+    },
+    tokens: {
+      type: GraphQLNonNull(ContractTokenLinkType),
+      resolve: (contract) => contract,
     },
     createdAt: {
       type: GraphQLNonNull(DateTimeType),
@@ -929,7 +975,7 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
           .where(function () {
             const { id, hidden, search } = filter;
             if (id) {
-              this.where('id', id);
+              this.where(`${contractTableName}.id`, id);
             } else {
               this.where('protocol', protocol.id);
               if (filter.blockchain !== undefined) {
