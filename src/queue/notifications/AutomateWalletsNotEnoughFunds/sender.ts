@@ -37,6 +37,7 @@ export default async (process: Process) => {
       `${walletTableName}.id`,
     )
     .where('active', true)
+    .whereNull(`${walletTableName}.deletedAt`)
     .andWhere(`${walletTableName}.user`, user.id);
 
   const walletsFunds = await container.model

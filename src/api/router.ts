@@ -298,6 +298,7 @@ export function route({ express, server }: { express: Express; server: Server })
       }),
     );
 
+    const isDebank = protocol.adapter === 'debankByApiReadonly';
     const maxBoostedApy = Math.round(Math.max(...calculatedApyList.map((v) => v.boosted)));
     const avgInitialApy = Math.round(
       (calculatedApyList.reduce((prev, curr) => new BN(prev).plus(curr.initial).toNumber(), 0) /
@@ -321,7 +322,9 @@ export function route({ express, server }: { express: Express; server: Server })
       totalApyFont,
       protocolNameFont,
     ] = await Promise.all([
-      Jimp.read(`${__dirname}/../assets/opengraph-template.png`),
+      Jimp.read(
+        `${__dirname}/../assets/opengraph-${isDebank ? 'readonly-template' : 'template'}.png`,
+      ),
       protocol.previewPicture ? Jimp.read(protocol.previewPicture) : null,
       Jimp.loadFont(`${__dirname}/../assets/font-without-dfh/FCK4eZkmzDMwvOVkx7MoTdys.ttf.fnt`),
       Jimp.loadFont(`${__dirname}/../assets/font-with-dfh/KDHm2vWUrEv1xTEC3ilBxVL2.ttf.fnt`),
@@ -329,34 +332,46 @@ export function route({ express, server }: { express: Express; server: Server })
       Jimp.loadFont(`${__dirname}/../assets/font-protocol-name/kkMJaED6sIZbo4N0PfpUSPXk.ttf.fnt`),
     ]);
 
-    // protocol's apy
-    await templateInstance.print(
-      withoutDfhFont,
-      117,
-      175,
-      `APY ${avgInitialApy > 10000 ? '>10000' : avgInitialApy.toFixed()}%`,
-    );
+    if (isDebank) {
+      await Promise.all(
+        protocol.name
+          .split(' ')
+          .map(async (word, i) => templateInstance.print(totalApyFont, 117, 170 + i * 135, word)),
+      );
+    }
 
-    // boosted apy
-    await templateInstance.print(
-      withDfhBoostedFont,
-      117,
-      380,
-      `APY ${maxBoostedApy > 10000 ? '>10000' : maxBoostedApy.toFixed()}%`,
-    );
+    if (!isDebank) {
+      // protocol's apy
+      await templateInstance.print(
+        withoutDfhFont,
+        117,
+        175,
+        `APY ${avgInitialApy > 10000 ? '>10000' : avgInitialApy.toFixed()}%`,
+      );
 
-    // total apy
-    await templateInstance.print(
-      totalApyFont,
-      117,
-      660,
-      `${
-        maxBoostedApy + avgInitialApy > 10000 ? '>10000' : (maxBoostedApy + avgInitialApy).toFixed()
-      }%`,
-    );
+      // boosted apy
+      await templateInstance.print(
+        withDfhBoostedFont,
+        117,
+        380,
+        `APY ${maxBoostedApy > 10000 ? '>10000' : maxBoostedApy.toFixed()}%`,
+      );
 
-    // protocol's name
-    await templateInstance.print(protocolNameFont, 117, 114, protocol.name);
+      // total apy
+      await templateInstance.print(
+        totalApyFont,
+        117,
+        660,
+        `${
+          maxBoostedApy + avgInitialApy > 10000
+            ? '>10000'
+            : (maxBoostedApy + avgInitialApy).toFixed()
+        }%`,
+      );
+
+      // protocol's name
+      await templateInstance.print(protocolNameFont, 117, 114, protocol.name);
+    }
 
     // protocol logo
     if (protocolLogoInstance) {
