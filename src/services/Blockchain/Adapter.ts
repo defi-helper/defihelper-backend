@@ -6,11 +6,27 @@ import ethersMulticall from '@defihelper/ethers-multicall';
 import vm from 'vm';
 import { Blockchain } from '@models/types';
 import { ContractAutomate } from '@models/Protocol/Entity';
+import { PriceFeed } from '@models/Token/Entity';
 
 export class TemporaryOutOfService extends Error {
   constructor(m = 'wait a bit, usually it means that we updating our infrastructure') {
     super(m);
   }
+}
+
+export interface PriceNotResolvedError {
+  network: number;
+  address: string;
+  message: string;
+}
+
+export function isPriceNotResolvedError(error: any): error is PriceNotResolvedError {
+  return (
+    typeof error === 'object' &&
+    error instanceof Error &&
+    Object.prototype.hasOwnProperty.call(error, 'network') &&
+    Object.prototype.hasOwnProperty.call(error, 'address')
+  );
 }
 
 export interface MetricMap {
@@ -203,5 +219,13 @@ export class AdapterService {
     if (!isWavesAutomateArtifact(artifact)) throw new Error('Invalid artifact response');
 
     return artifact;
+  }
+
+  loadAliases() {
+    return axios
+      .get<Array<{ network: number; address: string; priceFeed: PriceFeed.PriceFeed }>>(
+        `${this.host}/token-bridges`,
+      )
+      .then(({ data }) => data);
   }
 }

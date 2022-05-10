@@ -92,6 +92,7 @@ export * as tokenAlias from './token/alias';
 export * as tokenInfoEth from './token/ethereumInfo';
 export * as tokenInfoWaves from './token/wavesInfo';
 export * as resolveTokenAliasLiquidity from './token/resolveTokenAliasLiquidity';
+export * as tokensBridgesFromAdapters from './token/tokensBridgesFromAdapters';
 
 /* treasury */
 export * as treasuryStatsCache from './treasury/cache';

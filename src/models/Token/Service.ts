@@ -1,5 +1,6 @@
 import { Factory } from '@services/Container';
 import {
+  PriceFeed,
   Token,
   TokenAlias,
   TokenAliasLiquidity,
@@ -106,6 +107,7 @@ export class TokenService {
     symbol: string,
     decimals: number,
     createdBy: TokenCreatedBy,
+    priceFeed: PriceFeed.PriceFeed | null = null,
   ) {
     const created: Token = {
       id: uuid(),
@@ -117,6 +119,7 @@ export class TokenService {
       symbol,
       decimals,
       tradable: false,
+      priceFeed,
       createdBy,
       createdAt: new Date(),
       updatedAt: new Date(),

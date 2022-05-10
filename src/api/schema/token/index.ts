@@ -1,7 +1,13 @@
 import { AuthenticationError, UserInputError } from 'apollo-server-express';
 import container from '@container';
 import { Request } from 'express';
-import { Token, TokenAlias, TokenAliasLiquidity, tokenTableName } from '@models/Token/Entity';
+import {
+  PriceFeed,
+  Token,
+  TokenAlias,
+  TokenAliasLiquidity,
+  tokenTableName,
+} from '@models/Token/Entity';
 import { walletTableName } from '@models/Wallet/Entity';
 import {
   GraphQLBoolean,
@@ -13,6 +19,7 @@ import {
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
+  GraphQLUnionType,
 } from 'graphql';
 import { metricWalletTokenTableName } from '@models/Metric/Entity';
 import {
@@ -29,6 +36,78 @@ import {
   SortArgument,
   UuidType,
 } from '../types';
+
+export const PriceFeedCoingeckoIdType = new GraphQLObjectType({
+  name: 'TokenPriceFeedCoingeckoIdType',
+  fields: {
+    type: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    id: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+  },
+});
+
+export const PriceFeedCoingeckoPlatformEnum = new GraphQLEnumType({
+  name: 'TokenPriceFeedCoingeckoPlatformEnum',
+  values: Object.values(PriceFeed.CoingeckoPlatform).reduce(
+    (res, type) => ({ ...res, [type.replace(/-/g, '_')]: { value: type } }),
+    {},
+  ),
+});
+
+export const PriceFeedCoingeckoAddressType = new GraphQLObjectType({
+  name: 'TokenPriceFeedCoingeckoAddressType',
+  fields: {
+    type: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    platform: {
+      type: GraphQLNonNull(PriceFeedCoingeckoPlatformEnum),
+    },
+    address: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+  },
+});
+
+export const PriceFeedType = new GraphQLUnionType({
+  name: 'TokenPriceFeedType',
+  types: [PriceFeedCoingeckoIdType, PriceFeedCoingeckoAddressType],
+  resolveType: (priceFeed) => {
+    if (PriceFeed.isCoingeckoId(priceFeed)) {
+      return PriceFeedCoingeckoIdType;
+    }
+    if (PriceFeed.isCoingeckoAddress(priceFeed)) {
+      return PriceFeedCoingeckoAddressType;
+    }
+    throw new Error(`Invalid token price feed "${JSON.stringify(priceFeed)}"`);
+  },
+});
+
+export const PriceFeedInputType = new GraphQLInputObjectType({
+  name: 'TokenPriceFeedInputType',
+  fields: {
+    coingeckoId: {
+      type: new GraphQLInputObjectType({
+        name: 'TokenPriceFeedCoingeckoIdInputType',
+        fields: {
+          id: { type: GraphQLNonNull(GraphQLString) },
+        },
+      }),
+    },
+    coingeckoAddress: {
+      type: new GraphQLInputObjectType({
+        name: 'TokenPriceFeedCoingeckoAddressInputType',
+        fields: {
+          platform: { type: GraphQLNonNull(PriceFeedCoingeckoPlatformEnum) },
+          address: { type: GraphQLNonNull(GraphQLString) },
+        },
+      }),
+    },
+  },
+});
 
 export const TokenType: GraphQLObjectType = new GraphQLObjectType<Token, Request>({
   name: 'TokenType',
@@ -67,6 +146,9 @@ export const TokenType: GraphQLObjectType = new GraphQLObjectType<Token, Request
     decimals: {
       type: GraphQLNonNull(GraphQLInt),
       description: 'Decimals',
+    },
+    priceFeed: {
+      type: PriceFeedType,
     },
   }),
 });
@@ -157,6 +239,9 @@ export const TokenUpdateMutation: GraphQLFieldConfig<any, Request> = {
               type: GraphQLInt,
               description: 'Decimals',
             },
+            priceFeed: {
+              type: PriceFeedInputType,
+            },
           },
         }),
       ),
@@ -168,7 +253,7 @@ export const TokenUpdateMutation: GraphQLFieldConfig<any, Request> = {
     const token = await container.model.tokenTable().where('id', id).first();
     if (!token) throw new UserInputError('Token not found');
 
-    const { alias: tokenAliasId, name, symbol, decimals } = input;
+    const { alias: tokenAliasId, name, symbol, decimals, priceFeed } = input;
     let alias;
     if (typeof tokenAliasId === 'string') {
       const tokenAlias = await container.model.tokenAliasTable().where('id', tokenAliasId).first();
@@ -177,6 +262,24 @@ export const TokenUpdateMutation: GraphQLFieldConfig<any, Request> = {
     } else {
       alias = token.alias;
     }
+    let priceFeedInput = token.priceFeed;
+    if (priceFeed) {
+      if (priceFeed.coingeckoId) {
+        priceFeed.coingeckoId.type = 'coingeckoId';
+        if (!PriceFeed.isCoingeckoId(priceFeed.coingeckoId)) {
+          throw new UserInputError(`Invalid price feed "${JSON.stringify(priceFeed.coingeckoId)}"`);
+        }
+        priceFeedInput = priceFeed.coingeckoId;
+      } else if (priceFeed.coingeckoAddress) {
+        priceFeed.coingeckoAddress.type = 'coingeckoAddress';
+        if (!PriceFeed.isCoingeckoAddress(priceFeed.coingeckoAddress)) {
+          throw new UserInputError(
+            `Invalid price feed "${JSON.stringify(priceFeed.coingeckoAddress)}"`,
+          );
+        }
+        priceFeedInput = priceFeed.coingeckoAddress;
+      }
+    }
 
     const updated = await container.model.tokenService().update({
       ...token,
@@ -184,6 +287,7 @@ export const TokenUpdateMutation: GraphQLFieldConfig<any, Request> = {
       name: typeof name === 'string' ? name : token.name,
       symbol: typeof symbol === 'string' ? symbol : token.symbol,
       decimals: typeof decimals === 'number' ? decimals : token.decimals,
+      priceFeed: priceFeedInput,
     });
 
     return updated;

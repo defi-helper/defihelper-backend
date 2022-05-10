@@ -4,6 +4,7 @@ import { Server } from 'http';
 import { ApolloServer } from 'apollo-server-express';
 import { formatApolloErrors } from 'apollo-server-errors';
 import { json } from 'body-parser';
+import cors from 'cors';
 import { GraphQLNonNull, GraphQLObjectType, GraphQLSchema, GraphQLString } from 'graphql';
 import * as middlewares from '@api/middlewares';
 import * as notificationSchemas from '@api/schema/notification';
@@ -28,6 +29,7 @@ import BN from 'bignumber.js';
 import { Blockchain } from '@models/types';
 import { triggerTableName } from '@models/Automate/Entity';
 import { walletTableName } from '@models/Wallet/Entity';
+import { Token } from '@models/Token/Entity';
 
 interface AprMetric {
   contract: string;
@@ -184,6 +186,7 @@ export function route({ express, server }: { express: Express; server: Server })
     apollo.getMiddleware({ path: '/' }),
   ]);
 
+  express.use(cors({ origin: container.parent.adapters.host }));
   express.route('/p/:code').get(async (req, res) => {
     const { code } = req.params;
     const codeRecord = await container.model.referrerCodeTable().where({ code }).first();
@@ -375,6 +378,34 @@ export function route({ express, server }: { express: Express; server: Server })
         'Content-Type': 'image/png',
       })
       .end(await templateInstance.getBufferAsync(Jimp.MIME_PNG));
+  });
+  express.route('/token/price-feed/:network').get(async (req, res) => {
+    const network = Number(req.params.network);
+    if (Number.isNaN(network)) {
+      return res.status(400).send('invalid network');
+    }
+    let addresses: string[] = [];
+    if (typeof req.query.tokens === 'string') addresses = [req.query.tokens];
+    else if (Array.isArray(req.query.tokens)) addresses = req.query.tokens.map((v) => `${v}`);
+    const tokens: Token[] = await container.model.tokenTable().where(function () {
+      this.where('network', network);
+      if (addresses.length > 0) {
+        this.whereIn(
+          'address',
+          addresses.map((address) => `${address}`.toLowerCase()),
+        );
+      }
+    });
+
+    return res.json(
+      tokens.reduce(
+        (aliases, token) =>
+          token.priceFeed
+            ? { ...aliases, [token.address.toLowerCase()]: token.priceFeed }
+            : aliases,
+        {},
+      ),
+    );
   });
   express.get('/', (_, res) => res.status(200).send(''));
 }

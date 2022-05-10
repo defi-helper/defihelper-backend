@@ -117,6 +117,11 @@ export async function contractMetrics(process: Process) {
 
   const contractAdapterData = await contractAdapterFactory(provider, contract.address, {
     blockNumber,
+  }).catch((e) => {
+    if (Adapters.isPriceNotResolvedError(e)) {
+      getOrCreateToken(contract, e.address);
+    }
+    throw e;
   });
   if (
     typeof contractAdapterData.metrics === 'object' &&
@@ -231,10 +236,22 @@ export async function walletMetrics(process: Process) {
 
   const contractAdapterData = await contractAdapterFactory(provider, contract.address, {
     blockNumber,
+  }).catch((e) => {
+    if (Adapters.isPriceNotResolvedError(e)) {
+      getOrCreateToken(contract, e.address);
+    }
+    throw e;
   });
   if (!contractAdapterData.wallet) return process.done();
 
-  const walletAdapterData = await contractAdapterData.wallet(blockchainWallet.address);
+  const walletAdapterData = await contractAdapterData
+    .wallet(blockchainWallet.address)
+    .catch((e) => {
+      if (Adapters.isPriceNotResolvedError(e)) {
+        getOrCreateToken(contract, e.address);
+      }
+      throw e;
+    });
   if (
     typeof walletAdapterData.metrics === 'object' &&
     Object.keys(walletAdapterData.metrics).length > 0

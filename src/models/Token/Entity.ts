@@ -31,6 +31,61 @@ export enum TokenCreatedBy {
   Adapter = 'adapter',
 }
 
+export namespace PriceFeed {
+  export interface CoingeckoId {
+    type: 'coingeckoId';
+    id: string;
+  }
+
+  export function isCoingeckoId(v: any): v is CoingeckoId {
+    if (typeof v !== 'object' || v === null) return false;
+    if (
+      !Object.prototype.hasOwnProperty.call(v, 'type') ||
+      !Object.prototype.hasOwnProperty.call(v, 'id')
+    ) {
+      return false;
+    }
+    if (v.type !== 'coingeckoId') return false;
+
+    return true;
+  }
+
+  export enum CoingeckoPlatform {
+    Ethereum = 'ethereum',
+    BSC = 'binance-smart-chain',
+    Avalanche = 'avalanche',
+    Moonriver = 'moonriver',
+    Polygon = 'polygon-pos',
+    Fantom = 'fantom',
+    Cronos = 'cronos',
+    Arbitrum = 'arbitrum-one',
+    Optimistic = 'optimistic-ethereum',
+  }
+
+  export interface CoingeckoAddress {
+    type: 'coingeckoAddress';
+    platform: CoingeckoPlatform;
+    address: string;
+  }
+
+  export function isCoingeckoAddress(v: any): v is CoingeckoAddress {
+    if (typeof v !== 'object' || v === null) return false;
+    if (
+      !Object.prototype.hasOwnProperty.call(v, 'type') ||
+      !Object.prototype.hasOwnProperty.call(v, 'platform') ||
+      !Object.prototype.hasOwnProperty.call(v, 'address')
+    ) {
+      return false;
+    }
+    if (v.type !== 'coingeckoAddress') return false;
+    if (!Object.values(CoingeckoPlatform).includes(v.platform)) return false;
+
+    return true;
+  }
+
+  export type PriceFeed = CoingeckoId | CoingeckoAddress;
+}
+
 export interface Token {
   id: string;
   alias: string | null;
@@ -41,6 +96,7 @@ export interface Token {
   symbol: string;
   decimals: number;
   tradable: boolean;
+  priceFeed: PriceFeed.PriceFeed | null;
   createdBy: TokenCreatedBy;
   updatedAt: Date;
   createdAt: Date;
