@@ -34,6 +34,7 @@ export const userBlockchainLoader = () =>
           `${walletBlockchainTableName}.network`,
         )
         .whereIn(`${walletTableName}.user`, usersId)
+        .whereNull(`${walletTableName}.deletedAt`)
         .groupBy(
           `${walletTableName}.user`,
           `${walletBlockchainTableName}.blockchain`,
@@ -59,6 +60,7 @@ export const userLastMetricLoader = ({ metric }: { metric: MetricWalletField }) 
           .column(database.raw(`(${metricWalletTableName}.data->>'${metric}')::numeric AS v`))
           .innerJoin(walletTableName, `${walletTableName}.id`, `${metricWalletTableName}.wallet`)
           .whereIn(`${walletTableName}.user`, usersId)
+          .whereNull(`${walletTableName}.deletedAt`)
           .andWhere(database.raw(`${metricWalletTableName}.data->>'${metric}' IS NOT NULL`))
           .orderBy(`${metricWalletTableName}.wallet`)
           .orderBy(`${metricWalletTableName}.contract`)
@@ -79,6 +81,7 @@ export const userLastAPRLoader = ({ metric }: { metric: MetricContractAPRField }
       .distinct(`${walletContractLinkTableName}.contract`)
       .innerJoin(walletTableName, `${walletTableName}.id`, `${walletContractLinkTableName}.wallet`)
       .whereIn(`${walletTableName}.user`, usersId)
+      .whereNull(`${walletTableName}.deletedAt`)
       .then((rows) => rows.map(({ contract }) => contract));
     const aprMap = await container.model
       .metricContractTable()
@@ -112,6 +115,7 @@ export const userLastAPRLoader = ({ metric }: { metric: MetricContractAPRField }
           .column(database.raw(`(${metricWalletTableName}.data->>'stakingUSD')::numeric AS v`))
           .innerJoin(walletTableName, `${walletTableName}.id`, `${metricWalletTableName}.wallet`)
           .whereIn(`${walletTableName}.user`, usersId)
+          .whereNull(`${walletTableName}.deletedAt`)
           .andWhere(database.raw(`${metricWalletTableName}.data->>'stakingUSD' IS NOT NULL`))
           .orderBy(`${walletTableName}.user`)
           .orderBy(`${metricWalletTableName}.contract`)
@@ -169,9 +173,9 @@ export const userTokenLastMetricLoader = ({
       .column(database.raw(`(${metricWalletTokenTableName}.data->>'usd')::numeric AS v`))
       .innerJoin(walletTableName, `${walletTableName}.id`, `${metricWalletTokenTableName}.wallet`)
       .where(function () {
-        this.whereIn(`${walletTableName}.user`, usersId).andWhere(
-          database.raw(`${metricWalletTokenTableName}.data->>'usd' IS NOT NULL`),
-        );
+        this.whereIn(`${walletTableName}.user`, usersId)
+          .whereNull(`${walletTableName}.deletedAt`)
+          .andWhere(database.raw(`${metricWalletTokenTableName}.data->>'usd' IS NOT NULL`));
         if (typeof contract === 'object') {
           if (contract !== null) {
             if (Array.isArray(contract.id)) {
