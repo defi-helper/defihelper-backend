@@ -947,6 +947,21 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
               hidden: {
                 type: GraphQLBoolean,
               },
+              automate: {
+                type: new GraphQLInputObjectType({
+                  name: 'ContractListAutomateFilterInputType',
+                  fields: {
+                    buyLiquidity: {
+                      type: GraphQLBoolean,
+                      description: 'Has buy liquidity automate',
+                    },
+                    autorestake: {
+                      type: GraphQLBoolean,
+                      description: 'Has autorestake automate',
+                    },
+                  },
+                }),
+              },
               search: {
                 type: GraphQLString,
               },
@@ -962,6 +977,7 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
         pagination: PaginationArgument('ContractListPaginationInputType'),
       },
       resolve: async (protocol, { filter, sort, pagination }, { currentUser }) => {
+        const database = container.database();
         const select = container.model
           .contractTable()
           .innerJoin(
@@ -988,6 +1004,23 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
               if (typeof hidden === 'boolean') {
                 this.andWhere('hidden', hidden);
               }
+              if (filter.automate !== undefined) {
+                const { buyLiquidity, autorestake } = filter.automate;
+                if (typeof buyLiquidity === 'boolean') {
+                  if (buyLiquidity) {
+                    this.where(database.raw("automate->>'buyLiquidity' IS NOT NULL"));
+                  } else {
+                    this.where(database.raw("automate->>'buyLiquidity' IS NULL"));
+                  }
+                }
+                if (typeof autorestake === 'boolean') {
+                  if (autorestake) {
+                    this.where(database.raw("automate->>'autorestakeAdapter' IS NOT NULL"));
+                  } else {
+                    this.where(database.raw("automate->>'autorestakeAdapter' IS NULL"));
+                  }
+                }
+              }
               if (search !== undefined && search !== '') {
                 this.andWhere(function () {
                   this.where('name', 'iLike', `%${search}%`);
@@ -998,7 +1031,6 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
           });
         let listSelect = select.clone();
         const sortColumns = sort.map(({ column }: { column: string }) => column);
-        const database = container.database();
         if (sortColumns.includes('myStaked')) {
           if (currentUser) {
             listSelect = listSelect
