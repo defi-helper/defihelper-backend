@@ -207,6 +207,10 @@ export const WalletBlockchainType = new GraphQLObjectType<
       type: GraphQLNonNull(GraphQLString),
       description: 'Public key',
     },
+    statisticsCollectedAt: {
+      type: GraphQLNonNull(DateTimeType),
+      description: 'Statistics collected',
+    },
     contracts: {
       type: GraphQLNonNull(PaginateList('WalletContractListType', GraphQLNonNull(ContractType))),
       args: {
@@ -633,6 +637,10 @@ export const WalletExchangeType = new GraphQLObjectType<
     exchange: {
       type: GraphQLNonNull(WalletExchangeTypeEnum),
       description: 'Exchange type',
+    },
+    statisticsCollectedAt: {
+      type: GraphQLNonNull(DateTimeType),
+      description: 'Statistics collected at',
     },
     tokenAliases: {
       type: GraphQLNonNull(

@@ -15,6 +15,7 @@
     "queue-consume": "node ./dist/queueConsume.js",
     "queue-deferred": "node ./dist/queueDeferred.js",
     "queue-broker": "node ./dist/queueBroker.js",
+    "make-migration": "node ./dist/makeMigration.js",
     "schedule": "node ./dist/queueSchedule.js",
     "seed": "node ./dist/cli.js seed",
     "billing": "node ./dist/cli.js billing",

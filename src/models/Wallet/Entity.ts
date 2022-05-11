@@ -11,6 +11,7 @@ export interface Wallet {
   user: string;
   name: string;
   suspendReason: WalletSuspenseReason | null;
+  statisticsCollectedAt: Date;
   deletedAt: Date | null;
   updatedAt: Date;
   createdAt: Date;
