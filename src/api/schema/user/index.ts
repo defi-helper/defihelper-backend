@@ -982,6 +982,12 @@ export const UserReferrerCodeType = new GraphQLObjectType({
     code: {
       type: GraphQLNonNull(GraphQLString),
     },
+    usedTimes: {
+      type: GraphQLNonNull(GraphQLInt),
+    },
+    visits: {
+      type: GraphQLNonNull(GraphQLInt),
+    },
     redirectTo: {
       type: GraphQLNonNull(GraphQLString),
     },
@@ -1279,6 +1285,22 @@ export const UserType = new GraphQLObjectType<User, Request>({
           }));
       },
     },
+    referrerCode: {
+      type: GraphQLNonNull(UserReferrerCodeType),
+      resolve: async (user) => {
+        const referrerCode = await container.model
+          .referrerCodeTable()
+          .where({ user: user.id })
+          .orderBy('createdAt')
+          .first();
+
+        if (referrerCode) {
+          return referrerCode;
+        }
+
+        return container.model.referrerCodeService().generate(user);
+      },
+    },
     metricChart: {
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(MetricChartType))),
       args: {
@@ -1573,6 +1595,7 @@ export const UserReferrerCodeQuery: GraphQLFieldConfig<any, Request> = {
   resolve: async (root, { code }) => {
     const codeRecord = await container.model.referrerCodeTable().where({ code }).first();
     if (!codeRecord) throw new UserInputError('Code not found');
+    container.model.referrerCodeService().visit(codeRecord);
 
     return codeRecord;
   },
