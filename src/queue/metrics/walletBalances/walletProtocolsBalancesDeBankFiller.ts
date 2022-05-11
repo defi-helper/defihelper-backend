@@ -564,7 +564,7 @@ export default async (process: Process) => {
   }
 
   container.model.userService().portfolioCollectedSuccessful(owner);
-  container.model.walletService().touch(targetWallet);
+  container.model.walletService().statisticsUpdated(targetWallet);
 
   return process.done();
 };

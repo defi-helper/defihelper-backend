@@ -281,7 +281,7 @@ export async function walletMetrics(process: Process) {
     throw new Error('Onwer must be accesible here');
   }
   container.model.userService().portfolioCollectedSuccessful(owner);
-  container.model.walletService().touch(blockchainWallet);
+  container.model.walletService().statisticsUpdated(blockchainWallet);
 
   return process.done();
 }

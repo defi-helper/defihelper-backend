@@ -640,7 +640,7 @@ export const WalletExchangeType = new GraphQLObjectType<
     },
     statisticsCollectedAt: {
       type: GraphQLNonNull(DateTimeType),
-      description: 'Statistics collected at',
+      description: 'Statistics collected',
     },
     tokenAliases: {
       type: GraphQLNonNull(

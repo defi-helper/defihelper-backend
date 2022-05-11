@@ -217,14 +217,15 @@ export class WalletService {
     return updated;
   }
 
-  async touch(wallet: Wallet) {
+  async statisticsUpdated(wallet: Wallet) {
+    const statisticsCollectedAt = new Date();
     const updated: Wallet = {
       ...wallet,
-      statisticsCollectedAt: new Date(),
+      statisticsCollectedAt,
     };
     await this.walletTable()
       .update({
-        statisticsCollectedAt: new Date(),
+        statisticsCollectedAt,
       })
       .where('id', wallet.id);
 

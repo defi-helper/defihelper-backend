@@ -3,12 +3,12 @@ import 'module-alias/register';
 import fs from 'fs';
 import dayjs from 'dayjs';
 
-const firstMigration = fs.readdirSync('./src/migrations/')[0];
-if (!firstMigration) {
-  throw new Error('Migration must be found');
+if (process.argv.length < 3) {
+  throw new Error('Wrong arguments');
 }
 
-const firstMigrationCode = fs.readFileSync(`./src/migrations/${firstMigration}`);
+const migrationName = process.argv[process.argv.length - 1];
+const firstMigrationCode = fs.readFileSync(`./src/migrations/_migrationDefault.ts`);
 const timestamp = dayjs().format('YYYYMMDDHHmm');
 
-fs.writeFileSync(`./src/migrations/M${timestamp}NewMigrationName.ts`, firstMigrationCode);
+fs.writeFileSync(`./src/migrations/M${timestamp}${migrationName}.ts`, firstMigrationCode);
