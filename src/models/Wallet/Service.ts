@@ -89,6 +89,7 @@ export class WalletService {
       name,
       suspendReason: null,
       deletedAt: null,
+      statisticsCollectedAt: new Date(),
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -120,6 +121,7 @@ export class WalletService {
       user: user.id,
       name: '',
       suspendReason: null,
+      statisticsCollectedAt: new Date(),
       deletedAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -211,6 +213,21 @@ export class WalletService {
     };
     await this.walletTable().update({ user: user.id }).where('id', wallet.id);
     this.onBlockchainWalletChangeOwner.emit({ prev: wallet, current: updated });
+
+    return updated;
+  }
+
+  async statisticsUpdated(wallet: Wallet) {
+    const statisticsCollectedAt = new Date();
+    const updated: Wallet = {
+      ...wallet,
+      statisticsCollectedAt,
+    };
+    await this.walletTable()
+      .update({
+        statisticsCollectedAt,
+      })
+      .where('id', wallet.id);
 
     return updated;
   }
