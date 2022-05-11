@@ -11,10 +11,15 @@ export class ACLContainer extends Container<typeof AppContainer> {
       }),
   );
 
+  readonly demo = singleton(() =>
+    ACL.expand(this.guest(), {
+      protocol: ['view'],
+    }),
+  );
+
   readonly user = singleton(() =>
     ACL.expand(this.guest(), {
-      integration: ['connect', 'disconnect'],
-      wallet: ['update-own', 'delete-own'],
+      wallet: ['update-own', 'delete-own', 'metric-scan'],
       proposal: ['create', 'update-own'],
       protocol: ['view', 'favorite'],
       contract: ['walletLink-own'],
@@ -22,6 +27,7 @@ export class ACLContainer extends Container<typeof AppContainer> {
       automateCondition: ['create', 'update-own', 'delete-own'],
       automateAction: ['create', 'update-own', 'delete-own'],
       automateContract: ['create', 'update-own', 'delete-own'],
+      integration: ['connect', 'disconnect'],
     }),
   );
 

@@ -2,6 +2,7 @@ import { tableFactoryLegacy } from '@services/Database';
 import { Locale } from '@services/I18n/container';
 
 export enum Role {
+  Demo = 'demo',
   User = 'user',
   Admin = 'admin',
 }

@@ -1652,6 +1652,16 @@ export const AuthType = new GraphQLObjectType({
   },
 });
 
+export const AuthDemoMutation: GraphQLFieldConfig<any, Request> = {
+  type: AuthType,
+  resolve: async () => {
+    const user = await container.model.userTable().where('role', Role.Demo).first();
+    if (!user) return null;
+    const sid = container.model.sessionService().generate(user);
+    return { user, sid };
+  },
+};
+
 export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
   type: AuthType,
   args: {
@@ -2120,28 +2130,31 @@ export const WalletMetricScanMutation: GraphQLFieldConfig<any, Request> = {
       description: 'Contract id',
     },
   },
-  resolve: async (root, { wallet: walletId, contract: contractId }, { currentUser }) => {
-    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+  resolve: onlyAllowed(
+    'wallet.metric-scan',
+    async (root, { wallet: walletId, contract: contractId }, { currentUser }) => {
+      if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
-    const wallet = await container.model.walletTable().where('id', walletId).first();
-    if (!wallet) throw new UserInputError('Wallet not found');
-    if (wallet.user !== currentUser.id) throw new UserInputError('Foreign wallet');
+      const wallet = await container.model.walletTable().where('id', walletId).first();
+      if (!wallet) throw new UserInputError('Wallet not found');
+      if (wallet.user !== currentUser.id) throw new UserInputError('Foreign wallet');
 
-    const contract = await container.model.contractTable().where('id', contractId).first();
-    if (!contract) throw new UserInputError('Contract not found');
+      const contract = await container.model.contractTable().where('id', contractId).first();
+      if (!contract) throw new UserInputError('Contract not found');
 
-    const link = await container.model
-      .walletContractLinkTable()
-      .where({ wallet: wallet.id, contract: contract.id })
-      .first();
-    if (!link) throw new UserInputError('Wallet not linked to contract');
-    await container.model.queueService().push('metricsWalletCurrent', {
-      contract: contract.id,
-      wallet: wallet.id,
-    });
+      const link = await container.model
+        .walletContractLinkTable()
+        .where({ wallet: wallet.id, contract: contract.id })
+        .first();
+      if (!link) throw new UserInputError('Wallet not linked to contract');
+      await container.model.queueService().push('metricsWalletCurrent', {
+        contract: contract.id,
+        wallet: wallet.id,
+      });
 
-    return true;
-  },
+      return true;
+    },
+  ),
 };
 
 export const WalletMetricUpdatedEvent = new GraphQLObjectType({

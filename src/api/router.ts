@@ -95,6 +95,7 @@ export function route({ express, server }: { express: Express; server: Server })
         fields: {
           userUpdate: userSchemas.UserUpdateMutation,
           authEth: userSchemas.AuthEthereumMutation,
+          authDemo: userSchemas.AuthDemoMutation,
           authWaves: userSchemas.AuthWavesMutation,
           addWallet: userSchemas.AddWalletMutation,
           walletUpdate: userSchemas.WalletUpdateMutation,
