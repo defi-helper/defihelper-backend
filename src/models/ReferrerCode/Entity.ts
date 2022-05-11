@@ -6,6 +6,7 @@ export interface ReferrerCode {
   code: string;
   redirectTo: string;
   usedTimes: number;
+  visits: number;
   createdAt: Date;
 }
 
