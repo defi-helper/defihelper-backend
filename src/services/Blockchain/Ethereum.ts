@@ -260,6 +260,23 @@ export class BlockchainContainer extends Container<Config> {
       tokenPriceResolver: debankPriceFeed('1'),
       network: this.parent.ethRopsten,
     }),
+    '4': networkFactory({
+      id: '4',
+      testnet: true,
+      name: 'Ethereum Rinkeby',
+      txExplorerURL: new URL('https://rinkeby.etherscan.io/tx'),
+      walletExplorerURL: new URL('https://rinkeby.etherscan.io/address'),
+      getContractAbi: useEtherscanContractAbi('https://api-rinkeby.etherscan.io/api'),
+      getAvgGasPrice: avgGasPriceFeedManual('2000000000'),
+      nativeTokenPrice: coingeckoPriceFeedUSD('ethereum'),
+      nativeTokenDetails: {
+        decimals: 18,
+        symbol: 'ETH',
+        name: 'Ethereum',
+      },
+      tokenPriceResolver: debankPriceFeed('1'),
+      network: this.parent.ethRopsten,
+    }),
     '56': networkFactory({
       id: '56',
       testnet: false,
