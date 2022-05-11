@@ -13,7 +13,6 @@ export default async (process: Process) => {
     queue.push('metricsContractScannerBroker', {}),
     queue.push('metricsWalletBalancesBroker', {}),
     queue.push('notificationAutomateWalletsNotEnoughFundsBroker', {}),
-    queue.push('treasuryStatsCache', {}),
     queue.push('metricsContractAprWeekRealBroker', {}),
     queue.push('metricsUserBalancesBroker', {}),
   ]);
