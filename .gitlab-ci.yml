@@ -14,6 +14,7 @@ variables:
   APP_NAME: "app"
   APP_NAMESPACE: "${CI_PROJECT_ROOT_NAMESPACE}-${CI_PROJECT_NAME}"
   ENVIRONMENT: dev
+  KUBECONFIG_B64: $DEV_KUBECONFIG_B64
 
 stages:
   - build
@@ -32,6 +33,10 @@ build:app:
     - if: $CI_COMMIT_REF_NAME == "master"
       variables:
         BUILD_ARGS: "--build-arg NODE_ENV=development"
+    - if: $CI_COMMIT_REF_NAME == "release"
+      variables:
+        BUILD_ARGS: "--build-arg NODE_ENV=production"
+        ENVIRONMENT: prod
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_COMMIT_BRANCH'
 
 build:nginx:
@@ -43,6 +48,10 @@ build:nginx:
     - if: $CI_COMMIT_REF_NAME == "master"
       variables:
         BUILD_ARGS: "--build-arg NODE_ENV=development"
+    - if: $CI_COMMIT_REF_NAME == "release"
+      variables:
+        BUILD_ARGS: "--build-arg NODE_ENV=production"
+        ENVIRONMENT: prod
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_COMMIT_BRANCH'
 
 deploy:
@@ -53,5 +62,10 @@ deploy:
       variables:
         CONFIG: $DEV_CONFIG
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-      when: never
-    - if: '$CI_COMMIT_REF_NAME == "master" || $CI_COMMIT_REF_NAME == "release"'
+      when: manual
+    - if: '$CI_COMMIT_REF_NAME == "release"'
+      variables:
+        KUBECONFIG_B64: $PROD_KUBECONFIG_B64
+        ENVIRONMENT: prod
+    - if: '$CI_COMMIT_REF_NAME == "master"'
+
