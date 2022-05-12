@@ -100,6 +100,7 @@ export function route({ express, server }: { express: Express; server: Server })
           addWallet: userSchemas.AddWalletMutation,
           walletUpdate: userSchemas.WalletUpdateMutation,
           walletDelete: userSchemas.WalletDeleteMutation,
+          walletUpdateStatistics: userSchemas.WalletUpdateStatisticsMutation,
           walletMetricScan: userSchemas.WalletMetricScanMutation,
           integrationExchangeApiConnect: userSchemas.IntegrationExchangeApiConnectMutation,
           integrationDisconnect: userSchemas.IntegrationDisconnectMutation,
