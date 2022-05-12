@@ -210,6 +210,7 @@ export interface NativeTokenDetails {
 export interface Config {
   eth: NetworkConfig;
   ethRopsten: NetworkConfig;
+  ethRinkeby: NetworkConfig;
   bsc: NetworkConfig;
   polygon: NetworkConfig;
   cronos: NetworkConfig;
