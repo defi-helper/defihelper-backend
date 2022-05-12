@@ -19,6 +19,7 @@ ingress:
   className: ""
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-production"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "360s"
   hosts:
     - host: backend-dev.defihelper.info
       paths:
