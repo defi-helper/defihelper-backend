@@ -949,6 +949,9 @@ export const RoleType = new GraphQLEnumType({
     [Role.Admin]: {
       description: 'Administrator',
     },
+    [Role.Demo]: {
+      description: 'Demo',
+    },
   },
 });
 
@@ -1663,7 +1666,11 @@ export const AuthType = new GraphQLObjectType({
 export const AuthDemoMutation: GraphQLFieldConfig<any, Request> = {
   type: AuthType,
   resolve: async () => {
-    const user = await container.model.userTable().where('role', Role.Demo).first();
+    const user = await container.model
+      .userTable()
+      .where('role', Role.Demo)
+      .orderBy('createdAt', 'asc')
+      .first();
     if (!user) return null;
     const sid = container.model.sessionService().generate(user);
     return { user, sid };
