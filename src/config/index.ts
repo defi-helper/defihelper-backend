@@ -76,6 +76,13 @@ export default {
         consumers: array(process.env.ETH_ROPSTEN_CONSUMERS ?? '[]'),
         avgBlockTime: 13.2,
       },
+      ethRinkeby: {
+        node: array(process.env.ETH_RINKEBY_NODE ?? '[]'),
+        historicalNode: array(process.env.ETH_RINKEBY_NODE_HISTORICAL ?? '[]'),
+        inspectors: array(process.env.ETH_RINKEBY_INSPECTORS ?? '[]'),
+        consumers: array(process.env.ETH_RINKEBY_CONSUMERS ?? '[]'),
+        avgBlockTime: 13.2,
+      },
       bsc: {
         node: array(process.env.BSC_NODE ?? '[]'),
         historicalNode: array(process.env.BSC_NODE_HISTORICAL ?? '[]'),

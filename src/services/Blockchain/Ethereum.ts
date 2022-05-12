@@ -275,7 +275,7 @@ export class BlockchainContainer extends Container<Config> {
         name: 'Ethereum',
       },
       tokenPriceResolver: debankPriceFeed('1'),
-      network: this.parent.ethRopsten,
+      network: this.parent.ethRinkeby,
     }),
     '56': networkFactory({
       id: '56',
