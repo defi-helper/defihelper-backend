@@ -30,7 +30,7 @@ export default {
     // key must be 128 bit length
     key: process.env.ENCRYPT_KEY ?? '&F)J@NcRfUjXn2r5',
   },
-  socilaStats: {
+  socialStats: {
     host: process.env.SOCIAL_STATS_HOST ?? 'https://stats.defihelper.io',
   },
   database: {
