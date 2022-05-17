@@ -7,8 +7,22 @@ replicaCount: 1
 images:
   nginx:
     name: nginx
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 100m
+      limits:
+        memory: 128Mi
+        cpu: 1000m
   app:
     name: app
+    resources:
+      requests:
+        memory: 128Mi
+        cpu: 100m
+      limits:
+        memory: 128Mi
+        cpu: 1000m
 
 service:
   type: ClusterIP

@@ -43,7 +43,7 @@ class AppContainer extends Container<typeof config> {
 
   readonly debank = singleton(debankServiceFactory());
 
-  readonly socialStats = singleton(() => new SocialStatsGateway(this.parent.socilaStats));
+  readonly socialStats = singleton(() => new SocialStatsGateway(this.parent.socialStats));
 
   readonly blockchain = {
     ethereum: new Blockchain.Ethereum.BlockchainContainer(this.parent.blockchain.ethereum),
