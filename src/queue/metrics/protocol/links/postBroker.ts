@@ -1,6 +1,7 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import { PostProvider } from '@services/SocialStats';
+import dayjs from 'dayjs';
 
 const matchers = {
   [PostProvider.Medium]: (links: string[]): string[] => {
@@ -24,17 +25,25 @@ const matchers = {
 export default async (process: Process) => {
   const protocols = await container.model.protocolTable();
   const queue = container.model.queueService();
+
   await Promise.all(
     protocols.map(async (protocol) => {
       const links = protocol.links.social?.map(({ value }) => value) ?? [];
 
-      return Promise.all(
-        Object.entries(matchers).map(([provider, matcher]) => {
-          const ids = matcher(links);
-          if (ids.length === 0) return null;
+      const lag = 43200 / Object.entries(matchers).length; // 12hrs
+      return Object.entries(matchers).reduce<Promise<dayjs.Dayjs>>(
+        async (prev, [provider, matcher]) => {
+          const startAt = await prev;
 
-          return queue.push('metricsProtocolLinksPost', { provider, protocol: protocol.id, ids });
-        }),
+          const ids = matcher(links);
+          if (ids.length > 0) {
+            await queue.push('metricsProtocolLinksPost', { provider, protocol: protocol.id, ids });
+            return startAt.clone().add(lag, 'seconds');
+          }
+
+          return startAt;
+        },
+        Promise.resolve(dayjs()),
       );
     }),
   );
