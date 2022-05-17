@@ -41,6 +41,7 @@ export * as billingStoreScan from './billing/storeScan';
 export * as automateContractEthereumVerify from './automate/contractEthereumVerify';
 export * as automateContractWavesVerify from './automate/contractWavesVerify';
 export * as automateTransactionEthereumConfirm from './automate/transactionEthereumConfirm';
+export * as automateTransactionWavesConfirm from './automate/transactionWavesConfirm';
 export * as automateTriggerRun from './automate/run';
 export * as automateTriggerByTime from './automate/trigger/byTime';
 export * as logBilling from './log/billingLogger';

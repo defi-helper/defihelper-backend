@@ -94,6 +94,16 @@ export class AutomateService {
           startAt: dayjs().add(network.avgBlockTime, 'seconds').toDate(),
         },
       );
+    } else if (blockchainWallet.blockchain === 'waves') {
+      container.model.queueService().push(
+        'automateTransactionWavesConfirm',
+        {
+          id: transaction.id,
+        },
+        {
+          startAt: dayjs().add(10, 'seconds').toDate(),
+        },
+      );
     }
   });
 

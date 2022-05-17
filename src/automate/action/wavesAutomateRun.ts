@@ -1,5 +1,5 @@
 import container from '@container';
-import { ContractVerificationStatus } from '@models/Automate/Entity';
+import { ContractVerificationStatus, WavesAutomateTransaction } from '@models/Automate/Entity';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 import { WavesProtocolAdapter } from '@services/Blockchain/Adapter';
 import * as uuid from 'uuid';
@@ -53,26 +53,17 @@ export default async (params: Params) => {
   const consumers = network.consumers();
   const consumer = consumers[Math.floor(Math.random() * consumers.length)];
   if (consumer === undefined) throw new Error('Not free consumer');
-
-  /*
-  const { run } = await adapter(consumer, contract.address);
-    const tx = await run();
-    if (tx instanceof Error) throw tx;
-
   const { address: consumerAddress } = await consumer.login();
-  const [tx] = await consumer
-    .transfer({
-      amount: '10000000',
-      recipient: '3N7gZxfwxYYvkiUqLtA5knWhxNHqZPbRujM',
-    })
-    .broadcast();
+
+  const { run } = await adapter(consumer, contract.address);
+  const res = await run();
+  if (res instanceof Error) throw res;
+  const [tx] = res;
 
   await container.model
     .automateService()
     .createTransaction<WavesAutomateTransaction>(contract, consumerAddress, {
       id: tx.id,
-      recipient: tx.recipient,
       type: tx.type,
     });
-    */
 };

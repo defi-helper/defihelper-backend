@@ -179,7 +179,6 @@ export interface EthereumAutomateTransaction {
 export interface WavesAutomateTransaction {
   id: string;
   type: number;
-  recipient: string;
 }
 
 export type AutomateTransactionData = EthereumAutomateTransaction | WavesAutomateTransaction;

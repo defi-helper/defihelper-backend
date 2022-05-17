@@ -7,6 +7,7 @@ import vm from 'vm';
 import { Blockchain } from '@models/types';
 import { ContractAutomate } from '@models/Protocol/Entity';
 import { PriceFeed } from '@models/Token/Entity';
+import { BroadcastedTx, SignedTx, SignerInvokeTx } from '@waves/signer';
 
 export class TemporaryOutOfService extends Error {
   constructor(m = 'wait a bit, usually it means that we updating our infrastructure') {
@@ -85,10 +86,9 @@ export interface EthereumAutomateAdapter {
 
 export interface WavesAutomateAdapter {
   (signer: any, contract: string): Promise<{
-    migrate: () => Promise<null | Error>;
-    deposit: () => Promise<null | Error>;
-    refund: () => Promise<null | Error>;
-    run: () => Promise<null | Error>;
+    deposit: () => Promise<BroadcastedTx<SignedTx<[SignerInvokeTx]>> | Error>;
+    refund: () => Promise<BroadcastedTx<SignedTx<[SignerInvokeTx]>> | Error>;
+    run: () => Promise<BroadcastedTx<SignedTx<[SignerInvokeTx]>> | Error>;
   }>;
 }
 
