@@ -38,9 +38,10 @@ export default async (process: Process) => {
           const ids = matcher(links);
           if (ids.length > 0) {
             await queue.push('metricsProtocolLinksPost', { provider, protocol: protocol.id, ids });
+            return startAt.clone().add(lag, 'seconds');
           }
 
-          return startAt.clone().add(lag, 'seconds');
+          return startAt;
         },
         Promise.resolve(dayjs()),
       );
