@@ -1568,6 +1568,10 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
       type: new GraphQLInputObjectType({
         name: 'ProtocolListFilterInputType',
         fields: {
+          id: {
+            type: GraphQLList(GraphQLNonNull(UuidType)),
+            description: 'Target ID',
+          },
           blockchain: {
             type: BlockchainFilterInputType,
           },
@@ -1601,7 +1605,10 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
   },
   resolve: async (root, { filter, sort, pagination }, { currentUser }) => {
     const select = container.model.protocolTable().where(function () {
-      const { blockchain, linked, favorite, hidden, isDebank, search } = filter;
+      const { id, blockchain, linked, favorite, hidden, isDebank, search } = filter;
+      if (Array.isArray(id)) {
+        this.whereIn('id', id);
+      }
       if (blockchain !== undefined) {
         const { protocol, network } = blockchain;
         const contractSelect = container.model
