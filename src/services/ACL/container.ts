@@ -34,7 +34,7 @@ export class ACLContainer extends Container<typeof AppContainer> {
   readonly admin = singleton(() =>
     ACL.expand(this.user(), {
       wallet: ['add'],
-      user: ['list', 'update'],
+      user: ['list', 'update', 'login-through'],
       proposal: ['update', 'delete'],
       protocol: ['create', 'update', 'delete'],
       contract: ['create', 'update', 'delete', 'walletLink'],

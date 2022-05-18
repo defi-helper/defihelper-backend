@@ -1677,6 +1677,29 @@ export const AuthDemoMutation: GraphQLFieldConfig<any, Request> = {
   },
 };
 
+export const AuthThroughAdminMutation: GraphQLFieldConfig<any, Request> = {
+  type: AuthType,
+  args: {
+    userId: {
+      type: GraphQLNonNull(UuidType),
+      description: 'Target user id',
+    },
+  },
+  resolve: onlyAllowed('user.login-through', async (root, { userId: id }, { currentUser }) => {
+    if (!currentUser) {
+      throw new AuthenticationError('UNAUTHENTICATED');
+    }
+
+    const user = await container.model.userTable().where({ id }).first();
+    if (!user) {
+      throw new UserInputError('User not found');
+    }
+
+    const sid = container.model.sessionService().generate(user);
+    return { user, sid };
+  }),
+};
+
 export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
   type: AuthType,
   args: {
