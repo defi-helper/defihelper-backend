@@ -12,6 +12,10 @@ export interface ConnectFactoryConfig {
 export function redisConnectFactory(config: ConnectFactoryConfig) {
   return () =>
     redis.createClient({
+      tls: {
+        host: config.host,
+        port: config.port,
+      },
       host: config.host,
       port: config.port,
       password: config.password,
