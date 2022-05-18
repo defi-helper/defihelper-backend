@@ -82,7 +82,7 @@ export default async (process: Process) => {
       return process.done();
     }
 
-    return process.error(e);
+    return process.error(e instanceof Error ? e : new Error(`${e}`));
   }
 
   const existingTokens = await container.model
@@ -92,7 +92,7 @@ export default async (process: Process) => {
       'symbol',
       assetsOnBalance.map(({ symbol }) => symbol),
     )
-    .orderBy('createdAt', 'desc')
+    .orderBy('createdAt', 'asc')
     .then((rows) => new Map(rows.map((token) => [token.symbol, token])));
 
   const { found, notFound } = assetsOnBalance.reduce<{
