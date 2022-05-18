@@ -19,10 +19,14 @@ export function redisConnectFactory(config: ConnectFactoryConfig) {
     });
 }
 
-export function redisSubscriberFactory(connectFactory: Factory<redis.RedisClient>) {
+export function redisSubscriberFactory(
+  connectFactory: Factory<redis.RedisClient>,
+  maxListeners: number,
+) {
   return (channel: string) => {
     const subscriber = connectFactory().duplicate();
     subscriber.subscribe(channel);
+    subscriber.setMaxListeners(maxListeners);
 
     return {
       subscriber,
