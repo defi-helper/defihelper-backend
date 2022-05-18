@@ -60,6 +60,7 @@ export default async (process: Process) => {
     });
     const resolveTokenPriceUSD = (symbol: string) =>
       tokensPrices.find((v) => v.symbol === `${symbol}/USDT`)?.price ??
+      tokensPrices.find((v) => v.symbol === `${symbol}/BUSD`)?.price ??
       tokensPrices.find((v) => v.symbol === `${symbol}/USD`)?.price ??
       new BN(1);
 
