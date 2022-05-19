@@ -1613,11 +1613,16 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
         const { protocol, network } = blockchain;
         const contractSelect = container.model
           .contractTable()
-          .columns('protocol')
+          .innerJoin(
+            contractBlockchainTableName,
+            `${contractTableName}.id`,
+            `${contractBlockchainTableName}.id`,
+          )
+          .distinct(`${contractTableName}.protocol`)
           .where(function () {
-            this.andWhere('blockchain', protocol);
+            this.andWhere(`${contractBlockchainTableName}.blockchain`, protocol);
             if (network !== undefined) {
-              this.andWhere('network', network);
+              this.andWhere(`${contractBlockchainTableName}.network`, network);
             }
           });
         this.whereIn('id', contractSelect);
