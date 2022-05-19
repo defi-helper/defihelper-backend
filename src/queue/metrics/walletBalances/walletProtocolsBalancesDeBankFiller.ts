@@ -558,13 +558,6 @@ export default async (process: Process) => {
     }),
   );
 
-  const owner = await container.model.userTable().where('id', targetWallet.user).first();
-  if (!owner) {
-    throw new Error('Onwer must be accesible here');
-  }
-
-  container.model.userService().portfolioCollectedSuccessful(owner);
   container.model.walletService().statisticsUpdated(targetWallet);
-
   return process.done();
 };

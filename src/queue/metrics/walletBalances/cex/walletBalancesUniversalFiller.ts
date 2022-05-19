@@ -85,14 +85,22 @@ export default async (process: Process) => {
     return process.error(e);
   }
 
-  const existingTokens = await container.model
-    .tokenTable()
-    .distinctOn('symbol', 'createdAt')
-    .whereIn(
-      'symbol',
-      assetsOnBalance.map(({ symbol }) => symbol),
+  const existingTokens = await container
+    .database()
+    .select('*')
+    .from(
+      container.model
+        .tokenTable()
+        .as('t')
+        .distinctOn('symbol')
+        .select('*')
+        .whereIn(
+          'symbol',
+          assetsOnBalance.map(({ symbol }) => symbol),
+        )
+        .orderByRaw('symbol, "createdAt" asc'),
     )
-    .orderBy('createdAt', 'desc')
+    .orderBy('createdAt')
     .then((rows) => new Map(rows.map((token) => [token.symbol, token])));
 
   const { found, notFound } = assetsOnBalance.reduce<{
