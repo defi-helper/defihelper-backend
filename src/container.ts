@@ -27,7 +27,7 @@ class AppContainer extends Container<typeof config> {
 
   readonly cache = singleton(redisConnectFactory(this.parent.cache));
 
-  readonly cacheSubscriber = singletonParametric(redisSubscriberFactory(this.cache));
+  readonly cacheSubscriber = singletonParametric(redisSubscriberFactory(this.cache, 100));
 
   readonly semafor = singleton(redisLockFactory(this.cache));
 

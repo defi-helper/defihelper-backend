@@ -60,6 +60,7 @@ export default async (process: Process) => {
     });
     const resolveTokenPriceUSD = (symbol: string) =>
       tokensPrices.find((v) => v.symbol === `${symbol}/USDT`)?.price ??
+      tokensPrices.find((v) => v.symbol === `${symbol}/BUSD`)?.price ??
       tokensPrices.find((v) => v.symbol === `${symbol}/USD`)?.price ??
       new BN(1);
 
@@ -82,7 +83,7 @@ export default async (process: Process) => {
       return process.done();
     }
 
-    return process.error(e);
+    return process.error(e instanceof Error ? e : new Error(`${e}`));
   }
 
   const existingTokens = await container
@@ -100,7 +101,7 @@ export default async (process: Process) => {
         )
         .orderByRaw('symbol, "createdAt" asc'),
     )
-    .orderBy('createdAt')
+    .orderBy('createdAt', 'asc')
     .then((rows) => new Map(rows.map((token) => [token.symbol, token])));
 
   const { found, notFound } = assetsOnBalance.reduce<{

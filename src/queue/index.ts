@@ -41,6 +41,7 @@ export * as billingStoreScan from './billing/storeScan';
 export * as automateContractEthereumVerify from './automate/contractEthereumVerify';
 export * as automateContractWavesVerify from './automate/contractWavesVerify';
 export * as automateTransactionEthereumConfirm from './automate/transactionEthereumConfirm';
+export * as automateTransactionWavesConfirm from './automate/transactionWavesConfirm';
 export * as automateTriggerRun from './automate/run';
 export * as automateTriggerByTime from './automate/trigger/byTime';
 export * as logBilling from './log/billingLogger';
@@ -93,6 +94,7 @@ export * as tokenInfoEth from './token/ethereumInfo';
 export * as tokenInfoWaves from './token/wavesInfo';
 export * as resolveTokenAliasLiquidity from './token/resolveTokenAliasLiquidity';
 export * as tokensBridgesFromAdapters from './token/tokensBridgesFromAdapters';
+export * as tokensDeleteDuplicates from './token/deleteTokenDuplicates';
 
 /* treasury */
 export * as treasuryStatsCache from './treasury/cache';

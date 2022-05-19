@@ -14,12 +14,13 @@ import {
 } from '@models/Protocol/Entity';
 
 async function getOrCreateToken(contract: Contract & ContractBlockchainType, address: string) {
+  const addressNormalize = contract.blockchain === 'ethereum' ? address.toLowerCase() : address;
   const token = await container.model
     .tokenTable()
     .where({
       blockchain: contract.blockchain,
       network: contract.network,
-      address,
+      address: addressNormalize,
     })
     .first();
   if (token) return token;
@@ -30,7 +31,7 @@ async function getOrCreateToken(contract: Contract & ContractBlockchainType, add
       null,
       contract.blockchain,
       contract.network,
-      address,
+      addressNormalize,
       '',
       '',
       0,
@@ -45,10 +46,7 @@ async function registerToken(
   linkType: TokenContractLinkType | null,
   parent: Token | null,
 ) {
-  const token = await getOrCreateToken(
-    contract,
-    contract.blockchain === 'ethereum' ? tokenData.address.toLowerCase() : tokenData.address,
-  );
+  const token = await getOrCreateToken(contract, tokenData.address);
 
   await Promise.all([
     linkType !== null

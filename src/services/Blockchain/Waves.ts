@@ -1,6 +1,7 @@
 import { Container, singleton } from '@services/Container';
 import { isKey } from '@services/types';
 import { fetchScriptInfo } from '@waves/node-api-js/cjs/api-node/addresses';
+import { fetchInfo, fetchStatus } from '@waves/node-api-js/cjs/api-node/transactions';
 import { Signer } from '@waves/signer';
 import { ProviderSeed } from '@waves/provider-seed/cjs';
 
@@ -8,6 +9,10 @@ function nodeGatewayFactory(url: string) {
   return {
     addresses: {
       scriptInfo: fetchScriptInfo.bind(null, url),
+    },
+    transactions: {
+      fetchInfo: fetchInfo.bind(null, url),
+      fetchStatus: fetchStatus.bind(null, url),
     },
   };
 }

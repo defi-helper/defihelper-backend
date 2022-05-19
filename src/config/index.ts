@@ -59,6 +59,7 @@ export default {
     port: int(process.env.CACHE_PORT ?? '6379'),
     password: process.env.CACHE_PASSWORD ?? undefined,
     database: process.env.CACHE_DATABASE ?? undefined,
+    tls: bool(process.env.CACHE_TLS ?? ''),
   },
   blockchain: {
     ethereum: {

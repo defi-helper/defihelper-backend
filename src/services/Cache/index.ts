@@ -7,11 +7,18 @@ export interface ConnectFactoryConfig {
   readonly port?: number;
   readonly password?: string;
   readonly database?: string | number;
+  readonly tls?: boolean;
 }
 
 export function redisConnectFactory(config: ConnectFactoryConfig) {
   return () =>
     redis.createClient({
+      tls: config.tls
+        ? {
+            host: config.host,
+            port: config.port,
+          }
+        : undefined,
       host: config.host,
       port: config.port,
       password: config.password,
@@ -19,10 +26,14 @@ export function redisConnectFactory(config: ConnectFactoryConfig) {
     });
 }
 
-export function redisSubscriberFactory(connectFactory: Factory<redis.RedisClient>) {
+export function redisSubscriberFactory(
+  connectFactory: Factory<redis.RedisClient>,
+  maxListeners: number,
+) {
   return (channel: string) => {
     const subscriber = connectFactory().duplicate();
     subscriber.subscribe(channel);
+    subscriber.setMaxListeners(maxListeners);
 
     return {
       subscriber,
