@@ -7,15 +7,18 @@ export interface ConnectFactoryConfig {
   readonly port?: number;
   readonly password?: string;
   readonly database?: string | number;
+  readonly tls?: boolean;
 }
 
 export function redisConnectFactory(config: ConnectFactoryConfig) {
   return () =>
     redis.createClient({
-      tls: {
-        host: config.host,
-        port: config.port,
-      },
+      tls: config.tls
+        ? {
+            host: config.host,
+            port: config.port,
+          }
+        : undefined,
       host: config.host,
       port: config.port,
       password: config.password,
