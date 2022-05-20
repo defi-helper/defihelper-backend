@@ -221,7 +221,6 @@ export interface Config {
   moonriver: NetworkConfig;
   moonbeam: NetworkConfig;
   avalanche: NetworkConfig;
-  harmony: NetworkConfig;
   avalancheTestnet: NetworkConfig;
   local: NetworkConfig;
 }
