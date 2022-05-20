@@ -1023,6 +1023,28 @@ export const UserType = new GraphQLObjectType<User, Request>({
     isPorfolioCollected: {
       type: GraphQLNonNull(GraphQLBoolean),
       description: 'Is portfolio collected',
+      resolve: async (user) => {
+        const cacheKey: string | null = await new Promise((resolve) => {
+          container.cache().get(`defihelper:portfolio-preload:${user.id}`, (err, reply) => {
+            if (err || reply === null) {
+              return resolve(null);
+            }
+
+            return resolve(reply);
+          });
+        });
+
+        if (cacheKey === null) {
+          container.model.queueService().push('metricsUserPortfolioFiller', {}, { priority: 9 });
+          container.cache().setex(
+            `defihelper:portfolio-preload:${user.id}`,
+            3600, // 1 hour
+            'true',
+          );
+        }
+
+        return user.isPorfolioCollected;
+      },
     },
     tokenAliasesStakedMetrics: {
       type: GraphQLNonNull(
