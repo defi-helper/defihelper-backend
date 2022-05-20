@@ -1,5 +1,10 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
+import {
+  walletBlockchainTableName,
+  walletExchangeTableName,
+  walletTableName,
+} from '@models/Wallet/Entity';
 
 export interface Params {
   id: string;
@@ -8,12 +13,26 @@ export interface Params {
 export default async (process: Process) => {
   const { id: user } = process.task.params as Params;
 
-  const wallets = await container.model.walletTable().where({ user });
-  const queue = container.model.queueService();
+  const [walletsBlockchain, walletsExchange] = await Promise.all([
+    container.model
+      .walletTable()
+      .innerJoin(
+        walletBlockchainTableName,
+        `${walletBlockchainTableName}.id`,
+        `${walletTableName}.id`,
+      )
+      .where({ user }),
 
-  await Promise.all(
-    wallets.map(({ id }) => {
-      return Promise.all([
+    container.model
+      .walletTable()
+      .innerJoin(walletExchangeTableName, `${walletExchangeTableName}.id`, `${walletTableName}.id`)
+      .where({ user }),
+  ]);
+
+  const queue = container.model.queueService();
+  await Promise.all([
+    walletsBlockchain.map(({ id }) =>
+      Promise.all([
         queue.push(
           'metricsWalletBalancesDeBankFiller',
           {
@@ -32,9 +51,21 @@ export default async (process: Process) => {
             priority: 9,
           },
         ),
-      ]);
-    }),
-  );
+      ]),
+    ),
+
+    walletsExchange.map(({ id }) =>
+      queue.push(
+        'metricsWalletBalancesCexUniversalFiller',
+        {
+          id,
+        },
+        {
+          priority: 9,
+        },
+      ),
+    ),
+  ]);
 
   return process.done();
 };
