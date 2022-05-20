@@ -209,6 +209,7 @@ export interface NativeTokenDetails {
 
 export interface Config {
   eth: NetworkConfig;
+  aurora: NetworkConfig;
   ethRopsten: NetworkConfig;
   ethRinkeby: NetworkConfig;
   bsc: NetworkConfig;
@@ -218,7 +219,9 @@ export interface Config {
   arbitrum: NetworkConfig;
   optimistic: NetworkConfig;
   moonriver: NetworkConfig;
+  moonbeam: NetworkConfig;
   avalanche: NetworkConfig;
+  harmony: NetworkConfig;
   avalancheTestnet: NetworkConfig;
   local: NetworkConfig;
 }
@@ -243,6 +246,40 @@ export class BlockchainContainer extends Container<Config> {
       },
       tokenPriceResolver: debankPriceFeed('1'),
       network: this.parent.eth,
+    }),
+    '1313161554': networkFactory({
+      id: '1313161554',
+      testnet: false,
+      name: 'Aurora',
+      txExplorerURL: new URL('https://aurorascan.dev/tx'),
+      walletExplorerURL: new URL('https://aurorascan.dev/address'),
+      getContractAbi: useEtherscanContractAbi('https://api.aurorascan.dev/api?'),
+      getAvgGasPrice: avgGasPriceFeedManual('130000000000'), // checkme
+      nativeTokenPrice: coingeckoPriceFeedUSD('aurora-near'),
+      nativeTokenDetails: {
+        decimals: 18,
+        symbol: 'ETH',
+        name: 'Ethereum',
+      },
+      tokenPriceResolver: debankPriceFeed('1313161554'),
+      network: this.parent.aurora,
+    }),
+    '1284': networkFactory({
+      id: '1284',
+      testnet: false,
+      name: 'Moonbeam',
+      txExplorerURL: new URL('https://moonbeam.moonscan.io/tx'),
+      walletExplorerURL: new URL('https://moonbeam.moonscan.io/address'),
+      getContractAbi: useEtherscanContractAbi('https://api-moonbeam.moonscan.io/api'),
+      getAvgGasPrice: avgGasPriceFeedManual('3000000000'), // todo
+      nativeTokenPrice: coingeckoPriceFeedUSD('moonbeam'),
+      nativeTokenDetails: {
+        decimals: 18,
+        symbol: 'GLMR',
+        name: 'Moonbeam',
+      },
+      tokenPriceResolver: debankPriceFeed('1284'),
+      network: this.parent.moonriver,
     }),
     '3': networkFactory({
       id: '3',
