@@ -86,21 +86,15 @@ export default async (process: Process) => {
     return process.error(e instanceof Error ? e : new Error(`${e}`));
   }
 
-  const existingTokens = await container
-    .database()
-    .select('*')
-    .from(
-      container.model
-        .tokenTable()
-        .as('t')
-        .distinctOn('symbol')
-        .select('*')
-        .whereIn(
-          'symbol',
-          assetsOnBalance.map(({ symbol }) => symbol),
-        )
-        .orderByRaw('symbol, "createdAt" asc'),
+  const existingTokens = await container.model
+    .tokenTable()
+    .distinctOn('symbol')
+    .columns('*')
+    .whereIn(
+      'symbol',
+      assetsOnBalance.map(({ symbol }) => symbol),
     )
+    .orderBy('symbol', 'asc')
     .orderBy('createdAt', 'asc')
     .then((rows) => new Map(rows.map((token) => [token.symbol, token])));
 
