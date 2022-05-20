@@ -51,6 +51,7 @@ export * as logPriceResolver from './log/tokenPriceResolverLogger';
 export * as emptyWalletsBroker from './billing/emptyWalletsBroker';
 
 /* metrics */
+export * as metricsUserPortfolioFiller from './metrics/userPortfolioFiller';
 export * as metricsUserBalancesBroker from './metrics/walletBalances/userBalancesBroker';
 export * as metricsUserBalancesFiller from './metrics/walletBalances/userBalancesFiller';
 
