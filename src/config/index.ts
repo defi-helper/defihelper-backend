@@ -105,6 +105,20 @@ export default {
         consumers: array(process.env.OPTIMISTIC_CONSUMERS ?? '[]'),
         avgBlockTime: 10,
       },
+      aurora: {
+        node: array(process.env.AURORA_NODE ?? '[]'),
+        historicalNode: array(process.env.AURORA_NODE_HISTORICAL ?? '[]'),
+        inspectors: array(process.env.AURORA_INSPECTORS ?? '[]'),
+        consumers: array(process.env.AURORA_CONSUMERS ?? '[]'),
+        avgBlockTime: 10,
+      },
+      moonbeam: {
+        node: array(process.env.MOONBEAM_NODE ?? '[]'),
+        historicalNode: array(process.env.MOONBEAM_NODE_HISTORICAL ?? '[]'),
+        inspectors: array(process.env.MOONBEAM_INSPECTORS ?? '[]'),
+        consumers: array(process.env.MOONBEAM_CONSUMERS ?? '[]'),
+        avgBlockTime: 5,
+      },
       fantom: {
         node: array(process.env.PANTOM_NODE ?? '[]'),
         historicalNode: array(process.env.PANTOM_NODE_HISTORICAL ?? '[]'),
