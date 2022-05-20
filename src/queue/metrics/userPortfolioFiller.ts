@@ -31,7 +31,7 @@ export default async (process: Process) => {
 
   const queue = container.model.queueService();
   await Promise.all([
-    ...walletsBlockchain.map(({ id }) =>
+    walletsBlockchain.map(({ id }) =>
       Promise.all([
         queue.push(
           'metricsWalletBalancesDeBankFiller',
@@ -54,7 +54,7 @@ export default async (process: Process) => {
       ]),
     ),
 
-    ...walletsExchange.map(({ id }) =>
+    walletsExchange.map(({ id }) =>
       queue.push(
         'metricsWalletBalancesCexUniversalFiller',
         {
