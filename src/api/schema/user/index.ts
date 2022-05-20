@@ -1023,9 +1023,6 @@ export const UserType = new GraphQLObjectType<User, Request>({
     isPorfolioCollected: {
       type: GraphQLNonNull(GraphQLBoolean),
       description: 'Is portfolio collected',
-      resolve: async (user) => {
-        return user.isPorfolioCollected;
-      },
     },
     tokenAliasesStakedMetrics: {
       type: GraphQLNonNull(
