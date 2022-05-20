@@ -32,6 +32,15 @@ export default async (process: Process) => {
             priority: 9,
           },
         ),
+        queue.push(
+          'metricsWalletBalancesCexUniversalFiller',
+          {
+            id,
+          },
+          {
+            priority: 9,
+          },
+        ),
       ]);
     }),
   );
