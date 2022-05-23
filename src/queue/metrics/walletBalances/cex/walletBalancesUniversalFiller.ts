@@ -58,11 +58,15 @@ export default async (process: Process) => {
         price: new BN(v.ask ?? v.last ?? v.average),
       };
     });
-    const resolveTokenPriceUSD = (symbol: string) =>
-      tokensPrices.find((v) => v.symbol === `${symbol}/USDT`)?.price ??
-      tokensPrices.find((v) => v.symbol === `${symbol}/BUSD`)?.price ??
-      tokensPrices.find((v) => v.symbol === `${symbol}/USD`)?.price ??
-      new BN(1);
+    const resolveTokenPriceUSD = (symbol: string): BN => {
+      const tokenPrices = [
+        tokensPrices.find((v) => v.symbol === `${symbol}/USDT`)?.price,
+        tokensPrices.find((v) => v.symbol === `${symbol}/BUSD`)?.price,
+        tokensPrices.find((v) => v.symbol === `${symbol}/USD`)?.price,
+      ].filter((v) => v && !v.isZero());
+
+      return tokenPrices[0] ?? new BN(1);
+    };
 
     assetsOnBalance = Object.entries((await exchangeInstance.fetchBalance()).total)
       .map(([symbol, amount]) => ({ symbol, amount: new BN(amount) }))
