@@ -279,6 +279,8 @@ export function route({ express, server }: { express: Express; server: Server })
         `${contractBlockchainTableName}.id`,
       )
       .where(`${contractTableName}.protocol`, protocol.id)
+      .andWhere(`${contractTableName}.hidden`, false)
+      .andWhere(`${contractTableName}.deprecated`, false)
       .andWhere(database.raw(`${metricContractTableName}.data->>'aprYear' IS NOT NULL`))
       .orderBy(`${metricContractTableName}.contract`)
       .orderBy(`${metricContractTableName}.date`, 'DESC');
