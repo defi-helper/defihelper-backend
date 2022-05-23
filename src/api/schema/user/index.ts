@@ -1644,6 +1644,22 @@ export const UserListQuery: GraphQLFieldConfig<any, Request> = {
           role: {
             type: RoleType,
           },
+          wallet: {
+            type: new GraphQLInputObjectType({
+              name: 'UserListWalletFilterInputType',
+              fields: {
+                blockchain: {
+                  type: BlockchainFilterInputType,
+                },
+                type: {
+                  type: WalletBlockchainTypeEnum,
+                },
+                search: {
+                  type: GraphQLString,
+                },
+              },
+            }),
+          },
         },
       }),
       defaultValue: {},
@@ -1657,9 +1673,38 @@ export const UserListQuery: GraphQLFieldConfig<any, Request> = {
   },
   resolve: onlyAllowed('user.list', async (root, { filter, sort, pagination }) => {
     const select = container.model.userTable().where(function () {
-      const { role } = filter;
+      const { role, wallet } = filter;
       if (role !== undefined) {
         this.andWhere('role', role);
+      }
+      if (wallet) {
+        const { blockchain, type, search } = wallet;
+        this.whereIn(
+          'id',
+          container.model
+            .walletTable()
+            .distinct(`${walletTableName}.user`)
+            .innerJoin(
+              walletBlockchainTableName,
+              `${walletTableName}.id`,
+              `${walletBlockchainTableName}.id`,
+            )
+            .where(function () {
+              if (blockchain) {
+                const { protocol, network } = blockchain;
+                this.andWhere(`${walletBlockchainTableName}.blockchain`, protocol);
+                if (network !== undefined) {
+                  this.andWhere(`${walletBlockchainTableName}.network`, network);
+                }
+              }
+              if (type) {
+                this.andWhere(`${walletBlockchainTableName}.type`, type);
+              }
+              if (search !== undefined && search !== '') {
+                this.andWhere(`${walletBlockchainTableName}.address`, 'iLike', `%${search}%`);
+              }
+            }),
+        );
       }
     });
     return {
