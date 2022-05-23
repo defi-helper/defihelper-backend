@@ -253,7 +253,7 @@ export class BlockchainContainer extends Container<Config> {
       txExplorerURL: new URL('https://aurorascan.dev/tx'),
       walletExplorerURL: new URL('https://aurorascan.dev/address'),
       getContractAbi: useEtherscanContractAbi('https://api.aurorascan.dev/api?'),
-      getAvgGasPrice: avgGasPriceFeedManual('130000000000'), // checkme
+      getAvgGasPrice: avgGasPriceFeedManual('5500000000'),
       nativeTokenPrice: coingeckoPriceFeedUSD('aurora-near'),
       nativeTokenDetails: {
         decimals: 18,
@@ -270,7 +270,7 @@ export class BlockchainContainer extends Container<Config> {
       txExplorerURL: new URL('https://moonbeam.moonscan.io/tx'),
       walletExplorerURL: new URL('https://moonbeam.moonscan.io/address'),
       getContractAbi: useEtherscanContractAbi('https://api-moonbeam.moonscan.io/api'),
-      getAvgGasPrice: avgGasPriceFeedManual('3000000000'), // todo
+      getAvgGasPrice: avgGasPriceFeedManual('2750000000'),
       nativeTokenPrice: coingeckoPriceFeedUSD('moonbeam'),
       nativeTokenDetails: {
         decimals: 18,
