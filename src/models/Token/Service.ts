@@ -120,6 +120,7 @@ export class TokenService {
       decimals,
       tradable: false,
       priceFeed,
+      priceFeedNeeded: false,
       createdBy,
       createdAt: new Date(),
       updatedAt: new Date(),

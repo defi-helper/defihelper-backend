@@ -97,6 +97,7 @@ export interface Token {
   decimals: number;
   tradable: boolean;
   priceFeed: PriceFeed.PriceFeed | null;
+  priceFeedNeeded: boolean;
   createdBy: TokenCreatedBy;
   updatedAt: Date;
   createdAt: Date;

@@ -150,6 +150,9 @@ export const TokenType: GraphQLObjectType = new GraphQLObjectType<Token, Request
     priceFeed: {
       type: PriceFeedType,
     },
+    priceFeedNeeded: {
+      type: GraphQLNonNull(GraphQLBoolean),
+    },
   }),
 });
 
@@ -167,6 +170,9 @@ export const TokenListQuery: GraphQLFieldConfig<any, Request> = {
             type: GraphQLList(GraphQLNonNull(GraphQLString)),
           },
           tradable: {
+            type: GraphQLBoolean,
+          },
+          isPriceFeedNedded: {
             type: GraphQLBoolean,
           },
           search: {
@@ -197,6 +203,9 @@ export const TokenListQuery: GraphQLFieldConfig<any, Request> = {
       }
       if (typeof filter.tradable === 'boolean') {
         this.andWhere('tradable', filter.tradable);
+      }
+      if (typeof filter.isPriceFeedNedded === 'boolean') {
+        this.andWhere('priceFeedNeeded', filter.isPriceFeedNedded);
       }
       if (filter.search !== undefined && filter.search !== '') {
         this.andWhere('name', 'iLike', `%${filter.search}%`);
