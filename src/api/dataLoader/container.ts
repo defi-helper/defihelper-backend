@@ -5,6 +5,7 @@ import {
   contractUserLastMetricLoader,
   protocolFavoritesLoader,
   protocolLastMetricLoader,
+  protocolLoader,
   protocolUserLastAPRLoader,
   protocolUserLastMetricLoader,
 } from './protocol';
@@ -21,6 +22,8 @@ import {
 } from './user';
 
 export class DataLoaderContainer extends Container<{}> {
+  readonly protocol = singleton(protocolLoader);
+
   readonly protocolFavorites = singletonParametric(protocolFavoritesLoader);
 
   readonly protocolMetric = singletonParametric(protocolLastMetricLoader);
