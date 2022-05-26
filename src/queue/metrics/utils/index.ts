@@ -12,6 +12,7 @@ import {
   TokenContractLinkType,
   ContractBlockchainType,
 } from '@models/Protocol/Entity';
+import { apyBoost } from '@services/RestakeStrategy';
 
 async function getOrCreateToken(contract: Contract & ContractBlockchainType, address: string) {
   const addressNormalize = contract.blockchain === 'ethereum' ? address.toLowerCase() : address;
@@ -137,6 +138,12 @@ export async function contractMetrics(process: Process) {
           aprWeek: contractAdapterData.metrics.aprWeek ?? '0',
           aprMonth: contractAdapterData.metrics.aprMonth ?? '0',
           aprYear: contractAdapterData.metrics.aprYear ?? '0',
+          aprBoosted: await apyBoost(
+            contract.blockchain,
+            contract.network,
+            10000,
+            Number(contractAdapterData.metrics.aprYear ?? 0),
+          ),
         },
       }),
     ]);

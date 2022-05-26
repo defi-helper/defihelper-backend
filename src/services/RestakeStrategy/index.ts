@@ -137,6 +137,8 @@ export async function apyBoost(
   balance: number,
   apy: number,
 ): Promise<string> {
+  if (balance <= 0) return '0';
+  if (apy <= 0) return String(apy);
   const optimalPoints = await optimalRestake(blockchain, network, balance, apy);
   const lastPoint = optimalPoints[optimalPoints.length - 1];
   if (!lastPoint) return '0';

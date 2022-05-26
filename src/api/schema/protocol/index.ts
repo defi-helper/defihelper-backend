@@ -433,7 +433,17 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
     },
     sort: SortArgument(
       'ContractListSortInputType',
-      ['id', 'name', 'address', 'createdAt', 'tvl', 'aprYear', 'aprWeekReal', 'myStaked'],
+      [
+        'id',
+        'name',
+        'address',
+        'createdAt',
+        'tvl',
+        'aprYear',
+        'aprWeekReal',
+        'aprBoosted',
+        'myStaked',
+      ],
       [{ column: 'name', order: 'asc' }],
     ),
     pagination: PaginationArgument('ContractListPaginationInputType'),
@@ -536,6 +546,13 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
       listSelect = listSelect.column(
         database.raw(
           `(COALESCE(${contractBlockchainTableName}.metric->>'aprYear', '0'))::numeric AS "aprYear"`,
+        ),
+      );
+    }
+    if (sortColumns.includes('aprYear')) {
+      listSelect = listSelect.column(
+        database.raw(
+          `(COALESCE(${contractBlockchainTableName}.metric->>'aprBoosted', '0'))::numeric AS "aprBoosted"`,
         ),
       );
     }
