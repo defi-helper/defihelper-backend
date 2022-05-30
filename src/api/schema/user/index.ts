@@ -26,7 +26,7 @@ import { Blockchain } from '@models/types';
 import BN from 'bignumber.js';
 import * as WavesCrypto from '@waves/ts-lib-crypto';
 import * as WavesMarshall from '@waves/marshall';
-import { AuthenticationError, UserInputError } from 'apollo-server-express';
+import { AuthenticationError, UserInputError, ForbiddenError } from 'apollo-server-express';
 import {
   TokenAliasLiquidityEnum,
   TokenAliasStakedStatisticsType,
@@ -1810,6 +1810,10 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
     },
   },
   resolve: async (root, { input }, { currentUser }) => {
+    if (currentUser?.role === Role.Demo) {
+      throw new ForbiddenError('FORBIDDEN');
+    }
+
     const { network, address, message, signature, merge, code } = input;
     if (typeof message !== 'string' || message.length < 5) return null;
 
@@ -1915,6 +1919,10 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
     },
   },
   resolve: async (root, { input }, { currentUser }) => {
+    if (currentUser?.role === Role.Demo) {
+      throw new ForbiddenError('FORBIDDEN');
+    }
+
     const { network, address, message, publicKey, signature, merge, code } = input;
     if (typeof message !== 'string' || message.length < 5) return null;
 
