@@ -73,7 +73,7 @@ broker:
             value: "true"
             effect: NoSchedule
       metrics:
-        name: queue
+        name: metrics
         command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue-consume -- -q tasks_metricCurrent"'
         replicas: 1
         resources:
@@ -91,7 +91,7 @@ broker:
             value: "true"
             effect: NoSchedule
       history:
-        name: queue
+        name: history
         command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue-consume -- -q tasks_metricHistory"'
         replicas: 1
         resources:
