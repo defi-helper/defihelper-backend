@@ -44,6 +44,23 @@ ingress:
       hosts:
         - backend-dev.defihelper.info
 
+handlers:
+  labels:
+    app: backend
+    component: cronHandler
+    environment: dev
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 200m
+    limits:
+      memory: 256Mi
+      cpu: 300m
+  schedules:
+    queue-deferred:
+      command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue-deferred"'
+      schedule: "* * * * *"
+
 resources: {}
 autoscaling:
   enabled: false

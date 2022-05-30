@@ -1,4 +1,4 @@
-# Default values for scanner.
+# Default values for backend.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
@@ -40,7 +40,7 @@ ingress:
         - path: /
           pathType: ImplementationSpecific
   tls:
-    - secretName: scanner-tls
+    - secretName: backend-tls
       hosts:
         - backend.defihelper.io
 
@@ -119,7 +119,7 @@ handlers:
       value: "true"
       effect: NoSchedule
   labels:
-    app: scanner
+    app: backend
     component: cronHandler
     environment: prod
   resources:
