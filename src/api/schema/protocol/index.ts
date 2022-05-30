@@ -403,6 +403,9 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
           id: {
             type: UuidType,
           },
+          protocol: {
+            type: GraphQLList(GraphQLNonNull(UuidType)),
+          },
           blockchain: {
             type: BlockchainFilterInputType,
           },
@@ -461,12 +464,14 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
       .column(`${contractTableName}.id`)
       .column(`${contractBlockchainTableName}.*`)
       .where(function () {
-        const { id, hidden, search } = filter;
+        const { id, protocol, hidden, search } = filter;
         if (id) {
           this.where(`${contractTableName}.id`, id);
         } else {
           if (uuid.validate(String(root?.id))) {
             this.where('protocol', root.id);
+          } else if (protocol !== undefined) {
+            this.whereIn('protocol', protocol);
           }
           if (filter.blockchain !== undefined) {
             const { protocol: blockchain, network } = filter.blockchain;
