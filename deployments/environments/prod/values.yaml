@@ -57,7 +57,7 @@ broker:
       queue:
         name: queue
         command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue-consume -- -q tasks_default"'
-        replicas: 1
+        replicas: 4
         resources:
           requests:
             memory: 1024Mi
@@ -75,7 +75,7 @@ broker:
       metrics:
         name: metrics
         command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue-consume -- -q tasks_metricCurrent"'
-        replicas: 1
+        replicas: 4
         resources:
           requests:
             memory: 1024Mi
