@@ -1,0 +1,57 @@
+{{- if .Values.handlers }}
+{{- range $queue, $params := .Values.handlers.schedules }}
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: {{ $.Release.Name }}-handlers-{{ $queue }}
+  labels:
+  {{- range $key, $value := $.Values.handlers.labels }}
+    {{ $key }}: {{ $value }}
+  {{- end }}
+    release: {{ $.Release.Name }}
+spec:
+  jobTemplate:
+    metadata:
+      labels:
+      {{- range $key, $value := $.Values.handlers.labels }}
+        {{ $key }}: {{ $value }}
+      {{- end }}
+        queueName: {{ $queue }}
+        release: {{ $.Release.Name }}
+    spec:
+      template:
+        metadata:
+          annotations:
+            "sidecar.istio.io/inject": "false"
+        spec:
+          containers:
+          - name: handlers-{{ $queue }}
+            image: "{{ $.Values.image.repository }}/{{ $.Values.images.app.name }}:{{ $.Values.image.tag }}"
+            command: [{{ $params.command }}]
+            imagePullPolicy: Always
+            volumeMounts:
+            - mountPath: /app/configuration
+              name: configuration
+              readOnly: true
+          volumes:
+            - name: configuration
+              secret:
+                secretName: config-secrets
+          restartPolicy: Never
+          imagePullSecrets:
+            - name: docker-registry-secret
+          nodeSelector:
+          {{- range $key, $value := $.Values.handlers.nodeSelector }}
+            {{ $key }}: {{ $value }}
+          {{- end }}
+          {{- with $.Values.handlers.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+  schedule: {{ $params.schedule | quote }}
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  suspend: false
+---
+{{- end }}
+{{- end }}

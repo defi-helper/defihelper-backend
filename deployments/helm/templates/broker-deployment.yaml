@@ -1,0 +1,69 @@
+{{- $images := .Values.images -}}
+
+{{- if .Values.broker }}
+{{- range $queue, $params := .Values.broker.process.queues }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: '{{ $.Release.Name }}-broker-{{ $params.name }}'
+  labels:
+  {{- range $key, $value := $.Values.broker.process.labels }}
+    {{ $key }}: {{ $value }}
+  {{- end }}
+    queueName: {{ $params.name }}
+    release: {{ $.Release.Name }}
+    timestamp: {{ $.Values.timestamp | quote }}
+spec:
+  replicas: {{ $params.replicas }}
+  selector:
+    matchLabels:
+    {{- range $key, $value := $.Values.broker.process.labels }}
+      {{ $key }}: {{ $value }}
+    {{- end }}
+      queueName: {{ $params.name }}
+      release: {{ $.Release.Name }}
+  template:
+    metadata:
+      labels:
+      {{- range $key, $value := $.Values.broker.process.labels }}
+        {{ $key }}: {{ $value }}
+      {{- end }}
+        queueName: {{ $params.name }}
+        release: {{ $.Release.Name }}
+        timestamp: {{ $.Values.timestamp | quote }}
+    spec:
+      imagePullSecrets:
+        - name: docker-registry-secret
+      containers:
+      - name: app
+        imagePullPolicy: Always
+        image: "{{ $.Values.image.repository }}/{{ $images.app.name }}:{{ $.Values.image.tag }}"
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh","-c","kill -15 1; while ps -p 1; do sleep 1; done"]
+        command: [{{ $params.command }}]
+        resources:
+          {{- toYaml $params.resources | nindent 12 }}
+        volumeMounts:
+          - mountPath: /app/configuration
+            name: configuration
+            readOnly: true
+      volumes:
+        - name: configuration
+          secret:
+            secretName: config-secrets
+      nodeSelector:
+      {{- range $key, $value := $params.nodeSelector }}
+        {{ $key }}: {{ $value }}
+      {{- end }}
+      {{- if $params.graceperiod }}
+      terminationGracePeriodSeconds: {{ $params.graceperiod }}
+      {{- end }}
+      {{- with $params.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+{{- end }}
+{{- end }}
