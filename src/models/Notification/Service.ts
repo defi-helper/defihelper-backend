@@ -56,7 +56,7 @@ export class NotificationService {
 }
 
 export class UserContactService {
-  constructor(readonly table: Factory<UserContactTable>, readonly externalSelfUrl: string) {}
+  constructor(readonly table: Factory<UserContactTable>) {}
 
   public readonly onCreated = new Emitter<{ user: User; contact: UserContact }>(
     async ({ user, contact }) => {

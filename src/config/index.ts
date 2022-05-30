@@ -19,7 +19,6 @@ function array(value: string): string[] {
 export default {
   api: {
     port: int(process.env.API_PORT ?? '8080'),
-    externalUrl: process.env.API_EXTERNAL_URL ?? 'https://backend-local.defihelper.io',
     internalUrl: process.env.API_INTERNAL_URL ?? 'https://backend-local.defihelper.io',
     secret: process.env.API_SECRET ?? 'defiHelperApiSecret',
   },
