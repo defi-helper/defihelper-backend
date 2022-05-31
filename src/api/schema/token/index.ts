@@ -699,7 +699,11 @@ export const TokenAliasListQuery: GraphQLFieldConfig<any, Request> = {
         this.andWhere('symbol', filter.symbol);
       }
       if (filter.search !== undefined && filter.search !== '') {
-        this.andWhere('name', 'iLike', `%${filter.search}%`);
+        this.andWhere('id', 'iLike', `%${filter.search}%`).andWhere(
+          'name',
+          'iLike',
+          `%${filter.search}%`,
+        );
       }
     });
 
