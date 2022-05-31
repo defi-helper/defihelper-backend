@@ -38,6 +38,10 @@ import {
   walletTableName,
   WalletBlockchainType,
 } from '@models/Wallet/Entity';
+import {
+  contractTableName as automateContractTableName,
+  ContractVerificationStatus,
+} from '@models/Automate/Entity';
 import { AuthenticationError, ForbiddenError, UserInputError } from 'apollo-server-express';
 import BN from 'bignumber.js';
 import { Blockchain } from '@models/types';
@@ -424,6 +428,10 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
                   type: GraphQLBoolean,
                   description: 'Has autorestake automate',
                 },
+                autorestakeCandidate: {
+                  type: GraphQLBoolean,
+                  description: 'Is autorestake automate candidate',
+                },
               },
             }),
           },
@@ -484,7 +492,7 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
             this.andWhere('hidden', hidden);
           }
           if (filter.automate !== undefined) {
-            const { buyLiquidity, autorestake } = filter.automate;
+            const { buyLiquidity, autorestake, autorestakeCandidate } = filter.automate;
             if (typeof buyLiquidity === 'boolean') {
               if (buyLiquidity) {
                 this.where(database.raw("automate->>'buyLiquidity' IS NOT NULL"));
@@ -497,6 +505,52 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
                 this.where(database.raw("automate->>'autorestakeAdapter' IS NOT NULL"));
               } else {
                 this.where(database.raw("automate->>'autorestakeAdapter' IS NULL"));
+              }
+            }
+            if (currentUser && typeof autorestakeCandidate === 'boolean') {
+              const candidateSelect = database
+                .select('contract')
+                .from(
+                  container.model
+                    .metricWalletTable()
+                    .distinctOn(`${metricWalletTableName}.contract`)
+                    .column(`${metricWalletTableName}.contract`)
+                    .column(`${metricWalletTableName}.data`)
+                    .innerJoin(
+                      walletTableName,
+                      `${metricWalletTableName}.wallet`,
+                      `${walletTableName}.id`,
+                    )
+                    .where(`${walletTableName}.user`, currentUser.id)
+                    .andWhere(
+                      database.raw(`${metricWalletTableName}.data->>'stakingUSD' IS NOT NULL`),
+                    )
+                    .whereNotIn(
+                      `${metricWalletTableName}.contract`,
+                      container.model
+                        .automateContractTable()
+                        .distinct(`${automateContractTableName}.contract`)
+                        .innerJoin(
+                          walletTableName,
+                          `${walletTableName}.id`,
+                          `${automateContractTableName}.wallet`,
+                        )
+                        .where(`${walletTableName}.user`, currentUser.id)
+                        .whereNotNull(`${automateContractTableName}.contract`)
+                        .andWhere(
+                          `${automateContractTableName}.verification`,
+                          ContractVerificationStatus.Confirmed,
+                        ),
+                    )
+                    .orderBy(`${metricWalletTableName}.contract`)
+                    .orderBy(`${metricWalletTableName}.date`, 'desc')
+                    .as('m'),
+                )
+                .where(database.raw(`(data->>'stakingUSD')::numeric`), '>', 0);
+              if (autorestakeCandidate) {
+                this.whereIn(`${contractTableName}.id`, candidateSelect);
+              } else {
+                this.whereNotIn(`${contractTableName}.id`, candidateSelect);
               }
             }
           }
