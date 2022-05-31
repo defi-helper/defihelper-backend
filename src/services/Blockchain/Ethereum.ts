@@ -99,6 +99,7 @@ function networkFactory({
   );
 
   return {
+    id,
     name,
     testnet,
     provider,
