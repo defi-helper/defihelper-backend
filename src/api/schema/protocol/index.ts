@@ -1,5 +1,6 @@
 import container from '@container';
 import dayjs from 'dayjs';
+import * as uuid from 'uuid';
 import { Request } from 'express';
 import {
   GraphQLBoolean,
@@ -160,16 +161,19 @@ export const ContractTokenLinkType = new GraphQLObjectType<
   ),
 });
 
-export const ContractType = new GraphQLObjectType<Contract & ContractBlockchainType, Request>({
+export const ContractType: GraphQLObjectType = new GraphQLObjectType<
+  Contract & ContractBlockchainType,
+  Request
+>({
   name: 'ContractType',
-  fields: {
+  fields: () => ({
     id: {
       type: GraphQLNonNull(UuidType),
       description: 'Identificator',
     },
-    protocolId: {
-      type: GraphQLNonNull(UuidType),
-      resolve: ({ protocol }) => protocol,
+    protocol: {
+      type: GraphQLNonNull(ProtocolType),
+      resolve: ({ protocol }, _, { dataLoader }) => dataLoader.protocol().load(protocol),
     },
     adapter: {
       type: GraphQLNonNull(GraphQLString),
@@ -386,8 +390,192 @@ export const ContractType = new GraphQLObjectType<Contract & ContractBlockchainT
       type: GraphQLNonNull(DateTimeType),
       description: 'Date of created account',
     },
-  },
+  }),
 });
+
+export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(PaginateList('ContractListType', GraphQLNonNull(ContractType))),
+  args: {
+    filter: {
+      type: new GraphQLInputObjectType({
+        name: 'ContractListFilterInputType',
+        fields: {
+          id: {
+            type: UuidType,
+          },
+          blockchain: {
+            type: BlockchainFilterInputType,
+          },
+          hidden: {
+            type: GraphQLBoolean,
+          },
+          automate: {
+            type: new GraphQLInputObjectType({
+              name: 'ContractListAutomateFilterInputType',
+              fields: {
+                buyLiquidity: {
+                  type: GraphQLBoolean,
+                  description: 'Has buy liquidity automate',
+                },
+                autorestake: {
+                  type: GraphQLBoolean,
+                  description: 'Has autorestake automate',
+                },
+              },
+            }),
+          },
+          search: {
+            type: GraphQLString,
+          },
+        },
+      }),
+      defaultValue: {},
+    },
+    sort: SortArgument(
+      'ContractListSortInputType',
+      [
+        'id',
+        'name',
+        'address',
+        'createdAt',
+        'tvl',
+        'aprYear',
+        'aprWeekReal',
+        'aprBoosted',
+        'myStaked',
+      ],
+      [{ column: 'name', order: 'asc' }],
+    ),
+    pagination: PaginationArgument('ContractListPaginationInputType'),
+  },
+  resolve: async (root, { filter, sort, pagination }, { currentUser }) => {
+    const database = container.database();
+    const select = container.model
+      .contractTable()
+      .innerJoin(
+        contractBlockchainTableName,
+        `${contractBlockchainTableName}.id`,
+        `${contractTableName}.id`,
+      )
+      .column(`${contractTableName}.*`)
+      .column(`${contractTableName}.id`)
+      .column(`${contractBlockchainTableName}.*`)
+      .where(function () {
+        const { id, hidden, search } = filter;
+        if (id) {
+          this.where(`${contractTableName}.id`, id);
+        } else {
+          if (uuid.validate(String(root?.id))) {
+            this.where('protocol', root.id);
+          }
+          if (filter.blockchain !== undefined) {
+            const { protocol: blockchain, network } = filter.blockchain;
+            this.andWhere('blockchain', blockchain);
+            if (network !== undefined) {
+              this.andWhere('network', network);
+            }
+          }
+          if (typeof hidden === 'boolean') {
+            this.andWhere('hidden', hidden);
+          }
+          if (filter.automate !== undefined) {
+            const { buyLiquidity, autorestake } = filter.automate;
+            if (typeof buyLiquidity === 'boolean') {
+              if (buyLiquidity) {
+                this.where(database.raw("automate->>'buyLiquidity' IS NOT NULL"));
+              } else {
+                this.where(database.raw("automate->>'buyLiquidity' IS NULL"));
+              }
+            }
+            if (typeof autorestake === 'boolean') {
+              if (autorestake) {
+                this.where(database.raw("automate->>'autorestakeAdapter' IS NOT NULL"));
+              } else {
+                this.where(database.raw("automate->>'autorestakeAdapter' IS NULL"));
+              }
+            }
+          }
+          if (search !== undefined && search !== '') {
+            this.andWhere(function () {
+              this.where('name', 'iLike', `%${search}%`);
+              this.orWhere('address', 'iLike', `%${search}%`);
+            });
+          }
+        }
+      });
+    let listSelect = select.clone();
+    const sortColumns = sort.map(({ column }: { column: string }) => column);
+    if (sortColumns.includes('myStaked')) {
+      if (currentUser) {
+        listSelect = listSelect
+          .column(database.raw(`COALESCE(metric."myStaked", '0') AS "myStaked"`))
+          .leftJoin(
+            container.model
+              .metricWalletTable()
+              .distinctOn(`${metricWalletTableName}.contract`)
+              .column(`${metricWalletTableName}.contract`)
+              .column(database.raw(`${metricWalletTableName}.data->>'stakingUSD' AS "myStaked"`))
+              .innerJoin(
+                walletTableName,
+                `${walletTableName}.id`,
+                `${metricWalletTableName}.wallet`,
+              )
+              .where(`${walletTableName}.user`, currentUser.id)
+              .andWhere(database.raw(`${metricWalletTableName}.contract = contract`))
+              .orderBy(`${metricWalletTableName}.contract`)
+              .orderBy(`${metricWalletTableName}.date`, 'DESC')
+              .as('metric'),
+            `${contractTableName}.id`,
+            'metric.contract',
+          );
+      } else {
+        listSelect = listSelect
+          .column(`${contractTableName}.*`)
+          .column(`${contractBlockchainTableName}.*`)
+          .column(database.raw(`'0' AS "myStaked"`));
+      }
+    }
+    if (sortColumns.includes('tvl')) {
+      listSelect = listSelect.column(
+        database.raw(
+          `(COALESCE(${contractBlockchainTableName}.metric->>'tvl', '0'))::numeric AS "tvl"`,
+        ),
+      );
+    }
+    if (sortColumns.includes('aprYear')) {
+      listSelect = listSelect.column(
+        database.raw(
+          `(COALESCE(${contractBlockchainTableName}.metric->>'aprYear', '0'))::numeric AS "aprYear"`,
+        ),
+      );
+    }
+    if (sortColumns.includes('aprYear')) {
+      listSelect = listSelect.column(
+        database.raw(
+          `(COALESCE(${contractBlockchainTableName}.metric->>'aprBoosted', '0'))::numeric AS "aprBoosted"`,
+        ),
+      );
+    }
+    if (sortColumns.includes('aprWeekReal')) {
+      listSelect = listSelect.column(
+        database.raw(
+          `(COALESCE(${contractBlockchainTableName}.metric->>'aprWeekReal', '0'))::numeric AS "aprWeekReal"`,
+        ),
+      );
+    }
+
+    return {
+      list: await listSelect
+        .clone()
+        .orderBy(sort)
+        .limit(pagination.limit)
+        .offset(pagination.offset),
+      pagination: {
+        count: await select.clone().clearSelect().count().first(),
+      },
+    };
+  },
+};
 
 export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
   type: GraphQLNonNull(ContractType),
@@ -880,9 +1068,9 @@ export const ProtocolMetricType = new GraphQLObjectType({
   },
 });
 
-export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
+export const ProtocolType: GraphQLObjectType = new GraphQLObjectType<Protocol, Request>({
   name: 'ProtocolType',
-  fields: {
+  fields: () => ({
     id: {
       type: GraphQLNonNull(UuidType),
       description: 'Identificator',
@@ -931,172 +1119,7 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
         return dataLoader.protocolFavorites({ userId: currentUser.id }).load(protocol.id);
       },
     },
-    contracts: {
-      type: GraphQLNonNull(PaginateList('ContractListType', GraphQLNonNull(ContractType))),
-      args: {
-        filter: {
-          type: new GraphQLInputObjectType({
-            name: 'ContractListFilterInputType',
-            fields: {
-              id: {
-                type: UuidType,
-              },
-              blockchain: {
-                type: BlockchainFilterInputType,
-              },
-              hidden: {
-                type: GraphQLBoolean,
-              },
-              automate: {
-                type: new GraphQLInputObjectType({
-                  name: 'ContractListAutomateFilterInputType',
-                  fields: {
-                    buyLiquidity: {
-                      type: GraphQLBoolean,
-                      description: 'Has buy liquidity automate',
-                    },
-                    autorestake: {
-                      type: GraphQLBoolean,
-                      description: 'Has autorestake automate',
-                    },
-                  },
-                }),
-              },
-              search: {
-                type: GraphQLString,
-              },
-            },
-          }),
-          defaultValue: {},
-        },
-        sort: SortArgument(
-          'ContractListSortInputType',
-          ['id', 'name', 'address', 'createdAt', 'tvl', 'aprYear', 'aprWeekReal', 'myStaked'],
-          [{ column: 'name', order: 'asc' }],
-        ),
-        pagination: PaginationArgument('ContractListPaginationInputType'),
-      },
-      resolve: async (protocol, { filter, sort, pagination }, { currentUser }) => {
-        const database = container.database();
-        const select = container.model
-          .contractTable()
-          .innerJoin(
-            contractBlockchainTableName,
-            `${contractBlockchainTableName}.id`,
-            `${contractTableName}.id`,
-          )
-          .column(`${contractTableName}.*`)
-          .column(`${contractTableName}.id`)
-          .column(`${contractBlockchainTableName}.*`)
-          .where(function () {
-            const { id, hidden, search } = filter;
-            if (id) {
-              this.where(`${contractTableName}.id`, id);
-            } else {
-              this.where('protocol', protocol.id);
-              if (filter.blockchain !== undefined) {
-                const { protocol: blockchain, network } = filter.blockchain;
-                this.andWhere('blockchain', blockchain);
-                if (network !== undefined) {
-                  this.andWhere('network', network);
-                }
-              }
-              if (typeof hidden === 'boolean') {
-                this.andWhere('hidden', hidden);
-              }
-              if (filter.automate !== undefined) {
-                const { buyLiquidity, autorestake } = filter.automate;
-                if (typeof buyLiquidity === 'boolean') {
-                  if (buyLiquidity) {
-                    this.where(database.raw("automate->>'buyLiquidity' IS NOT NULL"));
-                  } else {
-                    this.where(database.raw("automate->>'buyLiquidity' IS NULL"));
-                  }
-                }
-                if (typeof autorestake === 'boolean') {
-                  if (autorestake) {
-                    this.where(database.raw("automate->>'autorestakeAdapter' IS NOT NULL"));
-                  } else {
-                    this.where(database.raw("automate->>'autorestakeAdapter' IS NULL"));
-                  }
-                }
-              }
-              if (search !== undefined && search !== '') {
-                this.andWhere(function () {
-                  this.where('name', 'iLike', `%${search}%`);
-                  this.orWhere('address', 'iLike', `%${search}%`);
-                });
-              }
-            }
-          });
-        let listSelect = select.clone();
-        const sortColumns = sort.map(({ column }: { column: string }) => column);
-        if (sortColumns.includes('myStaked')) {
-          if (currentUser) {
-            listSelect = listSelect
-              .column(database.raw(`COALESCE(metric."myStaked", '0') AS "myStaked"`))
-              .leftJoin(
-                container.model
-                  .metricWalletTable()
-                  .distinctOn(`${metricWalletTableName}.contract`)
-                  .column(`${metricWalletTableName}.contract`)
-                  .column(
-                    database.raw(`${metricWalletTableName}.data->>'stakingUSD' AS "myStaked"`),
-                  )
-                  .innerJoin(
-                    walletTableName,
-                    `${walletTableName}.id`,
-                    `${metricWalletTableName}.wallet`,
-                  )
-                  .where(`${walletTableName}.user`, currentUser.id)
-                  .andWhere(database.raw(`${metricWalletTableName}.contract = contract`))
-                  .orderBy(`${metricWalletTableName}.contract`)
-                  .orderBy(`${metricWalletTableName}.date`, 'DESC')
-                  .as('metric'),
-                `${contractTableName}.id`,
-                'metric.contract',
-              );
-          } else {
-            listSelect = listSelect
-              .column(`${contractTableName}.*`)
-              .column(`${contractBlockchainTableName}.*`)
-              .column(database.raw(`'0' AS "myStaked"`));
-          }
-        }
-        if (sortColumns.includes('tvl')) {
-          listSelect = listSelect.column(
-            database.raw(
-              `(COALESCE(${contractBlockchainTableName}.metric->>'tvl', '0'))::numeric AS "tvl"`,
-            ),
-          );
-        }
-        if (sortColumns.includes('aprYear')) {
-          listSelect = listSelect.column(
-            database.raw(
-              `(COALESCE(${contractBlockchainTableName}.metric->>'aprYear', '0'))::numeric AS "aprYear"`,
-            ),
-          );
-        }
-        if (sortColumns.includes('aprWeekReal')) {
-          listSelect = listSelect.column(
-            database.raw(
-              `(COALESCE(${contractBlockchainTableName}.metric->>'aprWeekReal', '0'))::numeric AS "aprWeekReal"`,
-            ),
-          );
-        }
-
-        return {
-          list: await listSelect
-            .clone()
-            .orderBy(sort)
-            .limit(pagination.limit)
-            .offset(pagination.offset),
-          pagination: {
-            count: await select.clone().clearSelect().count().first(),
-          },
-        };
-      },
-    },
+    contracts: ContractListQuery,
     metricChart: {
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(MetricChartType))),
       args: {
@@ -1528,7 +1551,7 @@ export const ProtocolType = new GraphQLObjectType<Protocol, Request>({
       type: GraphQLNonNull(DateTimeType),
       description: 'Date of created',
     },
-  },
+  }),
 });
 
 export const ProtocolQuery: GraphQLFieldConfig<any, Request> = {

@@ -4,6 +4,7 @@ import {
   contractBlockchainTableName,
   ContractBlockchainType,
   contractTableName,
+  Protocol,
 } from '@models/Protocol/Entity';
 import {
   MetricContract,
@@ -60,6 +61,16 @@ class Cache {
     );
   }
 }
+
+export const protocolLoader = () =>
+  new DataLoader<string, Protocol | null>(async (protocolIds) => {
+    const map = await container.model
+      .protocolTable()
+      .whereIn('id', protocolIds)
+      .then((rows) => new Map(rows.map((protocol) => [protocol.id, protocol])));
+
+    return protocolIds.map((id) => map.get(id) ?? null);
+  });
 
 export const protocolFavoritesLoader = ({ userId }: { userId: string }) =>
   new DataLoader<string, boolean>(async (protocolsId) => {

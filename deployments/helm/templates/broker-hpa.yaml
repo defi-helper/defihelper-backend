@@ -1,0 +1,39 @@
+{{- if .Values.broker }}
+{{- range $queue, $params := .Values.broker.process.queues }}
+apiVersion: autoscaling/v2beta2
+kind: HorizontalPodAutoscaler
+metadata:
+  labels:
+  {{- range $key, $value := $.Values.broker.labels }}
+    {{ $key }}: {{ $value }}
+  {{- end }}
+    release: {{ $.Release.Name }}
+  name: '{{ $.Release.Name }}-broker-{{ $params.name }}-hpa'
+spec:
+  maxReplicas: {{ $.Values.broker.maxReplicas }}
+  metrics:
+  - type: Object
+    object:
+      metric:
+        name: 'rabbitmq_{{ $.Release.Name }}_{{ $queue }}_messages_ready'
+      describedObject:
+        apiVersion: v1
+        kind: Service
+        name: prometheus-rabbitmq-exporter
+      target:
+        type: Value
+        value: {{ $.Values.broker.maxReadyMessagesForHpa }}
+  minReplicas: 1
+  behavior:
+    scaleDown:
+      policies:
+      - type: Pods
+        value: 1
+        periodSeconds: 1800
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: '{{ $.Release.Name }}-broker-{{ $params.name }}'
+---
+{{- end }}
+{{- end }}
