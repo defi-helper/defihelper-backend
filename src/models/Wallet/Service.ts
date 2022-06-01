@@ -147,6 +147,12 @@ export class WalletService {
       .update({ ...wallet, deletedAt: new Date() });
   }
 
+  restoreBlockchainWallet(wallet: Wallet) {
+    return this.walletTable()
+      .where('id', wallet.id)
+      .update({ ...wallet, deletedAt: null });
+  }
+
   deleteExchangeWallet({ id }: Wallet) {
     return this.database.transaction(async (trx) => {
       await this.walletTable().where('id', id).delete().transacting(trx);
