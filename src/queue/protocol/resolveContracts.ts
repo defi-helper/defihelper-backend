@@ -69,7 +69,8 @@ export default async (process: Process) => {
       (p) =>
         p.address.toLowerCase() === pool.address.toLowerCase() &&
         p.network === pool.network &&
-        p.blockchain === pool.blockchain,
+        p.blockchain === pool.blockchain &&
+        p.adapter === pool.adapter,
     );
     if (duplicate) {
       return Promise.all([
