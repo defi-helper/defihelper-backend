@@ -190,7 +190,7 @@ export class AdapterService {
       ethers,
       ethersMulticall,
     });
-    vm.runInContext(adapterResponse.data, context);
+    vm.runInContext(adapterResponse.data, context, { displayErrors: true });
 
     return context.module.exports;
   }
