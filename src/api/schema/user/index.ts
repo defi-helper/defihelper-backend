@@ -1849,6 +1849,10 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
         return { user: currentUser, sid };
       }
 
+      if (duplicate.deletedAt) {
+        await container.model.walletService().restoreBlockchainWallet(duplicate);
+      }
+
       const sid = container.model.sessionService().generate(user);
       return { user, sid };
     }
@@ -1963,6 +1967,10 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
 
         const sid = container.model.sessionService().generate(currentUser);
         return { user: currentUser, sid };
+      }
+
+      if (duplicate.deletedAt) {
+        await container.model.walletService().restoreBlockchainWallet(duplicate);
       }
 
       const sid = container.model.sessionService().generate(user);
