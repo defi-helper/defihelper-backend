@@ -1,4 +1,4 @@
-import { tableFactoryLegacy, typedTableFactory } from '@services/Database';
+import { typedTableFactory } from '@services/Database';
 import { Blockchain } from '@models/types';
 
 export interface ProtocolLink {
@@ -155,11 +155,27 @@ export interface TokenContractLink {
 
 export const tokenContractLinkTableName = 'protocol_contract_token_link';
 
-export const tokenContractLinkTableFactory = tableFactoryLegacy<TokenContractLink>(
-  tokenContractLinkTableName,
-);
+export const tokenContractLinkTableFactory = typedTableFactory(tokenContractLinkTableName);
 
 export type TokenContractLinkTable = ReturnType<ReturnType<typeof tokenContractLinkTableFactory>>;
+
+export enum UserContractLinkType {
+  AutorestakeHide = 'autorestakeHide',
+}
+
+export interface UserContractLink {
+  id: string;
+  contract: string;
+  user: string;
+  type: UserContractLinkType;
+  createdAt: Date;
+}
+
+export const userContractLinkTableName = 'protocol_contract_user_link';
+
+export const userContractLinkTableFactory = typedTableFactory(userContractLinkTableName);
+
+export type UserContractLinkTable = ReturnType<ReturnType<typeof userContractLinkTableFactory>>;
 
 declare module 'knex/types/tables' {
   interface Tables {
@@ -170,5 +186,7 @@ declare module 'knex/types/tables' {
     [protocolUserFavoriteTableName]: ProtocolUserFavorite;
     [contractDebankTableName]: ContractDebankType;
     [contractBlockchainTableName]: ContractBlockchainType;
+    [tokenContractLinkTableName]: TokenContractLink;
+    [userContractLinkTableName]: UserContractLink;
   }
 }

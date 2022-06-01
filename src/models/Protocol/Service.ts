@@ -27,6 +27,9 @@ import {
   TokenContractLinkType,
   ContractAutomate,
   TokenContractLink,
+  UserContractLinkTable,
+  UserContractLink,
+  UserContractLinkType,
 } from './Entity';
 
 export class ProtocolService {
@@ -155,6 +158,7 @@ export class ContractService {
     readonly contractDebankTable: Factory<ContractDebankTable>,
     readonly walletLinkTable: Factory<WalletContractLinkTable>,
     readonly tokenLinkTable: Factory<TokenContractLinkTable>,
+    readonly userLinkTable: Factory<UserContractLinkTable>,
   ) {}
 
   async createDebank(
@@ -384,6 +388,48 @@ export class ContractService {
         return created;
       }),
     );
+  }
+
+  async userLink(contract: Contract, users: Array<{ user: User; type: UserContractLinkType }>) {
+    const duplicates = await this.userLinkTable()
+      .where('contract', contract.id)
+      .then(
+        (rows) =>
+          new Map(rows.map((duplicate) => [`${duplicate.user}:${duplicate.type}`, duplicate])),
+      );
+
+    return Promise.all(
+      users.map(async ({ user, type }) => {
+        const duplicate = duplicates.get(`${user.id}:${type}`);
+        if (duplicate) return duplicate;
+
+        const created: UserContractLink = {
+          id: uuid(),
+          contract: contract.id,
+          user: user.id,
+          type,
+          createdAt: new Date(),
+        };
+        await this.userLinkTable().insert(created);
+
+        return created;
+      }),
+    );
+  }
+
+  async userUnlink(contract: Contract, users: Array<{ user: User; type: UserContractLinkType }>) {
+    await this.userLinkTable()
+      .where(function () {
+        this.where('contract', contract.id);
+        this.where(function () {
+          users.forEach(({ user, type }) =>
+            this.orWhere(function () {
+              this.where('user', user.id).where('type', type);
+            }),
+          );
+        });
+      })
+      .delete();
   }
 }
 

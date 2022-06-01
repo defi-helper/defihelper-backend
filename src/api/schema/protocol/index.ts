@@ -26,6 +26,7 @@ import {
   MetadataType,
   TokenContractLinkType,
   tokenContractLinkTableName,
+  UserContractLinkType,
 } from '@models/Protocol/Entity';
 import { apyBoost } from '@services/RestakeStrategy';
 import {
@@ -397,6 +398,14 @@ export const ContractType: GraphQLObjectType = new GraphQLObjectType<
   }),
 });
 
+export const ContractUserLinkTypeEnum = new GraphQLEnumType({
+  name: 'ContractUserLinkTypeEnum',
+  values: Object.values(UserContractLinkType).reduce(
+    (prev, name) => ({ ...prev, [name]: { value: name } }),
+    {},
+  ),
+});
+
 export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
   type: GraphQLNonNull(PaginateList('ContractListType', GraphQLNonNull(ContractType))),
   args: {
@@ -415,6 +424,9 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
           },
           hidden: {
             type: GraphQLBoolean,
+          },
+          userLink: {
+            type: ContractUserLinkTypeEnum,
           },
           automate: {
             type: new GraphQLInputObjectType({
@@ -472,7 +484,7 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
       .column(`${contractTableName}.id`)
       .column(`${contractBlockchainTableName}.*`)
       .where(function () {
-        const { id, protocol, hidden, search } = filter;
+        const { id, protocol, hidden, userLink, search } = filter;
         if (id) {
           this.where(`${contractTableName}.id`, id);
         } else {
@@ -542,6 +554,14 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
                           ContractVerificationStatus.Confirmed,
                         ),
                     )
+                    .whereNotIn(
+                      `${metricWalletTableName}.contract`,
+                      container.model
+                        .userContractLinkTable()
+                        .column('contract')
+                        .where('user', currentUser.id)
+                        .where('type', UserContractLinkType.AutorestakeHide),
+                    )
                     .orderBy(`${metricWalletTableName}.contract`)
                     .orderBy(`${metricWalletTableName}.date`, 'desc')
                     .as('m'),
@@ -553,6 +573,16 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
                 this.whereNotIn(`${contractTableName}.id`, candidateSelect);
               }
             }
+          }
+          if (userLink !== undefined && currentUser) {
+            this.whereIn(
+              `${contractTableName}.id`,
+              container.model
+                .userContractLinkTable()
+                .column('contract')
+                .where('user', currentUser.id)
+                .where('type', userLink),
+            );
           }
           if (search !== undefined && search !== '') {
             this.andWhere(function () {
@@ -1017,6 +1047,82 @@ export const ContractWalletUnlinkMutation: GraphQLFieldConfig<any, Request> = {
     }
 
     await container.model.contractService().walletUnlink(contract, wallet);
+
+    return true;
+  },
+};
+
+export const ContractUserLinkMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLBoolean),
+  args: {
+    contract: {
+      type: GraphQLNonNull(UuidType),
+      description: 'Target contract',
+    },
+    user: {
+      type: GraphQLNonNull(UuidType),
+      description: 'Target user',
+    },
+    type: {
+      type: ContractUserLinkTypeEnum,
+      description: 'Link type',
+    },
+  },
+  resolve: async (root, { contract: contractId, user: userId, type }, { currentUser, acl }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const contract = await container.model.contractTable().where('id', contractId).first();
+    if (!contract) throw new UserInputError('Contract not found');
+
+    const user = await container.model.userTable().where('id', userId).first();
+    if (!user) throw new UserInputError('User not found');
+
+    if (
+      !(user.id === currentUser.id && acl.isAllowed('contract', 'userLink-own')) &&
+      !acl.isAllowed('contract', 'userLink')
+    ) {
+      throw new ForbiddenError('FORBIDDEN');
+    }
+
+    await container.model.contractService().userLink(contract, [{ user, type }]);
+
+    return true;
+  },
+};
+
+export const ContractUserUnlinkMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLBoolean),
+  args: {
+    contract: {
+      type: GraphQLNonNull(UuidType),
+      description: 'Target contract',
+    },
+    user: {
+      type: GraphQLNonNull(UuidType),
+      description: 'Target user',
+    },
+    type: {
+      type: ContractUserLinkTypeEnum,
+      description: 'Link type',
+    },
+  },
+  resolve: async (root, { contract: contractId, user: userId, type }, { currentUser, acl }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const contract = await container.model.contractTable().where('id', contractId).first();
+    if (!contract) throw new UserInputError('Contract not found');
+
+    const user = await container.model.userTable().where('id', userId).first();
+    if (!user) throw new UserInputError('User not found');
+
+    if (
+      !(user.id === currentUser.id && acl.isAllowed('contract', 'userLink-own')) &&
+      !acl.isAllowed('contract', 'userLink')
+    ) {
+      throw new ForbiddenError('FORBIDDEN');
+    }
+
+    await container.model.contractService().userUnlink(contract, [{ user, type }]);
 
     return true;
   },

@@ -121,6 +121,10 @@ export class ModelContainer extends Container<typeof AppContainer> {
     this.parent.database,
   );
 
+  readonly userContractLinkTable = Models.Protocol.Entity.userContractLinkTableFactory(
+    this.parent.database,
+  );
+
   readonly contractService = singleton(
     () =>
       new Models.Protocol.Service.ContractService(
@@ -130,6 +134,7 @@ export class ModelContainer extends Container<typeof AppContainer> {
         this.contractDebankTable,
         this.walletContractLinkTable,
         this.tokenContractLinkTable,
+        this.userContractLinkTable,
       ),
   );
 
