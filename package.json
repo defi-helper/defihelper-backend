@@ -37,6 +37,8 @@
     "@types/redis": "^2.8.29",
     "@types/uuid": "^8.3.0",
     "@typescript-eslint/eslint-plugin": "^4.28.2",
+    "@uniswap/sdk-core": "^3.0.1",
+    "@uniswap/v3-sdk": "^3.8.2",
     "@waves/marshall": "^0.14.0",
     "@waves/node-api-js": "^1.2.5-beta.14",
     "@waves/provider-seed": "^0.3.1",

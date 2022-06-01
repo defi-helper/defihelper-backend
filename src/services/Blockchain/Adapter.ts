@@ -3,6 +3,8 @@ import dayjs from 'dayjs';
 import { BigNumber } from 'bignumber.js';
 import { ethers } from 'ethers';
 import ethersMulticall from '@defihelper/ethers-multicall';
+import * as Uniswap3Core from '@uniswap/sdk-core';
+import * as Uniswap3SDK from '@uniswap/v3-sdk';
 import vm from 'vm';
 import { Blockchain } from '@models/types';
 import { ContractAutomate } from '@models/Protocol/Entity';
@@ -189,6 +191,10 @@ export class AdapterService {
       axios,
       ethers,
       ethersMulticall,
+      uniswap3: {
+        core: Uniswap3Core,
+        sdk: Uniswap3SDK,
+      },
     });
     vm.runInContext(adapterResponse.data, context, { displayErrors: true });
 
