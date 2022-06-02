@@ -561,6 +561,52 @@ export const UserBillingType = new GraphQLObjectType<User>({
   },
 });
 
+export const BalanceMetaType = new GraphQLObjectType({
+  name: 'BalanceMetaType',
+  fields: {
+    token: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    recomendedIncome: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    priceUSD: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+  },
+});
+
+export const BalanceMetaQuery: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(BalanceMetaType),
+  args: {
+    blockchain: {
+      type: GraphQLNonNull(BlockchainEnum),
+    },
+    network: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Chain ID',
+    },
+  },
+  resolve: async (root, { blockchain, network }) => {
+    if (blockchain === 'ethereum') {
+      const provider = container.blockchain.ethereum.byNetwork(network);
+      return {
+        token: provider.nativeTokenDetails.symbol,
+        recomendedIncome: '1',
+        priceUSD: await provider.nativeTokenPrice(),
+      };
+    }
+    if (blockchain === 'waves') {
+      return {
+        token: 'WAVES',
+        recomendedIncome: '1',
+        priceUSD: '0', // todo: price feed call
+      };
+    }
+    throw new UserInputError('Invalid blockchain');
+  },
+};
+
 export const AddTransferMutation: GraphQLFieldConfig<any, Request> = {
   type: GraphQLNonNull(TransferType),
   args: {
