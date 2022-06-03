@@ -21,12 +21,11 @@ export default async (process: Process) => {
         `${walletBlockchainTableName}.id`,
         `${walletTableName}.id`,
       )
-      .where({ user }),
-
+      .where(`${walletTableName}.user`, user),
     container.model
       .walletTable()
       .innerJoin(walletExchangeTableName, `${walletExchangeTableName}.id`, `${walletTableName}.id`)
-      .where({ user }),
+      .where(`${walletTableName}.user`, user),
   ]);
 
   const queue = container.model.queueService();
