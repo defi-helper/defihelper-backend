@@ -182,6 +182,20 @@ export function route({ express, server }: { express: Express; server: Server })
       container.logger().error(`${err}`);
       return err;
     },
+    plugins: [
+      {
+        requestDidStart() {
+          return {
+            didEncounterErrors(context) {
+              const error = `query: ${context.request.query?.toString()}
+                  variables: ${JSON.stringify(context.request.variables, null, 4)}`;
+              container.model.logService().create(`graphql:PARSING_ERROR`, error);
+              container.logger().error(error);
+            },
+          };
+        },
+      },
+    ],
   });
   apollo.installSubscriptionHandlers(server);
   express.use('/api', [
