@@ -45,7 +45,6 @@ export * as automateTransactionWavesConfirm from './automate/transactionWavesCon
 export * as automateTriggerRun from './automate/run';
 export * as automateTriggerByTime from './automate/trigger/byTime';
 export * as logBilling from './log/billingLogger';
-export * as logPriceResolver from './log/tokenPriceResolverLogger';
 
 /* billing */
 export * as emptyWalletsBroker from './billing/emptyWalletsBroker';

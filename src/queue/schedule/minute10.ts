@@ -12,7 +12,6 @@ export default async (process: Process) => {
     ...networks,
     queue.push('emptyWalletsBroker'),
     queue.push('logBilling'),
-    queue.push('logPriceResolver'),
     queue.push('regularContractsWalletLink'),
   ]);
 
