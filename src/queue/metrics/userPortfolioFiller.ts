@@ -29,8 +29,8 @@ export default async (process: Process) => {
   ]);
 
   const queue = container.model.queueService();
-  walletsBlockchain.forEach(({ id, network }) => {
-    if (container.blockchain.ethereum.byNetwork(network).testnet) {
+  walletsBlockchain.forEach(({ id, blockchain, network }) => {
+    if (blockchain !== 'ethereum' || container.blockchain.ethereum.byNetwork(network).testnet) {
       return;
     }
     queue.push('metricsWalletBalancesDeBankFiller', { id }, { priority: 9 });
