@@ -29,42 +29,16 @@ export default async (process: Process) => {
   ]);
 
   const queue = container.model.queueService();
-  await Promise.all([
-    walletsBlockchain.map(({ id }) =>
-      Promise.all([
-        queue.push(
-          'metricsWalletBalancesDeBankFiller',
-          {
-            id,
-          },
-          {
-            priority: 9,
-          },
-        ),
-        queue.push(
-          'metricsWalletProtocolsBalancesDeBankFiller',
-          {
-            id,
-          },
-          {
-            priority: 9,
-          },
-        ),
-      ]),
-    ),
-
-    walletsExchange.map(({ id }) =>
-      queue.push(
-        'metricsWalletBalancesCexUniversalFiller',
-        {
-          id,
-        },
-        {
-          priority: 9,
-        },
-      ),
-    ),
-  ]);
+  walletsBlockchain.forEach(({ id, network }) => {
+    if (container.blockchain.ethereum.byNetwork(network).testnet) {
+      return;
+    }
+    queue.push('metricsWalletBalancesDeBankFiller', { id }, { priority: 9 });
+    queue.push('metricsWalletProtocolsBalancesDeBankFiller', { id }, { priority: 9 });
+  });
+  walletsExchange.forEach(({ id }) =>
+    queue.push('metricsWalletBalancesCexUniversalFiller', { id }, { priority: 9 }),
+  );
 
   return process.done();
 };

@@ -32,6 +32,8 @@ export default async (process: Process) => {
 
   const tasks = await wallets.reduce<Promise<Task[]>>(async (addedTasksPromise, wallet) => {
     const addedTasks = await addedTasksPromise;
+    if (container.blockchain.ethereum.byNetwork(wallet.network).testnet) return addedTasks;
+
     return [
       ...addedTasks,
       await queue.push('metricsWalletBalancesDeBankFiller', {

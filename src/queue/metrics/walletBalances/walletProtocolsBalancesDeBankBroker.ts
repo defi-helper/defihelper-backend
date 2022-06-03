@@ -22,16 +22,15 @@ export default async (process: Process) => {
     .whereNull(`${walletTableName}.deletedAt`);
 
   const lag = 600 / wallets.length;
-  await wallets.reduce<Promise<dayjs.Dayjs>>(async (prev, wallet) => {
+  await wallets.reduce<Promise<dayjs.Dayjs>>(async (prev, { id, network }) => {
     const startAt = await prev;
+    if (container.blockchain.ethereum.byNetwork(network).testnet) {
+      return startAt;
+    }
 
-    await container.model.queueService().push(
-      'metricsWalletProtocolsBalancesDeBankFiller',
-      {
-        id: wallet.id,
-      },
-      { startAt: startAt.toDate() },
-    );
+    await container.model
+      .queueService()
+      .push('metricsWalletProtocolsBalancesDeBankFiller', { id }, { startAt: startAt.toDate() });
 
     return startAt.clone().add(lag, 'seconds');
   }, Promise.resolve(dayjs()));

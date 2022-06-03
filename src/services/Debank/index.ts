@@ -44,6 +44,9 @@ export class Debank {
     arb: '42161',
     op: '10',
     cro: '25',
+    mobm: '1284',
+    aurora: '1313161554',
+    hmy: '1666600000',
   };
 
   public chainResolver = (

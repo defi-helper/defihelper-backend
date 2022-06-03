@@ -26,6 +26,9 @@ export default async (process: Process) => {
   if (!blockchainWallet || blockchainWallet.blockchain !== 'ethereum') {
     throw new Error('wallet not found or unsupported blockchain');
   }
+  if (container.blockchain.ethereum.byNetwork(blockchainWallet.network).testnet) {
+    throw new Error('testnet unsupported');
+  }
 
   const debankUserTokenList = (
     await container

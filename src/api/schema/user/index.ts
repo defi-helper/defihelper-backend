@@ -2218,25 +2218,28 @@ export const WalletUpdateStatisticsMutation: GraphQLFieldConfig<any, Request> = 
   resolve: onlyAllowed('wallet.update-own', async (root, { id }, { currentUser }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
-    const wallet = await container.model.walletTable().where('id', id).first();
+    const wallet = await container.model
+      .walletTable()
+      .innerJoin(
+        walletBlockchainTableName,
+        `${walletBlockchainTableName}.id`,
+        `${walletTableName}.id`,
+      )
+      .where(`${walletTableName}.id`, id)
+      .first();
     if (!wallet) throw new UserInputError('Wallet not found');
     if (wallet.user !== currentUser.id) throw new UserInputError('Foreign wallet');
+    if (container.blockchain.ethereum.byNetwork(wallet.network).testnet) {
+      return false;
+    }
 
     await Promise.all([
-      container.model.queueService().push(
-        'metricsWalletBalancesDeBankFiller',
-        {
-          id,
-        },
-        { priority: 9 },
-      ),
-      container.model.queueService().push(
-        'metricsWalletProtocolsBalancesDeBankFiller',
-        {
-          id,
-        },
-        { priority: 9 },
-      ),
+      container.model
+        .queueService()
+        .push('metricsWalletBalancesDeBankFiller', { id }, { priority: 9 }),
+      container.model
+        .queueService()
+        .push('metricsWalletProtocolsBalancesDeBankFiller', { id }, { priority: 9 }),
     ]);
 
     return true;
