@@ -488,13 +488,14 @@ export class BlockchainContainer extends Container<Config> {
   } as const;
 
   readonly isNetwork = (network: string | number): network is Networks => {
-    return isKey(this.networks, network.toString());
+    return isKey(this.networks, String(network));
   };
 
   readonly byNetwork = (network: string | number) => {
-    if (!this.isNetwork(network)) throw new Error('Undefined network');
+    const chainId = String(network);
+    if (!this.isNetwork(chainId)) throw new Error('Undefined network');
 
-    return this.networks[network];
+    return this.networks[chainId];
   };
 
   readonly contract = (
