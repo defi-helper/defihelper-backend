@@ -22,11 +22,8 @@ export default async (process: Process) => {
     .whereNull(`${walletTableName}.deletedAt`);
 
   const lag = 600 / wallets.length;
-  await wallets.reduce<Promise<dayjs.Dayjs>>(async (prev, { id, network }) => {
+  await wallets.reduce<Promise<dayjs.Dayjs>>(async (prev, { id }) => {
     const startAt = await prev;
-    if (container.blockchain.ethereum.byNetwork(network).testnet) {
-      return startAt;
-    }
 
     await container.model
       .queueService()
