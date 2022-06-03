@@ -26,10 +26,10 @@ export default async (process: Process) => {
   }, {} as { [network: string]: { [handler: string]: Task } });
 
   const queueService = container.model.queueService();
+  const { ethereum } = container.blockchain;
   await Promise.all(
     Object.entries(contracts).map(async ([network, networkContracts]) => {
-      // Skip testnet
-      if (container.blockchain.ethereum.byNetwork(network).testnet) return [];
+      if (!ethereum.isNetwork(network) || ethereum.byNetwork(network).testnet) return [];
 
       const pool = [];
       if (isKey(networkContracts, 'Balance')) {
