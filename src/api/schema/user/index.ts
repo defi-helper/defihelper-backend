@@ -2297,10 +2297,14 @@ export const WalletMetricScanMutation: GraphQLFieldConfig<any, Request> = {
       type: GraphQLNonNull(UuidType),
       description: 'Contract id',
     },
+    txId: {
+      type: GraphQLString,
+      description: 'Transaction id',
+    },
   },
   resolve: onlyAllowed(
     'wallet.metric-scan',
-    async (root, { wallet: walletId, contract: contractId }, { currentUser }) => {
+    async (root, { wallet: walletId, contract: contractId, txId }, { currentUser }) => {
       if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
       const wallet = await container.model.walletTable().where('id', walletId).first();
@@ -2315,9 +2319,10 @@ export const WalletMetricScanMutation: GraphQLFieldConfig<any, Request> = {
         .where({ wallet: wallet.id, contract: contract.id })
         .first();
       if (!link) throw new UserInputError('Wallet not linked to contract');
-      await container.model.queueService().push('metricsWalletCurrent', {
+      await container.model.queueService().push('metricsWalletScanMutation', {
         contract: contract.id,
         wallet: wallet.id,
+        txId,
       });
 
       return true;

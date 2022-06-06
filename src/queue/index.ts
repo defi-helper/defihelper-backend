@@ -24,6 +24,7 @@ export * as metricsContractAprWeekRealBroker from './metrics/contractAprWeekReal
 export * as metricsContractScannerDate from './metrics/contractScannerDate';
 export * as metricsWalletCurrent from './metrics/walletCurrent';
 export * as metricsWalletBlock from './metrics/walletBlock';
+export * as metricsWalletScanMutation from './metrics/walletScanMutation';
 export * as sendEmail from './email/send';
 export * as sendTelegram from './telegram/send';
 export * as subscribeToEventFromScanner from './scanner/subscribeToEvent';
