@@ -176,7 +176,7 @@ export const TriggerCallHistoryListQuery: GraphQLFieldConfig<Automate.Trigger, R
     return {
       list: await select.clone().orderBy(sort).limit(pagination.limit).offset(pagination.offset),
       pagination: {
-        count: await select.clone().first(),
+        count: await select.clone().count().first(),
       },
     };
   },
