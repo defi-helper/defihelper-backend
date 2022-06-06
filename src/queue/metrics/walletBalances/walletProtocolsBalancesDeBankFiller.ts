@@ -14,13 +14,14 @@ import {
 } from '@models/Protocol/Entity';
 import { TokenAliasLiquidity, TokenCreatedBy } from '@models/Token/Entity';
 import BN from 'bignumber.js';
+import { ProtocolListItem } from '@services/Debank';
 
 interface Params {
   id: string;
 }
 
 export default async (process: Process) => {
-  const { id } = process.task.params as Params;
+  const { id: walletId } = process.task.params as Params;
 
   const walletMetrics = container.model.metricService();
   const targetWallet = await container.model
@@ -30,13 +31,12 @@ export default async (process: Process) => {
       `${walletBlockchainTableName}.id`,
       `${walletTableName}.id`,
     )
-    .where(`${walletTableName}.id`, id)
+    .where(`${walletTableName}.id`, walletId)
     .first();
 
   if (!targetWallet || targetWallet.blockchain !== 'ethereum') {
     throw new Error('wallet not found or unsupported blockchain');
   }
-
   const chainsWallets = await container.model
     .walletTable()
     .innerJoin(
@@ -51,22 +51,34 @@ export default async (process: Process) => {
     })
     .orderBy('createdAt', 'desc');
 
-  const debankUserProtocolsList = (
-    await container.debank().getProtocolListWallet(targetWallet.address)
-  )
-    .map((protocol) => {
-      const pureProtocolId = protocol.id.replace(`${protocol.chain}_`, '');
+  const protocolAdaptersMap = await container.model
+    .protocolTable()
+    .column('debankId', 'adapter')
+    .then((protocols) => new Map(protocols.map(({ adapter, debankId }) => [debankId, adapter])));
+  const debankUserProtocolsList = await container
+    .debank()
+    .getProtocolListWallet(targetWallet.address)
+    .then((protocols) =>
+      protocols.reduce<ProtocolListItem[]>((result, protocol) => {
+        if (container.debank().chainResolver(protocol.chain) === undefined) {
+          return result;
+        }
+        const protocolNormalize = {
+          ...protocol,
+          id: protocol.id.replace(`${protocol.chain}_`, ''),
+        };
+        // Skip not debank protocols
+        const adapter = protocolAdaptersMap.get(protocolNormalize.id);
+        if (adapter !== undefined && adapter !== 'debankByApiReadonly') {
+          return result;
+        }
 
-      return {
-        ...protocol,
-        id: pureProtocolId,
-      };
-    })
-    .filter((v) => Boolean(container.debank().chainResolver(v.chain)));
-
+        return [...result, protocolNormalize];
+      }, []),
+    );
   const existingProtocols = await container.model.protocolTable().whereIn(
     'debankId',
-    debankUserProtocolsList.map((v) => v.id),
+    debankUserProtocolsList.map(({ id }) => id),
   );
 
   await Promise.all(

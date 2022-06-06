@@ -15,7 +15,7 @@ export interface Token {
   logo_url?: string;
 }
 
-interface ProtocolListItem {
+export interface ProtocolListItem {
   id: string;
   chain: string;
   name: string;
