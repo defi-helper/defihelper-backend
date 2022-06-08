@@ -17,7 +17,7 @@ export default async (process: Process) => {
     );
 
   await Promise.all(
-    metadata.map((meta) => {
+    metadata.map(async (meta) => {
       const contract = contracts.find((v) => {
         return v.id === meta.contract;
       });
@@ -26,18 +26,22 @@ export default async (process: Process) => {
         return null;
       }
 
-      return container.model
-        .metadataTable()
-        .where({
-          contract: contract.id,
-        })
-        .update({
-          blockchain: contract.blockchain,
-          network: contract.network,
-          address: contract.address,
-        })
-        .onConflict(['blockchain', 'network', 'address'])
-        .ignore();
+      try {
+        return await container.model
+          .metadataTable()
+          .where({
+            contract: contract.id,
+          })
+          .update({
+            blockchain: contract.blockchain,
+            network: contract.network,
+            address: contract.address,
+          });
+      } catch {
+        console.info('duplicate');
+      }
+
+      return null;
     }),
   );
 
