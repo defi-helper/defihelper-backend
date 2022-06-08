@@ -26,20 +26,18 @@ export default async (process: Process) => {
         return null;
       }
 
-      try {
-        return await container.model
-          .metadataService()
-          .createOrUpdate(
-            contract,
-            meta.type,
-            meta.value,
-            contract.blockchain,
-            contract.network,
-            contract.address,
-          );
-      } catch {
-        console.warn('duplicate');
-      }
+      await container.model
+        .metadataTable()
+        .where({
+          contract: contract.id,
+        })
+        .update({
+          blockchain: contract.blockchain,
+          network: contract.network,
+          address: contract.address,
+        })
+        .onConflict(['blockchain', 'network', 'address'])
+        .ignore();
 
       return null;
     }),
