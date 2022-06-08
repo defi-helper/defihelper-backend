@@ -7,6 +7,7 @@ ENV NODE_ENV ${NODE_ENV:-production}
 
 RUN apk --update add python3 build-base
 COPY package*.json ./
+#RUN npm ci
 RUN npm ci
 COPY . .
 RUN npm run build
