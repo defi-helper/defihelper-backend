@@ -21,6 +21,7 @@ export default async (process: Process) => {
       const contract = contracts.find((v) => {
         return v.id === meta.contract;
       });
+
       if (!contract) {
         return null;
       }
