@@ -17,7 +17,7 @@ export default async (process: Process) => {
     );
 
   await Promise.all(
-    metadata.map(async (meta) => {
+    metadata.map((meta) => {
       const contract = contracts.find((v) => {
         return v.id === meta.contract;
       });
@@ -26,7 +26,7 @@ export default async (process: Process) => {
         return null;
       }
 
-      await container.model
+      return container.model
         .metadataTable()
         .where({
           contract: contract.id,
@@ -38,8 +38,6 @@ export default async (process: Process) => {
         })
         .onConflict(['blockchain', 'network', 'address'])
         .ignore();
-
-      return null;
     }),
   );
 
