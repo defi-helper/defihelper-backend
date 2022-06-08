@@ -12,7 +12,7 @@ export default async (process: Process) => {
       `${contractTableName}.id`,
     )
     .whereIn(
-      'id',
+      `${contractTableName}.id`,
       metadata.map((m) => m.contract),
     );
 
