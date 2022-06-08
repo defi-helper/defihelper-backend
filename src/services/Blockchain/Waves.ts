@@ -22,23 +22,39 @@ export interface NetworkConfig {
   consumers: string[];
 }
 
+export interface NativeTokenDetails {
+  decimals: number;
+  symbol: string;
+  name: string;
+}
+
 function networkFactory(
   config: {
+    id: string;
     name: string;
+    testnet: boolean;
     nodeGatewayURL: string;
     avgBlockTime: number;
-    txExplorerURL: string;
-    walletExplorerURL: string;
+    explorerURL: URL;
+    txExplorerURL: URL;
+    walletExplorerURL: URL;
+    icon: string;
+    nativeTokenDetails: NativeTokenDetails;
   } & NetworkConfig,
 ) {
   return {
+    id: config.id,
     name: config.name,
+    testnet: config.testnet,
+    icon: config.icon,
     provider: singleton(() => config.node),
     providerHistorical: singleton(() => config.node),
     node: nodeGatewayFactory(config.nodeGatewayURL),
     avgBlockTime: config.avgBlockTime,
-    txExplorerURL: new URL(config.txExplorerURL),
-    walletExplorerURL: new URL(config.walletExplorerURL),
+    explorerURL: config.explorerURL,
+    txExplorerURL: config.txExplorerURL,
+    walletExplorerURL: config.walletExplorerURL,
+    nativeTokenDetails: config.nativeTokenDetails,
     consumers: () =>
       config.consumers.map((seed) => {
         const signer = new Signer({ NODE_URL: config.node });
@@ -63,19 +79,37 @@ export class BlockchainContainer extends Container<Config> {
   readonly networks = {
     main: networkFactory({
       ...this.parent.main,
+      id: 'main',
       name: 'Waves',
+      testnet: false,
       nodeGatewayURL: 'https://nodes.wavesnodes.com',
       avgBlockTime: 60,
-      txExplorerURL: 'https://wavesexplorer.com/tx',
-      walletExplorerURL: 'https://wavesexplorer.com/address',
+      explorerURL: new URL('https://wavesexplorer.com'),
+      txExplorerURL: new URL('https://wavesexplorer.com/tx'),
+      walletExplorerURL: new URL('https://wavesexplorer.com/address'),
+      icon: 'wavesRegular',
+      nativeTokenDetails: {
+        decimals: 8,
+        symbol: 'WAVES',
+        name: 'Waves',
+      },
     }),
     test: networkFactory({
       ...this.parent.test,
+      id: 'test',
       name: 'Waves Test',
+      testnet: true,
       nodeGatewayURL: 'https://nodes-testnet.wavesnodes.com',
       avgBlockTime: 60,
-      txExplorerURL: 'https://testnet.wavesexplorer.com/tx',
-      walletExplorerURL: 'https://testnet.wavesexplorer.com/address',
+      explorerURL: new URL('https://testnet.wavesexplorer.com'),
+      txExplorerURL: new URL('https://testnet.wavesexplorer.com/tx'),
+      walletExplorerURL: new URL('https://testnet.wavesexplorer.com/address'),
+      icon: 'wavesRegular',
+      nativeTokenDetails: {
+        decimals: 8,
+        symbol: 'WAVES',
+        name: 'Waves',
+      },
     }),
   } as const;
 

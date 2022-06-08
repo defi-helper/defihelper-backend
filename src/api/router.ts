@@ -7,6 +7,7 @@ import { json } from 'body-parser';
 import cors from 'cors';
 import { GraphQLNonNull, GraphQLObjectType, GraphQLSchema, GraphQLString } from 'graphql';
 import * as middlewares from '@api/middlewares';
+import * as configSchemas from '@api/schema/config';
 import * as notificationSchemas from '@api/schema/notification';
 import * as userNotificationSchemas from '@api/schema/userNotification';
 import * as billingSchemas from '@api/schema/billing';
@@ -48,6 +49,7 @@ export function route({ express, server }: { express: Express; server: Server })
             type: GraphQLNonNull(GraphQLString),
             resolve: () => 'pong',
           },
+          config: configSchemas.ConfigQuery,
           me: {
             type: userSchemas.UserType,
             resolve: (root, args, { currentUser }) => currentUser,
