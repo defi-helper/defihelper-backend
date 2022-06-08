@@ -34,10 +34,22 @@ export default async (process: Process) => {
     const network = container.blockchain[contract.blockchain].byNetwork(contract.network);
     const abi = await network.getContractAbi(contract.address);
 
-    await metadataService.createOrUpdate(contract, MetadataType.EthereumContractAbi, abi);
+    await metadataService.createOrUpdate(
+      MetadataType.EthereumContractAbi,
+      abi,
+      contract.blockchain,
+      contract.network,
+      contract.address,
+    );
   } catch (e) {
     if (e.message === 'NOT_VERIFIED') {
-      await metadataService.createOrUpdate(contract, MetadataType.EthereumContractAbi, null);
+      await metadataService.createOrUpdate(
+        MetadataType.EthereumContractAbi,
+        null,
+        contract.blockchain,
+        contract.network,
+        contract.address,
+      );
       return process.done();
     }
 
