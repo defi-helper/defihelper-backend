@@ -1818,6 +1818,9 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
 
     const { network, address, message, signature, merge, code } = input;
     if (typeof message !== 'string' || message.length < 5) return null;
+    if (container.blockchain.ethereum.isNetwork(network)) {
+      throw new UserInputError('Network unsupported');
+    }
 
     const hash = utils.hashMessage(message);
     const hashBytes = utils.arrayify(hash);
