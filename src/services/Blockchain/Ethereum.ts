@@ -493,7 +493,7 @@ export class BlockchainContainer extends Container<Config> {
 
   readonly byNetwork = (network: string | number) => {
     const chainId = String(network);
-    if (!this.isNetwork(chainId)) throw new Error('Undefined network');
+    if (!this.isNetwork(chainId)) throw new Error(`Undefined network "${chainId}"`);
 
     return this.networks[chainId];
   };

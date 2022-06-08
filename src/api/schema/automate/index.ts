@@ -1153,6 +1153,9 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
           archived: {
             type: GraphQLBoolean,
           },
+          search: {
+            type: GraphQLString,
+          },
         },
       }),
       defaultValue: {},
@@ -1168,8 +1171,13 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
     const select = container.model
       .automateContractTable()
       .innerJoin(walletTableName, `${walletTableName}.id`, `${Automate.contractTableName}.wallet`)
+      .leftJoin(
+        contractTableName,
+        `${contractTableName}.id`,
+        `${Automate.contractTableName}.contract`,
+      )
       .where(function () {
-        const { wallet, user, protocol, contract, address, archived } = filter;
+        const { wallet, user, protocol, contract, address, archived, search } = filter;
         if (typeof user === 'string') {
           this.andWhere(`${walletTableName}.user`, user);
         }
@@ -1188,6 +1196,9 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
         if (typeof archived === 'boolean') {
           if (archived) this.whereNotNull(`${Automate.contractTableName}.archivedAt`);
           else this.whereNull(`${Automate.contractTableName}.archivedAt`);
+        }
+        if (typeof search === 'string' && search !== '') {
+          this.where(`${contractTableName}.name`, 'iLike', `%${search}%`);
         }
       });
 
