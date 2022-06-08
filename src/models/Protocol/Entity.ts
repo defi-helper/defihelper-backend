@@ -128,9 +128,12 @@ export enum MetadataType {
 }
 export interface Metadata {
   id: string;
-  contract: string;
+  contract: string | null;
   type: MetadataType;
   value: { value: any };
+  blockchain: string | null;
+  network: string | null;
+  address: string | null;
   createdAt: Date;
 }
 
