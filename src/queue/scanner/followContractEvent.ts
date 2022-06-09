@@ -3,23 +3,25 @@ import container from '@container';
 import dayjs from 'dayjs';
 import { MetadataType } from '@models/Protocol/Entity';
 import * as Scanner from '@services/Scanner';
+import { TriggerType } from '@models/Automate/Entity';
 
 export interface ContractRegisterParams {
-  address: string;
-  network: string;
-  event: string;
-  triggerId: string;
+  trigger: string;
 }
 
 export default async (process: Process) => {
-  const {
-    address,
-    network,
-    event: eventToSubscribe,
-    triggerId,
-  } = process.task.params as ContractRegisterParams;
+  const { trigger: triggerId } = process.task.params as ContractRegisterParams;
 
   const trigger = await container.model.automateTriggerTable().where('id', triggerId).first();
+  if (!trigger) {
+    throw new Error('trigger not found');
+  }
+
+  if (trigger.type !== TriggerType.ContractEvent) {
+    throw new Error('Invalid trigger type');
+  }
+
+  const { network, address, event: eventToSubscribe } = trigger.params;
   const servedAbi = await container.model
     .metadataTable()
     .where({
@@ -30,8 +32,8 @@ export default async (process: Process) => {
     })
     .first();
 
-  if (!servedAbi || !trigger) {
-    throw new Error('Abi or trigger not found');
+  if (!servedAbi) {
+    throw new Error('Abi not found');
   }
 
   try {
@@ -55,12 +57,7 @@ export default async (process: Process) => {
     await container.model.automateService().updateTrigger({
       ...trigger,
       params: {
-        ...{
-          ...trigger.params,
-          network,
-          address,
-          event: eventToSubscribe,
-        },
+        ...trigger.params,
         callback: callback.id,
       },
     });

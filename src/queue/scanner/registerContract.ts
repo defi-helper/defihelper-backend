@@ -40,7 +40,9 @@ export default async (process: Process) => {
       const servedAbi = await container.model
         .metadataTable()
         .where({
-          contract: contract.id,
+          blockchain: contract.blockchain,
+          network: contract.network,
+          address: contract.address,
           type: MetadataType.EthereumContractAbi,
         })
         .first();

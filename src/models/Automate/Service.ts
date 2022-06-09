@@ -39,10 +39,7 @@ export class AutomateService {
   public readonly onTriggerCreated = new Emitter<Trigger>(async (trigger) => {
     if (trigger.type === TriggerType.ContractEvent) {
       await container.model.queueService().push('followContractEvent', {
-        address: trigger.params.address,
-        network: trigger.params.network,
-        event: trigger.params.event,
-        triggerId: trigger.id,
+        trigger: trigger.id,
       });
     }
   });
