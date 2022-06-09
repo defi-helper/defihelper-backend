@@ -132,23 +132,29 @@ export class ContractService {
     contract: Contract & ContractBlockchainType;
     wallet: WalletBlockchain;
     link: WalletContractLink;
-  }>(({ contract, link }) => {
+  }>(({ contract, wallet, link }) => {
     if (
-      !(contract.blockchain === 'ethereum' && ['1', '56'].includes(contract.network)) ||
+      contract.blockchain !== 'ethereum' ||
+      !container.blockchain.ethereum.isNetwork(wallet.network) ||
       contract.deployBlockNumber === null ||
       contract.deployBlockNumber === '0'
     ) {
       return null;
     }
-
-    return Promise.all([
+    const { hasProvider, hasProviderHistorical } = container.blockchain.ethereum.byNetwork(
+      wallet.network,
+    );
+    if (hasProvider) {
       container.model
         .queueService()
-        .push('metricsWalletHistory', { contract: link.contract, wallet: link.wallet }),
+        .push('metricsWalletCurrent', { contract: link.contract, wallet: link.wallet });
+    }
+    if (hasProviderHistorical) {
       container.model
         .queueService()
-        .push('metricsWalletCurrent', { contract: link.contract, wallet: link.wallet }),
-    ]);
+        .push('metricsWalletHistory', { contract: link.contract, wallet: link.wallet });
+    }
+    return null;
   });
 
   constructor(

@@ -160,6 +160,13 @@ export default {
         consumers: array(process.env.AVALANCHE__TESTNET_CONSUMERS ?? '[]'),
         avgBlockTime: 1,
       },
+      harmony: {
+        node: array(process.env.AVALANCHE_NODE ?? '[]'),
+        historicalNode: array(process.env.AVALANCHE_NODE_HISTORICAL ?? '[]'),
+        inspectors: array(process.env.AVALANCHE_INSPECTORS ?? '[]'),
+        consumers: array(process.env.AVALANCHE_CONSUMERS ?? '[]'),
+        avgBlockTime: 2,
+      },
       local: {
         node: array(process.env.ETH_LOCAL_NODE ?? '[]'),
         historicalNode: array(process.env.ETH_LOCAL_NODE_HISTORICAL ?? '[]'),

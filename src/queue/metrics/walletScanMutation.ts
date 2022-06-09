@@ -20,11 +20,9 @@ export default async (process: Process) => {
     if (contract.blockchain !== 'ethereum') {
       return process.info('No ethereum').done();
     }
+    const provider = container.blockchain.ethereum.byNetwork(contract.network).provider();
     try {
-      await container.blockchain.ethereum
-        .byNetwork(contract.network)
-        .provider()
-        .waitForTransaction(txId, 1, 10000); // 10 seconds
+      await provider.waitForTransaction(txId, 1, 10000); // 10 seconds
     } catch (e) {
       if (e instanceof Error && e.message.startsWith('timeout exceeded')) {
         // Later call if timeout

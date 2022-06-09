@@ -2194,6 +2194,12 @@ export const ContractMetricsScanMutation: GraphQLFieldConfig<any, Request> = {
         .where(`${contractTableName}.id`, contractId)
         .first();
       if (!contract) throw new UserInputError('Contract not found');
+      if (!container.blockchain.ethereum.isNetwork(contract.network)) {
+        throw new UserInputError(`Undefined network "${contract.network}"`);
+      }
+      if (!container.blockchain.ethereum.byNetwork(contract.network).hasProvider) {
+        throw new UserInputError(`Invalid provider for network "${contract.network}"`);
+      }
 
       await container.model.queueService().push(
         'metricsContractCurrent',

@@ -20,8 +20,7 @@ export function paramsVerify(params: any): params is Params {
 }
 
 export default async (params: Params) => {
-  const network = container.blockchain.ethereum.byNetwork(params.network);
-  const provider = network.provider();
+  const provider = container.blockchain.ethereum.byNetwork(params.network).provider();
   const currentGasPrice = await provider.getGasPrice();
   const database = container.database();
 

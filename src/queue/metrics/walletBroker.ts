@@ -1,5 +1,9 @@
 import container from '@container';
-import { contractTableName, walletContractLinkTableName } from '@models/Protocol/Entity';
+import {
+  contractTableName,
+  contractBlockchainTableName,
+  walletContractLinkTableName,
+} from '@models/Protocol/Entity';
 import { Process } from '@models/Queue/Entity';
 import { walletTableName } from '@models/Wallet/Entity';
 
@@ -12,20 +16,25 @@ export default async (process: Process) => {
       `${contractTableName}.id`,
       `${walletContractLinkTableName}.contract`,
     )
+    .innerJoin(
+      contractBlockchainTableName,
+      `${contractTableName}.id`,
+      `${contractBlockchainTableName}.id`,
+    )
     .innerJoin(walletTableName, `${walletTableName}.id`, `${walletContractLinkTableName}.wallet`)
     .whereNull(`${walletTableName}.deletedAt`)
     .andWhere(`${contractTableName}.deprecated`, false);
   await Promise.all(
-    links.map(async (link) => {
-      queue.push(
+    links.map((link) => {
+      if (!container.blockchain.ethereum.byNetwork(link.network).hasProvider) return null;
+
+      return queue.push(
         'metricsWalletCurrent',
         {
           contract: link.contract,
           wallet: link.wallet,
         },
-        {
-          topic: 'metricCurrent',
-        },
+        { topic: 'metricCurrent' },
       );
     }),
   );
