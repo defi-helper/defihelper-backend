@@ -457,7 +457,15 @@ export function route({ express, server }: { express: Express; server: Server })
       return res.status(400).send('invalid network');
     }
 
-    container.model.metadataTable().where('type', MetadataType.EthereumContractAbi);
+    const existing = await container.model
+      .metadataTable()
+      .where('type', MetadataType.EthereumContractAbi)
+      .andWhere({ address, network, blockchain: 'ethereum' })
+      .first();
+
+    if (existing) {
+      return existing.value?.value ?? null;
+    }
 
     const foundNetwork = container.blockchain.ethereum.byNetwork(network);
     const response = await axios.get(
