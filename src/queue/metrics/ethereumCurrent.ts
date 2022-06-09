@@ -10,14 +10,9 @@ export default async (process: Process) => {
   const provider = container.blockchain.ethereum.byNetwork(network).provider();
   const gasPrice = await provider.getGasPrice();
 
-  await container.model.metricService().createBlockchain(
-    'ethereum',
-    network,
-    {
-      gasPrice: gasPrice.toString(),
-    },
-    new Date(),
-  );
+  await container.model
+    .metricService()
+    .createBlockchain('ethereum', network, { gasPrice: gasPrice.toString() }, new Date());
 
   return process.done();
 };

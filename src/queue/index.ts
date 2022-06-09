@@ -10,6 +10,7 @@ export * as metricsProtocolLinksListingBroker from './metrics/protocol/links/lis
 export * as metricsProtocolLinksListing from './metrics/protocol/links/listing';
 export * as metricsProtocolLinksPostBroker from './metrics/protocol/links/postBroker';
 export * as metricsProtocolLinksPost from './metrics/protocol/links/post';
+export * as metricsEthereumBroker from './metrics/ethereumBroker';
 export * as metricsEthereumCurrent from './metrics/ethereumCurrent';
 export * as metricsContractBroker from './metrics/contractBroker';
 export * as metricsContractScannerBroker from './metrics/contractScannerBroker';
