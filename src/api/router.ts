@@ -23,13 +23,19 @@ import * as monitoringSchemas from '@api/schema/monitoring';
 import * as landingSchemas from '@api/schema/landing';
 import Jimp from 'jimp';
 import { metricContractTableName } from '@models/Metric/Entity';
-import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
+import {
+  contractBlockchainTableName,
+  contractTableName,
+  MetadataType,
+} from '@models/Protocol/Entity';
 import { apyBoost } from '@services/RestakeStrategy';
 import BN from 'bignumber.js';
 import { Blockchain } from '@models/types';
 import { triggerTableName } from '@models/Automate/Entity';
 import { walletTableName } from '@models/Wallet/Entity';
 import { Token } from '@models/Token/Entity';
+
+import axios from 'axios';
 
 interface AprMetric {
   contract: string;
@@ -444,6 +450,33 @@ export function route({ express, server }: { express: Express; server: Server })
         {},
       ),
     );
+  });
+  express.route('/ethereum-abi/:network/:address').get(async (req, res) => {
+    const { address, network } = req.params;
+    if (!container.blockchain.ethereum.isNetwork(network)) {
+      return res.status(400).send('invalid network');
+    }
+
+    container.model.metadataTable().where('type', MetadataType.EthereumContractAbi);
+
+    const foundNetwork = container.blockchain.ethereum.byNetwork(network);
+    const response = await axios.get(
+      `${foundNetwork.etherscanApiURL}?module=contract&action=getabi&address=${address}`,
+    );
+
+    let abi = null;
+    try {
+      abi = JSON.parse(response.data?.result);
+      if (!Array.isArray(abi)) throw new Error();
+    } catch {
+      return null;
+    }
+
+    await container.model
+      .metadataService()
+      .createOrUpdate(MetadataType.EthereumContractAbi, abi, 'ethereum', address, network);
+
+    return abi;
   });
   express.get('/', (_, res) => res.status(200).send(''));
 }
