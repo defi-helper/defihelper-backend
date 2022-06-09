@@ -443,16 +443,17 @@ export class MetadataService {
   constructor(readonly metadataTable: Factory<MetadataTable>) {}
 
   async createOrUpdate(
-    contract: Contract,
     type: MetadataType,
     value: any,
-    blockchain: string | null = null,
-    network: string | null = null,
-    address: string | null = null,
+    blockchain: string,
+    network: string,
+    address: string,
   ) {
     const actualRow = await this.metadataTable()
       .where({
-        contract: contract.id,
+        blockchain,
+        network,
+        address,
         type,
       })
       .first();
@@ -461,7 +462,6 @@ export class MetadataService {
       const v = {
         id: uuid(),
         type,
-        contract: contract.id,
         value: { value },
         blockchain,
         network,
@@ -475,22 +475,18 @@ export class MetadataService {
 
     await this.metadataTable()
       .where({
-        contract: contract.id,
+        blockchain,
+        network,
+        address,
         type,
       })
       .update({
         ...actualRow,
-        blockchain,
-        network,
-        address,
         value: { value },
       });
 
     return {
       ...actualRow,
-      blockchain,
-      network,
-      address,
       value: { value },
     };
   }
