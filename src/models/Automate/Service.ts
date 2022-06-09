@@ -38,19 +38,11 @@ import {
 export class AutomateService {
   public readonly onTriggerCreated = new Emitter<Trigger>(async (trigger) => {
     if (trigger.type === TriggerType.ContractEvent) {
-      const callback = await this.scanner().registerCallback(
-        trigger.params.network,
-        trigger.params.address,
-        trigger.params.event,
-        `${container.parent.api.internalUrl}/callback/trigger/${trigger.id}?secret=${container.parent.api.secret}`,
-      );
-
-      await this.updateTrigger({
-        ...trigger,
-        params: {
-          ...trigger.params,
-          callback: callback.id,
-        },
+      await container.model.queueService().push('followContractEvent', {
+        address: trigger.params.address,
+        network: trigger.params.network,
+        event: trigger.params.event,
+        triggerId: trigger.id,
       });
     }
   });
