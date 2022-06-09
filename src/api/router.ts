@@ -472,12 +472,19 @@ export function route({ express, server }: { express: Express; server: Server })
       `${foundNetwork.etherscanApiURL}?module=contract&action=getabi&address=${address}`,
     );
 
-    let abi = null;
+    if (response.data?.result.includes('Max rate limit reached')) {
+      return res.status(404).send('ABI not found');
+    }
+
+    let abi;
     try {
       abi = JSON.parse(response.data?.result);
-      if (!Array.isArray(abi)) throw new Error();
-    } catch {
-      return null;
+      if (!Array.isArray(abi)) {
+        throw new Error(response.data?.result);
+      }
+    } catch (e) {
+      container.model.logService().create(`ethereum-abi:resolve:${network}:${address}`, String(e));
+      return res.status(404).send('ABI not found');
     }
 
     await container.model
