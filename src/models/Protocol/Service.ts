@@ -476,17 +476,11 @@ export class MetadataService {
       })
       .update({
         ...actualRow,
-        blockchain,
-        network,
-        address,
         value: { value },
       });
 
     return {
       ...actualRow,
-      blockchain,
-      network,
-      address,
       value: { value },
     };
   }

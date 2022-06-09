@@ -461,12 +461,16 @@ export function route({ express, server }: { express: Express; server: Server })
 
     const existing = await container.model
       .metadataTable()
-      .where('type', MetadataType.EthereumContractAbi)
-      .andWhere({ address, network, blockchain: 'ethereum' })
+      .where({
+        blockchain: 'ethereum',
+        network,
+        address,
+        type: MetadataType.EthereumContractAbi,
+      })
       .first();
 
     if (existing) {
-      return existing.value?.value ?? null;
+      return res.json(existing.value?.value ?? null);
     }
 
     const foundNetwork = container.blockchain.ethereum.byNetwork(network);
@@ -474,7 +478,10 @@ export function route({ express, server }: { express: Express; server: Server })
       `${foundNetwork.etherscanApiURL}?module=contract&action=getabi&address=${address}`,
     );
 
-    if (String(response.data?.result).includes('Max rate limit reached')) {
+    if (
+      response.data?.result === '0' &&
+      String(response.data?.result).includes('Max rate limit reached')
+    ) {
       return res.status(404).send('ABI not found');
     }
 
@@ -491,9 +498,9 @@ export function route({ express, server }: { express: Express; server: Server })
 
     await container.model
       .metadataService()
-      .createOrUpdate(MetadataType.EthereumContractAbi, abi, 'ethereum', address, network);
+      .createOrUpdate(MetadataType.EthereumContractAbi, abi, 'ethereum', network, address);
 
-    return abi;
+    return res.json(abi);
   });
   express.get('/', (_, res) => res.status(200).send(''));
 }
