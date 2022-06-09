@@ -43,8 +43,6 @@ export default async (process: Process) => {
       return process.later(dayjs().add(1, 'minutes').toDate());
     }
 
-    await container.scanner().registerListener(contractFromScanner.id, eventToSubscribe);
-
     const callback = await container
       .scanner()
       .registerCallback(
