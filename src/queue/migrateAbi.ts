@@ -30,7 +30,9 @@ export default async (process: Process) => {
         return await container.model
           .metadataTable()
           .where({
-            contract: contract.id,
+            blockchain: contract.blockchain,
+            network: contract.network,
+            address: contract.address,
           })
           .update({
             blockchain: contract.blockchain,
