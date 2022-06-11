@@ -14,7 +14,8 @@ export default async (process: Process) => {
     .andWhere(`${contractTableName}.deprecated`, false);
   await Promise.all(
     contracts.map((contract) => {
-      if (!container.blockchain.ethereum.byNetwork(contract.network).hasProvider) return null;
+      const network = container.blockchain[contract.blockchain].byNetwork(contract.network);
+      if (!network.hasProvider) return null;
 
       return queue.push(
         'metricsContractCurrent',
