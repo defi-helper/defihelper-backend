@@ -26,7 +26,8 @@ export default async (process: Process) => {
     .andWhere(`${contractTableName}.deprecated`, false);
   await Promise.all(
     links.map((link) => {
-      if (!container.blockchain.ethereum.byNetwork(link.network).hasProvider) return null;
+      const network = container.blockchain[link.blockchain].byNetwork(link.network);
+      if (!network.hasProvider) return null;
 
       return queue.push(
         'metricsWalletCurrent',
