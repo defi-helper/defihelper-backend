@@ -172,6 +172,9 @@ export const TokenListQuery: GraphQLFieldConfig<any, Request> = {
           tradable: {
             type: GraphQLBoolean,
           },
+          tokenAlias: {
+            type: UuidType,
+          },
           isPriceFeedNedded: {
             type: GraphQLBoolean,
           },
@@ -206,6 +209,9 @@ export const TokenListQuery: GraphQLFieldConfig<any, Request> = {
       }
       if (typeof filter.isPriceFeedNedded === 'boolean') {
         this.andWhere('priceFeedNeeded', filter.isPriceFeedNedded);
+      }
+      if (filter.tokenAlias !== undefined) {
+        this.andWhere('alias', filter.tokenAlias);
       }
       if (filter.search !== undefined && filter.search !== '') {
         this.andWhere('name', 'iLike', `%${filter.search}%`);
@@ -663,6 +669,9 @@ export const TokenAliasListQuery: GraphQLFieldConfig<any, Request> = {
           symbol: {
             type: GraphQLString,
           },
+          hasLogo: {
+            type: GraphQLBoolean,
+          },
           search: {
             type: GraphQLString,
           },
@@ -697,6 +706,9 @@ export const TokenAliasListQuery: GraphQLFieldConfig<any, Request> = {
       }
       if (filter.symbol !== undefined) {
         this.andWhere('symbol', filter.symbol);
+      }
+      if (filter.hasLogo !== undefined) {
+        this.andWhere(`logoUrl is ${filter.hasLogo ? 'not null' : 'null'}`);
       }
       if (filter.search !== undefined && filter.search !== '') {
         this.where(function () {
