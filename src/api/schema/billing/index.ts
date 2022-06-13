@@ -592,7 +592,7 @@ export const BalanceMetaQuery: GraphQLFieldConfig<any, Request> = {
       const provider = container.blockchain.ethereum.byNetwork(network);
       return {
         token: provider.nativeTokenDetails.symbol,
-        recomendedIncome: '1',
+        recomendedIncome: new BN(20).dividedBy(await provider.nativeTokenPrice()).toString(10),
         priceUSD: await provider.nativeTokenPrice(),
       };
     }
