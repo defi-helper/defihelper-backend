@@ -87,7 +87,7 @@ export default async (process: Process) => {
               tokenAsset.name,
               tokenAsset.symbol,
               TokenAliasLiquidity.Unstable,
-              tokenAsset.logo_url ?? null,
+              tokenAsset.logo_url || null,
             );
         }
 
