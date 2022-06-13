@@ -357,8 +357,8 @@ export class BlockchainContainer extends Container<Config> {
       nativeTokenPrice: coingeckoPriceFeedUSD('binancecoin'),
       nativeTokenDetails: {
         decimals: 18,
-        symbol: 'BSC',
-        name: 'Binance Smart Chain',
+        symbol: 'BNB',
+        name: 'BNB',
       },
       tokenPriceResolver: debankPriceFeed('56'),
       network: this.parent.bsc,
