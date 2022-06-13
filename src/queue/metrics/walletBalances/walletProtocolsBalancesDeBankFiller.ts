@@ -379,7 +379,7 @@ export default async (process: Process) => {
               token.name ?? '',
               token.symbol ?? '',
               TokenAliasLiquidity.Unstable,
-              token.logo_url || null,
+              token.logo_url ?? null,
             );
         }
 
@@ -475,7 +475,7 @@ export default async (process: Process) => {
               token.name ?? '',
               token.symbol ?? '',
               TokenAliasLiquidity.Unstable,
-              token.logo_url || null,
+              token.logo_url ?? null,
             );
         }
 

@@ -33,7 +33,7 @@ export default async (process: Process) => {
   await container.model.tokenAliasService().update({
     ...tokenAlias,
     liquidity: isLiquid ? TokenAliasLiquidity.Unstable : TokenAliasLiquidity.Trash,
-    logoUrl: token?.logo_url || null,
+    logoUrl: tokenAlias.logoUrl || (token?.logo_url ?? null),
   });
 
   return process.done();
