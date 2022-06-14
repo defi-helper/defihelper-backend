@@ -65,43 +65,43 @@ export default async (process: Process) => {
   pools.reduce<Promise<unknown>>(async (prev, pool) => {
     await prev;
 
-    const duplicate = existingPools.find(
+    let instance = existingPools.find(
       (p) =>
         p.address.toLowerCase() === pool.address.toLowerCase() &&
         p.network === pool.network &&
         p.blockchain === pool.blockchain &&
         p.adapter === pool.adapter,
     );
-    if (duplicate) {
-      return Promise.all([
-        container.model
-          .queueService()
-          .push('registerContractInScanner', { contract: duplicate.id, events }),
-        contractService.updateBlockchain({
-          ...duplicate,
-          automate: pool.automate,
-        }),
-      ]);
+    if (!instance) {
+      instance = await container.model
+        .contractService()
+        .createBlockchain(
+          protocol,
+          protocolBlockchain,
+          protocolNetwork,
+          pool.address.toLowerCase(),
+          null,
+          pool.adapter,
+          pool.layout,
+          pool.automate,
+          {},
+          pool.name,
+          pool.description,
+          pool.link,
+          true,
+          events,
+        );
     }
 
-    return container.model
-      .contractService()
-      .createBlockchain(
-        protocol,
-        protocolBlockchain,
-        protocolNetwork,
-        pool.address.toLowerCase(),
-        null,
-        pool.adapter,
-        pool.layout,
-        pool.automate,
-        {},
-        pool.name,
-        pool.description,
-        pool.link,
-        true,
-        events,
-      );
+    return Promise.all([
+      container.model
+        .queueService()
+        .push('registerContractInScanner', { contract: instance.id, events }),
+      contractService.updateBlockchain({
+        ...instance,
+        automate: pool.automate,
+      }),
+    ]);
   }, Promise.resolve(null));
 
   return process.done();
