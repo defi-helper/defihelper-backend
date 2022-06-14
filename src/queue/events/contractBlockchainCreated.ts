@@ -30,7 +30,7 @@ export default async (process: Process) => {
         collisionSign: `contractResolveDeployBlockNumber:${contract.id}`,
       },
     );
-    return process.later(dayjs().add(300, 'seconds').toDate());
+    return process.later(dayjs().add(5, 'minutes').toDate());
   }
 
   await container.model

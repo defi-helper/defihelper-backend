@@ -73,15 +73,10 @@ export default async (process: Process) => {
         p.adapter === pool.adapter,
     );
     if (duplicate) {
-      return Promise.all([
-        container.model
-          .queueService()
-          .push('registerContractInScanner', { contract: duplicate.id, events }),
-        contractService.updateBlockchain({
-          ...duplicate,
-          automate: pool.automate,
-        }),
-      ]);
+      return contractService.updateBlockchain({
+        ...duplicate,
+        automate: pool.automate,
+      });
     }
 
     return container.model
