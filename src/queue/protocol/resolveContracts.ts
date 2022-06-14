@@ -65,43 +65,38 @@ export default async (process: Process) => {
   pools.reduce<Promise<unknown>>(async (prev, pool) => {
     await prev;
 
-    let instance = existingPools.find(
+    const duplicate = existingPools.find(
       (p) =>
         p.address.toLowerCase() === pool.address.toLowerCase() &&
         p.network === pool.network &&
         p.blockchain === pool.blockchain &&
         p.adapter === pool.adapter,
     );
-    if (!instance) {
-      instance = await container.model
-        .contractService()
-        .createBlockchain(
-          protocol,
-          protocolBlockchain,
-          protocolNetwork,
-          pool.address.toLowerCase(),
-          null,
-          pool.adapter,
-          pool.layout,
-          pool.automate,
-          {},
-          pool.name,
-          pool.description,
-          pool.link,
-          true,
-          events,
-        );
+    if (duplicate) {
+      return contractService.updateBlockchain({
+        ...duplicate,
+        automate: pool.automate,
+      });
     }
 
-    return Promise.all([
-      container.model
-        .queueService()
-        .push('registerContractInScanner', { contract: instance.id, events }),
-      contractService.updateBlockchain({
-        ...instance,
-        automate: pool.automate,
-      }),
-    ]);
+    return container.model
+      .contractService()
+      .createBlockchain(
+        protocol,
+        protocolBlockchain,
+        protocolNetwork,
+        pool.address.toLowerCase(),
+        null,
+        pool.adapter,
+        pool.layout,
+        pool.automate,
+        {},
+        pool.name,
+        pool.description,
+        pool.link,
+        true,
+        events,
+      );
   }, Promise.resolve(null));
 
   return process.done();
