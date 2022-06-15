@@ -1,8 +1,11 @@
 import * as Mustache from 'mustache';
-import TelegramBot from 'node-telegram-bot-api';
 import container from '@container';
 import { Factory } from '@services/Container';
 import { ContactStatus } from '@models/Notification/Entity';
+import { Telegraf } from 'telegraf';
+import { Locale } from '@services/I18n/container';
+import { utils } from 'ethers';
+import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 import { Templates } from './templates';
 
 export type TelegramTemplate = keyof typeof Templates;
@@ -10,7 +13,7 @@ export type TelegramTemplate = keyof typeof Templates;
 export interface ITelegramService {
   startHandler(): void;
 
-  send(template: TelegramTemplate, data: Object, chatId: number): Promise<void>;
+  send(template: TelegramTemplate, chatId: number, data: Object, locale: Locale): Promise<void>;
 }
 
 class NullService implements ITelegramService {
@@ -22,62 +25,83 @@ class NullService implements ITelegramService {
 }
 
 export class TelegramService implements ITelegramService {
-  protected bot: TelegramBot;
+  protected bot: Telegraf;
 
   constructor(token: string) {
-    this.bot = new TelegramBot(token);
+    this.bot = new Telegraf(token);
   }
 
   startHandler() {
-    this.bot.startPolling({ polling: true });
-    this.bot.on('error', async (error) => {
-      container.logger().error(`Error in TG. Message: Error: ${error.message}`);
+    this.bot.launch();
+
+    this.bot.start(async ({ message }) => {
+      const confirmationCode = message.text.replace('/start ', '');
+      const userContact = await container.model
+        .userContactTable()
+        .where('confirmationCode', confirmationCode)
+        .first();
+
+      if (userContact && userContact.status !== ContactStatus.Active) {
+        await container.model
+          .userContactService()
+          .activate(userContact, message.from?.username || '', {
+            chatId: message.chat.id.toString(),
+          });
+        const user = await container.model.userTable().where('id', userContact.user).first();
+        return this.send('welcomeTemplate', message.chat.id, {}, user?.locale || 'enUS');
+      }
+
+      return this.send('walletConnectWelcome', message.chat.id, {}, 'enUS');
     });
 
-    this.bot.on('message', async (message) => {
-      try {
-        if (message.text && message.text.indexOf('/start') > -1) {
-          const confirmationCode = message.text.replace('/start ', '');
-          const userContact = await container.model
-            .userContactTable()
-            .where('confirmationCode', confirmationCode)
-            .first();
-          if (!userContact || userContact.status === ContactStatus.Active) {
-            await this.bot.sendMessage(
-              message.chat.id,
-              'Please use https://defihelper.io to register',
-            );
-            return;
-          }
-
-          await container.model
-            .userContactService()
-            .activate(userContact, message.from?.username || '', {
-              chatId: message.chat.id.toString(),
-            });
-          const user = await container.model.userTable().where('id', userContact.user).first();
-
-          await container.model.queueService().push('sendTelegram', {
-            chatId: message.chat.id,
-            template: 'welcomeTemplate',
-            params: {},
-            locale: user?.locale || 'enUS',
-          });
-        }
-      } catch (error) {
-        container
-          .logger()
-          .error(`Error handling TG message. Message: ${JSON.stringify(message)}, error: ${error}`);
+    this.bot.on('text', async (ctx) => {
+      if (!utils.isAddress(ctx.message.text)) {
+        return ctx.reply(
+          'Right now, I understand only Ethereum addresses(ex. 0xc1912fee45d61c87cc5ea59dae31190fffff232d) :(',
+        );
       }
+
+      const inputAddress = ctx.message.text.toLowerCase();
+      const foundWallet = await container.model
+        .walletTable()
+        .innerJoin(
+          walletBlockchainTableName,
+          `${walletBlockchainTableName}.id`,
+          `${walletTableName}.id`,
+        )
+        .where(`${walletBlockchainTableName}.address`, inputAddress)
+        .first();
+
+      if (!foundWallet) {
+        return ctx.reply("Unfortunately, I don't found any wallets with address like your's one");
+      }
+
+      return ctx.reply(
+        'I sent you a confirmation letter to fjdk****da@gmail.com, please head the link inside to prove connection',
+      );
+
+      return ctx.reply('adsasdsd');
     });
   }
 
-  async send(template: TelegramTemplate, data: Object, chatId: number): Promise<void> {
-    const message = Mustache.render(await Templates[template], data);
-
-    await this.bot.sendMessage(chatId, message, {
-      parse_mode: 'HTML',
+  async send(
+    template: TelegramTemplate,
+    chatId: number,
+    data: Object = {},
+    locale: Locale = 'enUS',
+  ): Promise<void> {
+    const message = Mustache.render(await Templates[template], {
+      data,
+      ...container.template.i18n(container.i18n.byLocale(locale)),
     });
+
+    try {
+      await this.bot.telegram.sendMessage(chatId, message, {
+        parse_mode: 'HTML',
+      });
+    } catch {
+      console.error('unable to reply');
+    }
   }
 }
 

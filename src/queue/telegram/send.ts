@@ -17,14 +17,6 @@ export default async (process: Process) => {
     throw new Error(`Incorrect chatId ${chatId}`);
   }
 
-  await container.telegram().send(
-    template,
-    {
-      ...container.template.i18n(container.i18n.byLocale(locale)),
-      ...params,
-    },
-    chatId,
-  );
-
+  await container.telegram().send(template, chatId, params, locale);
   return process.done();
 };
