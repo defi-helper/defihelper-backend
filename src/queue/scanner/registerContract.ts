@@ -51,10 +51,12 @@ export default async (process: Process) => {
         await container.model.queueService().push('contractResolveAbi', {
           id: contract.id,
         });
-        return process.later(dayjs().add(5, 'minutes').toDate());
+        return process
+          .later(dayjs().add(5, 'minutes').toDate())
+          .info('postponed due to abi resolving');
       }
       if (servedAbi.value.value === null) {
-        return process.done();
+        return process.done().info(`served abi contains wrong payload: ${servedAbi.id}`);
       }
 
       await container
@@ -68,7 +70,9 @@ export default async (process: Process) => {
           contract.id,
         );
 
-      return process.later(dayjs().add(1, 'minutes').toDate());
+      return process
+        .later(dayjs().add(1, 'minutes').toDate())
+        .info('postponed due to awaiting registering contract');
     }
 
     if (eventsToSubscribe && eventsToSubscribe.length === 0) {
