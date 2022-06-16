@@ -1,6 +1,5 @@
 import container from '@container';
 import { Process, Task } from '@models/Queue/Entity';
-import dayjs from 'dayjs';
 import {
   walletBlockchainTableName,
   walletTableName,
@@ -30,7 +29,7 @@ export default async (process: Process) => {
     .andWhere(`${walletBlockchainTableName}.blockchain`, 'ethereum')
     .whereNull(`${walletTableName}.deletedAt`);
 
-  const tasks = await wallets.reduce<Promise<Task[]>>(async (addedTasksPromise, wallet) => {
+  await wallets.reduce<Promise<Task[]>>(async (addedTasksPromise, wallet) => {
     const addedTasks = await addedTasksPromise;
     if (container.blockchain.ethereum.byNetwork(wallet.network).testnet) return addedTasks;
 
@@ -41,16 +40,6 @@ export default async (process: Process) => {
       }),
     ];
   }, Promise.resolve([]));
-  await queue.push(
-    'notificationPortfolioMetricsNotify',
-    {
-      userId: user.id,
-      wait: tasks.map(({ id }) => id),
-    },
-    {
-      startAt: dayjs().add(5, 'minutes').toDate(),
-    },
-  );
 
   return process.done();
 };
