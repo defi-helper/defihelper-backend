@@ -45,7 +45,7 @@ ingress:
         - backend.defihelper.io
 
 broker:
-  maxReplicas: 5
+  maxReplicas: 10
   maxReadyMessagesForHpa: 100
   process:
     labels:
