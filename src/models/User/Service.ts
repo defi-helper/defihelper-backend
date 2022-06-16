@@ -23,6 +23,7 @@ export class UserService {
       locale,
       referrer: codeRecord?.id ?? null,
       isPorfolioCollected: false,
+      timezone: 'Europe/Moscow',
       createdAt: new Date(),
       updatedAt: new Date(),
     };

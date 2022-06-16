@@ -1,7 +1,6 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import { ProductCode } from '@models/Store/Entity';
-import { UserNotificationType } from '@models/UserNotification/Entity';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 
 export interface Params {
@@ -48,11 +47,12 @@ export default async (process: Process) => {
   }
 
   // Enable all notifications
-  await Promise.all(
-    Object.values(UserNotificationType).map((t) =>
-      container.model.userNotificationService().enable(user, t as UserNotificationType),
-    ),
-  );
+  // fixme enable later
+  // await Promise.all(
+  //   Object.values(UserNotificationType).map((t) =>
+  //     container.model.userNotificationService().enable(user, t as UserNotificationType),
+  //   ),
+  // );
 
   return process.done();
 };
