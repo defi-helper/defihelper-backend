@@ -482,6 +482,13 @@ export function route({ express, server }: { express: Express; server: Server })
       response.data?.result === '0' &&
       String(response.data?.result).includes('Max rate limit reached')
     ) {
+      return res.status(503).send('Try next time');
+    }
+
+    if (
+      response.data?.result === '0' &&
+      String(response.data?.result).includes('Contract source code not verified')
+    ) {
       return res.status(404).send('ABI not found');
     }
 
