@@ -134,14 +134,18 @@ export class ScannerService {
     fid?: string,
   ): Promise<Contract> {
     const contract = await this.client
-      .post<Contract>(`/api/contract`, {
-        name: name ?? address.toLowerCase(),
-        network,
-        address: address.toLowerCase(),
-        startHeight: startHeight || (await this.currentBlock(network)) - 10,
-        abi: JSON.stringify(abi),
-        fid: fid ?? '',
-      })
+      .post<Contract>(
+        `/api/contract`,
+        {
+          name: name ?? address.toLowerCase(),
+          network,
+          address: address.toLowerCase(),
+          startHeight: startHeight || (await this.currentBlock(network)) - 10,
+          abi: JSON.stringify(abi),
+          fid: fid ?? '',
+        },
+        { timeout: 15 },
+      )
       .catch((e) => {
         if (e.response?.code === 503) throw new TemporaryOutOfService();
         throw new Error(`Undefined error in scanner: ${e.message}`);
