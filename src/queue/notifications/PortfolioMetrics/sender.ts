@@ -3,6 +3,7 @@ import container from '@container';
 import { DataLoaderContainer } from '@api/dataLoader/container';
 import BN from 'bignumber.js';
 import { TokenAliasLiquidity } from '@models/Token/Entity';
+import { ContactStatus } from '@models/Notification/Entity';
 
 interface Params {
   notificationId: string;
@@ -24,6 +25,7 @@ export default async (process: Process) => {
     .userContactTable()
     .where({
       id: notificationSetting.contact,
+      status: ContactStatus.Active,
     })
     .first();
 
