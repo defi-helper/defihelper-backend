@@ -6,10 +6,7 @@ import {
   NotificationStatus,
   notificationTableName,
   NotificationType,
-  userEventSubscriptionTableName,
-  contractEventWebHookTableName,
 } from '@models/Notification/Entity';
-import { contractTableName } from '@models/Protocol/Entity';
 
 export default async (schema: SchemaBuilder) => {
   return schema
@@ -57,37 +54,6 @@ export default async (schema: SchemaBuilder) => {
       table.dateTime('processedAt').nullable();
 
       table.primary(['id'], `${notificationTableName}_pkey`);
-      table
-        .foreign('contact')
-        .references(`${userContactTableName}.id`)
-        .onUpdate('CASCADE')
-        .onDelete('CASCADE');
-    })
-    .createTable(contractEventWebHookTableName, (table) => {
-      table.string('id', 36).notNullable();
-      table.string('contract', 36).notNullable().index();
-      table.string('event', 256).notNullable();
-      table.dateTime('createdAt').notNullable();
-
-      table.primary(['id'], `${contractEventWebHookTableName}_pkey`);
-      table
-        .foreign('contract')
-        .references(`${contractTableName}.id`)
-        .onUpdate('CASCADE')
-        .onDelete('CASCADE');
-    })
-    .createTable(userEventSubscriptionTableName, (table) => {
-      table.string('id', 36).notNullable();
-      table.string('webHook', 36).notNullable().index();
-      table.string('contact', 36).notNullable().index();
-      table.dateTime('createdAt').notNullable();
-
-      table.primary(['id'], `${userEventSubscriptionTableName}_pkey`);
-      table
-        .foreign('webHook')
-        .references(`${contractEventWebHookTableName}.id`)
-        .onUpdate('CASCADE')
-        .onDelete('CASCADE');
       table
         .foreign('contact')
         .references(`${userContactTableName}.id`)

@@ -29,12 +29,14 @@ export default async (process: Process) => {
   if (!contract) {
     throw new Error('Contract is not found');
   }
+  const { deployBlockNumber } = contract;
+  if (deployBlockNumber === null) {
+    throw new Error('Contract deploy block number is not resolved');
+  }
 
-  const deployBlockNumber =
-    contract.deployBlockNumber === null ? undefined : parseInt(contract.deployBlockNumber, 10);
-
+  const scanner = container.scanner();
   try {
-    const contractFromScanner = await container.scanner().getContractByFid(contract.id);
+    const contractFromScanner = await scanner.getContractByFid(contract.id);
 
     if (!contractFromScanner) {
       const servedAbi = await container.model
@@ -59,16 +61,14 @@ export default async (process: Process) => {
         return process.done().info(`served abi contains wrong payload: ${servedAbi.id}`);
       }
 
-      await container
-        .scanner()
-        .registerContract(
-          contract.network,
-          contract.address,
-          servedAbi.value.value,
-          contract.name,
-          deployBlockNumber,
-          contract.id,
-        );
+      await scanner.registerContract(
+        contract.network,
+        contract.address,
+        servedAbi.value.value,
+        contract.name,
+        deployBlockNumber,
+        contract.id,
+      );
 
       return process
         .later(dayjs().add(1, 'minutes').toDate())
@@ -86,14 +86,7 @@ export default async (process: Process) => {
       )
       .map(({ name }: any) => name);
 
-    await Promise.all(
-      events.map((event) =>
-        Promise.all([
-          container.scanner().registerListener(contractFromScanner.id, event, deployBlockNumber),
-          container.model.contractEventWebHookService().create(contract, event),
-        ]),
-      ),
-    );
+    await Promise.all(events.map((event) => scanner.registerListener(contractFromScanner, event)));
   } catch (e) {
     if (e instanceof Scanner.TemporaryOutOfService) {
       return process

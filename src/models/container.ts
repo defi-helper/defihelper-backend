@@ -207,29 +207,12 @@ export class ModelContainer extends Container<typeof AppContainer> {
     this.parent.database,
   );
 
-  readonly userEventSubscriptionTable =
-    Models.Notification.Entity.userEventSubscriptionTableFactory(this.parent.database);
-
-  readonly contractEventWebHookTable = Models.Notification.Entity.contractEventWebHookTableFactory(
-    this.parent.database,
-  );
-
   readonly notificationService = singleton(
     () => new Models.Notification.Service.NotificationService(this.notificationTable),
   );
 
   readonly userContactService = singleton(
     () => new Models.Notification.Service.UserContactService(this.userContactTable),
-  );
-
-  readonly userEventSubscriptionService = singleton(
-    () =>
-      new Models.Notification.Service.UserEventSubscriptionService(this.userEventSubscriptionTable),
-  );
-
-  readonly contractEventWebHookService = singleton(
-    () =>
-      new Models.Notification.Service.ContractEventWebHookService(this.contractEventWebHookTable),
   );
 
   readonly billingBillTable = Models.Billing.Entity.billTableFactory(this.parent.database);
@@ -246,12 +229,7 @@ export class ModelContainer extends Container<typeof AppContainer> {
   readonly storePurchaseTable = Models.Store.Entity.purchaseTableFactory(this.parent.database);
 
   readonly storeService = singleton(
-    () =>
-      new Models.Store.Service.StoreService(
-        this.storeProductTable,
-        this.storePurchaseTable,
-        this.notificationTable,
-      ),
+    () => new Models.Store.Service.StoreService(this.storeProductTable, this.storePurchaseTable),
   );
 
   readonly metadataTable = Models.Protocol.Entity.metadataTableFactory(this.parent.database);
@@ -299,7 +277,6 @@ export class ModelContainer extends Container<typeof AppContainer> {
         this.automateContractTable,
         this.automateTransactionTable,
         this.walletTable,
-        this.parent.scanner,
       ),
   );
 }
