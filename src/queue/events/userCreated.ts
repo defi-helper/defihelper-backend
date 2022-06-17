@@ -52,7 +52,9 @@ export default async (process: Process) => {
     contacts.map((contact) =>
       Promise.all(
         Object.values(UserNotificationType).map((t) =>
-          container.model.userNotificationService().enable(contact, t as UserNotificationType),
+          container.model
+            .userNotificationService()
+            .enable(contact, t as UserNotificationType, '12:00'),
         ),
       ),
     ),

@@ -16,14 +16,14 @@ export class UserService {
 
   constructor(readonly table: Factory<UserTable>) {}
 
-  async create(role: Role, codeRecord?: ReferrerCode, locale: Locale = 'enUS') {
+  async create(role: Role, timezone: string, codeRecord?: ReferrerCode, locale: Locale = 'enUS') {
     const created = {
       id: uuid(),
       role,
       locale,
       referrer: codeRecord?.id ?? null,
       isPorfolioCollected: false,
-      timezone: 'Europe/Moscow',
+      timezone,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

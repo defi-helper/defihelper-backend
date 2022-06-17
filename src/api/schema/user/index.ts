@@ -44,6 +44,7 @@ import {
   contractTableName,
   contractTableName as protocolContractTableName,
 } from '@models/Protocol/Entity';
+import dayjs from 'dayjs';
 import { ContractType } from '../protocol';
 import {
   BlockchainEnum,
@@ -1801,6 +1802,10 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
               type: GraphQLString,
               description: 'Code',
             },
+            timezone: {
+              type: GraphQLNonNull(GraphQLString),
+              description: 'Timezone',
+            },
             merge: {
               type: GraphQLBoolean,
               description: 'Merged target account to current account',
@@ -1867,7 +1872,15 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
       codeRecord = await container.model.referrerCodeTable().where({ id: code }).first();
     }
 
-    const user = currentUser ?? (await container.model.userService().create(Role.User, codeRecord));
+    try {
+      dayjs().tz(input.timezone).isValid();
+    } catch {
+      throw new UserInputError('Wrong timezone');
+    }
+
+    const user =
+      currentUser ??
+      (await container.model.userService().create(Role.User, input.timezone, codeRecord));
     await container.model
       .walletService()
       .createBlockchainWallet(
@@ -1916,6 +1929,10 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
             code: {
               type: GraphQLString,
               description: 'Promo id',
+            },
+            timezone: {
+              type: GraphQLNonNull(GraphQLString),
+              description: 'Timezone',
             },
             merge: {
               type: GraphQLBoolean,
@@ -1991,7 +2008,16 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
         })
         .first();
     }
-    const user = currentUser ?? (await container.model.userService().create(Role.User, codeRecord));
+
+    try {
+      dayjs().tz(input.timezone).isValid();
+    } catch {
+      throw new UserInputError('Wrong timezone');
+    }
+
+    const user =
+      currentUser ??
+      (await container.model.userService().create(Role.User, input.timezone, codeRecord));
     await container.model
       .walletService()
       .createBlockchainWallet(

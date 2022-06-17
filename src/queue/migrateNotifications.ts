@@ -14,8 +14,8 @@ export default async (process: Process) => {
       if (!contact) return null;
 
       return container.model.userNotificationTable().where('id', notification.id).update({
-        user: null,
         contact: contact.id,
+        user: null,
       });
     }),
   );

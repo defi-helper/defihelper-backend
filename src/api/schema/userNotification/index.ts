@@ -2,6 +2,7 @@ import {
   GraphQLBoolean,
   GraphQLEnumType,
   GraphQLFieldConfig,
+  GraphQLInt,
   GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
@@ -71,8 +72,11 @@ export const UserNotificationToggleMutation: GraphQLFieldConfig<any, Request> = 
     state: {
       type: GraphQLNonNull(GraphQLBoolean),
     },
+    hour: {
+      type: GraphQLNonNull(GraphQLInt),
+    },
   },
-  resolve: async (_, { contact: contactId, type, state }, { currentUser }) => {
+  resolve: async (_, { contact: contactId, type, state, hour }, { currentUser }) => {
     if (!currentUser) {
       throw new AuthenticationError('UNAUTHENTICATED');
     }
@@ -82,8 +86,12 @@ export const UserNotificationToggleMutation: GraphQLFieldConfig<any, Request> = 
       throw new UserInputError('Contact not found');
     }
 
+    if (hour > 23 || hour < 0) {
+      throw new UserInputError('Wrong hour');
+    }
+
     if (state) {
-      await container.model.userNotificationService().enable(contact, type);
+      await container.model.userNotificationService().enable(contact, type, `${hour}:00`);
       return true;
     }
 
