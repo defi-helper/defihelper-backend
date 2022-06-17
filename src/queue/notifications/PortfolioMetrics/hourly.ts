@@ -3,7 +3,6 @@ import container from '@container';
 import { ContactBroker, ContactStatus, userContactTableName } from '@models/Notification/Entity';
 import { tableName as userTableName, User } from '@models/User/Entity';
 import { userNotificationTableName, UserNotification } from '@models/UserNotification/Entity';
-import dayjs from 'dayjs';
 
 export default async (process: Process) => {
   const notifications = (await container.model
@@ -23,18 +22,11 @@ export default async (process: Process) => {
     )) as (UserNotification & User)[];
 
   await Promise.all(
-    notifications.map((notification) => {
-      const [userPrefferredHour] = notification.time.split(':');
-      const currentHourInUserPrefferedTimezone = dayjs().tz(notification.timezone).get('hour');
-
-      if (Number(userPrefferredHour) !== currentHourInUserPrefferedTimezone) {
-        return null;
-      }
-
-      return container.model.queueService().push('notificationPortfolioMetricsNotify', {
+    notifications.map((notification) =>
+      container.model.queueService().push('notificationPortfolioMetricsNotify', {
         notificationId: notification.id,
-      });
-    }),
+      }),
+    ),
   );
 
   return process.done();

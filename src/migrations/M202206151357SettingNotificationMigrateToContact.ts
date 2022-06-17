@@ -19,6 +19,5 @@ export default async (schema: SchemaBuilder) => {
         .onDelete('CASCADE');
 
       table.dropUnique(['user', 'type'], `${userNotificationTableName}_uniqkey`);
-      table.unique(['contact', 'type'], `${userNotificationTableName}_contact_uniqkey`);
     });
 };

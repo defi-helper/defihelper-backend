@@ -81,13 +81,13 @@ export const UserNotificationToggleMutation: GraphQLFieldConfig<any, Request> = 
       throw new AuthenticationError('UNAUTHENTICATED');
     }
 
+    if (hour > 23 || hour < 0) {
+      throw new UserInputError('Wrong hour');
+    }
+
     const contact = await container.model.userContactTable().where({ id: contactId }).first();
     if (!contact || contact.user !== currentUser.id) {
       throw new UserInputError('Contact not found');
-    }
-
-    if (hour > 23 || hour < 0) {
-      throw new UserInputError('Wrong hour');
     }
 
     if (state) {

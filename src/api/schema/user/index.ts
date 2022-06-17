@@ -1826,6 +1826,11 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
     if (!container.blockchain.ethereum.isNetwork(network)) {
       throw new UserInputError('Network unsupported');
     }
+    try {
+      dayjs().tz(input.timezone);
+    } catch {
+      throw new UserInputError('Wrong timezone');
+    }
 
     const hash = utils.hashMessage(message);
     const hashBytes = utils.arrayify(hash);
@@ -1870,12 +1875,6 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
     let codeRecord;
     if (code) {
       codeRecord = await container.model.referrerCodeTable().where({ id: code }).first();
-    }
-
-    try {
-      dayjs().tz(input.timezone).isValid();
-    } catch {
-      throw new UserInputError('Wrong timezone');
     }
 
     const user =
@@ -1951,6 +1950,11 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
 
     const { network, address, message, publicKey, signature, merge, code } = input;
     if (typeof message !== 'string' || message.length < 5) return null;
+    try {
+      dayjs().tz(input.timezone);
+    } catch {
+      throw new UserInputError('Wrong timezone');
+    }
 
     const isValidSignature = WavesCrypto.verifySignature(
       publicKey,
@@ -2007,12 +2011,6 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
           id: code.id,
         })
         .first();
-    }
-
-    try {
-      dayjs().tz(input.timezone).isValid();
-    } catch {
-      throw new UserInputError('Wrong timezone');
     }
 
     const user =
