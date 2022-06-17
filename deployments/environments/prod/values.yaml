@@ -56,7 +56,7 @@ broker:
     queues:
       queue:
         name: queue
-        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue-consume -- -q tasks_default"'
+        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue:consume -- -q tasks_default"'
         replicas: 1
         resources:
           requests:
@@ -74,7 +74,7 @@ broker:
             effect: NoSchedule
       events-trigger:
         name: events-trigger
-        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run trigger-event"'
+        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run trigger:event"'
         replicas: 1
         resources:
           requests:
@@ -92,7 +92,7 @@ broker:
             effect: NoSchedule
       metrics:
         name: metrics
-        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue-consume -- -q tasks_metricCurrent"'
+        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue:consume -- -q tasks_metricCurrent"'
         replicas: 1
         resources:
           requests:
@@ -110,7 +110,7 @@ broker:
             effect: NoSchedule
       history:
         name: history
-        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue-consume -- -q tasks_metricHistory"'
+        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue:consume -- -q tasks_metricHistory"'
         replicas: 1
         resources:
           requests:
@@ -149,7 +149,7 @@ handlers:
       cpu: 100m
   schedules:
     queue-deferred:
-      command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue-deferred"'
+      command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue:deferred"'
       schedule: "* * * * *"
     minute10:
       command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run schedule -- --period minute10"'
