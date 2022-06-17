@@ -72,13 +72,11 @@ export class TelegramService implements ITelegramService {
         .where(`${walletBlockchainTableName}.address`, inputAddress)
         .first();
 
-      if (!foundWallet) {
-        return ctx.reply("Unfortunately, I don't found any wallets with address like your's one");
+      if (foundWallet) {
+        return ctx.reply(
+          'You already have an account, please login at https://app.defihelper.io :sowwy:',
+        );
       }
-
-      return ctx.reply(
-        'I sent you a confirmation letter to fjdk****da@gmail.com, please head the link inside to prove connection',
-      );
 
       return ctx.reply('adsasdsd');
     });
