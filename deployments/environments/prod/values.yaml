@@ -72,6 +72,24 @@ broker:
             operator: "Equal"
             value: "true"
             effect: NoSchedule
+      events-trigger:
+        name: events-trigger
+        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run trigger-event"'
+        replicas: 1
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 100m
+          limits:
+            memory: 256Mi
+            cpu: 500m
+        nodeSelector:
+          group_name: "apps-jobs"
+        tolerations:
+          - key: node-role.kubernetes.io/apps-jobs
+            operator: "Equal"
+            value: "true"
+            effect: NoSchedule
       metrics:
         name: metrics
         command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue-consume -- -q tasks_metricCurrent"'
