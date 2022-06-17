@@ -1,14 +1,11 @@
 import { Factory } from '@services/Container';
 import { v4 as uuid } from 'uuid';
 import { User } from '@models/User/Entity';
-import { Contract, ContractBlockchainType } from '@models/Protocol/Entity';
 import container from '@container';
 import { Emitter } from '@services/Event';
 import {
   ContactBroker,
   ContactStatus,
-  ContractEventWebHook,
-  ContractEventWebHookTable,
   Notification,
   NotificationPayloadType,
   NotificationStatus,
@@ -16,8 +13,6 @@ import {
   UserContact,
   UserContactParams,
   UserContactTable,
-  UserEventSubscription,
-  UserEventSubscriptionTable,
 } from './Entity';
 
 export class NotificationService {
@@ -158,93 +153,5 @@ export class UserContactService {
         id: contact.id,
       })
       .delete();
-  }
-}
-
-export class UserEventSubscriptionService {
-  constructor(readonly table: Factory<UserEventSubscriptionTable>) {}
-
-  async create(
-    contact: UserContact,
-    webHook: ContractEventWebHook,
-  ): Promise<UserEventSubscription> {
-    const duplicate = await this.table()
-      .where({
-        contact: contact.id,
-        webHook: webHook.id,
-      })
-      .first();
-
-    if (duplicate) {
-      return duplicate;
-    }
-
-    const created: UserEventSubscription = {
-      id: uuid(),
-      contact: contact.id,
-      webHook: webHook.id,
-      createdAt: new Date(),
-    };
-
-    await this.table().insert(created);
-
-    return created;
-  }
-
-  async delete(subscription: UserEventSubscription): Promise<void> {
-    await this.table()
-      .where({
-        id: subscription.id,
-      })
-      .delete();
-  }
-}
-
-interface ContractEventWebHookInfo {
-  network: string;
-  address: string;
-  event: string;
-  webHookId: string;
-}
-
-export class ContractEventWebHookService {
-  constructor(readonly table: Factory<ContractEventWebHookTable>) {}
-
-  public readonly onCreated = new Emitter<ContractEventWebHookInfo>(async (webHookInfo) => {
-    await container.model.queueService().push('subscribeToEventFromScanner', webHookInfo);
-  });
-
-  async create(
-    contract: Contract & ContractBlockchainType,
-    event: string,
-  ): Promise<ContractEventWebHook> {
-    const duplicate = await this.table()
-      .where({
-        contract: contract.id,
-        event,
-      })
-      .first();
-
-    if (duplicate) {
-      return duplicate;
-    }
-
-    const created: ContractEventWebHook = {
-      id: uuid(),
-      contract: contract.id,
-      event,
-      createdAt: new Date(),
-    };
-
-    await this.table().insert(created);
-
-    this.onCreated.emit({
-      network: contract.network,
-      address: contract.address,
-      event,
-      webHookId: created.id,
-    });
-
-    return created;
   }
 }

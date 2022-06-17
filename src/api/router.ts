@@ -71,8 +71,6 @@ export function route({ express, server }: { express: Express; server: Server })
           userContact: notificationSchemas.UserContactQuery,
           userContacts: notificationSchemas.UserContactListQuery,
           userNotifications: userNotificationSchemas.UserNotificationListQuery,
-          userEventSubscription: notificationSchemas.UserEventSubscriptionQuery,
-          userEventSubscriptions: notificationSchemas.UserEventSubscriptionListQuery,
           tokens: tokenSchemas.TokenListQuery,
           tokenAlias: tokenSchemas.TokenAliasQuery,
           tokensAlias: tokenSchemas.TokenAliasListQuery,
@@ -145,8 +143,6 @@ export function route({ express, server }: { express: Express; server: Server })
           userContactUpdate: notificationSchemas.UserContactUpdateMutation,
           userContactEmailConfirm: notificationSchemas.UserContactEmailConfirmMutation,
           userContactDelete: notificationSchemas.UserContactDeleteMutation,
-          userEventSubscriptionCreate: notificationSchemas.UserEventSubscriptionCreateMutation,
-          userEventSubscriptionDelete: notificationSchemas.UserEventSubscriptionDeleteMutation,
           productCreate: storeSchemas.ProductCreateMutation,
           productUpdate: storeSchemas.ProductUpdateMutation,
           productDelete: storeSchemas.ProductDeleteMutation,
@@ -229,33 +225,6 @@ export function route({ express, server }: { express: Express; server: Server })
         domain: 'defihelper.io',
       })
       .redirect(codeRecord.redirectTo);
-  });
-  express.route('/callback/event/:webHookId').post(json({ limit: '512kb' }), async (req, res) => {
-    const { secret } = req.query;
-    if (secret !== container.parent.api.secret) {
-      res.sendStatus(403);
-      return;
-    }
-
-    const webHook = await container.model
-      .contractEventWebHookTable()
-      .where('id', req.params.webHookId)
-      .first();
-
-    if (!webHook) {
-      res.sendStatus(404);
-      return;
-    }
-
-    const eventQueueParam = {
-      eventName: req.body.eventName,
-      events: req.body.events,
-      webHookId: req.params.webHookId,
-    };
-
-    await container.model.queueService().push('sendEventsNotifications', eventQueueParam);
-
-    res.sendStatus(200);
   });
   express.route('/callback/trigger/:triggerId').post(json(), async (req, res) => {
     const { secret } = req.query;
