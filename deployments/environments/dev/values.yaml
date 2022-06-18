@@ -9,7 +9,7 @@ images:
     name: nginx
     resources:
       requests:
-        memory: 128Mi
+        memory: 64Mi
         cpu: 100m
       limits:
         memory: 128Mi
@@ -18,7 +18,7 @@ images:
     name: app
     resources:
       requests:
-        memory: 128Mi
+        memory: 64Mi
         cpu: 100m
       limits:
         memory: 128Mi
