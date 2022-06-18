@@ -129,13 +129,6 @@ broker:
 
 
 handlers:
-  nodeSelector:
-    group_name: "apps-jobs"
-  tolerations:
-    - key: node-role.kubernetes.io/apps-jobs
-      operator: "Equal"
-      value: "true"
-      effect: NoSchedule
   labels:
     app: backend
     component: cronHandler
