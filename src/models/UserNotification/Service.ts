@@ -27,7 +27,6 @@ export class UserNotificationService {
     const created: UserNotification = {
       id: uuid(),
       contact: contact.id,
-      user: null,
       type,
       time: '12:00',
       createdAt: new Date(),
