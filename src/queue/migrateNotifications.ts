@@ -12,7 +12,7 @@ export default async (process: Process) => {
   );
   const contacts = await container.model.userContactTable().whereIn(
     'user',
-    notifications.map((v) => v.user),
+    notifications.map((v: any) => v.user),
   );
 
   await Promise.all(
@@ -26,7 +26,6 @@ export default async (process: Process) => {
 
       return container.model.userNotificationTable().where('id', notification.id).update({
         contact: contact.id,
-        user: null,
       });
     }),
   );

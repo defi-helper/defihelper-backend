@@ -13,6 +13,10 @@ export interface UserNotification {
   createdAt: Date;
 }
 
+export interface UserNotificationLegacy extends UserNotification {
+  user: string;
+}
+
 export const userNotificationTableName = 'user_notification';
 
 export const userNotificationTableFactory =
