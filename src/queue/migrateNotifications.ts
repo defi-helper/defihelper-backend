@@ -21,7 +21,7 @@ export default async (process: Process) => {
         return null;
       }
 
-      const contact = contacts.find((v) => v.id === notification.user);
+      const contact = contacts.find((v) => v.user === notification.user);
       if (!contact) return null;
 
       return container.model.userNotificationTable().where('id', notification.id).update({
