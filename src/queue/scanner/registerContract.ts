@@ -62,16 +62,14 @@ export default async (process: Process) => {
       }
 
       try {
-        await container
-          .scanner()
-          .registerContract(
-            contract.network,
-            contract.address,
-            servedAbi.value.value,
-            contract.name,
-            deployBlockNumber,
-            contract.id,
-          );
+        await scanner.registerContract(
+          contract.network,
+          contract.address,
+          servedAbi.value.value,
+          contract.name,
+          deployBlockNumber,
+          contract.id,
+        );
       } catch {
         return process
           .later(dayjs().add(10, 'minutes').toDate())
@@ -94,7 +92,9 @@ export default async (process: Process) => {
       )
       .map(({ name }: any) => name);
 
-    await Promise.all(events.map((event) => scanner.registerListener(contractFromScanner, event)));
+    await Promise.all(
+      events.map(async (event) => scanner.registerListener(contractFromScanner, event)),
+    );
   } catch (e) {
     if (e instanceof Scanner.TemporaryOutOfService) {
       return process
@@ -102,7 +102,9 @@ export default async (process: Process) => {
         .later(dayjs().add(5, 'minute').toDate());
     }
 
-    throw e;
+    return process
+      .info(`postponed due to unknown error: ${e.message}`)
+      .later(dayjs().add(10, 'minute').toDate());
   }
 
   return process.done();
