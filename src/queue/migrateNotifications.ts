@@ -1,6 +1,10 @@
 import container from '@container';
-import { UserNotificationLegacy, userNotificationTableName } from '@models/UserNotification/Entity';
+import { UserNotification, userNotificationTableName } from '@models/UserNotification/Entity';
 import { Process } from '@models/Queue/Entity';
+
+export interface UserNotificationLegacy extends UserNotification {
+  user: string | null;
+}
 
 export default async (process: Process) => {
   const notifications = await container.database()<UserNotificationLegacy>(
