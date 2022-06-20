@@ -71,20 +71,6 @@ export type Notification = {
   processedAt?: Date;
 } & NotificationPayloadType;
 
-export interface ContractEventWebHook {
-  id: string;
-  contract: string;
-  event: string;
-  createdAt: Date;
-}
-
-export interface UserEventSubscription {
-  id: string;
-  webHook: string;
-  contact: string;
-  createdAt: Date;
-}
-
 export const userContactTableName = 'user_contact';
 
 export const userContactTableFactory = tableFactoryLegacy<UserContact>(userContactTableName);
@@ -96,23 +82,3 @@ export const notificationTableName = 'notification';
 export const notificationTableFactory = tableFactoryLegacy<Notification>(notificationTableName);
 
 export type NotificationTable = ReturnType<ReturnType<typeof notificationTableFactory>>;
-
-export const contractEventWebHookTableName = 'contract_event_webhook';
-
-export const contractEventWebHookTableFactory = tableFactoryLegacy<ContractEventWebHook>(
-  contractEventWebHookTableName,
-);
-
-export type ContractEventWebHookTable = ReturnType<
-  ReturnType<typeof contractEventWebHookTableFactory>
->;
-
-export const userEventSubscriptionTableName = 'user_event_subscription';
-
-export const userEventSubscriptionTableFactory = tableFactoryLegacy<UserEventSubscription>(
-  userEventSubscriptionTableName,
-);
-
-export type UserEventSubscriptionTable = ReturnType<
-  ReturnType<typeof userEventSubscriptionTableFactory>
->;

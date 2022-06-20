@@ -30,17 +30,12 @@ export default async (process: Process) => {
   }
 
   const scanner = container.scanner();
-  const scannerContract = await scanner.findContract(contract.network, contract.address);
+  const scannerContract = await scanner.getContractByFid(contract.id);
   if (!scannerContract) throw new Error('Contract not register on scanner');
-
   const { uniqueWalletsCount } = await scanner.getContractStatistics(scannerContract.id);
-  await container.model.metricService().createContract(
-    contract,
-    {
-      uniqueWalletsCount: uniqueWalletsCount.toString(),
-    },
-    new Date(),
-  );
+  await container.model
+    .metricService()
+    .createContract(contract, { uniqueWalletsCount: String(uniqueWalletsCount) }, new Date());
 
   return process.done();
 };

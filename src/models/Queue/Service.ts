@@ -33,6 +33,19 @@ export class QueueService {
     readonly logger: Factory<Log>,
   ) {}
 
+  async resetAndRestart(task: Task) {
+    const updated = {
+      ...task,
+      status: TaskStatus.Pending,
+      startAt: new Date(),
+      error: '',
+      updatedAt: new Date(),
+    };
+    await this.queueTable().update(updated).where('id', updated.id);
+
+    return updated;
+  }
+
   async push<H extends Handler>(handler: H, params: Object = {}, options: PushOptions = {}) {
     let task: Task = {
       id: uuid(),

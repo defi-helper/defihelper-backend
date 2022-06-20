@@ -13,7 +13,7 @@ images:
         cpu: 100m
       limits:
         memory: 128Mi
-        cpu: 1000m
+        cpu: 300m
   app:
     name: app
     resources:
@@ -21,8 +21,8 @@ images:
         memory: 128Mi
         cpu: 100m
       limits:
-        memory: 128Mi
-        cpu: 1000m
+        memory: 256Mi
+        cpu: 300m
 
 service:
   type: ClusterIP
@@ -45,7 +45,7 @@ ingress:
         - backend.defihelper.io
 
 broker:
-  maxReplicas: 10
+  maxReplicas: 20
   maxReadyMessagesForHpa: 100
   process:
     labels:
@@ -56,15 +56,33 @@ broker:
     queues:
       queue:
         name: queue
-        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue-consume -- -q tasks_default"'
+        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue:consume -- -q tasks_default"'
         replicas: 1
         resources:
           requests:
-            memory: 1024Mi
-            cpu: 500m
+            memory: 256Mi
+            cpu: 100m
           limits:
-            memory: 2048Mi
-            cpu: 800m
+            memory: 512Mi
+            cpu: 500m
+        nodeSelector:
+          group_name: "apps-jobs"
+        tolerations:
+          - key: node-role.kubernetes.io/apps-jobs
+            operator: "Equal"
+            value: "true"
+            effect: NoSchedule
+      events-trigger:
+        name: events-trigger
+        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run trigger:event"'
+        replicas: 1
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 100m
+          limits:
+            memory: 256Mi
+            cpu: 500m
         nodeSelector:
           group_name: "apps-jobs"
         tolerations:
@@ -74,15 +92,15 @@ broker:
             effect: NoSchedule
       metrics:
         name: metrics
-        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue-consume -- -q tasks_metricCurrent"'
+        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue:consume -- -q tasks_metricCurrent"'
         replicas: 1
         resources:
           requests:
-            memory: 1024Mi
-            cpu: 500m
+            memory: 128Mi
+            cpu: 100m
           limits:
-            memory: 2048Mi
-            cpu: 800m
+            memory: 256Mi
+            cpu: 500m
         nodeSelector:
           group_name: "apps-jobs"
         tolerations:
@@ -92,15 +110,15 @@ broker:
             effect: NoSchedule
       history:
         name: history
-        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue-consume -- -q tasks_metricHistory"'
+        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue:consume -- -q tasks_metricHistory"'
         replicas: 1
         resources:
           requests:
-            memory: 1024Mi
-            cpu: 500m
+            memory: 128Mi
+            cpu: 100m
           limits:
-            memory: 2048Mi
-            cpu: 800m
+            memory: 256Mi
+            cpu: 500m
         nodeSelector:
           group_name: "apps-jobs"
         tolerations:
@@ -111,13 +129,6 @@ broker:
 
 
 handlers:
-  nodeSelector:
-    group_name: "apps-jobs"
-  tolerations:
-    - key: node-role.kubernetes.io/apps-jobs
-      operator: "Equal"
-      value: "true"
-      effect: NoSchedule
   labels:
     app: backend
     component: cronHandler
@@ -125,13 +136,13 @@ handlers:
   resources:
     requests:
       memory: 128Mi
-      cpu: 200m
+      cpu: 100m
     limits:
-      memory: 256Mi
-      cpu: 300m
+      memory: 128Mi
+      cpu: 100m
   schedules:
     queue-deferred:
-      command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue-deferred"'
+      command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue:deferred"'
       schedule: "* * * * *"
     minute10:
       command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run schedule -- --period minute10"'
