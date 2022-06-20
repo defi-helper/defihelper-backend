@@ -1,8 +1,15 @@
 import container from '@container';
+import { UserNotification, userNotificationTableName } from '@models/UserNotification/Entity';
 import { Process } from '@models/Queue/Entity';
 
+export interface UserNotificationLegacy extends UserNotification {
+  user: string | null;
+}
+
 export default async (process: Process) => {
-  const notifications = await container.model.userNotificationTable().whereNot('user', null);
+  const notifications = await container.database()<UserNotificationLegacy>(
+    userNotificationTableName,
+  );
   const contacts = await container.model.userContactTable().whereIn(
     'user',
     notifications.map((v) => v.user),
@@ -10,7 +17,11 @@ export default async (process: Process) => {
 
   await Promise.all(
     notifications.map(async (notification) => {
-      const contact = contacts.find((v) => v.id === notification.user);
+      if (!notification.user) {
+        return null;
+      }
+
+      const contact = contacts.find((v) => v.user === notification.user);
       if (!contact) return null;
 
       return container.model.userNotificationTable().where('id', notification.id).update({
