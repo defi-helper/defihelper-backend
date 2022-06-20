@@ -1,8 +1,11 @@
 import 'source-map-support/register';
 import 'module-alias/register';
 import cli from 'command-line-args';
+import process from 'process';
 import container from '@container';
 import { TriggerType } from '@models/Automate/Entity';
+
+console.log(process.pid);
 
 container.model
   .migrationService()
@@ -19,12 +22,15 @@ container.model
     rabbit.on('disconnected', () => {
       throw new Error('Rabbit disconnected');
     });
+    let isConsume = false;
+    let isStoped = false;
     rabbit.createQueue(
       options.queue,
       { durable: false, autoDelete: true },
       async ({ content }, ack) => {
+        if (isStoped) return;
+        isConsume = true;
         const { contract, listener } = JSON.parse(content.toString());
-        ack();
 
         const triggers = await container.model
           .automateTriggerTable()
@@ -33,9 +39,17 @@ container.model
           .where(database.raw(`params->>'address' = ?`, contract.address.toLowerCase()))
           .where(database.raw(`params->>'event' = ?`, listener.name));
         triggers.map(({ id }) => queue.push('automateTriggerRun', { id }));
+        ack();
+        if (isStoped) setTimeout(() => rabbit.close(), 500); // for ack work
+        isConsume = false;
       },
     );
     rabbit.bindToTopic(options.queue, options.topic);
+
+    process.on('SIGTERM', () => {
+      isStoped = true;
+      if (!isConsume) rabbit.close();
+    });
   })
   .catch((e) => {
     container.logger().error(e);

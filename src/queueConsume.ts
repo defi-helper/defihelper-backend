@@ -1,6 +1,7 @@
 import 'source-map-support/register';
 import 'module-alias/register';
 import cli from 'command-line-args';
+import process from 'process';
 import container from './container';
 
 container.model
@@ -17,7 +18,13 @@ container.model
     container.rabbitmq().on('disconnected', () => {
       throw new Error('Rabbit disconnected');
     });
-    container.model.queueService().consume({ queue: options.queue });
+    const consumer = container.model.queueService().consume({ queue: options.queue });
+
+    process.on('SIGTERM', () => {
+      console.log('sigterm start');
+      consumer.stop();
+      console.log('sigterm end');
+    });
 
     container.logger().info(`Consume "${options.queue}" queue messages`);
   })
