@@ -156,13 +156,6 @@ export class QueueService {
     }
   }
 
-  async consumer(msg: any, ack: (error?: any, reply?: any) => any) {
-    const task: Task = JSON.parse(msg.content.toString());
-    this.logger().info(`Handle task: ${task.id}`);
-    await this.handle(task);
-    ack();
-  }
-
   consume({ queue }: ConsumerOptions) {
     let isConsume = false;
     let isStoped = false;
