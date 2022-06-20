@@ -53,7 +53,7 @@ export class ScannerService {
     return this.client
       .get<Contract[]>(`/api/contract?network=${network}&address=${address.toLowerCase()}`)
       .catch((e) => {
-        if (e.response?.code === 503) throw new TemporaryOutOfService();
+        if (e.response?.code !== 200) throw new TemporaryOutOfService();
         throw new Error(`Undefined error in scanner: ${e.message}`);
       })
       .then(({ data }) => (data.length > 0 ? data[0] : undefined));
@@ -110,7 +110,7 @@ export class ScannerService {
       })
       .then(({ data }) => data)
       .catch((e) => {
-        if (e.response?.code === 503) throw new TemporaryOutOfService();
+        if (e.response?.code !== 200) throw new TemporaryOutOfService();
         throw new Error(`Undefined error in scanner: ${e.message}`);
       });
   }
@@ -130,7 +130,7 @@ export class ScannerService {
       .put<Contract>(`/api/contract/${id}`, state)
       .then(({ data }) => data)
       .catch((e) => {
-        if (e.response?.code === 503) throw new TemporaryOutOfService();
+        if (e.response?.code !== 200) throw new TemporaryOutOfService();
         throw new Error(`Undefined error in scanner: ${e.message}`);
       });
   }
@@ -139,7 +139,7 @@ export class ScannerService {
     return this.client
       .get<EventListener[]>(`/api/contract/${contractId}/event-listener?name=${event}`)
       .catch((e) => {
-        if (e.response?.code === 503) throw new TemporaryOutOfService();
+        if (e.response?.code !== 200) throw new TemporaryOutOfService();
         throw new Error(`Undefined error in scanner: ${e.message}`);
       })
       .then(({ data }) => (data.length > 0 ? data[0] : undefined));
@@ -152,7 +152,7 @@ export class ScannerService {
       })
       .then(({ data }) => data)
       .catch((e) => {
-        if (e.response?.code === 503) throw new TemporaryOutOfService();
+        if (e.response?.code !== 200) throw new TemporaryOutOfService();
         throw new Error(`Undefined error in scanner: ${e.message}`);
       });
   }

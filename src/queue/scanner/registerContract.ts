@@ -102,9 +102,7 @@ export default async (process: Process) => {
         .later(dayjs().add(5, 'minute').toDate());
     }
 
-    return process
-      .info(`postponed due to unknown error: ${e.message}`)
-      .later(dayjs().add(10, 'minute').toDate());
+    throw e;
   }
 
   return process.done();
