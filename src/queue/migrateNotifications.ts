@@ -26,6 +26,7 @@ export default async (process: Process) => {
 
       return container.model.userNotificationTable().where('id', notification.id).update({
         contact: contact.id,
+        user: null,
       });
     }),
   );

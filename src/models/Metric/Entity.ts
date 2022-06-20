@@ -56,6 +56,21 @@ export const metricContractTableFactory =
 
 export type MetricContractTable = ReturnType<ReturnType<typeof metricContractTableFactory>>;
 
+export interface MetricContractTask {
+  id: string;
+  contract: string;
+  task: string;
+  createdAt: Date;
+}
+
+export const metricContractTaskTableName = 'metric_contract_task';
+
+export const metricContractTaskTableFactory = tableFactoryLegacy<MetricContractTask>(
+  metricContractTaskTableName,
+);
+
+export type MetricContractTaskTable = ReturnType<ReturnType<typeof metricContractTaskTableFactory>>;
+
 export type MetricWalletField = 'stakingUSD' | 'earnedUSD';
 
 export interface MetricWallet extends Metric {
@@ -68,6 +83,21 @@ export const metricWalletTableName = 'metric_wallet';
 export const metricWalletTableFactory = tableFactoryLegacy<MetricWallet>(metricWalletTableName);
 
 export type MetricWalletTable = ReturnType<ReturnType<typeof metricWalletTableFactory>>;
+
+export interface MetricWalletTask {
+  id: string;
+  contract: string;
+  wallet: string;
+  task: string;
+  createdAt: Date;
+}
+
+export const metricWalletTaskTableName = 'metric_wallet_task';
+
+export const metricWalletTaskTableFactory =
+  tableFactoryLegacy<MetricWalletTask>(metricWalletTaskTableName);
+
+export type MetricWalletTaskTable = ReturnType<ReturnType<typeof metricWalletTaskTableFactory>>;
 
 export interface MetricWalletToken extends Metric {
   contract: string | null;

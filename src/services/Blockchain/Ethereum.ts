@@ -83,6 +83,7 @@ function networkFactory({
   nativeTokenPrice,
   nativeTokenDetails,
   tokenPriceResolver,
+  rpcUrls,
   network: { node, historicalNode, avgBlockTime, inspectors, consumers },
 }: {
   id: string;
@@ -98,6 +99,7 @@ function networkFactory({
   nativeTokenPrice: NativePriceFeedUSD;
   nativeTokenDetails: NativeTokenDetails;
   tokenPriceResolver: { usd: TokenPriceFeedUSD };
+  rpcUrls?: string[];
   network: NetworkConfig;
 }) {
   const provider = providerRandomizerFactory(
@@ -124,6 +126,7 @@ function networkFactory({
     getAvgGasPrice,
     etherscanApiURL,
     nativeTokenPrice,
+    rpcUrls,
     tokenPriceResolver,
     nativeTokenDetails,
     inspector: () => (inspectors.length > 0 ? new ethers.Wallet(inspectors[0], provider()) : null),
@@ -321,6 +324,7 @@ export class BlockchainContainer extends Container<Config> {
         name: 'Optimism Ethereum',
       },
       tokenPriceResolver: debankPriceFeed('10'),
+      rpcUrls: ['https://mainnet.optimism.io'],
       network: this.parent.optimistic,
     }),
     '25': networkFactory({
@@ -360,6 +364,11 @@ export class BlockchainContainer extends Container<Config> {
         symbol: 'BNB',
         name: 'BNB',
       },
+      rpcUrls: [
+        'https://bsc-dataseed.binance.org/',
+        'https://bsc-dataseed1.defibit.io/',
+        'https://bsc-dataseed1.ninicoin.io/',
+      ],
       tokenPriceResolver: debankPriceFeed('56'),
       network: this.parent.bsc,
     }),
@@ -381,6 +390,7 @@ export class BlockchainContainer extends Container<Config> {
         name: 'Polygon',
       },
       tokenPriceResolver: debankPriceFeed('137'),
+      rpcUrls: ['https://rpc-mainnet.maticvigil.com/', 'https://rpc-mainnet.maticvigil.com/'],
       network: this.parent.polygon,
     }),
     '250': networkFactory({
@@ -401,6 +411,7 @@ export class BlockchainContainer extends Container<Config> {
         name: 'Fantom',
       },
       tokenPriceResolver: debankPriceFeed('250'),
+      rpcUrls: ['https://rpc.ftm.tools'],
       network: this.parent.fantom,
     }),
     '1284': networkFactory({
@@ -421,6 +432,7 @@ export class BlockchainContainer extends Container<Config> {
         name: 'Moonbeam',
       },
       tokenPriceResolver: debankPriceFeed('1284'),
+      rpcUrls: ['https://rpc.api.moonbeam.network', 'https://rpc.api.moonbeam.network'],
       network: this.parent.moonriver,
     }),
     '1285': networkFactory({
@@ -441,6 +453,7 @@ export class BlockchainContainer extends Container<Config> {
         name: 'Moonriver',
       },
       tokenPriceResolver: debankPriceFeed('1285'),
+      rpcUrls: ['https://rpc.moonriver.moonbeam.network', 'https://rpc.moonriver.moonbeam.network'],
       network: this.parent.moonriver,
     }),
     '31337': networkFactory({
@@ -481,6 +494,7 @@ export class BlockchainContainer extends Container<Config> {
         name: 'Ethereum',
       },
       tokenPriceResolver: debankPriceFeed('42161'),
+      rpcUrls: ['https://arb1.arbitrum.io/rpc'],
       network: this.parent.arbitrum,
     }),
     '43113': networkFactory({
@@ -521,6 +535,7 @@ export class BlockchainContainer extends Container<Config> {
         name: 'Avalanche',
       },
       tokenPriceResolver: debankPriceFeed('43114'),
+      rpcUrls: ['https://api.avax.network/ext/bc/C/rpc', 'https://api.avax.network/ext/bc/C/rpc'],
       network: this.parent.avalanche,
     }),
     '1313161554': networkFactory({
@@ -563,6 +578,12 @@ export class BlockchainContainer extends Container<Config> {
         name: 'Harmony',
       },
       tokenPriceResolver: debankPriceFeed('1666600000'),
+      rpcUrls: [
+        'https://api.harmony.one',
+        'https://s1.api.harmony.one',
+        'https://s2.api.harmony.one',
+        'https://s3.api.harmony.one',
+      ],
       network: this.parent.harmony,
     }),
   } as const;

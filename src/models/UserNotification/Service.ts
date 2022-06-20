@@ -15,7 +15,11 @@ export class UserNotificationService {
     return c !== undefined && c.count > 0;
   }
 
-  async enable(contact: UserContact, type: UserNotificationType): Promise<UserNotification> {
+  async enable(
+    contact: UserContact,
+    type: UserNotificationType,
+    time: string,
+  ): Promise<UserNotification> {
     const duplicates = await this.table().where({
       contact: contact.id,
       type,
@@ -28,7 +32,7 @@ export class UserNotificationService {
       id: uuid(),
       contact: contact.id,
       type,
-      time: '12:00',
+      time,
       createdAt: new Date(),
     };
 
