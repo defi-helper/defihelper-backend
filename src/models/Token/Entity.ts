@@ -27,7 +27,7 @@ export type TokenAliasTable = ReturnType<ReturnType<typeof tokenAliasTableFactor
 
 export enum TokenCreatedBy {
   Manualy = 'manualy',
-  Scanner = 'scanner',
+  Watcher = 'watcher',
   Adapter = 'adapter',
 }
 

@@ -11,7 +11,7 @@ type Handler = keyof typeof Handlers;
 
 export interface PushOptions {
   startAt?: Date;
-  scanner?: boolean;
+  watcher?: boolean;
   priority?: number;
   collisionSign?: string;
   topic?: string;
@@ -45,7 +45,7 @@ export class QueueService {
       collisionSign: options.collisionSign ?? null,
       priority: options.priority ?? QueueService.defaultPriority,
       topic: options.topic ?? QueueService.defaultTopic,
-      scanner: options.scanner ?? false,
+      watcher: options.watcher ?? false,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -133,7 +133,7 @@ export class QueueService {
       const error = e instanceof Error ? e : new Error(`${e}`);
 
       return Promise.all([
-        task.scanner
+        task.watcher
           ? this.queueTable()
               .update(process.later(dayjs().add(10, 'seconds').toDate()).task)
               .where('id', task.id)

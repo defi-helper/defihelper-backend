@@ -15,7 +15,7 @@ export default async (process: Process) => {
   if (token.alias !== null) throw new Error('Token alias already registered');
 
   const liquidity =
-    token.createdBy === TokenCreatedBy.Scanner
+    token.createdBy === TokenCreatedBy.Watcher
       ? TokenAliasLiquidity.Trash
       : TokenAliasLiquidity.Unstable;
   const alias = await container.model

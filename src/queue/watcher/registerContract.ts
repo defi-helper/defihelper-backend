@@ -6,7 +6,7 @@ import {
   contractTableName,
   MetadataType,
 } from '@models/Protocol/Entity';
-import * as Scanner from '@services/Scanner';
+import * as Watcher from '@services/Watcher';
 
 export interface ContractRegisterParams {
   contract: string;
@@ -34,9 +34,9 @@ export default async (process: Process) => {
     contract.deployBlockNumber === null ? undefined : parseInt(contract.deployBlockNumber, 10);
 
   try {
-    const contractFromScanner = await container.scanner().getContractByFid(contract.id);
+    const contractFromWatcher = await container.watcher().getContractByFid(contract.id);
 
-    if (!contractFromScanner) {
+    if (!contractFromWatcher) {
       const servedAbi = await container.model
         .metadataTable()
         .where({
@@ -59,7 +59,7 @@ export default async (process: Process) => {
 
       try {
         await container
-          .scanner()
+          .watcher()
           .registerContract(
             contract.network,
             contract.address,
@@ -71,7 +71,7 @@ export default async (process: Process) => {
       } catch {
         return process
           .later(dayjs().add(10, 'minutes').toDate())
-          .info('scanner registerContract() received unknown error');
+          .info('watcher registerContract() received unknown error');
       }
 
       return process.later(dayjs().add(1, 'minutes').toDate());
@@ -81,7 +81,7 @@ export default async (process: Process) => {
       return process.done();
     }
 
-    const events: string[] = contractFromScanner.abi
+    const events: string[] = contractFromWatcher.abi
       .filter(
         ({ type, name }: any) =>
           type === 'event' && (!eventsToSubscribe || eventsToSubscribe.includes(name)),
@@ -91,13 +91,13 @@ export default async (process: Process) => {
     await Promise.all(
       events.map((event) =>
         Promise.all([
-          container.scanner().registerListener(contractFromScanner.id, event, deployBlockNumber),
+          container.watcher().registerListener(contractFromWatcher.id, event, deployBlockNumber),
           container.model.contractEventWebHookService().create(contract, event),
         ]),
       ),
     );
   } catch (e) {
-    if (e instanceof Scanner.TemporaryOutOfService) {
+    if (e instanceof Watcher.TemporaryOutOfService) {
       return process
         .info('postponed due to temporarily service unavailability')
         .later(dayjs().add(5, 'minute').toDate());

@@ -11,7 +11,7 @@ import { ACLContainer } from '@services/ACL/container';
 import { TemplateContainer } from '@services/Template/container';
 import { emailServiceFactory } from '@services/Email';
 import { telegramServiceFactory } from '@services/Telegram';
-import { scannerServiceFactory } from '@services/Scanner';
+import { watcherServiceFactory } from '@services/Watcher';
 import { rabbitmqFactory } from '@services/Rabbitmq';
 import { cryptographyServiceFactory } from '@services/Cryptography';
 import { cexServicesProviderFactory } from '@services/Cex';
@@ -37,7 +37,7 @@ class AppContainer extends Container<typeof config> {
 
   readonly cexServicesProvider = singleton(cexServicesProviderFactory());
 
-  readonly scanner = singleton(scannerServiceFactory(this.parent.scanner));
+  readonly watcher = singleton(watcherServiceFactory(this.parent.watcher));
 
   readonly cryptography = singleton(cryptographyServiceFactory(this.parent.cryptography.key));
 

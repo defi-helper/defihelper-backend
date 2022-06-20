@@ -211,7 +211,7 @@ export class ContractEventWebHookService {
   constructor(readonly table: Factory<ContractEventWebHookTable>) {}
 
   public readonly onCreated = new Emitter<ContractEventWebHookInfo>(async (webHookInfo) => {
-    await container.model.queueService().push('subscribeToEventFromScanner', webHookInfo);
+    await container.model.queueService().push('subscribeToEventFromWatcher', webHookInfo);
   });
 
   async create(

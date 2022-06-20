@@ -735,7 +735,7 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
             },
             eventsToSubscribe: {
               type: GraphQLList(GraphQLNonNull(GraphQLString)),
-              description: 'Events to subscribe in scanner',
+              description: 'Events to subscribe in watcher',
               defaultValue: undefined,
             },
           },
@@ -2057,7 +2057,7 @@ export const ProtocolDeleteMutation: GraphQLFieldConfig<any, Request> = {
   }),
 };
 
-export const ContractScannerRegisterMutation: GraphQLFieldConfig<any, Request> = {
+export const ContractWatcherRegisterMutation: GraphQLFieldConfig<any, Request> = {
   type: GraphQLNonNull(GraphQLBoolean),
   args: {
     id: {
@@ -2075,7 +2075,7 @@ export const ContractScannerRegisterMutation: GraphQLFieldConfig<any, Request> =
 
     await container.model
       .queueService()
-      .push('registerContractInScanner', { contract: contract.id, events });
+      .push('registerContractInWatcher', { contract: contract.id, events });
 
     return true;
   }),

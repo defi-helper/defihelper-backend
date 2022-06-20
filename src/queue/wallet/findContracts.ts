@@ -25,7 +25,7 @@ export default async (process: Process) => {
   }
 
   const contractsAddresses = await container
-    .scanner()
+    .watcher()
     .getContractsAddressByUserAddress(blockchainWallet.network, blockchainWallet.address);
 
   const groupLimit = 50;

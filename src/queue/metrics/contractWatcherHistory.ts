@@ -36,7 +36,7 @@ export default async (process: Process) => {
   while (startDate.isBefore(currentMonth)) {
     const endDate = startDate.clone().add(1, 'month').startOf('month');
     queue.push(
-      'metricsContractScannerDate',
+      'metricsContractWatcherDate',
       {
         contract: contract.id,
         date: {

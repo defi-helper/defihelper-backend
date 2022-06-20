@@ -35,7 +35,7 @@ export default async (process: Process) => {
 
   await container.model
     .queueService()
-    .push('registerContractInScanner', { contract: contract.id, events });
+    .push('registerContractInWatcher', { contract: contract.id, events });
 
   if (container.blockchain.ethereum.isNetwork(contract.network)) {
     const { hasProvider, hasProviderHistorical } = container.blockchain.ethereum.byNetwork(
@@ -49,7 +49,7 @@ export default async (process: Process) => {
       container.model
         .queueService()
         .push(
-          'metricsContractScannerHistory',
+          'metricsContractWatcherHistory',
           { contract: contract.id },
           { startAt: dayjs().add(10, 'minutes').toDate() },
         );

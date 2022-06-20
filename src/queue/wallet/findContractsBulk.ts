@@ -11,7 +11,7 @@ export default async (process: Process) => {
   const { wallets } = process.task.params as Params;
 
   const contractsAddressesByWallets = await container
-    .scanner()
+    .watcher()
     .getWalletsInteractedContracts(wallets);
 
   const localWallets = await container.model

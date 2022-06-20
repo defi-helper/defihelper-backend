@@ -6,7 +6,7 @@ export class TemporaryOutOfService extends Error {
   }
 }
 
-export interface ScannerParams {
+export interface WatcherParams {
   host: string;
 }
 
@@ -58,24 +58,13 @@ export interface WalletsInteractedWith {
   [wallet: string]: { [network: string]: string[] };
 }
 
-export class ScannerService {
+export class WatcherService {
   protected client: AxiosInstance;
 
-  constructor(scannerParams: ScannerParams) {
+  constructor(watcherParams: WatcherParams) {
     this.client = axios.create({
-      baseURL: scannerParams.host,
+      baseURL: watcherParams.host,
     });
-  }
-
-  async currentBlock(network: string): Promise<number> {
-    try {
-      const res = await this.client.get<{ currentBlock: number }>(
-        `/api/eth/${network}/current-block`,
-      );
-      return Number(res.data.currentBlock);
-    } catch {
-      return 0;
-    }
   }
 
   async findContract(network: string, address: string): Promise<Contract | undefined> {
@@ -84,7 +73,7 @@ export class ScannerService {
         .get<Contract[]>(`/api/contract?network=${network}&address=${address.toLowerCase()}`)
         .catch((e) => {
           if (e.response?.code === 503) throw new TemporaryOutOfService();
-          throw new Error(`Undefined error in scanner: ${e.message}`);
+          throw new Error(`Undefined error in watcher: ${e.message}`);
         })
     ).data;
     if (contracts.length === 0) {
@@ -119,7 +108,7 @@ export class ScannerService {
       .get<ContractStatistics>(`/api/contract/${id}/statistics`)
       .catch((e) => {
         if (e.response?.code === 503) throw new TemporaryOutOfService();
-        throw new Error(`Undefined error in scanner: ${e.message}`);
+        throw new Error(`Undefined error in watcher: ${e.message}`);
       });
 
     return res.data;
@@ -144,7 +133,7 @@ export class ScannerService {
       })
       .catch((e) => {
         if (e.response?.code === 503) throw new TemporaryOutOfService();
-        throw new Error(`Undefined error in scanner: ${e.message}`);
+        throw new Error(`Undefined error in watcher: ${e.message}`);
       });
 
     return contract.data;
@@ -166,83 +155,7 @@ export class ScannerService {
       .then(({ data }) => data)
       .catch((e) => {
         if (e.response?.code === 503) throw new TemporaryOutOfService();
-        throw new Error(`Undefined error in scanner: ${e.message}`);
-      });
-  }
-
-  async findListener(contractId: string, event: string): Promise<EventListener | undefined> {
-    const eventListeners = (
-      await this.client
-        .get<EventListener[]>(`/api/contract/${contractId}/event-listener?name=${event}`)
-        .catch((e) => {
-          if (e.response?.code === 503) throw new TemporaryOutOfService();
-          throw new Error(`Undefined error in scanner: ${e.message}`);
-        })
-    ).data;
-    if (eventListeners.length === 0) {
-      return undefined;
-    }
-
-    return eventListeners[0];
-  }
-
-  async registerListener(
-    contractId: string,
-    event: string,
-    syncHeight: number = 0,
-  ): Promise<EventListener> {
-    const contract = await this.getContract(contractId);
-    if (!contract) {
-      throw new Error('Contract has not found');
-    }
-
-    const eventListener = await this.client
-      .post<EventListener>(`/api/contract/${contractId}/event-listener`, {
-        name: event,
-        syncHeight: syncHeight || (await this.currentBlock(contract.network)) - 10,
-      })
-      .catch((e) => {
-        if (e.response?.code === 503) throw new TemporaryOutOfService();
-        throw new Error(`Undefined error in scanner: ${e.message}`);
-      });
-
-    return eventListener.data;
-  }
-
-  async registerCallback(
-    network: string,
-    address: string,
-    event: string,
-    callBackUrl: string,
-  ): Promise<CallBack> {
-    const contract = await this.findContract(network, address.toLowerCase());
-    if (!contract) {
-      throw new Error('Contract not found');
-    }
-
-    let listener = await this.findListener(contract.id, event);
-    if (!listener) {
-      listener = await this.registerListener(contract.id, event);
-    }
-
-    const callbackResponse = await this.client
-      .post<CallBack>(`/api/contract/${contract.id}/event-listener/${listener.id}/call-back`, {
-        callBackUrl,
-      })
-      .catch((e) => {
-        if (e.response?.code === 503) throw new TemporaryOutOfService();
-        throw new Error(`Undefined error in scanner: ${e.message}`);
-      });
-
-    return callbackResponse.data;
-  }
-
-  async deleteCallback(callbackId: string) {
-    await this.client
-      .delete<string>(`/api/contract/0/event-listener/0/call-back/${callbackId}`)
-      .catch((e) => {
-        if (e.response?.code === 503) throw new TemporaryOutOfService();
-        throw new Error(`Undefined error in scanner: ${e.message}`);
+        throw new Error(`Undefined error in watcher: ${e.message}`);
       });
   }
 
@@ -259,6 +172,6 @@ export class ScannerService {
   }
 }
 
-export function scannerServiceFactory(scannerParams: ScannerParams) {
-  return () => new ScannerService(scannerParams);
+export function watcherServiceFactory(watcherParams: WatcherParams) {
+  return () => new WatcherService(watcherParams);
 }

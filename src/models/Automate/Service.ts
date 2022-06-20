@@ -11,7 +11,7 @@ import {
   WalletTable,
   walletTableName,
 } from '@models/Wallet/Entity';
-import { ScannerService } from '@services/Scanner';
+import { WatcherService } from '@services/Watcher';
 import {
   Action,
   ActionParams,
@@ -47,7 +47,7 @@ export class AutomateService {
   public readonly onTriggerDeleted = new Emitter<Trigger>(async (trigger) => {
     if (trigger.type === TriggerType.ContractEvent) {
       if (trigger.params.callback) {
-        await this.scanner().deleteCallback(trigger.params.callback);
+        await this.watcher().deleteCallback(trigger.params.callback);
       }
     }
   });
@@ -104,7 +104,7 @@ export class AutomateService {
     readonly contractTable: Factory<ContractTable>,
     readonly transactionTable: Factory<TransactionTable>,
     readonly walletTable: Factory<WalletTable>,
-    readonly scanner: Factory<ScannerService>,
+    readonly watcher: Factory<WatcherService>,
   ) {}
 
   async createTrigger(wallet: Wallet, type: TriggerTypes, name: string, active: boolean = true) {

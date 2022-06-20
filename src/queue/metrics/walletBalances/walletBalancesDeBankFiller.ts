@@ -101,7 +101,7 @@ export default async (process: Process) => {
             tokenAsset.name,
             tokenAsset.symbol,
             new BN(tokenAsset.decimals).toNumber(),
-            TokenCreatedBy.Scanner,
+            TokenCreatedBy.Watcher,
           );
       }
 

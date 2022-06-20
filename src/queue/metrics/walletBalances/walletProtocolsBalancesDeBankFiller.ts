@@ -394,7 +394,7 @@ export default async (process: Process) => {
               token.name ?? '',
               token.symbol ?? '',
               token.decimals,
-              TokenCreatedBy.Scanner,
+              TokenCreatedBy.Watcher,
             );
         } catch (e) {
           // uniq violation
@@ -490,7 +490,7 @@ export default async (process: Process) => {
               token.name ?? '',
               token.symbol ?? '',
               token.decimals,
-              TokenCreatedBy.Scanner,
+              TokenCreatedBy.Watcher,
             );
         } catch (e) {
           // uniq violation

@@ -76,7 +76,7 @@ export default async (process: Process) => {
       return Promise.all([
         container.model
           .queueService()
-          .push('registerContractInScanner', { contract: duplicate.id, events }),
+          .push('registerContractInWatcher', { contract: duplicate.id, events }),
         contractService.updateBlockchain({
           ...duplicate,
           automate: pool.automate,

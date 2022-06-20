@@ -1,9 +1,9 @@
 import { Process } from '@models/Queue/Entity';
 import container from '@container';
 import dayjs from 'dayjs';
-import * as Scanner from '@services/Scanner';
+import * as Watcher from '@services/Watcher';
 
-export interface ScannerSubscriptionParams {
+export interface WatcherSubscriptionParams {
   network: string;
   address: string;
   event: string;
@@ -11,13 +11,13 @@ export interface ScannerSubscriptionParams {
 }
 
 export default async (process: Process) => {
-  const subscriptionParams = process.task.params as ScannerSubscriptionParams;
+  const subscriptionParams = process.task.params as WatcherSubscriptionParams;
 
   const callBackUrl = `${container.parent.api.internalUrl}/callback/event/${subscriptionParams.webHookId}?secret=${container.parent.api.secret}`;
 
   try {
     await container
-      .scanner()
+      .watcher()
       .registerCallback(
         subscriptionParams.network,
         subscriptionParams.address,
@@ -25,7 +25,7 @@ export default async (process: Process) => {
         callBackUrl,
       );
   } catch (e) {
-    if (e instanceof Scanner.TemporaryOutOfService) {
+    if (e instanceof Watcher.TemporaryOutOfService) {
       return process
         .info('postponed due to temporarily service unavailability')
         .later(dayjs().add(5, 'minute').toDate());

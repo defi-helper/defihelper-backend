@@ -2,7 +2,7 @@ import { Process } from '@models/Queue/Entity';
 import container from '@container';
 import dayjs from 'dayjs';
 import { MetadataType } from '@models/Protocol/Entity';
-import * as Scanner from '@services/Scanner';
+import * as Watcher from '@services/Watcher';
 import { TriggerType } from '@models/Automate/Entity';
 
 export interface ContractRegisterParams {
@@ -37,14 +37,14 @@ export default async (process: Process) => {
   }
 
   try {
-    const contractFromScanner = await container.scanner().findContract(network, address);
-    if (!contractFromScanner) {
-      await container.scanner().registerContract(network, address, servedAbi.value?.value);
+    const contractFromWatcher = await container.watcher().findContract(network, address);
+    if (!contractFromWatcher) {
+      await container.watcher().registerContract(network, address, servedAbi.value?.value);
       return process.later(dayjs().add(1, 'minutes').toDate());
     }
 
     const callback = await container
-      .scanner()
+      .watcher()
       .registerCallback(
         network,
         address,
@@ -60,7 +60,7 @@ export default async (process: Process) => {
       },
     });
   } catch (e) {
-    if (e instanceof Scanner.TemporaryOutOfService) {
+    if (e instanceof Watcher.TemporaryOutOfService) {
       return process
         .info('postponed due to temporarily service unavailability')
         .later(dayjs().add(5, 'minute').toDate());

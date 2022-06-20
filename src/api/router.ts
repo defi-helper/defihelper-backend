@@ -118,7 +118,7 @@ export function route({ express, server }: { express: Express; server: Server })
           protocolCreate: protocolSchemas.ProtocolCreateMutation,
           protocolUpdate: protocolSchemas.ProtocolUpdateMutation,
           protocolResolveContracts: protocolSchemas.ProtocolResolveContractsMutation,
-          contractScannerRegister: protocolSchemas.ContractScannerRegisterMutation,
+          contractWatcherRegister: protocolSchemas.ContractWatcherRegisterMutation,
           protocolDelete: protocolSchemas.ProtocolDeleteMutation,
           protocolFavorite: protocolSchemas.ProtocolFavoriteMutation,
           contractCreate: protocolSchemas.ContractCreateMutation,

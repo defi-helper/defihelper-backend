@@ -3,7 +3,7 @@ import container from '@container';
 import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
 
 export default async (process: Process) => {
-  const scanner = container.scanner();
+  const watcher = container.watcher();
   const contracts = await container.model
     .contractTable()
     .innerJoin(
@@ -14,10 +14,10 @@ export default async (process: Process) => {
   await contracts.reduce<Promise<any>>(async (prev, contract) => {
     await prev;
 
-    const scannerContract = await scanner.findContract(contract.network, contract.address);
-    if (!scannerContract) return null;
+    const watcherContract = await watcher.findContract(contract.network, contract.address);
+    if (!watcherContract) return null;
 
-    return scanner.updateContract(scannerContract.id, { fid: contract.id });
+    return watcher.updateContract(watcherContract.id, { fid: contract.id });
   }, Promise.resolve(null));
 
   return process.done();

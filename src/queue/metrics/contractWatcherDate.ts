@@ -26,14 +26,14 @@ export default async (process: Process) => {
   const protocol = await container.model.protocolTable().where('id', contract.protocol).first();
   if (!protocol) throw new Error('Protocol not found');
   if (protocol.adapter === 'debankByApiReadonly') {
-    return process.info('Do not need to add in scanner').done();
+    return process.info('Do not need to add in watcher').done();
   }
 
-  const scanner = container.scanner();
-  const scannerContract = await scanner.findContract(contract.network, contract.address);
-  if (!scannerContract) throw new Error('Contract not register on scanner');
+  const watcher = container.watcher();
+  const watcherContract = await watcher.findContract(contract.network, contract.address);
+  if (!watcherContract) throw new Error('Contract not register on watcher');
 
-  const { uniqueWalletsCount } = await scanner.getContractStatistics(scannerContract.id);
+  const { uniqueWalletsCount } = await watcher.getContractStatistics(watcherContract.id);
   await container.model.metricService().createContract(
     contract,
     {

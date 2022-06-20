@@ -22,8 +22,8 @@ export default {
     internalUrl: process.env.API_INTERNAL_URL ?? 'https://backend-local.defihelper.io',
     secret: process.env.API_SECRET ?? 'defiHelperApiSecret',
   },
-  scanner: {
-    host: process.env.SCANNER_HOST ?? 'https://scanner-local.defihelper.io',
+  watcher: {
+    host: process.env.WATCHER_HOST ?? 'https://watcher-local.defihelper.io',
   },
   cryptography: {
     // key must be 128 bit length

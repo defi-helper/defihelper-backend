@@ -48,7 +48,7 @@ export default async (process: Process) => {
               },
               {
                 collisionSign: `billingTransferScan:ethereum:${network}`,
-                scanner: true,
+                watcher: true,
               },
             ),
           );
@@ -66,7 +66,7 @@ export default async (process: Process) => {
               },
               {
                 collisionSign: `billingClaimScan:ethereum:${network}`,
-                scanner: true,
+                watcher: true,
               },
             ),
           );
@@ -89,7 +89,7 @@ export default async (process: Process) => {
               },
               {
                 collisionSign: `billingStoreScan:ethereum:${network}`,
-                scanner: true,
+                watcher: true,
               },
             ),
           );
@@ -106,7 +106,7 @@ export default async (process: Process) => {
             },
             {
               collisionSign: `billingFeeOracle:ethereum:${network}`,
-              scanner: true,
+              watcher: true,
             },
           ),
         );
