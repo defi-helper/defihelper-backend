@@ -47,10 +47,16 @@ export default async (process: Process) => {
     }
   }
 
-  // Enable all notifications
+  const contacts = await container.model.userContactTable().where('user', user.id);
   await Promise.all(
-    Object.values(UserNotificationType).map((t) =>
-      container.model.userNotificationService().enable(user, t as UserNotificationType),
+    contacts.map((contact) =>
+      Promise.all(
+        Object.values(UserNotificationType).map((t) =>
+          container.model
+            .userNotificationService()
+            .enable(contact, t as UserNotificationType, '12:00'),
+        ),
+      ),
     ),
   );
 

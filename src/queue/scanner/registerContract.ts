@@ -61,14 +61,22 @@ export default async (process: Process) => {
         return process.done().info(`served abi contains wrong payload: ${servedAbi.id}`);
       }
 
-      await scanner.registerContract(
-        contract.network,
-        contract.address,
-        servedAbi.value.value,
-        contract.name,
-        deployBlockNumber,
-        contract.id,
-      );
+      try {
+        await container
+          .scanner()
+          .registerContract(
+            contract.network,
+            contract.address,
+            servedAbi.value.value,
+            contract.name,
+            deployBlockNumber,
+            contract.id,
+          );
+      } catch {
+        return process
+          .later(dayjs().add(10, 'minutes').toDate())
+          .info('scanner registerContract() received unknown error');
+      }
 
       return process
         .later(dayjs().add(1, 'minutes').toDate())

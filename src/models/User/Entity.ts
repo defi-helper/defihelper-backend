@@ -13,6 +13,7 @@ export interface User {
   referrer: string | null;
   isPorfolioCollected: boolean;
   locale: Locale;
+  timezone: string;
   updatedAt: Date;
   createdAt: Date;
 }
