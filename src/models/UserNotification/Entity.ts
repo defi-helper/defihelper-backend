@@ -5,6 +5,10 @@ export enum UserNotificationType {
   AutomateCallNotEnoughFunds = 'automateCallNotEnoughFunds',
 }
 
+export interface UserNotificationLegacy extends UserNotification {
+  user: string | null;
+}
+
 export interface UserNotification {
   id: string;
   contact: string | null;
