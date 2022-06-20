@@ -6,11 +6,16 @@ import { Protocol, Contract } from '@models/Protocol/Entity';
 import { Factory } from '@services/Container';
 import { Wallet } from '@models/Wallet/Entity';
 import { Token } from '@models/Token/Entity';
+import { Task } from '@models/Queue/Entity';
 import {
   MetricBlockchain,
   MetricBlockchainTable,
   MetricContract,
   MetricContractTable,
+  MetricContractTask,
+  MetricContractTaskTable,
+  MetricWalletTask,
+  MetricWalletTaskTable,
   MetricMap,
   MetricProtocol,
   MetricProtocolTable,
@@ -50,7 +55,9 @@ export class MetricContractService {
     readonly metricBlockchainTable: Factory<MetricBlockchainTable>,
     readonly metricProtocolTable: Factory<MetricProtocolTable>,
     readonly metricContractTable: Factory<MetricContractTable>,
+    readonly metricContractTaskTable: Factory<MetricContractTaskTable>,
     readonly metricWalletTable: Factory<MetricWalletTable>,
+    readonly metricWalletTaskTable: Factory<MetricWalletTaskTable>,
     readonly metricWalletTokenTable: Factory<MetricWalletTokenTable>,
     readonly metricTokenTable: Factory<MetricTokenTable>,
   ) {}
@@ -95,6 +102,30 @@ export class MetricContractService {
     return created;
   }
 
+  async setContractTask(contract: Contract, task: Task) {
+    const duplicate = await this.metricContractTaskTable().where('contract', contract.id).first();
+    if (duplicate) {
+      const updated: MetricContractTask = {
+        ...duplicate,
+        task: task.id,
+        createdAt: new Date(),
+      };
+      await this.metricContractTaskTable().where('id', updated.id).update(updated);
+
+      return updated;
+    }
+
+    const created: MetricContractTask = {
+      id: uuid(),
+      contract: contract.id,
+      task: task.id,
+      createdAt: new Date(),
+    };
+    await this.metricContractTaskTable().insert(created);
+
+    return created;
+  }
+
   async createWallet(contract: Contract, wallet: Wallet, data: MetricMap, date: Date) {
     const created: MetricWallet = {
       id: uuid(),
@@ -106,6 +137,33 @@ export class MetricContractService {
     };
     await this.metricWalletTable().insert(created);
     this.onWalletCreated.emit(created);
+
+    return created;
+  }
+
+  async setWalletTask(contract: Contract, wallet: Wallet, task: Task) {
+    const duplicate = await this.metricWalletTaskTable()
+      .where({ contract: contract.id, wallet: wallet.id })
+      .first();
+    if (duplicate) {
+      const updated: MetricWalletTask = {
+        ...duplicate,
+        task: task.id,
+        createdAt: new Date(),
+      };
+      await this.metricWalletTaskTable().where('id', updated.id).update(updated);
+
+      return updated;
+    }
+
+    const created: MetricWalletTask = {
+      id: uuid(),
+      contract: contract.id,
+      wallet: wallet.id,
+      task: task.id,
+      createdAt: new Date(),
+    };
+    await this.metricWalletTaskTable().insert(created);
 
     return created;
   }

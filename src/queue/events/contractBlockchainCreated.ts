@@ -20,8 +20,8 @@ export default async (process: Process) => {
     .where(`${contractTableName}.id`, contractId)
     .first();
   if (!contract) throw new Error('Contract not found');
-
   if (contract.blockchain !== 'ethereum') return process.done();
+
   if (contract.deployBlockNumber === null) {
     await container.model.queueService().push(
       'contractResolveDeployBlockNumber',
