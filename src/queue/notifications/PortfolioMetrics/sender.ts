@@ -43,7 +43,7 @@ export default async (process: Process) => {
   }
 
   const chatId = contact.params?.chatId;
-  if (!chatId) return null;
+  if (!chatId) return process.error(new Error('Chat id not found'));
 
   const [totalStackedUSD, totalEarnedUSD, totalTokensUSD] = await Promise.all([
     dataLoader.userMetric({ metric: 'stakingUSD' }).load(contact.user),
@@ -56,7 +56,7 @@ export default async (process: Process) => {
       .load(contact.user),
   ]);
 
-  if (!totalStackedUSD) return null;
+  if (!totalStackedUSD) return process.done().info('no totalStackedUSD');
 
   await container.model.queueService().push('sendTelegram', {
     chatId,
