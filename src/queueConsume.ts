@@ -20,11 +20,7 @@ container.model
     });
     const consumer = container.model.queueService().consume({ queue: options.queue });
 
-    process.on('SIGTERM', () => {
-      console.log('sigterm start');
-      consumer.stop();
-      console.log('sigterm end');
-    });
+    process.on('SIGTERM', () => consumer.stop());
 
     container.logger().info(`Consume "${options.queue}" queue messages`);
   })
