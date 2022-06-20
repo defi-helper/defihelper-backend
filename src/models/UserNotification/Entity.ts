@@ -7,9 +7,14 @@ export enum UserNotificationType {
 
 export interface UserNotification {
   id: string;
-  user: string;
+  contact: string | null;
+  time: string;
   type: UserNotificationType;
   createdAt: Date;
+}
+
+export interface UserNotificationLegacy extends UserNotification {
+  user: string;
 }
 
 export const userNotificationTableName = 'user_notification';

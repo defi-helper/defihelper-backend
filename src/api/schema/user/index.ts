@@ -44,6 +44,7 @@ import {
   contractTableName,
   contractTableName as protocolContractTableName,
 } from '@models/Protocol/Entity';
+import dayjs from 'dayjs';
 import { ContractType } from '../protocol';
 import {
   BlockchainEnum,
@@ -1801,6 +1802,10 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
               type: GraphQLString,
               description: 'Code',
             },
+            timezone: {
+              type: GraphQLNonNull(GraphQLString),
+              description: 'Timezone',
+            },
             merge: {
               type: GraphQLBoolean,
               description: 'Merged target account to current account',
@@ -1820,6 +1825,11 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
     if (typeof message !== 'string' || message.length < 5) return null;
     if (!container.blockchain.ethereum.isNetwork(network)) {
       throw new UserInputError('Network unsupported');
+    }
+    try {
+      dayjs().tz(input.timezone);
+    } catch {
+      throw new UserInputError('Wrong timezone');
     }
 
     const hash = utils.hashMessage(message);
@@ -1867,7 +1877,9 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
       codeRecord = await container.model.referrerCodeTable().where({ id: code }).first();
     }
 
-    const user = currentUser ?? (await container.model.userService().create(Role.User, codeRecord));
+    const user =
+      currentUser ??
+      (await container.model.userService().create(Role.User, input.timezone, codeRecord));
     await container.model
       .walletService()
       .createBlockchainWallet(
@@ -1917,6 +1929,10 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
               type: GraphQLString,
               description: 'Promo id',
             },
+            timezone: {
+              type: GraphQLNonNull(GraphQLString),
+              description: 'Timezone',
+            },
             merge: {
               type: GraphQLBoolean,
               description: 'Merged target account to current account',
@@ -1934,6 +1950,11 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
 
     const { network, address, message, publicKey, signature, merge, code } = input;
     if (typeof message !== 'string' || message.length < 5) return null;
+    try {
+      dayjs().tz(input.timezone);
+    } catch {
+      throw new UserInputError('Wrong timezone');
+    }
 
     const isValidSignature = WavesCrypto.verifySignature(
       publicKey,
@@ -1991,7 +2012,10 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
         })
         .first();
     }
-    const user = currentUser ?? (await container.model.userService().create(Role.User, codeRecord));
+
+    const user =
+      currentUser ??
+      (await container.model.userService().create(Role.User, input.timezone, codeRecord));
     await container.model
       .walletService()
       .createBlockchainWallet(

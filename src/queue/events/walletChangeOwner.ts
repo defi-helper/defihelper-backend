@@ -43,10 +43,6 @@ export default async (process: Process) => {
         .protocolUserFavoriteTable()
         .update('user', blockchainWallet.user)
         .where('user', user.id),
-      container.model
-        .userNotificationTable()
-        .update('user', blockchainWallet.user)
-        .where('user', user.id),
     ]);
 
     await container.model.userService().delete(user);

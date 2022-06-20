@@ -1,23 +1,27 @@
 import { Factory } from '@services/Container';
 import { v4 as uuid } from 'uuid';
-import { User } from '@models/User/Entity';
 import {
   UserNotification,
   UserNotificationTable,
   UserNotificationType,
 } from '@models/UserNotification/Entity';
+import { UserContact } from '@models/Notification/Entity';
 
 export class UserNotificationService {
   constructor(readonly table: Factory<UserNotificationTable>) {}
 
-  async isNotificationEnabled(user: User, type: UserNotificationType): Promise<boolean> {
-    const c = await this.table().count('id').where({ user: user.id, type }).first();
+  async isNotificationEnabled(contact: UserContact, type: UserNotificationType): Promise<boolean> {
+    const c = await this.table().count('id').where({ contact: contact.id, type }).first();
     return c !== undefined && c.count > 0;
   }
 
-  async enable(user: User, type: UserNotificationType): Promise<UserNotification> {
+  async enable(
+    contact: UserContact,
+    type: UserNotificationType,
+    time: string,
+  ): Promise<UserNotification> {
     const duplicates = await this.table().where({
-      user: user.id,
+      contact: contact.id,
       type,
     });
     if (duplicates.length > 0) {
@@ -26,8 +30,9 @@ export class UserNotificationService {
 
     const created: UserNotification = {
       id: uuid(),
-      user: user.id,
+      contact: contact.id,
       type,
+      time,
       createdAt: new Date(),
     };
 
@@ -35,10 +40,10 @@ export class UserNotificationService {
     return created;
   }
 
-  async disable(user: User, type: UserNotificationType): Promise<void> {
+  async disable(contact: UserContact, type: UserNotificationType): Promise<void> {
     await this.table()
       .where({
-        user: user.id,
+        contact: contact.id,
         type,
       })
       .delete();
