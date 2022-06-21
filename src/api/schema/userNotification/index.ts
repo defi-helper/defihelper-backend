@@ -6,7 +6,6 @@ import {
   GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
-  GraphQLString,
 } from 'graphql';
 import container from '@container';
 import { Request } from 'express';
@@ -37,8 +36,12 @@ export const UserNotificationType = new GraphQLObjectType<UserNotification.UserN
       description: 'Contact',
     },
     time: {
-      type: GraphQLNonNull(GraphQLString),
+      type: GraphQLNonNull(GraphQLInt),
       description: 'Time',
+      resolve: (notification) => {
+        const [hour] = notification.time.split(':');
+        return Number(hour);
+      },
     },
   },
 });
