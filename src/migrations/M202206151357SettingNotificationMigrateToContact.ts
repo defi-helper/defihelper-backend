@@ -6,7 +6,7 @@ import { tableName as userTableName } from '@models/User/Entity';
 export default async (schema: SchemaBuilder) => {
   return schema
     .alterTable(userTableName, (table) => {
-      table.string('timezone', 10).notNullable().defaultTo('Atlantic/Reykjavik');
+      table.string('timezone', 128).notNullable().defaultTo('Atlantic/Reykjavik');
     })
     .alterTable(userNotificationTableName, (table) => {
       table.string('contact').nullable();
