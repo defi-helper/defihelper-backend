@@ -27,14 +27,10 @@ export class UserNotificationService {
       })
       .first();
     if (duplicate) {
-      const [existingHour] = duplicate.time.split(':');
-      const [newTime] = time.split(':');
-
-      if (existingHour !== newTime) {
+      if (duplicate.time !== `${time}:00`) {
         await this.table()
           .where({
-            contact: contact.id,
-            type,
+            id: duplicate.id,
           })
           .update('time', time);
       }
