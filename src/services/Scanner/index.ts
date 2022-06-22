@@ -110,6 +110,7 @@ export class ScannerService {
       abi?: object;
       name?: string;
       startHeight?: number;
+      enabled?: boolean;
     },
   ) {
     return this.client
