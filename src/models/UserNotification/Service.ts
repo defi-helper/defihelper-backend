@@ -27,7 +27,6 @@ export class UserNotificationService {
       })
       .first();
     if (duplicate) {
-      console.info(`${duplicate.time} !== '${time}:00'`);
       if (duplicate.time !== `${time}:00`) {
         await this.table()
           .where({
