@@ -6,7 +6,6 @@ import {
   GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
-  GraphQLString,
 } from 'graphql';
 import container from '@container';
 import { Request } from 'express';
@@ -37,8 +36,12 @@ export const UserNotificationType = new GraphQLObjectType<UserNotification.UserN
       description: 'Contact',
     },
     time: {
-      type: GraphQLNonNull(GraphQLString),
+      type: GraphQLNonNull(GraphQLInt),
       description: 'Time',
+      resolve: (notification) => {
+        const [hour] = notification.time.split(':');
+        return Number(hour);
+      },
     },
   },
 });
@@ -91,7 +94,9 @@ export const UserNotificationToggleMutation: GraphQLFieldConfig<any, Request> = 
     }
 
     if (state) {
-      await container.model.userNotificationService().enable(contact, type, `${hour}:00`);
+      await container.model
+        .userNotificationService()
+        .enable(contact, type, `${String(hour).padStart(2, '0')}:00`);
       return true;
     }
 

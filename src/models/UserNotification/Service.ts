@@ -20,12 +20,25 @@ export class UserNotificationService {
     type: UserNotificationType,
     time: string,
   ): Promise<UserNotification> {
-    const duplicates = await this.table().where({
-      contact: contact.id,
-      type,
-    });
-    if (duplicates.length > 0) {
-      return duplicates[0];
+    const duplicate = await this.table()
+      .where({
+        contact: contact.id,
+        type,
+      })
+      .first();
+    if (duplicate) {
+      if (duplicate.time !== `${time}:00`) {
+        await this.table()
+          .where({
+            id: duplicate.id,
+          })
+          .update('time', time);
+      }
+
+      return {
+        ...duplicate,
+        time,
+      };
     }
 
     const created: UserNotification = {
