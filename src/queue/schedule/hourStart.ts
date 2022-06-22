@@ -12,6 +12,7 @@ export default async (process: Process) => {
     queue.push('billingBroker', {}),
     queue.push('walletBalancesCentralizedExchangeBroker'),
     queue.push('treasuryStatsCache', {}),
+    queue.push('notificationPortfolioMetricsNotifyHourly', {}),
   ]);
 
   return process.done();
