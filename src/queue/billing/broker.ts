@@ -42,7 +42,7 @@ export default async (process: Process) => {
               {
                 blockchain: 'ethereum',
                 network,
-                step: 1000,
+                step: 5000,
                 from: balanceFrom,
                 lag: ['43114'].includes(network) ? 4 : 1,
               },
@@ -60,7 +60,7 @@ export default async (process: Process) => {
               {
                 blockchain: 'ethereum',
                 network,
-                step: 1000,
+                step: 5000,
                 from: balanceFrom,
                 lag: ['43114'].includes(network) ? 4 : 1,
               },
@@ -83,7 +83,7 @@ export default async (process: Process) => {
               {
                 blockchain: 'ethereum',
                 network,
-                step: 1000,
+                step: 5000,
                 from: storeFrom,
                 lag: ['43114'].includes(network) ? 4 : 1,
               },

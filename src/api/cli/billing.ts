@@ -21,7 +21,7 @@ export default async ([network = '1']: string[]) => {
       {
         blockchain: 'ethereum',
         network,
-        step: 1000,
+        step: 5000,
         from: balanceFrom,
       },
       {
@@ -34,7 +34,7 @@ export default async ([network = '1']: string[]) => {
       {
         blockchain: 'ethereum',
         network,
-        step: 1000,
+        step: 5000,
         from: balanceFrom,
       },
       {
@@ -58,7 +58,7 @@ export default async ([network = '1']: string[]) => {
       {
         blockchain: 'ethereum',
         network,
-        step: 1000,
+        step: 5000,
         from: storeFrom,
       },
       {
