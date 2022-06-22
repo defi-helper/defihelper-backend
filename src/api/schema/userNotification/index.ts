@@ -94,7 +94,9 @@ export const UserNotificationToggleMutation: GraphQLFieldConfig<any, Request> = 
     }
 
     if (state) {
-      await container.model.userNotificationService().enable(contact, type, `${hour}:00`);
+      await container.model
+        .userNotificationService()
+        .enable(contact, type, `${String(hour).padStart(2, '0')}:00`);
       return true;
     }
 
