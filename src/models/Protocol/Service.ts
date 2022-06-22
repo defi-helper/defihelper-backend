@@ -116,15 +116,27 @@ interface ContractRegisterData {
 }
 
 export class ContractService {
-  public readonly onContractDebankCreated = new Emitter<{
-    contract: Contract;
-    contractDebank: ContractDebankType;
-  }>();
+  public readonly onContractDebankCreated = new Emitter<
+    Readonly<{
+      contract: Contract;
+      contractDebank: ContractDebankType;
+    }>
+  >();
 
-  public readonly onContractBlockchainCreated = new Emitter<ContractRegisterData>((contract) => {
-    container.model.queueService().push('eventsContractBlockchainCreated', {
-      contract: contract.contract.id,
-      events: contract.eventsToSubscribe,
+  public readonly onContractBlockchainCreated = new Emitter<Readonly<ContractRegisterData>>(
+    (contract) => {
+      container.model.queueService().push('eventsContractBlockchainCreated', {
+        contract: contract.contract.id,
+        events: contract.eventsToSubscribe,
+      });
+    },
+  );
+
+  public readonly onContractBlockchainUpdated = new Emitter<
+    Readonly<ContractBlockchainType & Contract>
+  >((contract) => {
+    container.model.queueService().push('eventsContractBlockchainUpdated', {
+      contract: contract.id,
     });
   });
 
@@ -302,6 +314,8 @@ export class ContractService {
         metric: updatedBlockchain.metric,
       });
     });
+
+    this.onContractBlockchainUpdated.emit(contractBlockchain);
 
     return updatedBlockchain;
   }

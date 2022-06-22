@@ -1021,6 +1021,10 @@ export const UserType = new GraphQLObjectType<User, Request>({
       type: GraphQLNonNull(LocaleEnum),
       description: 'Current user locale',
     },
+    timezone: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Current user timezone',
+    },
     isPorfolioCollected: {
       type: GraphQLNonNull(GraphQLBoolean),
       description: 'Is portfolio collected',
