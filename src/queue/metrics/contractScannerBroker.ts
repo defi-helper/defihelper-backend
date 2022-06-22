@@ -11,7 +11,8 @@ export default async (process: Process) => {
       `${contractBlockchainTableName}.id`,
       `${contractTableName}.id`,
     )
-    .where(`${contractBlockchainTableName}.blockchain`, 'ethereum');
+    .where(`${contractBlockchainTableName}.blockchain`, 'ethereum')
+    .whereNotNull(`${contractBlockchainTableName}.watcherId`);
   await Promise.all(
     contracts.map((contract) =>
       queue.push('metricsContractScannerDate', { contract: contract.id }),

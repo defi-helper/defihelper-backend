@@ -247,6 +247,7 @@ export class ContractService {
       },
       blockchain,
       deployBlockNumber,
+      watcherId: null,
       metric,
       network,
     };
@@ -295,6 +296,7 @@ export class ContractService {
         network: updatedBlockchain.network,
         address: updatedBlockchain.address,
         deployBlockNumber: updatedBlockchain.deployBlockNumber,
+        watcherId: updatedBlockchain.watcherId,
         adapter: updatedBlockchain.adapter,
         automate: updatedBlockchain.automate,
         metric: updatedBlockchain.metric,

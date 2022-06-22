@@ -46,13 +46,6 @@ export default async (process: Process) => {
     }
     if (hasProviderHistorical) {
       container.model.queueService().push('metricsContractHistory', { contract: contract.id });
-      container.model
-        .queueService()
-        .push(
-          'metricsContractScannerHistory',
-          { contract: contract.id },
-          { startAt: dayjs().add(10, 'minutes').toDate() },
-        );
     }
   }
 
