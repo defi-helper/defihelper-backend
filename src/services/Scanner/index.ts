@@ -12,7 +12,6 @@ export interface ScannerParams {
 
 export interface Contract {
   id: string;
-  fid: string | null;
   address: string;
   network: string;
   name: string;
@@ -69,16 +68,6 @@ export class ScannerService {
       });
   }
 
-  getContractByFid(fid: string): Promise<Contract | null> {
-    return this.client
-      .get<Contract>(`/api/contract/fid/${fid}`)
-      .then(({ data }) => data)
-      .catch((e: AxiosError) => {
-        if (e.response?.status === 404) return null;
-        throw e;
-      });
-  }
-
   getContractStatistics(id: string): Promise<ContractStatistics> {
     return this.client
       .get<ContractStatistics>(`/api/contract/${id}/statistics`)
@@ -97,7 +86,6 @@ export class ScannerService {
     abi: object,
     name?: string,
     startHeight?: number | string,
-    fid?: string,
   ): Promise<Contract> {
     return this.client
       .post<Contract>(`/api/contract`, {
@@ -106,11 +94,10 @@ export class ScannerService {
         address: address.toLowerCase(),
         startHeight: startHeight ?? 0,
         abi: JSON.stringify(abi),
-        fid: fid ?? '',
       })
       .then(({ data }) => data)
       .catch((e) => {
-        if (e.response?.code !== 200) throw new TemporaryOutOfService();
+        if (e.response?.code !== 200) throw new TemporaryOutOfService(`${e}`);
         throw new Error(`Undefined error in scanner: ${e.message}`);
       });
   }
@@ -123,14 +110,13 @@ export class ScannerService {
       abi?: object;
       name?: string;
       startHeight?: number;
-      fid?: string;
     },
   ) {
     return this.client
       .put<Contract>(`/api/contract/${id}`, state)
       .then(({ data }) => data)
       .catch((e) => {
-        if (e.response?.code !== 200) throw new TemporaryOutOfService();
+        if (e.response?.code !== 200) throw new TemporaryOutOfService(`${e}`);
         throw new Error(`Undefined error in scanner: ${e.message}`);
       });
   }
@@ -139,7 +125,7 @@ export class ScannerService {
     return this.client
       .get<EventListener[]>(`/api/contract/${contractId}/event-listener?name=${event}`)
       .catch((e) => {
-        if (e.response?.code !== 200) throw new TemporaryOutOfService();
+        if (e.response?.code !== 200) throw new TemporaryOutOfService(`${e}`);
         throw new Error(`Undefined error in scanner: ${e.message}`);
       })
       .then(({ data }) => (data.length > 0 ? data[0] : undefined));
@@ -152,7 +138,7 @@ export class ScannerService {
       })
       .then(({ data }) => data)
       .catch((e) => {
-        if (e.response?.code !== 200) throw new TemporaryOutOfService();
+        if (e.response?.code !== 200) throw new TemporaryOutOfService(`${e}`);
         throw new Error(`Undefined error in scanner: ${e.message}`);
       });
   }

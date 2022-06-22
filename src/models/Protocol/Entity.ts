@@ -95,6 +95,7 @@ export interface ContractBlockchainType {
   network: string;
   address: string;
   deployBlockNumber: string | null;
+  watcherId: string | null;
   adapter: string;
   automate: ContractAutomate;
   metric: ContractMetric;

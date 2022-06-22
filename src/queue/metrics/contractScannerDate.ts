@@ -22,6 +22,9 @@ export default async (process: Process) => {
   if (contract.blockchain !== 'ethereum') {
     return process.info('No ethereum').done();
   }
+  if (!contract.watcherId) {
+    throw new Error('Contract not registered on watcher');
+  }
 
   const protocol = await container.model.protocolTable().where('id', contract.protocol).first();
   if (!protocol) throw new Error('Protocol not found');
@@ -30,8 +33,8 @@ export default async (process: Process) => {
   }
 
   const scanner = container.scanner();
-  const scannerContract = await scanner.getContractByFid(contract.id);
-  if (!scannerContract) throw new Error('Contract not register on scanner');
+  const scannerContract = await scanner.getContract(contract.watcherId);
+  if (!scannerContract) throw new Error('Contract not registered on watcher');
   const { uniqueWalletsCount } = await scanner.getContractStatistics(scannerContract.id);
   await container.model
     .metricService()
