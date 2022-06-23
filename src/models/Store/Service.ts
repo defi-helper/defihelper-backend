@@ -116,6 +116,6 @@ export class StoreService {
 
     return purchaseAmount - parseInt(result?.count || '0', 10);
       */
-    return 0;
+    return 10;
   }
 }
