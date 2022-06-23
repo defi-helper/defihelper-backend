@@ -239,7 +239,9 @@ export function route({ express, server }: { express: Express; server: Server })
       .andWhere(`${triggerTableName}.active`, true)
       .first();
     if (trigger) {
-      await container.model.queueService().push('automateTriggerRun', { id: trigger.id });
+      await container.model
+        .queueService()
+        .push('automateTriggerRun', { id: trigger.id }, { topic: 'trigger' });
     }
 
     return res.sendStatus(200);
