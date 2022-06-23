@@ -39,11 +39,12 @@ export default async (process: Process) => {
     await scanner.registerListener(
       await scanner.registerContract(network, address, servedAbi.value.value),
       event,
+      { promptly: {} },
     );
   } catch (e) {
     if (e instanceof Scanner.TemporaryOutOfService) {
       return process
-        .info('postponed due to temporarily service unavailability')
+        .info(`postponed due to temporarily service unavailability: ${e.message}`)
         .later(dayjs().add(5, 'minute').toDate());
     }
 
