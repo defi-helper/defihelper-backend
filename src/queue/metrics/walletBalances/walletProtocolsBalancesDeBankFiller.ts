@@ -413,6 +413,18 @@ export default async (process: Process) => {
             throw new Error('[1] can`t find token on fly, seems like a bug');
           }
         }
+
+        if (token.logo_url && tokenRecordAlias.logoUrl !== token.logo_url) {
+          await container.model.tokenAliasService().update({
+            ...tokenRecordAlias,
+            logoUrl: token.logo_url,
+          });
+
+          tokenRecordAlias = {
+            ...tokenRecordAlias,
+            logoUrl: token.logo_url,
+          };
+        }
       }
 
       const walletByChain = chainsWallets.find(
