@@ -49,6 +49,7 @@ export default {
     },
     queues: [
       { name: 'tasks_default', topic: 'tasks.*.default' },
+      { name: 'tasks_trigger', topic: 'tasks.*.trigger' },
       { name: 'tasks_metricHistory', topic: 'tasks.*.metricHistory' },
       { name: 'tasks_metricCurrent', topic: 'tasks.*.metricCurrent' },
     ],
