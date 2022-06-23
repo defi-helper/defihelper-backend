@@ -22,8 +22,6 @@ export default async (process: Process) => {
       `to_char(NOW() AT TIME ZONE "${userTableName}".timezone,'HH24') = to_char("${userNotificationTableName}".time,'HH24')`,
     );
 
-  console.info(notifications);
-
   await Promise.all(
     notifications.map(({ notificationId }) =>
       container.model.queueService().push('notificationPortfolioMetricsNotify', {
