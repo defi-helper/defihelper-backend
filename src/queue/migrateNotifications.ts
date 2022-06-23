@@ -1,32 +1,19 @@
 import container from '@container';
-import { UserNotification, userNotificationTableName } from '@models/UserNotification/Entity';
+import { UserNotificationType } from '@models/UserNotification/Entity';
 import { Process } from '@models/Queue/Entity';
 
-export interface UserNotificationLegacy extends UserNotification {
-  user: string | null;
-}
-
 export default async (process: Process) => {
-  const notifications = await container.database()<UserNotificationLegacy>(
-    userNotificationTableName,
-  );
-  const contacts = await container.model.userContactTable().whereIn(
-    'user',
-    notifications.map((v: any) => v.user),
-  );
+  const contacts = await container.model.userContactTable();
 
   await Promise.all(
-    notifications.map(async (notification) => {
-      if (!notification.user) {
-        return null;
-      }
-
-      const contact = contacts.find((v) => v.user === notification.user);
-      if (!contact) return null;
-
-      return container.model.userNotificationTable().where('id', notification.id).update({
-        contact: contact.id,
-      });
+    contacts.map(async (contact) => {
+      return Promise.all(
+        Object.values(UserNotificationType).map((t) =>
+          container.model
+            .userNotificationService()
+            .enable(contact, t as UserNotificationType, '12:00'),
+        ),
+      );
     }),
   );
 
