@@ -33,6 +33,11 @@ export interface EventListener {
   createdAt: Date;
 }
 
+export interface EventListenerConfig {
+  promptly?: {} | null;
+  historical?: { syncHeight: number } | null;
+}
+
 export interface WalletsInteractedWith {
   [wallet: string]: { [network: string]: string[] };
 }
@@ -110,6 +115,7 @@ export class ScannerService {
       abi?: object;
       name?: string;
       startHeight?: number;
+      enabled?: boolean;
     },
   ) {
     return this.client
@@ -131,11 +137,35 @@ export class ScannerService {
       .then(({ data }) => (data.length > 0 ? data[0] : undefined));
   }
 
-  async registerListener({ id }: Contract, event: string): Promise<EventListener> {
-    return this.client
-      .post<EventListener>(`/api/contract/${id}/event-listener`, {
+  async registerListener(
+    contract: Contract,
+    event: string,
+    config?: EventListenerConfig,
+  ): Promise<EventListener> {
+    const listener = await this.client
+      .post<EventListener>(`/api/contract/${contract.id}/event-listener`, {
         name: event,
       })
+      .then(({ data }) => data)
+      .catch((e) => {
+        if (e.response?.code !== 200) throw new TemporaryOutOfService(`${e}`);
+        throw new Error(`Undefined error in scanner: ${e.message}`);
+      });
+    if (config) {
+      await this.updateListener(contract, listener, config);
+    }
+
+    return listener;
+  }
+
+  /**
+   * @param contract
+   * @param listener
+   * @param config Null for delete sync.
+   */
+  updateListener(contract: Contract, listener: EventListener, config: EventListenerConfig) {
+    return this.client
+      .put<boolean>(`/api/contract/${contract.id}/event-listener/${listener.id}`, config)
       .then(({ data }) => data)
       .catch((e) => {
         if (e.response?.code !== 200) throw new TemporaryOutOfService(`${e}`);

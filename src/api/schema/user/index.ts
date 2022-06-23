@@ -1021,6 +1021,10 @@ export const UserType = new GraphQLObjectType<User, Request>({
       type: GraphQLNonNull(LocaleEnum),
       description: 'Current user locale',
     },
+    timezone: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Current user timezone',
+    },
     isPorfolioCollected: {
       type: GraphQLNonNull(GraphQLBoolean),
       description: 'Is portfolio collected',
@@ -1868,8 +1872,21 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
         await container.model.walletService().restoreBlockchainWallet(duplicate);
       }
 
+      if (user.timezone !== input.timezone) {
+        await container.model.userService().update({
+          ...user,
+          timezone: input.timezone,
+        });
+      }
+
       const sid = container.model.sessionService().generate(user);
-      return { user, sid };
+      return {
+        user: {
+          ...user,
+          timezone: input.timezone,
+        },
+        sid,
+      };
     }
 
     let codeRecord;
