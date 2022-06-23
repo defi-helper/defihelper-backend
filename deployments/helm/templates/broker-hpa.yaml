@@ -10,7 +10,7 @@ metadata:
     release: {{ $.Release.Name }}
   name: '{{ $.Release.Name }}-broker-{{ $params.name }}-hpa'
 spec:
-  maxReplicas: {{ $.Values.broker.maxReplicas }}
+  maxReplicas: {{ $params.maxReplicas }}
   metrics:
   - type: Object
     object:
@@ -22,7 +22,7 @@ spec:
         name: prometheus-rabbitmq-exporter
       target:
         type: Value
-        value: {{ $.Values.broker.maxReadyMessagesForHpa }}
+        value: {{ $params.maxReadyMessagesForHpa }}
   minReplicas: 1
   behavior:
     scaleDown:
