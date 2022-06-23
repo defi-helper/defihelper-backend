@@ -103,3 +103,4 @@ export * as utilsTokensLogoBroker from './utils/tokensLogoBroker';
 
 export * as sendTelegramNews from './sendTelegramNews';
 export * as migrateNotifications from './migrateNotifications';
+export * as iconsRefresh from './iconsRefresh';
