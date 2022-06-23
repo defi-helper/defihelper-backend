@@ -24,7 +24,7 @@ export default async (process: Process) => {
   const queue = container.model.queueService();
   await triggers.reduce<Promise<dayjs.Dayjs>>(async (prev, { id }) => {
     const startAt = await prev;
-    await queue.push('automateTriggerRun', { id }, { startAt: startAt.toDate() });
+    await queue.push('automateTriggerRun', { id }, { startAt: startAt.toDate(), topic: 'trigger' });
 
     return startAt.clone().add(lag, 'seconds');
   }, Promise.resolve(dayjs()));

@@ -36,7 +36,7 @@ container.model
           .where(database.raw(`params->>'network' = ?`, contract.network))
           .where(database.raw(`LOWER(params->>'address') = ?`, contract.address.toLowerCase()))
           .where(database.raw(`params->>'event' = ?`, listener.name));
-        triggers.map(({ id }) => queue.push('automateTriggerRun', { id }));
+        triggers.map(({ id }) => queue.push('automateTriggerRun', { id }, { topic: 'trigger' }));
         ack();
         if (isStoped) setTimeout(() => rabbit.close(), 500); // for ack work
         isConsume = false;
