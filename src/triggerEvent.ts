@@ -5,8 +5,6 @@ import process from 'process';
 import container from '@container';
 import { TriggerType } from '@models/Automate/Entity';
 
-console.log(process.pid);
-
 container.model
   .migrationService()
   .up()
@@ -36,7 +34,7 @@ container.model
           .automateTriggerTable()
           .where('type', TriggerType.ContractEvent)
           .where(database.raw(`params->>'network' = ?`, contract.network))
-          .where(database.raw(`params->>'address' = ?`, contract.address.toLowerCase()))
+          .where(database.raw(`LOWER(params->>'address') = ?`, contract.address.toLowerCase()))
           .where(database.raw(`params->>'event' = ?`, listener.name));
         triggers.map(({ id }) => queue.push('automateTriggerRun', { id }));
         ack();

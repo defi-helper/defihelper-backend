@@ -97,7 +97,13 @@ export default async (process: Process) => {
 
   // Watcher listeners
   const scanner = container.scanner();
-  await Promise.all(events.map((event) => scanner.registerListener(watcherContract, event)));
+  await Promise.all(
+    events.map((event) =>
+      scanner.registerListener(watcherContract, event, {
+        historical: { syncHeight: watcherContract.startHeight },
+      }),
+    ),
+  );
 
   return process.done();
 };
