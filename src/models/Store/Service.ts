@@ -4,6 +4,11 @@ import { Factory } from '@services/Container';
 import { User } from '@models/User/Entity';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 import {
+  NotificationTable,
+  notificationTableName,
+  userContactTableName,
+} from '@models/Notification/Entity';
+import {
   Product,
   ProductCode,
   productTableName,
@@ -17,6 +22,7 @@ export class StoreService {
   constructor(
     readonly productTable: Factory<ProductTable>,
     readonly purchaseTable: Factory<PurchaseTable>,
+    readonly notificationTable: Factory<NotificationTable>,
   ) {}
 
   async create(
@@ -99,12 +105,9 @@ export class StoreService {
     return parseInt(result.sum, 10);
   }
 
-  // eslint-disable-next-line
   async availableNotifications(user: User): Promise<number> {
-    // todo: fix it
-    /*
     const purchaseAmount = await this.purchaseAmount(ProductCode.Notification, user);
-    const result = await this.notificationTable()
+    const notificationsCount = await this.notificationTable()
       .countDistinct<{ count: string }>(`${notificationTableName}.id`)
       .innerJoin(
         userContactTableName,
@@ -112,10 +115,9 @@ export class StoreService {
         `${notificationTableName}.contact`,
       )
       .where(`${userContactTableName}.user`, user.id)
-      .first();
+      .first()
+      .then((row) => Number((row ?? { count: 0 }).count));
 
-    return purchaseAmount - parseInt(result?.count || '0', 10);
-      */
-    return 10;
+    return purchaseAmount - notificationsCount;
   }
 }
