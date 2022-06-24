@@ -413,17 +413,17 @@ export default async (process: Process) => {
             throw new Error('[1] can`t find token on fly, seems like a bug');
           }
         }
+      } else {
+        const tokenRecordAlias = await container.model
+          .tokenAliasTable()
+          .where('name', 'ilike', token.name)
+          .first();
 
-        if (token.logo_url && tokenRecordAlias.logoUrl !== token.logo_url) {
+        if (tokenRecordAlias && token.logo_url && tokenRecordAlias.logoUrl !== token.logo_url) {
           await container.model.tokenAliasService().update({
             ...tokenRecordAlias,
             logoUrl: token.logo_url,
           });
-
-          tokenRecordAlias = {
-            ...tokenRecordAlias,
-            logoUrl: token.logo_url,
-          };
         }
       }
 
@@ -520,6 +520,18 @@ export default async (process: Process) => {
           if (!tokenRecord) {
             throw new Error('[2] can`t find token on fly, seems like a bug');
           }
+        }
+      } else {
+        const tokenRecordAlias = await container.model
+          .tokenAliasTable()
+          .where('name', 'ilike', token.name)
+          .first();
+
+        if (tokenRecordAlias && token.logo_url && tokenRecordAlias.logoUrl !== token.logo_url) {
+          await container.model.tokenAliasService().update({
+            ...tokenRecordAlias,
+            logoUrl: token.logo_url,
+          });
         }
       }
 
