@@ -212,6 +212,7 @@ export class AutomateService {
       type,
       params,
       priority,
+      skipReason: null,
       updatedAt: new Date(),
       createdAt: new Date(),
     };

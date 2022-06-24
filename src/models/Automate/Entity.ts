@@ -89,12 +89,17 @@ export type ActionType = keyof typeof Actions;
 
 export type ActionParams<T extends ActionType> = Params<typeof Actions[T]['default']>;
 
+export enum ActionSkipReason {
+  NotAvailableNotification = 'notAvailableNotification',
+}
+
 export interface Action {
   id: string;
   trigger: string;
   type: ActionType;
   params: ActionParams<ActionType>;
   priority: number;
+  skipReason: ActionSkipReason | null;
   updatedAt: Date;
   createdAt: Date;
 }
