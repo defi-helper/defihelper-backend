@@ -34,8 +34,6 @@ export default async (params: Params) => {
 
   await container.model.notificationService().create(contact, {
     type: NotificationType.trigger,
-    payload: {
-      message,
-    },
+    payload: { message },
   });
 };

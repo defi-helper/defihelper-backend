@@ -239,7 +239,12 @@ export class ModelContainer extends Container<typeof AppContainer> {
   readonly storePurchaseTable = Models.Store.Entity.purchaseTableFactory(this.parent.database);
 
   readonly storeService = singleton(
-    () => new Models.Store.Service.StoreService(this.storeProductTable, this.storePurchaseTable),
+    () =>
+      new Models.Store.Service.StoreService(
+        this.storeProductTable,
+        this.storePurchaseTable,
+        this.notificationTable,
+      ),
   );
 
   readonly metadataTable = Models.Protocol.Entity.metadataTableFactory(this.parent.database);
