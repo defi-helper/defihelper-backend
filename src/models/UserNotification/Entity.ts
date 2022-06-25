@@ -7,7 +7,7 @@ export enum UserNotificationType {
 
 export interface UserNotification {
   id: string;
-  contact: string | null;
+  contact: string;
   time: string;
   type: UserNotificationType;
   createdAt: Date;

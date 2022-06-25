@@ -69,7 +69,6 @@ export * as protocolContractsResolver from './protocol/resolveContracts';
 /* regular notifications */
 export * as notificationPortfolioMetricsNotify from './notifications/PortfolioMetrics/sender';
 export * as notificationPortfolioMetricsNotifyHourly from './notifications/PortfolioMetrics/hourly';
-
 export * as notificationAutomateWalletsNotEnoughFundsNotify from './notifications/AutomateWalletsNotEnoughFunds/sender';
 export * as notificationAutomateWalletsNotEnoughFundsBroker from './notifications/AutomateWalletsNotEnoughFunds/broker';
 

@@ -17,7 +17,6 @@ export default async (process: Process) => {
     .innerJoin(walletTableName, `${walletTableName}.id`, `${triggerTableName}.wallet`)
     .where(`${triggerTableName}.active`, true)
     .andWhere(`${triggerTableName}.type`, type)
-    .whereNull(`${walletTableName}.suspendReason`)
     .whereNull(`${walletTableName}.deletedAt`)
     .orderBy(`${triggerTableName}.id`, 'asc');
   const lag = 3600 / triggers.length;

@@ -1,4 +1,5 @@
 import container from '@container';
+import { Action, ActionSkipReason } from '@models/Automate/Entity';
 import { ContactStatus, NotificationType } from '@models/Notification/Entity';
 import * as uuid from 'uuid';
 
@@ -19,7 +20,7 @@ export function paramsVerify(params: any): params is Params {
   return true;
 }
 
-export default async (params: Params) => {
+export default async function (this: Action, params: Params) {
   const { contactId, message } = params;
 
   const contact = await container.model.userContactTable().where('id', contactId).first();
@@ -30,10 +31,16 @@ export default async (params: Params) => {
   if (!user) throw new Error('User not found');
 
   const availableNotifications = await container.model.storeService().availableNotifications(user);
-  if (availableNotifications <= 0) throw new Error('Not available notifications');
+  if (availableNotifications <= 0) {
+    await container.model.automateService().updateAction({
+      ...this,
+      skipReason: ActionSkipReason.NotAvailableNotification,
+    });
+    throw new Error('Not available notifications');
+  }
 
   await container.model.notificationService().create(contact, {
     type: NotificationType.trigger,
     payload: { message },
   });
-};
+}
