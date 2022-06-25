@@ -12,6 +12,6 @@ export default async (schema: SchemaBuilder) => {
   `);
 
   return schema.alterTable(userNotificationTableName, (table) => {
-    table.unique(['contact', 'type'], `${userNotificationTableName}_uniqkey`);
+    table.unique(['contact', 'type'], `${userNotificationTableName}_uniqkey_contact`);
   });
 };
