@@ -26,12 +26,11 @@ export default async (process: Process) => {
     .where({
       id: notificationSetting.contact,
       status: ContactStatus.Active,
-      broker: ContactBroker.Telegram,
     })
     .first();
 
   if (!contact) {
-    throw new Error('NotificationSetting not found');
+    throw new Error('Contact not found');
   }
 
   const user = await container.model
@@ -60,16 +59,39 @@ export default async (process: Process) => {
   ]);
 
   if (!totalStackedUSD) return process.done().info('no totalStackedUSD');
+  const totalEarnedUSDFixedFloating = new BN(totalEarnedUSD).toFixed(2);
+  const totalNetWorth = new BN(totalStackedUSD)
+    .plus(totalEarnedUSD)
+    .plus(totalTokensUSD)
+    .toFixed(2);
 
-  await container.model.queueService().push('sendTelegram', {
-    chatId,
-    locale: user.locale,
-    params: {
-      totalNetWorth: new BN(totalStackedUSD).plus(totalEarnedUSD).plus(totalTokensUSD).toFixed(2),
-      totalEarnedUSD: new BN(totalEarnedUSD).toFixed(2),
-    },
-    template: 'portfolioMetrics',
-  });
+  switch (contact.broker) {
+    case ContactBroker.Telegram:
+      await container.model.queueService().push('sendTelegram', {
+        chatId,
+        locale: user.locale,
+        params: {
+          totalNetWorth,
+          totalEarnedUSD: totalEarnedUSDFixedFloating,
+        },
+        template: 'portfolioMetrics',
+      });
+      break;
+    case ContactBroker.Email:
+      await container.email().send(
+        'portfolioMetrics',
+        {
+          ...container.template.i18n(container.i18n.byLocale(user.locale)),
+          totalNetWorth,
+          totalEarnedUSD: totalEarnedUSDFixedFloating,
+        },
+        'Portfolio statistics',
+        contact.address,
+      );
+      break;
+    default:
+      throw new Error('Unknown broker');
+  }
 
   return process.done();
 };

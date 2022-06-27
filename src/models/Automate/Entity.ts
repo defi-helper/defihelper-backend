@@ -90,6 +90,7 @@ export type ActionType = keyof typeof Actions;
 export type ActionParams<T extends ActionType> = Params<typeof Actions[T]['default']>;
 
 export enum ActionSkipReason {
+  LowFeeFunds = 'lowFeeFunds',
   NotAvailableNotification = 'notAvailableNotification',
 }
 
