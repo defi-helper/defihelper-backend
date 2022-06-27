@@ -8,4 +8,5 @@ export const Templates = {
   ),
   eventTemplate: fs.promises.readFile(`${__dirname}/Event.mustache`, 'utf8'),
   triggerTemplate: fs.promises.readFile(`${__dirname}/Trigger.mustache`, 'utf8'),
+  portfolioMetrics: fs.promises.readFile(`${__dirname}/PortfolioMetrics.mustache`, 'utf8'),
 };
