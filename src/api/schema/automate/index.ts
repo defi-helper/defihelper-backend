@@ -127,6 +127,9 @@ export const ActionType = new GraphQLObjectType<Automate.Action, Request>({
     skipReason: {
       type: ActionSkipReasonEnum,
       description: 'Skip reason',
+      resolve: ({ skipReason }, _, { i18n }) => {
+        return skipReason ? i18n.t(`automate:action:skipReason:${skipReason}`) : null;
+      },
     },
     createdAt: {
       type: GraphQLNonNull(DateTimeType),
