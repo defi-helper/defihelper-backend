@@ -42,6 +42,11 @@ export enum WalletExchangeType {
   Coinex = 'coinex',
   Poloniex = 'poloniex',
   Ftx = 'ftx',
+  BinanceUS = 'binanceus',
+  Bybit = 'bybit',
+  Lbank = 'lbank',
+  FtxUS = 'ftxus',
+  GateIO = 'gateio',
 }
 
 export interface WalletExchange {
