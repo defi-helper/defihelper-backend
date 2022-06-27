@@ -59,6 +59,11 @@ export default async (process: Process) => {
   ]);
 
   if (!totalStackedUSD) return process.done().info('no totalStackedUSD');
+  const totalEarnedUSDFixedFloating = new BN(totalEarnedUSD).toFixed(2);
+  const totalNetWorth = new BN(totalStackedUSD)
+    .plus(totalEarnedUSD)
+    .plus(totalTokensUSD)
+    .toFixed(2);
 
   switch (contact.broker) {
     case ContactBroker.Telegram:
@@ -66,11 +71,8 @@ export default async (process: Process) => {
         chatId,
         locale: user.locale,
         params: {
-          totalNetWorth: new BN(totalStackedUSD)
-            .plus(totalEarnedUSD)
-            .plus(totalTokensUSD)
-            .toFixed(2),
-          totalEarnedUSD: new BN(totalEarnedUSD).toFixed(2),
+          totalNetWorth,
+          totalEarnedUSD: totalEarnedUSDFixedFloating,
         },
         template: 'portfolioMetrics',
       });
@@ -80,11 +82,8 @@ export default async (process: Process) => {
         'portfolioMetrics',
         {
           ...container.template.i18n(container.i18n.byLocale(user.locale)),
-          totalNetWorth: new BN(totalStackedUSD)
-            .plus(totalEarnedUSD)
-            .plus(totalTokensUSD)
-            .toFixed(2),
-          totalEarnedUSD: new BN(totalEarnedUSD).toFixed(2),
+          totalNetWorth,
+          totalEarnedUSD: totalEarnedUSDFixedFloating,
         },
         'Portfolio statistics',
         contact.address,
