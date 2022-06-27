@@ -57,6 +57,7 @@ export default async (process: Process) => {
       await actions.reduce(async (prev, action) => {
         await prev;
 
+        action.skipReason = null;
         try {
           return await Promise.resolve(getActionHandler(action).call(action, action.params));
         } catch (e) {

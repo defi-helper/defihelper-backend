@@ -1,5 +1,7 @@
 import container from '@container';
 import {
+  Action,
+  ActionSkipReason,
   contractTableName,
   ContractVerificationStatus,
   EthereumAutomateTransaction,
@@ -7,8 +9,11 @@ import {
 } from '@models/Automate/Entity';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 import { EthereumProtocolAdapter } from '@services/Blockchain/Adapter';
-import { Wallet } from 'ethers';
+import { ethers, Wallet } from 'ethers';
 import * as uuid from 'uuid';
+import { BigNumber as BN } from 'bignumber.js';
+import { abi as balanceAbi } from '@defihelper/networks/abi/Balance.json';
+import contracts from '@defihelper/networks/contracts.json';
 
 export interface Params {
   id: string;
@@ -23,7 +28,7 @@ export function paramsVerify(params: any): params is Params {
   return true;
 }
 
-export default async (params: Params) => {
+export default async function (this: Action, params: Params) {
   const contract = await container.model.automateContractTable().where('id', params.id).first();
   if (!contract) throw new Error('Contract not found');
   if (contract.verification !== ContractVerificationStatus.Confirmed) {
@@ -56,7 +61,30 @@ export default async (params: Params) => {
   if (adapter === undefined) throw new Error('Automate adapter not found');
 
   const network = container.blockchain.ethereum.byNetwork(wallet.network);
+  const provider = network.provider();
   const consumers = network.consumers();
+
+  const balanceAddress = network.dfhContracts()?.Balance.address;
+  if (!balanceAddress)
+    throw new Error(`Balance contract not found for "${wallet.network}" network`);
+  const balance = await container.blockchain.ethereum.contract(
+    balanceAddress,
+    balanceAbi,
+    provider,
+  );
+  const walletBalance: BN = await balance
+    .netBalanceOf(wallet.address)
+    .then((v: ethers.BigNumber) =>
+      new BN(v.toString()).div(`1e${network.nativeTokenDetails.decimals}`),
+    );
+  const nativeTokenUSD = await network.nativeTokenPrice();
+  if (walletBalance.multipliedBy(nativeTokenUSD).lt(1)) {
+    await container.model.automateService().updateAction({
+      ...this,
+      skipReason: ActionSkipReason.LowFeeFunds,
+    });
+    throw new Error(`Insufficient funds "${walletBalance.toString(10)}" to start automation`);
+  }
 
   const busyConsumers = await container.model
     .automateTransactionTable()
@@ -116,4 +144,4 @@ export default async (params: Params) => {
       );
     throw e;
   }
-};
+}
