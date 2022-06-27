@@ -13,7 +13,6 @@ import { ethers, Wallet } from 'ethers';
 import * as uuid from 'uuid';
 import { BigNumber as BN } from 'bignumber.js';
 import { abi as balanceAbi } from '@defihelper/networks/abi/Balance.json';
-import contracts from '@defihelper/networks/contracts.json';
 
 export interface Params {
   id: string;
@@ -29,6 +28,11 @@ export function paramsVerify(params: any): params is Params {
 }
 
 export default async function (this: Action, params: Params) {
+  await container.model.automateService().updateAction({
+    ...this,
+    skipReason: null,
+  });
+
   const contract = await container.model.automateContractTable().where('id', params.id).first();
   if (!contract) throw new Error('Contract not found');
   if (contract.verification !== ContractVerificationStatus.Confirmed) {
