@@ -1,6 +1,6 @@
 import { Process } from '@models/Queue/Entity';
 import container from '@container';
-import { ContactBroker, ContactStatus, userContactTableName } from '@models/Notification/Entity';
+import { ContactStatus, userContactTableName } from '@models/Notification/Entity';
 import { tableName as userTableName } from '@models/User/Entity';
 import { userNotificationTableName, UserNotificationType } from '@models/UserNotification/Entity';
 
@@ -15,7 +15,6 @@ export default async (process: Process) => {
     )
     .innerJoin(userTableName, `${userContactTableName}.user`, `${userTableName}.id`)
     .where({
-      broker: ContactBroker.Telegram,
       status: ContactStatus.Active,
       type: UserNotificationType.PortfolioMetrics,
     })
