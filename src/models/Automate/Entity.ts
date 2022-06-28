@@ -146,8 +146,13 @@ export enum ContractVerificationStatus {
   Rejected = 'rejected',
 }
 
+export enum ContractType {
+  Autorestake = 'autorestake',
+}
+
 export interface Contract {
   id: string;
+  type: ContractType;
   wallet: string;
   protocol: string;
   contract: string | null;
