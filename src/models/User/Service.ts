@@ -14,16 +14,21 @@ export class UserService {
     }),
   );
 
+  public readonly onAuth = new Emitter<User>((user) =>
+    this.update({ ...user, authAt: new Date() }),
+  );
+
   constructor(readonly table: Factory<UserTable>) {}
 
   async create(role: Role, timezone: string, codeRecord?: ReferrerCode, locale: Locale = 'enUS') {
-    const created = {
+    const created: User = {
       id: uuid(),
       role,
       locale,
       referrer: codeRecord?.id ?? null,
       isPorfolioCollected: false,
       timezone,
+      authAt: new Date(),
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -35,7 +40,7 @@ export class UserService {
   }
 
   async update(user: User) {
-    const updated = {
+    const updated: User = {
       ...user,
       updatedAt: new Date(),
     };
