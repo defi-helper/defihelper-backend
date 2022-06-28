@@ -214,7 +214,11 @@ export const TokenListQuery: GraphQLFieldConfig<any, Request> = {
         this.andWhere('alias', filter.tokenAlias);
       }
       if (filter.search !== undefined && filter.search !== '') {
-        this.andWhere('name', 'iLike', `%${filter.search}%`);
+        this.andWhere(function () {
+          this.where('name', 'iLike', `%${filter.search}%`);
+          this.orWhere('id', 'iLike', `%${filter.search}%`);
+          this.orWhere('alias', 'iLike', `%${filter.search}%`);
+        });
       }
     });
 
