@@ -201,7 +201,7 @@ export const ContractType: GraphQLObjectType = new GraphQLObjectType<
       description: 'Address',
     },
     watcherId: {
-      type: GraphQLNonNull(GraphQLString),
+      type: GraphQLString,
       description: 'Watcher id',
     },
     deployBlockNumber: {
