@@ -21,6 +21,11 @@ export function paramsVerify(params: any): params is Params {
 }
 
 export default async function (this: Action, params: Params) {
+  await container.model.automateService().updateAction({
+    ...this,
+    skipReason: null,
+  });
+
   const { contactId, message } = params;
 
   const contact = await container.model.userContactTable().where('id', contactId).first();

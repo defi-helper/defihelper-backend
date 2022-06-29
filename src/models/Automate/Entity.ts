@@ -90,6 +90,7 @@ export type ActionType = keyof typeof Actions;
 export type ActionParams<T extends ActionType> = Params<typeof Actions[T]['default']>;
 
 export enum ActionSkipReason {
+  LowFeeFunds = 'lowFeeFunds',
   NotAvailableNotification = 'notAvailableNotification',
 }
 
@@ -145,8 +146,13 @@ export enum ContractVerificationStatus {
   Rejected = 'rejected',
 }
 
+export enum ContractType {
+  Autorestake = 'autorestake',
+}
+
 export interface Contract {
   id: string;
+  type: ContractType;
   wallet: string;
   protocol: string;
   contract: string | null;

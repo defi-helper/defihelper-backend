@@ -75,7 +75,19 @@ export const ConditionType = new GraphQLObjectType<Automate.Condition, Request>(
       type: GraphQLNonNull(DateTimeType),
       description: 'Created at date',
     },
+    restakeAt: {
+      type: DateTimeType,
+      description: 'Next restake date',
+    },
   },
+});
+
+export const ActionSkipReasonEnum = new GraphQLEnumType({
+  name: 'AutomateSkipReasonEnum',
+  values: Object.keys(Automate.ActionSkipReason).reduce(
+    (res, handler) => ({ ...res, [handler]: { value: handler } }),
+    {} as GraphQLEnumValueConfigMap,
+  ),
 });
 
 export const ActionTypeEnum = new GraphQLEnumType({
@@ -111,6 +123,13 @@ export const ActionType = new GraphQLObjectType<Automate.Action, Request>({
     priority: {
       type: GraphQLNonNull(GraphQLInt),
       description: 'Execution priority (ascending)',
+    },
+    skipReason: {
+      type: ActionSkipReasonEnum,
+      description: 'Skip reason',
+      resolve: ({ skipReason }, _, { i18n }) => {
+        return skipReason ? i18n.t(`automate:action:skipReason:${skipReason}`) : null;
+      },
     },
     createdAt: {
       type: GraphQLNonNull(DateTimeType),
@@ -974,6 +993,14 @@ export const ContractVerificationStatusEnum = new GraphQLEnumType({
   ),
 });
 
+export const ContractTypeEnum = new GraphQLEnumType({
+  name: 'AutomateContractTypeEnum',
+  values: Object.values(Automate.ContractType).reduce(
+    (res, value) => ({ ...res, [value]: { value } }),
+    {} as GraphQLEnumValueConfigMap,
+  ),
+});
+
 export const ContractMetricType = new GraphQLObjectType({
   name: 'AutomateContractMetricType',
   fields: {
@@ -995,6 +1022,10 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
     id: {
       type: GraphQLNonNull(UuidType),
       description: 'Identificator',
+    },
+    type: {
+      type: GraphQLNonNull(ContractTypeEnum),
+      description: 'Contract type',
     },
     wallet: {
       type: GraphQLNonNull(WalletBlockchainType),
@@ -1147,6 +1178,9 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
           contract: {
             type: GraphQLList(GraphQLNonNull(UuidType)),
           },
+          type: {
+            type: GraphQLList(GraphQLNonNull(ContractTypeEnum)),
+          },
           address: {
             type: GraphQLList(GraphQLNonNull(GraphQLString)),
           },
@@ -1177,7 +1211,7 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
         `${Automate.contractTableName}.contract`,
       )
       .where(function () {
-        const { wallet, user, protocol, contract, address, archived, search } = filter;
+        const { wallet, user, protocol, contract, type, address, archived, search } = filter;
         if (typeof user === 'string') {
           this.andWhere(`${walletTableName}.user`, user);
         }
@@ -1186,6 +1220,9 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
         }
         if (typeof protocol === 'string') {
           this.andWhere(`${Automate.contractTableName}.protocol`, protocol);
+        }
+        if (Array.isArray(type)) {
+          this.whereIn(`${Automate.contractTableName}.type`, type);
         }
         if (Array.isArray(contract) && contract.length > 0) {
           this.whereIn(`${Automate.contractTableName}.contract`, contract);
@@ -1236,6 +1273,9 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
               type: UuidType,
               description: 'Protocol contract',
             },
+            type: {
+              type: GraphQLNonNull(ContractTypeEnum),
+            },
             address: {
               type: GraphQLNonNull(GraphQLString),
               description: 'Address',
@@ -1260,6 +1300,7 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
       wallet: walletId,
       protocol: protocolId,
       contract: contractId,
+      type,
       address,
       adapter,
       initParams,
@@ -1306,6 +1347,7 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
     const created = await container.model
       .automateService()
       .createContract(
+        type,
         blockchainWallet,
         protocol,
         contract,

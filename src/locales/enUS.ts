@@ -34,6 +34,8 @@ export default {
     'automate:trigger:everyDay:description': 'Call trigger every day',
     'automate:trigger:everyHour:name': 'Periodic',
     'automate:trigger:everyHour:description': 'Call trigger every hour',
+    'automate:action:skipReason:notAvailableNotification': 'Not available notifications',
+    'automate:action:skipReason:lowFeeFunds': 'Low fee funds',
     'automate:action:notification:paramsDescription': 'Send notification to {{contactId}}',
     'automate:action:ethereumAutomateRun:paramsDescription': 'Run automate {{id}}',
     'automate:condition:ethereumBalance:name': 'Native Token Balance',

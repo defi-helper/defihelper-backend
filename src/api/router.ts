@@ -75,6 +75,7 @@ export function route({ express, server }: { express: Express; server: Server })
           tokenAlias: tokenSchemas.TokenAliasQuery,
           tokensAlias: tokenSchemas.TokenAliasListQuery,
           products: storeSchemas.ProductListQuery,
+          productPriceFeed: storeSchemas.ProductPriceFeedQuery,
           billingBalance: billingSchemas.BalanceMetaQuery,
           govProposal: governanceSchemas.GovProposalQuery,
           govProposals: governanceSchemas.GovProposalListQuery,

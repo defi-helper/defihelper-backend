@@ -24,6 +24,7 @@ import {
   ConditionType,
   Contract,
   ContractTable,
+  ContractType,
   ContractVerificationStatus,
   TransactionTable,
   Trigger,
@@ -249,6 +250,7 @@ export class AutomateService {
   }
 
   async createContract(
+    type: ContractType,
     blockchainWallet: Wallet & WalletBlockchain,
     protocol: Protocol,
     contract: ProtocolContract | null,
@@ -258,6 +260,7 @@ export class AutomateService {
   ) {
     const created: Contract = {
       id: uuid(),
+      type,
       wallet: blockchainWallet.id,
       protocol: protocol.id,
       contract: contract?.id ?? null,

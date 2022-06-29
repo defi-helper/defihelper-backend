@@ -14,6 +14,7 @@ export interface User {
   isPorfolioCollected: boolean;
   locale: Locale;
   timezone: string;
+  authAt: Date;
   updatedAt: Date;
   createdAt: Date;
 }
