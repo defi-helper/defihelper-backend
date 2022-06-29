@@ -19,6 +19,7 @@ import {
 } from '@models/Automate/Entity';
 import { billTableName } from '@models/Billing/Entity';
 import { AuthenticationError } from 'apollo-server-express';
+import { walletTableName } from '@models/Wallet/Entity';
 import { DateTimeType, onlyAllowed } from '../types';
 
 export const MonitoringStatisticsPointType = new GraphQLObjectType({
@@ -80,7 +81,7 @@ export const MonitoringWalletRegisteringHistoryQuery: GraphQLFieldConfig<any, Re
     const rows: { date: Date; number: number }[] = await container.model
       .walletTable()
       .column(database.raw('count(distinct id) as number'))
-      .column(database.raw(`date_trunc('day', "${userTableName}"."createdAt") "date"`))
+      .column(database.raw(`date_trunc('day', "${walletTableName}"."createdAt") "date"`))
       .orderBy('date')
       .groupBy('date');
 
