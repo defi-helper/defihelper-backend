@@ -71,6 +71,32 @@ export const MonitoringUsersRegisteringHistoryQuery: GraphQLFieldConfig<any, Req
   }),
 };
 
+export const MonitoringWalletRegisteringHistoryQuery: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLList(GraphQLNonNull(MonitoringStatisticsPointType))),
+  resolve: onlyAllowed('monitoring.view', async (root, _, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const database = container.database();
+    const rows: { date: Date; number: number }[] = await container.model
+      .walletTable()
+      .column(database.raw('count(distinct id) as number'))
+      .column(database.raw(`date_trunc('day', "${userTableName}"."createdAt") "date"`))
+      .orderBy('date')
+      .groupBy('date');
+
+    return rows.reduce<{ date: Date; number: number }[]>(
+      (prev, cur) => [
+        ...prev,
+        {
+          ...cur,
+          number: new BigNumber(cur.number).plus(prev.pop()?.number ?? 0).toNumber(),
+        },
+      ],
+      [],
+    );
+  }),
+};
+
 export const MonitoringAutomatesCreationHistoryQuery: GraphQLFieldConfig<any, Request> = {
   type: GraphQLNonNull(GraphQLList(GraphQLNonNull(MonitoringStatisticsPointType))),
   resolve: onlyAllowed('monitoring.view', async (root, _, { currentUser }) => {

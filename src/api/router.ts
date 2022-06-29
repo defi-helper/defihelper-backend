@@ -89,6 +89,8 @@ export function route({ express, server }: { express: Express; server: Server })
           treasury: treasurySchemas.TreasuryQuery,
           monitoringUsersRegisteringHistory:
             monitoringSchemas.MonitoringUsersRegisteringHistoryQuery,
+          monitoringWalletsRegisteringHistory:
+            monitoringSchemas.MonitoringWalletRegisteringHistoryQuery,
           monitoringAutomateRunHistory: monitoringSchemas.MonitoringAutomateRunHistoryQuery,
           monitoringAutomatesCreationHistory:
             monitoringSchemas.MonitoringAutomatesCreationHistoryQuery,
