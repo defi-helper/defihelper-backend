@@ -1103,7 +1103,7 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
       type: DateTimeType,
       description: 'restake at',
       resolve: async (contract, _, { dataLoader }) => {
-        const cache = container.cache();
+        // const cache = container.cache();
 
         if (contract.type !== Automate.ContractType.Autorestake) {
           return null;
@@ -1116,10 +1116,10 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
           return null;
         }
 
-        const cachedState = await cache.getAsync(`nextRestake:${contract.id}`);
-        if (cachedState) {
-          return dayjs(cachedState);
-        }
+        // const cachedState = await cache.getAsync(`nextRestake:${contract.id}`);
+        // if (cachedState) {
+        //  return dayjs(cachedState);
+        // }
 
         const stakingContract = await dataLoader.contract().load(contract.contract);
         if (!stakingContract) return null;
@@ -1152,7 +1152,7 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
         if (!targetPoint) return null;
 
         const result = dayjs().add(new BN(targetPoint.t).multipliedBy(86400).toNumber(), 'second');
-        await cache.setAsync(`nextRestake:${contract.id}`, result.toISOString(), 300); // 5 minutes
+        // await cache.setAsync(`nextRestake:${contract.id}`, result.toISOString(), 300); // 5 minutes
         return result;
       },
     },
