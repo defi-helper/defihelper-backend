@@ -1618,6 +1618,10 @@ export const UserType = new GraphQLObjectType<User, Request>({
       type: GraphQLNonNull(UserStoreType),
       resolve: (user) => user,
     },
+    authAt: {
+      type: GraphQLNonNull(DateTimeType),
+      description: 'Date of last auth',
+    },
     createdAt: {
       type: GraphQLNonNull(DateTimeType),
       description: 'Date of created account',
@@ -1746,6 +1750,7 @@ export const AuthDemoMutation: GraphQLFieldConfig<any, Request> = {
       .orderBy('createdAt', 'asc')
       .first();
     if (!user) return null;
+    container.model.userService().onAuth.emit(user);
     const sid = container.model.sessionService().generate(user);
     return { user, sid };
   },
@@ -1825,6 +1830,7 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
       throw new ForbiddenError('FORBIDDEN');
     }
 
+    const userService = container.model.userService();
     const { network, address, message, signature, merge, code } = input;
     if (typeof message !== 'string' || message.length < 5) return null;
     if (!container.blockchain.ethereum.isNetwork(network)) {
@@ -1865,6 +1871,7 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
         await container.model.walletService().changeOwner(duplicate, currentUser);
 
         const sid = container.model.sessionService().generate(currentUser);
+        userService.onAuth.emit(currentUser);
         return { user: currentUser, sid };
       }
 
@@ -1873,13 +1880,14 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
       }
 
       if (user.timezone !== input.timezone) {
-        await container.model.userService().update({
+        await userService.update({
           ...user,
           timezone: input.timezone,
         });
       }
 
       const sid = container.model.sessionService().generate(user);
+      userService.onAuth.emit(user);
       return {
         user: {
           ...user,
@@ -1894,9 +1902,7 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
       codeRecord = await container.model.referrerCodeTable().where({ id: code }).first();
     }
 
-    const user =
-      currentUser ??
-      (await container.model.userService().create(Role.User, input.timezone, codeRecord));
+    const user = currentUser ?? (await userService.create(Role.User, input.timezone, codeRecord));
     await container.model
       .walletService()
       .createBlockchainWallet(
@@ -1909,6 +1915,7 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
         '',
       );
     const sid = container.model.sessionService().generate(user);
+    userService.onAuth.emit(user);
 
     return { user, sid };
   },
@@ -1965,6 +1972,7 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
       throw new ForbiddenError('FORBIDDEN');
     }
 
+    const userService = container.model.userService();
     const { network, address, message, publicKey, signature, merge, code } = input;
     if (typeof message !== 'string' || message.length < 5) return null;
     try {
@@ -2009,6 +2017,7 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
         await container.model.walletService().changeOwner(duplicate, currentUser);
 
         const sid = container.model.sessionService().generate(currentUser);
+        userService.onAuth.emit(currentUser);
         return { user: currentUser, sid };
       }
 
@@ -2017,6 +2026,7 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
       }
 
       const sid = container.model.sessionService().generate(user);
+      userService.onAuth.emit(user);
       return { user, sid };
     }
 
@@ -2030,9 +2040,7 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
         .first();
     }
 
-    const user =
-      currentUser ??
-      (await container.model.userService().create(Role.User, input.timezone, codeRecord));
+    const user = currentUser ?? (await userService.create(Role.User, input.timezone, codeRecord));
     await container.model
       .walletService()
       .createBlockchainWallet(
@@ -2045,6 +2053,7 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
         '',
       );
     const sid = container.model.sessionService().generate(user);
+    userService.onAuth.emit(user);
 
     return { user, sid };
   },

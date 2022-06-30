@@ -7,10 +7,11 @@ import { Role } from '@models/User/Entity';
 export default async (process: Process) => {
   const database = container.database();
 
-  const [protocolsRow, contractsRow, portfoliosRow, trackedRow] = await Promise.all([
+  const [protocolsRow, contractsRow, portfoliosRow, walletsRow, trackedRow] = await Promise.all([
     container.model.protocolTable().count().where('hidden', false).first(),
     container.model.contractTable().count().where('hidden', false).first(),
     container.model.userTable().count().whereIn('role', [Role.User, Role.Admin]).first(),
+    container.model.walletTable().count().first(),
     container
       .database()
       .sum('usd AS usd')
@@ -50,6 +51,7 @@ export default async (process: Process) => {
       protocolsCount: protocolsRow ? protocolsRow.count : '0',
       contractsCount: contractsRow ? contractsRow.count : '0',
       portfoliosCount: portfoliosRow ? portfoliosRow.count : '0',
+      walletsCount: walletsRow ? walletsRow.count : '0',
       trackedUSD: trackedRow ? trackedRow.usd : '0',
     }),
   );
