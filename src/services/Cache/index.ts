@@ -11,19 +11,40 @@ export interface ConnectFactoryConfig {
 }
 
 export function redisConnectFactory(config: ConnectFactoryConfig) {
-  return () =>
-    redis.createClient({
-      tls: config.tls
-        ? {
-            host: config.host,
-            port: config.port,
-          }
-        : undefined,
-      host: config.host,
-      port: config.port,
-      password: config.password,
-      db: config.database,
-    });
+  const client = redis.createClient({
+    tls: config.tls
+      ? {
+          host: config.host,
+          port: config.port,
+        }
+      : undefined,
+    host: config.host,
+    port: config.port,
+    password: config.password,
+    db: config.database,
+  });
+
+  return () => ({
+    ...client,
+    getAsync: (key: string): Promise<string | null> => {
+      return new Promise((resolve) =>
+        client.get(`defihelper:${key}`, (err, result) => {
+          if (err || !result) return resolve(null);
+          return resolve(result);
+        }),
+      );
+    },
+
+    setAsync: (key: string, value: string, expireIn: number): Promise<string | null> => {
+      return new Promise((resolve, reject) =>
+        client.setex(`defihelper:${key}`, expireIn, value, (err, reply) => {
+          if (err) return reject(err);
+
+          return resolve(reply);
+        }),
+      );
+    },
+  });
 }
 
 export function redisSubscriberFactory(

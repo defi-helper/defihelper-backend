@@ -161,7 +161,7 @@ export default async function (this: Condition, params: Params) {
 
   await container.model.automateService().updateCondition({
     ...condition,
-    restakeAt: dayjs().add(new BN(optimalRes.v).multipliedBy(86400).toNumber(), 'second').toDate(),
+    restakeAt: dayjs().add(new BN(optimalRes.t).multipliedBy(86400).toNumber(), 'second').toDate(),
   });
 
   return new BN(optimalRes.v).lte(0);
