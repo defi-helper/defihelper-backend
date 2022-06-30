@@ -1103,6 +1103,8 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
       type: DateTimeType,
       description: 'restake at',
       resolve: async (contract, _, { dataLoader }) => {
+        const cache = container.cache();
+
         if (contract.type !== Automate.ContractType.Autorestake) {
           return null;
         }
@@ -1114,13 +1116,13 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
           return null;
         }
 
-        const cachedState = await container.cache().getAsync(`nextRestake:${contract.id}`);
+        const cachedState = await cache.getAsync(`nextRestake:${contract.id}`);
         if (cachedState) {
           return dayjs(cachedState);
         }
 
-        const contractBlockchain = await dataLoader.contract().load(contract.contract);
-        if (!contractBlockchain) return null;
+        const stakingContract = await dataLoader.contract().load(contract.contract);
+        if (!stakingContract) return null;
 
         const { apr } = (await container.model
           .metricContractTable()
@@ -1129,30 +1131,28 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
               .database()
               .raw(`(${metricContractTableName}.data->>'aprYear')::numeric AS apr`),
           )
-          .where('contract', contractBlockchain.id)
+          .where('contract', stakingContract.id)
           .orderBy(`${metricContractTableName}.date`, 'DESC')
           .first()) as unknown as { apr?: number };
 
         if (!apr) return null;
 
-        const contractWallet = await dataLoader.wallet().load(contract.wallet);
-        if (!contractWallet) return null;
+        const automateOwnerWallet = await dataLoader.wallet().load(contract.wallet);
+        if (!automateOwnerWallet) return null;
 
-        const walletMetric = await dataLoader.walletMetric().load(contractWallet.id);
+        const walletMetric = await dataLoader.walletMetric().load(automateOwnerWallet.id);
         if (!walletMetric) return null;
 
         const [targetPoint] = await optimalRestake(
-          contractBlockchain.blockchain,
-          contractBlockchain.network,
+          stakingContract.blockchain,
+          stakingContract.network,
           new BN(walletMetric.stakingUSD).toNumber(),
           new BN(apr).toNumber(),
         );
         if (!targetPoint) return null;
 
         const result = dayjs().add(new BN(targetPoint.t).multipliedBy(86400).toNumber(), 'second');
-        await container
-          .cache()
-          .setAsync(`nextRestake:${contract.id}`, result.toISOString(), 5 * 60);
+        await cache.setAsync(`nextRestake:${contract.id}`, result.toISOString(), 300); // 5 minutes
         return result;
       },
     },
