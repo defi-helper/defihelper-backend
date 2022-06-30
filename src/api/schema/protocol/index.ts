@@ -27,6 +27,7 @@ import {
   TokenContractLinkType,
   tokenContractLinkTableName,
   UserContractLinkType,
+  protocolTableName,
 } from '@models/Protocol/Entity';
 import { apyBoost } from '@services/RestakeStrategy';
 import {
@@ -487,7 +488,6 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
         `${contractTableName}.id`,
       )
       .column(`${contractTableName}.*`)
-      .column(`${contractTableName}.id`)
       .column(`${contractBlockchainTableName}.*`)
       .where(function () {
         const { id, protocol, hidden, userLink, search } = filter;
@@ -603,22 +603,48 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
     if (sortColumns.includes('myStaked')) {
       if (currentUser) {
         listSelect = listSelect
-          .column(database.raw(`COALESCE(metric."myStaked", '0') AS "myStaked"`))
+          .column(database.raw('COALESCE("myStaked", 0) AS "myStaked"'))
           .leftJoin(
-            container.model
-              .metricWalletTable()
-              .distinctOn(`${metricWalletTableName}.contract`)
-              .column(`${metricWalletTableName}.contract`)
-              .column(database.raw(`${metricWalletTableName}.data->>'stakingUSD' AS "myStaked"`))
-              .innerJoin(
-                walletTableName,
-                `${walletTableName}.id`,
-                `${metricWalletTableName}.wallet`,
+            database
+              .columns(database.raw('SUM("myStaked") as "myStaked"'), 'contract')
+              .from(
+                container.model
+                  .metricWalletTable()
+                  .distinctOn(
+                    `${metricWalletTableName}.contract`,
+                    `${metricWalletTableName}.wallet`,
+                  )
+                  .column(`${metricWalletTableName}.contract`)
+                  .column(`${metricWalletTableName}.wallet`)
+                  .column(
+                    database.raw(
+                      `(COALESCE(${metricWalletTableName}.data->>'stakingUSD', '0'))::numeric AS "myStaked"`,
+                    ),
+                  )
+                  .innerJoin(
+                    walletTableName,
+                    `${walletTableName}.id`,
+                    `${metricWalletTableName}.wallet`,
+                  )
+                  .innerJoin(
+                    contractTableName,
+                    `${contractTableName}.id`,
+                    `${metricWalletTableName}.contract`,
+                  )
+                  .where(function () {
+                    this.where(`${walletTableName}.user`, currentUser.id);
+                    if (uuid.validate(String(root?.id))) {
+                      this.where(`${contractTableName}.protocol`, root.id);
+                    } else if (filter.protocol !== undefined) {
+                      this.whereIn(`${contractTableName}.protocol`, filter.protocol);
+                    }
+                  })
+                  .orderBy(`${metricWalletTableName}.contract`)
+                  .orderBy(`${metricWalletTableName}.wallet`)
+                  .orderBy(`${metricWalletTableName}.date`, 'DESC')
+                  .as('subquery'),
               )
-              .where(`${walletTableName}.user`, currentUser.id)
-              .andWhere(database.raw(`${metricWalletTableName}.contract = contract`))
-              .orderBy(`${metricWalletTableName}.contract`)
-              .orderBy(`${metricWalletTableName}.date`, 'DESC')
+              .groupBy('contract')
               .as('metric'),
             `${contractTableName}.id`,
             'metric.contract',
@@ -1786,6 +1812,16 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
           isDebank: {
             type: GraphQLBoolean,
           },
+          automate: {
+            type: new GraphQLInputObjectType({
+              name: 'ProtocolListFilterAutomateInputType',
+              fields: {
+                buyLiquidity: {
+                  type: GraphQLBoolean,
+                },
+              },
+            }),
+          },
         },
       }),
       defaultValue: {},
@@ -1798,8 +1834,9 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
     pagination: PaginationArgument('ProtocolListPaginationInputType'),
   },
   resolve: async (root, { filter, sort, pagination }, { currentUser }) => {
+    const database = container.database();
+    const { id, blockchain, linked, favorite, hidden, isDebank, search, automate } = filter;
     const select = container.model.protocolTable().where(function () {
-      const { id, blockchain, linked, favorite, hidden, isDebank, search } = filter;
       if (Array.isArray(id)) {
         this.whereIn('id', id);
       }
@@ -1854,7 +1891,6 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
       if (typeof hidden === 'boolean') {
         this.andWhere('hidden', hidden);
       }
-
       if (typeof isDebank === 'boolean') {
         if (isDebank === true) {
           this.andWhere('adapter', 'debankByApiReadonly');
@@ -1862,9 +1898,23 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
           this.andWhereNot('adapter', 'debankByApiReadonly');
         }
       }
-
       if (search !== undefined && search !== '') {
         this.andWhere('name', 'iLike', `%${search}%`);
+      }
+      if (typeof automate === 'object') {
+        if (typeof automate.buyLiquidity === 'boolean') {
+          this.where(
+            database.raw(`(
+              select count(${contractTableName}.id)
+              from ${contractTableName}
+              inner join ${contractBlockchainTableName} on ${contractBlockchainTableName}.id = ${contractTableName}.id
+              where ${contractTableName}.protocol = ${protocolTableName}.id
+              and ${contractBlockchainTableName}.automate->>'buyLiquidity' IS NOT NULL
+            )`),
+            automate.buyLiquidity ? '>' : '=',
+            0,
+          );
+        }
       }
     });
 

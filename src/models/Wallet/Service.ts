@@ -82,6 +82,7 @@ export class WalletService {
     address: string,
     publicKey: string,
     name: string,
+    confirmed = true,
   ): Promise<Wallet & WalletBlockchain> {
     const wallet: Wallet = {
       id: uuid(),
@@ -100,6 +101,7 @@ export class WalletService {
       network,
       address,
       publicKey,
+      confirmed,
     };
 
     await this.database.transaction(async (trx) => {
