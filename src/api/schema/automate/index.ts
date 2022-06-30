@@ -1138,35 +1138,15 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
         const contractWallet = await dataLoader.wallet().load(contract.wallet);
         if (!contractWallet) return null;
 
-        const wallet = await container.model
-          .walletTable()
-          .innerJoin(
-            walletBlockchainTableName,
-            `${walletBlockchainTableName}.id`,
-            `${walletTableName}.id`,
-          )
-          .where({
-            user: contractWallet.user,
-            type: WalletBlockchainModelType.Contract,
-            network: contractWallet.network,
-            address:
-              contractWallet.blockchain === 'ethereum'
-                ? contract.address.toLowerCase()
-                : contract.address,
-          })
-          .first();
-        if (!wallet) return null;
-
-        const walletMetric = await dataLoader.walletMetric().load(wallet.id);
+        const walletMetric = await dataLoader.walletMetric().load(contractWallet.id);
         if (!walletMetric) return null;
 
-        const optimalPoints = await optimalRestake(
+        const [targetPoint] = await optimalRestake(
           contractBlockchain.blockchain,
           contractBlockchain.network,
           new BN(walletMetric.stakingUSD).toNumber(),
           new BN(apr).toNumber(),
         );
-        const targetPoint = optimalPoints[0];
         if (!targetPoint) return null;
 
         const result = dayjs().add(new BN(targetPoint.t).multipliedBy(86400).toNumber(), 'second');
