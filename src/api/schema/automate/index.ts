@@ -958,31 +958,6 @@ export const ActionUpdateMutation: GraphQLFieldConfig<any, Request> = {
   }),
 };
 
-const cacheGet = (key: string): Promise<string | null> => {
-  return new Promise((resolve) =>
-    container.cache().get(`defihelper:automate:${key}`, (err, result) => {
-      if (err || !result) return resolve(null);
-
-      return resolve(result);
-    }),
-  );
-};
-
-const cacheSet = (key: string, value: string): Promise<string> => {
-  return new Promise((resolve, reject) =>
-    container.cache().setex(
-      `defihelper:automate:${key}`,
-      60 * 5, // 5 minutes
-      value,
-      (err, reply) => {
-        if (err) return reject(err);
-
-        return resolve(reply);
-      },
-    ),
-  );
-};
-
 export const ActionDeleteMutation: GraphQLFieldConfig<any, Request> = {
   type: GraphQLNonNull(GraphQLBoolean),
   args: {
@@ -1128,7 +1103,18 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
       type: DateTimeType,
       description: 'restake at',
       resolve: async (contract, _, { dataLoader }) => {
-        const cachedState = await cacheGet(`nextRestake:${contract.id}`);
+        if (contract.type !== Automate.ContractType.Autorestake) {
+          return null;
+        }
+
+        if (
+          !contract.contract ||
+          contract.verification !== Automate.ContractVerificationStatus.Confirmed
+        ) {
+          return null;
+        }
+
+        const cachedState = await container.cache().getAsync(`nextRestake:${contract.id}`);
         if (cachedState) {
           return dayjs(cachedState);
         }
@@ -1137,8 +1123,9 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
           .contractBlockchainTable()
           .where('id', contract.contract)
           .first();
+
         if (!contractBlockchain) {
-          throw new Error('no blockchain contract found');
+          return null;
         }
 
         const { apr } = (await container.model
@@ -1150,21 +1137,15 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
           )
           .where('contract', contractBlockchain.id)
           .orderBy(`${metricContractTableName}.date`, 'DESC')
-          .first()) as unknown as { apr: string };
+          .first()) as unknown as { apr?: number };
 
         if (!apr) return null;
 
-        if (
-          !contract.contract ||
-          contract.verification !== Automate.ContractVerificationStatus.Confirmed
-        ) {
-          return null;
-        }
+        const contractStaking = await dataLoader.contract().load(contract.contract);
+        if (!contractStaking) return null;
+        const contractWallet = await dataLoader.wallet().load(contract.wallet);
+        if (!contractWallet) return null;
 
-        const staking = await dataLoader.contract().load(contract.contract);
-        if (!staking) return null;
-        const ownerWallet = await dataLoader.wallet().load(contract.wallet);
-        if (!ownerWallet) return null;
         const wallet = await container.model
           .walletTable()
           .innerJoin(
@@ -1173,10 +1154,11 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
             `${walletTableName}.id`,
           )
           .where({
-            user: ownerWallet.user,
+            user: contractWallet.user,
             type: WalletBlockchainModelType.Contract,
+            network: contractWallet.network,
             address:
-              ownerWallet.blockchain === 'ethereum'
+              contractWallet.blockchain === 'ethereum'
                 ? contract.address.toLowerCase()
                 : contract.address,
           })
@@ -1196,8 +1178,10 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
         if (!targetPoint) return null;
 
         const result = dayjs().add(new BN(targetPoint.t).multipliedBy(86400).toNumber(), 'second');
-        await cacheSet(`nextRestake:${contract.id}`, result.toISOString());
-        return result.toDate();
+        await container
+          .cache()
+          .setAsync(`nextRestake:${contract.id}`, result.toISOString(), 5 * 60);
+        return result;
       },
     },
     metric: {
