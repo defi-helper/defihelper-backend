@@ -27,6 +27,7 @@ import {
   TokenContractLinkType,
   tokenContractLinkTableName,
   UserContractLinkType,
+  protocolTableName,
 } from '@models/Protocol/Entity';
 import { apyBoost } from '@services/RestakeStrategy';
 import {
@@ -1811,6 +1812,16 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
           isDebank: {
             type: GraphQLBoolean,
           },
+          automate: {
+            type: new GraphQLInputObjectType({
+              name: 'ProtocolListFilterAutomateInputType',
+              fields: {
+                buyLiquidity: {
+                  type: GraphQLBoolean,
+                },
+              },
+            }),
+          },
         },
       }),
       defaultValue: {},
@@ -1823,8 +1834,9 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
     pagination: PaginationArgument('ProtocolListPaginationInputType'),
   },
   resolve: async (root, { filter, sort, pagination }, { currentUser }) => {
+    const database = container.database();
+    const { id, blockchain, linked, favorite, hidden, isDebank, search, automate } = filter;
     const select = container.model.protocolTable().where(function () {
-      const { id, blockchain, linked, favorite, hidden, isDebank, search } = filter;
       if (Array.isArray(id)) {
         this.whereIn('id', id);
       }
@@ -1879,7 +1891,6 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
       if (typeof hidden === 'boolean') {
         this.andWhere('hidden', hidden);
       }
-
       if (typeof isDebank === 'boolean') {
         if (isDebank === true) {
           this.andWhere('adapter', 'debankByApiReadonly');
@@ -1887,9 +1898,23 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
           this.andWhereNot('adapter', 'debankByApiReadonly');
         }
       }
-
       if (search !== undefined && search !== '') {
         this.andWhere('name', 'iLike', `%${search}%`);
+      }
+      if (typeof automate === 'object') {
+        if (typeof automate.buyLiquidity === 'boolean') {
+          this.where(
+            database.raw(`(
+              select count(${contractTableName}.id)
+              from ${contractTableName}
+              inner join ${contractBlockchainTableName} on ${contractBlockchainTableName}.id = ${contractTableName}.id
+              where ${contractTableName}.protocol = ${protocolTableName}.id
+              and ${contractBlockchainTableName}.automate->>'buyLiquidity' IS NOT NULL
+            )`),
+            automate.buyLiquidity ? '>' : '=',
+            0,
+          );
+        }
       }
     });
 
