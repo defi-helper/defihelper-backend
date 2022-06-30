@@ -1119,14 +1119,8 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
           return dayjs(cachedState);
         }
 
-        const contractBlockchain = await container.model
-          .contractBlockchainTable()
-          .where('id', contract.contract)
-          .first();
-
-        if (!contractBlockchain) {
-          return null;
-        }
+        const contractBlockchain = await dataLoader.contract().load(contract.contract);
+        if (!contractBlockchain) return null;
 
         const { apr } = (await container.model
           .metricContractTable()
@@ -1141,8 +1135,6 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
 
         if (!apr) return null;
 
-        const contractStaking = await dataLoader.contract().load(contract.contract);
-        if (!contractStaking) return null;
         const contractWallet = await dataLoader.wallet().load(contract.wallet);
         if (!contractWallet) return null;
 
