@@ -22,8 +22,10 @@ import {
   GraphQLList,
   GraphQLFieldConfigMap,
 } from 'graphql';
-import { apyBoost } from '@services/RestakeStrategy';
+import { apyBoost, optimalRestake } from '@services/RestakeStrategy';
 import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
+import dayjs from 'dayjs';
+import { metricContractTableName } from '@models/Metric/Entity';
 import {
   DateTimeType,
   onlyAllowed,
@@ -956,6 +958,31 @@ export const ActionUpdateMutation: GraphQLFieldConfig<any, Request> = {
   }),
 };
 
+const cacheGet = (key: string): Promise<string | null> => {
+  return new Promise((resolve) =>
+    container.cache().get(`defihelper:automate:${key}`, (err, result) => {
+      if (err || !result) return resolve(null);
+
+      return resolve(result);
+    }),
+  );
+};
+
+const cacheSet = (key: string, value: string): Promise<string> => {
+  return new Promise((resolve, reject) =>
+    container.cache().setex(
+      `defihelper:automate:${key}`,
+      60 * 5, // 5 minutes
+      value,
+      (err, reply) => {
+        if (err) return reject(err);
+
+        return resolve(reply);
+      },
+    ),
+  );
+};
+
 export const ActionDeleteMutation: GraphQLFieldConfig<any, Request> = {
   type: GraphQLNonNull(GraphQLBoolean),
   args: {
@@ -1096,6 +1123,82 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
     },
     rejectReason: {
       type: GraphQLNonNull(GraphQLString),
+    },
+    restakeAt: {
+      type: DateTimeType,
+      description: 'restake at',
+      resolve: async (contract, _, { dataLoader }) => {
+        const cachedState = await cacheGet(`nextRestake:${contract.id}`);
+        if (cachedState) {
+          return dayjs(cachedState);
+        }
+
+        const contractBlockchain = await container.model
+          .contractBlockchainTable()
+          .where('id', contract.contract)
+          .first();
+        if (!contractBlockchain) {
+          throw new Error('no blockchain contract found');
+        }
+
+        const { apr } = (await container.model
+          .metricContractTable()
+          .column(
+            container
+              .database()
+              .raw(`(${metricContractTableName}.data->>'aprYear')::numeric AS apr`),
+          )
+          .where('contract', contractBlockchain.id)
+          .orderBy(`${metricContractTableName}.date`, 'DESC')
+          .first()) as unknown as { apr: string };
+
+        if (!apr) return null;
+
+        if (
+          !contract.contract ||
+          contract.verification !== Automate.ContractVerificationStatus.Confirmed
+        ) {
+          return null;
+        }
+
+        const staking = await dataLoader.contract().load(contract.contract);
+        if (!staking) return null;
+        const ownerWallet = await dataLoader.wallet().load(contract.wallet);
+        if (!ownerWallet) return null;
+        const wallet = await container.model
+          .walletTable()
+          .innerJoin(
+            walletBlockchainTableName,
+            `${walletBlockchainTableName}.id`,
+            `${walletTableName}.id`,
+          )
+          .where({
+            user: ownerWallet.user,
+            type: WalletBlockchainModelType.Contract,
+            address:
+              ownerWallet.blockchain === 'ethereum'
+                ? contract.address.toLowerCase()
+                : contract.address,
+          })
+          .first();
+        if (!wallet) return null;
+
+        const walletMetric = await dataLoader.walletMetric().load(wallet.id);
+        if (!walletMetric) return null;
+
+        const optimalPoints = await optimalRestake(
+          contractBlockchain.blockchain,
+          contractBlockchain.network,
+          new BN(walletMetric.stakingUSD).toNumber(),
+          new BN(apr).toNumber(),
+        );
+        const targetPoint = optimalPoints[0];
+        if (!targetPoint) return null;
+
+        const result = dayjs().add(new BN(targetPoint.t).multipliedBy(86400).toNumber(), 'second');
+        await cacheSet(`nextRestake:${contract.id}`, result.toISOString());
+        return result.toDate();
+      },
     },
     metric: {
       type: GraphQLNonNull(ContractMetricType),
