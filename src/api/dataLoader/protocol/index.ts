@@ -185,8 +185,10 @@ export const protocolUserLastMetricLoader = ({ userId }: { userId: string }) =>
                     `${metricWalletTableName}.wallet`,
                   )
                   .whereIn(`${contractTableName}.protocol`, protocolsId)
-                  .andWhere(`${walletTableName}.user`, userId)
+                  .where(`${walletTableName}.user`, userId)
                   .whereNull(`${walletTableName}.deletedAt`)
+                  .where(`${contractTableName}.deprecated`, false)
+                  .where(`${contractTableName}.hidden`, false)
                   .orderBy(`${metricWalletTableName}.contract`)
                   .orderBy(`${metricWalletTableName}.wallet`)
                   .orderBy(`${metricWalletTableName}.date`, 'DESC')
