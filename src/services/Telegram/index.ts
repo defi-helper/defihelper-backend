@@ -2,7 +2,6 @@ import * as Mustache from 'mustache';
 import TelegramBot from 'node-telegram-bot-api';
 import container from '@container';
 import { Factory } from '@services/Container';
-import { ContactStatus } from '@models/Notification/Entity';
 import { Templates } from './templates';
 
 export type TelegramTemplate = keyof typeof Templates;
@@ -42,10 +41,11 @@ export class TelegramService implements ITelegramService {
             .userContactTable()
             .where('confirmationCode', confirmationCode)
             .first();
-          if (!userContact || userContact.status === ContactStatus.Active) {
+
+          if (!userContact) {
             await this.bot.sendMessage(
               message.chat.id,
-              'Please use https://defihelper.io to register',
+              'Please use https://app.defihelper.io to register',
             );
             return;
           }
