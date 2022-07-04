@@ -100,7 +100,7 @@ export default async (process: Process) => {
   await Promise.all(
     events.map((event) =>
       scanner.registerListener(watcherContract, event, {
-        historical: { syncHeight: watcherContract.startHeight },
+        historical: { syncHeight: watcherContract.startHeight, saveEvents: false },
       }),
     ),
   );
