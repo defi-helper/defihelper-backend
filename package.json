@@ -45,6 +45,7 @@
     "@waves/provider-seed": "^0.3.1",
     "@waves/signer": "^1.0.7",
     "@waves/ts-lib-crypto": "^1.4.4-beta.1",
+    "@waves/waves-transactions": "^4.2.7",
     "amqplib": "^0.8.0",
     "apollo-server-errors": "^2.5.0",
     "apollo-server-express": "^2.25.4",
