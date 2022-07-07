@@ -12,7 +12,7 @@ import {
   contractTableName,
   protocolTableName,
 } from '@models/Protocol/Entity';
-import { TokenAliasLiquidity, TokenCreatedBy } from '@models/Token/Entity';
+import { TokenAliasLiquidity, TokenCreatedBy, Token } from '@models/Token/Entity';
 import BN from 'bignumber.js';
 import { ProtocolListItem } from '@services/Debank';
 
@@ -315,12 +315,15 @@ export default async (process: Process) => {
   const appliedTokens: {
     [walletUuid: string]: {
       [contractUuid: string]: {
-        contractEntity: Contract;
-        walletEntity: Wallet;
-        earnedBalance: BN;
-        stakedBalance: BN;
-        earnedUSD: BN;
-        stakedUSD: BN;
+        [tokenUuid: string]: {
+          contractEntity: Contract;
+          walletEntity: Wallet;
+          tokenEntity: Token & { price: BN; amount: BN };
+          earnedBalance: BN;
+          stakedBalance: BN;
+          earnedUSD: BN;
+          stakedUSD: BN;
+        };
       };
     };
   } = {};
@@ -328,16 +331,22 @@ export default async (process: Process) => {
   const applyTokenBalance = (
     wallet: Wallet,
     contract: Contract,
-    payload: { earnedBalance: BN; stakedBalance: BN; earnedUSD: BN; stakedUSD: BN },
+    token: Token & { price: BN; amount: BN },
+    type: 'staked' | 'earned',
   ) => {
     if (!appliedTokens[wallet.id]) {
       appliedTokens[wallet.id] = {};
     }
 
     if (!appliedTokens[wallet.id][contract.id]) {
-      appliedTokens[wallet.id][contract.id] = {
+      appliedTokens[wallet.id][contract.id] = {};
+    }
+
+    if (!appliedTokens[wallet.id][contract.id][token.id]) {
+      appliedTokens[wallet.id][contract.id][token.id] = {
         contractEntity: contract,
         walletEntity: wallet,
+        tokenEntity: token,
         earnedBalance: new BN(0),
         stakedBalance: new BN(0),
         earnedUSD: new BN(0),
@@ -345,16 +354,26 @@ export default async (process: Process) => {
       };
     }
 
-    appliedTokens[wallet.id][contract.id] = {
-      ...appliedTokens[wallet.id][contract.id],
-      earnedBalance: appliedTokens[wallet.id][contract.id].earnedBalance.plus(
-        payload.earnedBalance,
+    appliedTokens[wallet.id][contract.id][token.id] = {
+      ...appliedTokens[wallet.id][contract.id][token.id],
+      tokenEntity: {
+        ...appliedTokens[wallet.id][contract.id][token.id].tokenEntity,
+        amount: appliedTokens[wallet.id][contract.id][token.id].tokenEntity.amount.plus(
+          token.amount,
+        ),
+      },
+      earnedBalance: appliedTokens[wallet.id][contract.id][token.id].earnedBalance.plus(
+        type === 'earned' ? token.amount : 0,
       ),
-      stakedBalance: appliedTokens[wallet.id][contract.id].stakedBalance.plus(
-        payload.stakedBalance,
+      stakedBalance: appliedTokens[wallet.id][contract.id][token.id].stakedBalance.plus(
+        type === 'staked' ? token.amount : 0,
       ),
-      earnedUSD: appliedTokens[wallet.id][contract.id].earnedUSD.plus(payload.earnedUSD),
-      stakedUSD: appliedTokens[wallet.id][contract.id].stakedUSD.plus(payload.stakedUSD),
+      earnedUSD: appliedTokens[wallet.id][contract.id][token.id].earnedUSD.plus(
+        type === 'earned' ? token.amount.multipliedBy(token.price) : 0,
+      ),
+      stakedUSD: appliedTokens[wallet.id][contract.id][token.id].stakedUSD.plus(
+        type === 'staked' ? token.amount.multipliedBy(token.price) : 0,
+      ),
     };
   };
 
@@ -396,7 +415,7 @@ export default async (process: Process) => {
               token.decimals,
               TokenCreatedBy.Scanner,
             );
-        } catch (e) {
+        } catch (e: any) {
           // uniq violation
           if (e.code !== '23505') {
             throw e;
@@ -446,22 +465,15 @@ export default async (process: Process) => {
         return null;
       }
 
-      applyTokenBalance(walletByChain, rewardContract, {
-        earnedBalance: new BN(token.amount),
-        stakedBalance: new BN(0),
-        earnedUSD: new BN(token.price).multipliedBy(token.amount),
-        stakedUSD: new BN(0),
-      });
-
-      return walletMetrics.createWalletToken(
-        rewardContract,
+      return applyTokenBalance(
         walletByChain,
-        tokenRecord,
+        rewardContract,
         {
-          usd: new BN(token.price).multipliedBy(token.amount).toString(10),
-          balance: new BN(token.amount).toString(10),
+          ...tokenRecord,
+          price: new BN(token.price),
+          amount: new BN(token.amount),
         },
-        new Date(),
+        'earned',
       );
     }),
   );
@@ -504,7 +516,7 @@ export default async (process: Process) => {
               token.decimals,
               TokenCreatedBy.Scanner,
             );
-        } catch (e) {
+        } catch (e: any) {
           // uniq violation
           if (e.code !== '23505') {
             throw e;
@@ -548,24 +560,15 @@ export default async (process: Process) => {
         throw new Error('Contract must be found');
       }
 
-      applyTokenBalance(walletByChain, contract, {
-        earnedBalance: token.type === 'reward' ? new BN(token.amount) : new BN(0),
-        stakedBalance: token.type === 'liquidity' ? new BN(token.amount) : new BN(0),
-        earnedUSD:
-          token.type === 'reward' ? new BN(token.price).multipliedBy(token.amount) : new BN(0),
-        stakedUSD:
-          token.type === 'liquidity' ? new BN(token.price).multipliedBy(token.amount) : new BN(0),
-      });
-
-      return walletMetrics.createWalletToken(
-        contract,
+      return applyTokenBalance(
         walletByChain,
-        tokenRecord,
+        contract,
         {
-          usd: new BN(token.price).multipliedBy(token.amount).toString(10),
-          balance: new BN(token.amount).toString(10),
+          ...tokenRecord,
+          price: new BN(token.price),
+          amount: new BN(token.amount),
         },
-        new Date(),
+        token.type === 'reward' ? 'earned' : 'staked',
       );
     }),
   );
@@ -576,18 +579,78 @@ export default async (process: Process) => {
 
       return Promise.all(
         Object.keys(wallet).map((contractIndex) => {
-          const contractSummary = appliedTokens[walletIndex][contractIndex];
+          const contract = appliedTokens[walletIndex][contractIndex];
 
-          return container.model.metricService().createWallet(
-            contractSummary.contractEntity,
-            contractSummary.walletEntity,
+          const walletSummary = Object.keys(contract).reduce<{
+            contractEntity?: Contract;
+            walletEntity?: Wallet;
+            earnedBalance: BN;
+            stakedBalance: BN;
+            earnedUSD: BN;
+            stakedUSD: BN;
+          }>(
+            (prev, tokenIndex) => {
+              const {
+                earnedBalance,
+                earnedUSD,
+                stakedBalance,
+                stakedUSD,
+                contractEntity,
+                walletEntity,
+              } = appliedTokens[walletIndex][contractIndex][tokenIndex];
+
+              return {
+                contractEntity,
+                walletEntity,
+                earnedBalance: prev.earnedBalance.plus(earnedBalance),
+                earnedUSD: prev.earnedUSD.plus(earnedUSD),
+                stakedBalance: prev.stakedBalance.plus(stakedBalance),
+                stakedUSD: prev.stakedUSD.plus(stakedUSD),
+              };
+            },
             {
-              earned: contractSummary.earnedBalance.toString(10),
-              staking: contractSummary.stakedBalance.toString(10),
-              earnedUSD: contractSummary.earnedUSD.toString(10),
-              stakingUSD: contractSummary.stakedUSD.toString(10),
+              earnedBalance: new BN(0),
+              stakedBalance: new BN(0),
+              earnedUSD: new BN(0),
+              stakedUSD: new BN(0),
+            },
+          );
+
+          if (!walletSummary.contractEntity || !walletSummary.walletEntity) {
+            throw new Error('Wallet summary does not contain any contract or wallet entity.');
+          }
+
+          walletMetrics.createWallet(
+            walletSummary.contractEntity,
+            walletSummary.walletEntity,
+            {
+              earned: walletSummary.earnedBalance.toString(10),
+              staking: walletSummary.stakedBalance.toString(10),
+              earnedUSD: walletSummary.earnedUSD.toString(10),
+              stakingUSD: walletSummary.stakedUSD.toString(10),
             },
             new Date(),
+          );
+
+          return Promise.all(
+            Object.keys(contract).map((tokenIndex) => {
+              const contractSummary = appliedTokens[walletIndex][contractIndex][tokenIndex];
+
+              return Promise.all([
+                walletMetrics.createWalletToken(
+                  contractSummary.contractEntity,
+                  contractSummary.walletEntity,
+                  contractSummary.tokenEntity,
+                  {
+                    usd: new BN(contractSummary.tokenEntity.price)
+                      .multipliedBy(contractSummary.tokenEntity.amount)
+                      .toString(10),
+                    balance: new BN(contractSummary.tokenEntity.amount).toString(10),
+                  },
+                  new Date(),
+                ),
+              ]);
+            }),
           );
         }),
       );
