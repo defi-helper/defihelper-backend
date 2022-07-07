@@ -54,14 +54,28 @@ export function redisSubscriberFactory(
 
 export function redisLockFactory(cache: Factory<RedisClient>) {
   return () => ({
-    lock(key: string) {
+    lock(key: string, ttl?: number) {
       return new Promise((resolve, reject) => {
         cache().setnx(key, '', (err, reply) => {
           if (err) return reject(err);
           if (reply === 0) return reject(new Error('Lock failed'));
+          if (typeof ttl === 'number') cache().expire(key, ttl);
 
           return resolve(key);
         });
+      });
+    },
+
+    async wait(lock: () => Promise<boolean>, options: { interval?: number } = {}) {
+      const interval = options.interval ?? 500;
+
+      return new Promise((resolve) => {
+        const timer = setInterval(async () => {
+          if (await lock()) return;
+          clearInterval(timer);
+
+          resolve(null);
+        }, interval);
       });
     },
 
@@ -74,5 +88,25 @@ export function redisLockFactory(cache: Factory<RedisClient>) {
         });
       });
     },
+
+    async synchronized<T>(
+      key: string,
+      resolve: () => T | Promise<T>,
+      options: { ttl?: number; interval?: number } = {},
+    ): Promise<T> {
+      await this.wait(
+        () =>
+          this.lock(key, options.ttl)
+            .then(() => true)
+            .catch(() => false),
+        { interval: options.interval },
+      );
+      const result = await resolve();
+      await this.unlock(key);
+
+      return result;
+    },
   });
 }
+
+export type Semafor = ReturnType<ReturnType<typeof redisLockFactory>>;
