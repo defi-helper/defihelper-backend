@@ -22,9 +22,8 @@ import {
   GraphQLList,
   GraphQLFieldConfigMap,
 } from 'graphql';
-import { apyBoost, optimalRestake } from '@services/RestakeStrategy';
+import { apyBoost, optimalRestakeNearesDate } from '@services/RestakeStrategy';
 import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
-import dayjs from 'dayjs';
 import { metricContractTableName } from '@models/Metric/Entity';
 import {
   DateTimeType,
@@ -1143,17 +1142,15 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
         const walletMetric = await dataLoader.walletMetric().load(automateOwnerWallet.id);
         if (!walletMetric) return null;
 
-        const [targetPoint] = await optimalRestake(
+        const nextRestakeDate = await optimalRestakeNearesDate(
           stakingContract.blockchain,
           stakingContract.network,
           new BN(walletMetric.stakingUSD).toNumber(),
           new BN(apr).toNumber(),
         );
-        if (!targetPoint) return null;
 
-        const result = dayjs().add(new BN(targetPoint.t).multipliedBy(86400).toNumber(), 'second');
         // await cache.setAsync(`nextRestake:${contract.id}`, result.toISOString(), 300); // 5 minutes
-        return result;
+        return nextRestakeDate;
       },
     },
     metric: {
