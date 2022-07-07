@@ -169,6 +169,44 @@ export const ContractTokenLinkType = new GraphQLObjectType<
   ),
 });
 
+const metricChartResolver = async (contract: Contract, input: any) => {
+  const { metric, group, filter, sort, pagination } = input;
+  const database = container.database();
+  const select = container.model
+    .metricContractTable()
+    .distinctOn('date')
+    .column(database.raw(`(${metricContractTableName}.data->>'${metric}')::numeric AS value`))
+    .column(database.raw(`DATE_TRUNC('${group}', ${metricContractTableName}.date) AS "date"`))
+    .innerJoin(contractTableName, `${contractTableName}.id`, `${metricContractTableName}.contract`)
+    .where(function () {
+      this.where(`${metricContractTableName}.contract`, contract.id)
+        .andWhere(database.raw(`${metricContractTableName}.data->>'${metric}' IS NOT NULL`))
+        .where(`${contractTableName}.hidden`, false);
+      if (filter.dateAfter) {
+        this.andWhere(`${metricContractTableName}.date`, '>=', filter.dateAfter.toDate());
+      }
+      if (filter.dateBefore) {
+        this.andWhere(`${metricContractTableName}.date`, '<', filter.dateBefore.toDate());
+      }
+    })
+    .orderBy('date')
+    .orderBy(`${metricContractTableName}.date`, 'DESC');
+
+  return container
+    .database()
+    .column('date')
+    .max({ max: 'value' })
+    .min({ min: 'value' })
+    .count({ count: 'value' })
+    .avg({ avg: 'value' })
+    .sum({ sum: 'value' })
+    .from(select.as('metric'))
+    .groupBy('date')
+    .orderBy(sort)
+    .limit(pagination.limit)
+    .offset(pagination.offset);
+};
+
 export const ContractType: GraphQLObjectType = new GraphQLObjectType<
   Contract & ContractBlockchainType,
   Request
@@ -269,46 +307,7 @@ export const ContractType: GraphQLObjectType = new GraphQLObjectType<
         ),
         pagination: PaginationArgument('ContractMetricChartPaginationInputType'),
       },
-      resolve: async (contract, { metric, group, filter, sort, pagination }) => {
-        const database = container.database();
-        const select = container.model
-          .metricContractTable()
-          .distinctOn('date')
-          .column(database.raw(`(${metricContractTableName}.data->>'${metric}')::numeric AS value`))
-          .column(database.raw(`DATE_TRUNC('${group}', ${metricContractTableName}.date) AS "date"`))
-          .innerJoin(
-            contractTableName,
-            `${contractTableName}.id`,
-            `${metricContractTableName}.contract`,
-          )
-          .where(function () {
-            this.where(`${metricContractTableName}.contract`, contract.id)
-              .andWhere(database.raw(`${metricContractTableName}.data->>'${metric}' IS NOT NULL`))
-              .where(`${contractTableName}.hidden`, false);
-            if (filter.dateAfter) {
-              this.andWhere(`${metricContractTableName}.date`, '>=', filter.dateAfter.toDate());
-            }
-            if (filter.dateBefore) {
-              this.andWhere(`${metricContractTableName}.date`, '<', filter.dateBefore.toDate());
-            }
-          })
-          .orderBy('date')
-          .orderBy(`${metricContractTableName}.date`, 'DESC');
-
-        return container
-          .database()
-          .column('date')
-          .max({ max: 'value' })
-          .min({ min: 'value' })
-          .count({ count: 'value' })
-          .avg({ avg: 'value' })
-          .sum({ sum: 'value' })
-          .from(select.as('metric'))
-          .groupBy('date')
-          .orderBy(sort)
-          .limit(pagination.limit)
-          .offset(pagination.offset);
-      },
+      resolve: metricChartResolver,
     },
     metric: {
       type: GraphQLNonNull(ContractMetricType),
@@ -483,46 +482,7 @@ export const ContractDebankType: GraphQLObjectType = new GraphQLObjectType<
         ),
         pagination: PaginationArgument('ContractDebankMetricChartPaginationInputType'),
       },
-      resolve: async (contract, { metric, group, filter, sort, pagination }) => {
-        const database = container.database();
-        const select = container.model
-          .metricContractTable()
-          .distinctOn('date')
-          .column(database.raw(`(${metricContractTableName}.data->>'${metric}')::numeric AS value`))
-          .column(database.raw(`DATE_TRUNC('${group}', ${metricContractTableName}.date) AS "date"`))
-          .innerJoin(
-            contractTableName,
-            `${contractTableName}.id`,
-            `${metricContractTableName}.contract`,
-          )
-          .where(function () {
-            this.where(`${metricContractTableName}.contract`, contract.id)
-              .andWhere(database.raw(`${metricContractTableName}.data->>'${metric}' IS NOT NULL`))
-              .where(`${contractTableName}.hidden`, false);
-            if (filter.dateAfter) {
-              this.andWhere(`${metricContractTableName}.date`, '>=', filter.dateAfter.toDate());
-            }
-            if (filter.dateBefore) {
-              this.andWhere(`${metricContractTableName}.date`, '<', filter.dateBefore.toDate());
-            }
-          })
-          .orderBy('date')
-          .orderBy(`${metricContractTableName}.date`, 'DESC');
-
-        return container
-          .database()
-          .column('date')
-          .max({ max: 'value' })
-          .min({ min: 'value' })
-          .count({ count: 'value' })
-          .avg({ avg: 'value' })
-          .sum({ sum: 'value' })
-          .from(select.as('metric'))
-          .groupBy('date')
-          .orderBy(sort)
-          .limit(pagination.limit)
-          .offset(pagination.offset);
-      },
+      resolve: metricChartResolver,
     },
     metric: {
       type: GraphQLNonNull(ContractMetricType),
