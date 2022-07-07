@@ -28,6 +28,8 @@ import {
   tokenContractLinkTableName,
   UserContractLinkType,
   protocolTableName,
+  ContractDebankType as EntityContractDebankType,
+  contractDebankTableName,
 } from '@models/Protocol/Entity';
 import { apyBoost } from '@services/RestakeStrategy';
 import {
@@ -405,6 +407,183 @@ export const ContractType: GraphQLObjectType = new GraphQLObjectType<
   }),
 });
 
+export const ContractDebankType: GraphQLObjectType = new GraphQLObjectType<
+  Contract & EntityContractDebankType,
+  Request
+>({
+  name: 'ContractDebankType',
+  fields: () => ({
+    id: {
+      type: GraphQLNonNull(UuidType),
+      description: 'Identificator',
+    },
+    protocol: {
+      type: GraphQLNonNull(ProtocolType),
+      resolve: ({ protocol }, _, { dataLoader }) => dataLoader.protocol().load(protocol),
+    },
+    layout: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Layout name',
+    },
+    address: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Address',
+    },
+    name: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Name',
+    },
+    description: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Description',
+    },
+    link: {
+      type: GraphQLString,
+      description: 'View URL',
+    },
+    hidden: {
+      type: GraphQLNonNull(GraphQLBoolean),
+      description: 'Is hidden',
+    },
+    deprecated: {
+      type: GraphQLNonNull(GraphQLBoolean),
+      description: 'Is deprecated',
+    },
+    metricChart: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(MetricChartType))),
+      args: {
+        metric: {
+          type: GraphQLNonNull(MetricColumnType),
+          description: 'Metric column',
+        },
+        group: {
+          type: GraphQLNonNull(MetricGroupEnum),
+          description: 'Truncate date mode',
+        },
+        filter: {
+          type: new GraphQLInputObjectType({
+            name: 'ContractDebankMetricChartFilterInputType',
+            fields: {
+              dateAfter: {
+                type: DateTimeType,
+                description: 'Created at equals or greater',
+              },
+              dateBefore: {
+                type: DateTimeType,
+                description: 'Created at less',
+              },
+            },
+          }),
+          defaultValue: {},
+        },
+        sort: SortArgument(
+          'ContractDebankMetricChartSortInputType',
+          ['date', 'value'],
+          [{ column: 'date', order: 'asc' }],
+        ),
+        pagination: PaginationArgument('ContractDebankMetricChartPaginationInputType'),
+      },
+      resolve: async (contract, { metric, group, filter, sort, pagination }) => {
+        const database = container.database();
+        const select = container.model
+          .metricContractTable()
+          .distinctOn('date')
+          .column(database.raw(`(${metricContractTableName}.data->>'${metric}')::numeric AS value`))
+          .column(database.raw(`DATE_TRUNC('${group}', ${metricContractTableName}.date) AS "date"`))
+          .innerJoin(
+            contractTableName,
+            `${contractTableName}.id`,
+            `${metricContractTableName}.contract`,
+          )
+          .where(function () {
+            this.where(`${metricContractTableName}.contract`, contract.id)
+              .andWhere(database.raw(`${metricContractTableName}.data->>'${metric}' IS NOT NULL`))
+              .where(`${contractTableName}.hidden`, false);
+            if (filter.dateAfter) {
+              this.andWhere(`${metricContractTableName}.date`, '>=', filter.dateAfter.toDate());
+            }
+            if (filter.dateBefore) {
+              this.andWhere(`${metricContractTableName}.date`, '<', filter.dateBefore.toDate());
+            }
+          })
+          .orderBy('date')
+          .orderBy(`${metricContractTableName}.date`, 'DESC');
+
+        return container
+          .database()
+          .column('date')
+          .max({ max: 'value' })
+          .min({ min: 'value' })
+          .count({ count: 'value' })
+          .avg({ avg: 'value' })
+          .sum({ sum: 'value' })
+          .from(select.as('metric'))
+          .groupBy('date')
+          .orderBy(sort)
+          .limit(pagination.limit)
+          .offset(pagination.offset);
+      },
+    },
+    metric: {
+      type: GraphQLNonNull(ContractMetricType),
+      args: {
+        filter: {
+          type: new GraphQLInputObjectType({
+            name: 'ContractDebankMetricFilterInputType',
+            fields: {
+              wallet: {
+                type: new GraphQLInputObjectType({
+                  name: 'ContractDebankMetricWalletFilterInputType',
+                  fields: {
+                    type: {
+                      type: GraphQLList(GraphQLNonNull(WalletBlockchainTypeEnum)),
+                    },
+                  },
+                }),
+              },
+            },
+          }),
+          defaultValue: {},
+        },
+      },
+      resolve: async (contract, { filter }, { currentUser, dataLoader }) => {
+        const metric = {
+          tvl: contract.metric.tvl ?? '0',
+          myStaked: '0',
+          myEarned: '0',
+        };
+
+        if (!currentUser) {
+          return metric;
+        }
+
+        const userMetric = await dataLoader
+          .contractUserMetric({
+            userId: currentUser.id,
+            walletType: filter.wallet?.type ?? [
+              WalletBlockchainType.Contract,
+              WalletBlockchainType.Wallet,
+            ],
+          })
+          .load(contract.id);
+        return {
+          ...metric,
+          myStaked: userMetric.stakingUSD,
+          myEarned: userMetric.earnedUSD,
+        };
+      },
+    },
+    tokens: {
+      type: GraphQLNonNull(ContractTokenLinkType),
+      resolve: (contract) => contract,
+    },
+    createdAt: {
+      type: GraphQLNonNull(DateTimeType),
+      description: 'Date of created account',
+    },
+  }),
+});
+
 export const ContractUserLinkTypeEnum = new GraphQLEnumType({
   name: 'ContractUserLinkTypeEnum',
   values: Object.values(UserContractLinkType).reduce(
@@ -681,6 +860,157 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
       listSelect = listSelect.column(
         database.raw(
           `(COALESCE(${contractBlockchainTableName}.metric->>'aprWeekReal', '0'))::numeric AS "aprWeekReal"`,
+        ),
+      );
+    }
+
+    return {
+      list: await listSelect
+        .clone()
+        .orderBy(sort)
+        .limit(pagination.limit)
+        .offset(pagination.offset),
+      pagination: {
+        count: await select.clone().clearSelect().count().first(),
+      },
+    };
+  },
+};
+
+export const ContractDebankListQuery: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(PaginateList('ContractDebankListType', GraphQLNonNull(ContractDebankType))),
+  args: {
+    filter: {
+      type: new GraphQLInputObjectType({
+        name: 'ContractDebankListFilterInputType',
+        fields: {
+          id: {
+            type: UuidType,
+          },
+          protocol: {
+            type: GraphQLList(GraphQLNonNull(UuidType)),
+          },
+          hidden: {
+            type: GraphQLBoolean,
+          },
+          search: {
+            type: GraphQLString,
+          },
+        },
+      }),
+      defaultValue: {},
+    },
+    sort: SortArgument(
+      'ContractDebankListSortInputType',
+      ['id', 'name', 'address', 'createdAt', 'tvl', 'myStaked'],
+      [{ column: 'name', order: 'asc' }],
+    ),
+    pagination: PaginationArgument('ContractDebankListPaginationInputType'),
+  },
+  resolve: async (root, { filter, sort, pagination }, { currentUser }) => {
+    const database = container.database();
+    const select = container.model
+      .contractTable()
+      .innerJoin(
+        contractDebankTableName,
+        `${contractDebankTableName}.id`,
+        `${contractTableName}.id`,
+      )
+      .column(`${contractTableName}.*`)
+      .column(`${contractDebankTableName}.*`)
+      .where(function () {
+        const { id, protocol, hidden, userLink, search } = filter;
+        if (id) {
+          this.where(`${contractTableName}.id`, id);
+        } else {
+          if (uuid.validate(String(root?.id))) {
+            this.where('protocol', root.id);
+          } else if (protocol !== undefined) {
+            this.whereIn('protocol', protocol);
+          }
+          if (typeof hidden === 'boolean') {
+            this.andWhere('hidden', hidden);
+          }
+          if (userLink !== undefined && currentUser) {
+            this.whereIn(
+              `${contractTableName}.id`,
+              container.model
+                .userContractLinkTable()
+                .column('contract')
+                .where('user', currentUser.id)
+                .where('type', userLink),
+            );
+          }
+          if (search !== undefined && search !== '') {
+            this.andWhere(function () {
+              this.where('name', 'iLike', `%${search}%`);
+              this.orWhere('address', 'iLike', `%${search}%`);
+            });
+          }
+        }
+      });
+    let listSelect = select.clone();
+    const sortColumns = sort.map(({ column }: { column: string }) => column);
+    if (sortColumns.includes('myStaked')) {
+      if (currentUser) {
+        listSelect = listSelect
+          .column(database.raw('COALESCE("myStaked", 0) AS "myStaked"'))
+          .leftJoin(
+            database
+              .columns(database.raw('SUM("myStaked") as "myStaked"'), 'contract')
+              .from(
+                container.model
+                  .metricWalletTable()
+                  .distinctOn(
+                    `${metricWalletTableName}.contract`,
+                    `${metricWalletTableName}.wallet`,
+                  )
+                  .column(`${metricWalletTableName}.contract`)
+                  .column(`${metricWalletTableName}.wallet`)
+                  .column(
+                    database.raw(
+                      `(COALESCE(${metricWalletTableName}.data->>'stakingUSD', '0'))::numeric AS "myStaked"`,
+                    ),
+                  )
+                  .innerJoin(
+                    walletTableName,
+                    `${walletTableName}.id`,
+                    `${metricWalletTableName}.wallet`,
+                  )
+                  .innerJoin(
+                    contractTableName,
+                    `${contractTableName}.id`,
+                    `${metricWalletTableName}.contract`,
+                  )
+                  .where(function () {
+                    this.where(`${walletTableName}.user`, currentUser.id);
+                    if (uuid.validate(String(root?.id))) {
+                      this.where(`${contractTableName}.protocol`, root.id);
+                    } else if (filter.protocol !== undefined) {
+                      this.whereIn(`${contractTableName}.protocol`, filter.protocol);
+                    }
+                  })
+                  .orderBy(`${metricWalletTableName}.contract`)
+                  .orderBy(`${metricWalletTableName}.wallet`)
+                  .orderBy(`${metricWalletTableName}.date`, 'DESC')
+                  .as('subquery'),
+              )
+              .groupBy('contract')
+              .as('metric'),
+            `${contractTableName}.id`,
+            'metric.contract',
+          );
+      } else {
+        listSelect = listSelect
+          .column(`${contractTableName}.*`)
+          .column(`${contractBlockchainTableName}.*`)
+          .column(database.raw(`'0' AS "myStaked"`));
+      }
+    }
+    if (sortColumns.includes('tvl')) {
+      listSelect = listSelect.column(
+        database.raw(
+          `(COALESCE(${contractDebankTableName}.metric->>'tvl', '0'))::numeric AS "tvl"`,
         ),
       );
     }
@@ -1317,6 +1647,7 @@ export const ProtocolType: GraphQLObjectType = new GraphQLObjectType<Protocol, R
       },
     },
     contracts: ContractListQuery,
+    contractsDebank: ContractDebankListQuery,
     metricChart: {
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(MetricChartType))),
       args: {
