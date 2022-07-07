@@ -1146,6 +1146,7 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
           stakingContract.blockchain,
           stakingContract.network,
           new BN(walletMetric.stakingUSD).toNumber(),
+          new BN(walletMetric.earnedUSD).toNumber(),
           new BN(apr).toNumber(),
         );
 

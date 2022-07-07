@@ -104,6 +104,7 @@ export async function optimalRestakeNearesDate(
   blockchain: Blockchain,
   network: string,
   balance: number,
+  earned: number,
   apy: number,
   seq: number = 365,
 ): Promise<Dayjs | null> {
@@ -118,7 +119,7 @@ export async function optimalRestakeNearesDate(
     {
       params: {
         balance,
-        earned: 0,
+        earned,
         apd,
         fee,
         seq,
@@ -136,7 +137,7 @@ export async function optimalRestakeNearesDate(
     return null;
   }
 
-  return dayjs().add(targetPoint, 'days');
+  return dayjs().add(new BN(targetPoint).multipliedBy(86400).toNumber(), 'seconds');
 }
 
 export async function optimalRestake(
