@@ -620,38 +620,35 @@ export default async (process: Process) => {
             throw new Error('Wallet summary does not contain any contract or wallet entity.');
           }
 
-          walletMetrics.createWallet(
-            walletSummary.contractEntity,
-            walletSummary.walletEntity,
-            {
-              earned: walletSummary.earnedBalance.toString(10),
-              staking: walletSummary.stakedBalance.toString(10),
-              earnedUSD: walletSummary.earnedUSD.toString(10),
-              stakingUSD: walletSummary.stakedUSD.toString(10),
-            },
-            new Date(),
-          );
-
-          return Promise.all(
-            Object.keys(contract).map((tokenIndex) => {
+          return Promise.all([
+            walletMetrics.createWallet(
+              walletSummary.contractEntity,
+              walletSummary.walletEntity,
+              {
+                earned: walletSummary.earnedBalance.toString(10),
+                staking: walletSummary.stakedBalance.toString(10),
+                earnedUSD: walletSummary.earnedUSD.toString(10),
+                stakingUSD: walletSummary.stakedUSD.toString(10),
+              },
+              new Date(),
+            ),
+            ...Object.keys(contract).map((tokenIndex) => {
               const contractSummary = appliedTokens[walletIndex][contractIndex][tokenIndex];
 
-              return Promise.all([
-                walletMetrics.createWalletToken(
-                  contractSummary.contractEntity,
-                  contractSummary.walletEntity,
-                  contractSummary.tokenEntity,
-                  {
-                    usd: new BN(contractSummary.tokenEntity.price)
-                      .multipliedBy(contractSummary.tokenEntity.amount)
-                      .toString(10),
-                    balance: new BN(contractSummary.tokenEntity.amount).toString(10),
-                  },
-                  new Date(),
-                ),
-              ]);
+              return walletMetrics.createWalletToken(
+                contractSummary.contractEntity,
+                contractSummary.walletEntity,
+                contractSummary.tokenEntity,
+                {
+                  usd: new BN(contractSummary.tokenEntity.price)
+                    .multipliedBy(contractSummary.tokenEntity.amount)
+                    .toString(10),
+                  balance: new BN(contractSummary.tokenEntity.amount).toString(10),
+                },
+                new Date(),
+              );
             }),
-          );
+          ] as Promise<any>[]);
         }),
       );
     }),
