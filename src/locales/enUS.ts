@@ -46,7 +46,7 @@ export default {
     'automate:condition:ethereumOptimalAutomateRun:name': 'Optimized Staking',
     'automate:condition:ethereumOptimalAutomateRun:description': 'Use auto-staking',
     'automate:action:ethereumOptimalAutomateRun:paramsDescription':
-      'Autostaking for action: {{id}}',
+      'Auto-staking for action: {{id}}',
     'automate:condition:ethereumOptimalAutomateRun:paramsDescription':
       'Restake optimal run for {{id}}',
     'automate:condition:ethereumAvgGasPrice:name': 'Gas Price Fluctuation',
