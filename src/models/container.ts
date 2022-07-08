@@ -259,7 +259,11 @@ export class ModelContainer extends Container<typeof AppContainer> {
 
   readonly governanceService = singleton(
     () =>
-      new Models.Governance.Service.GovernanceService(this.govProposalTable, this.govReceiptTable),
+      new Models.Governance.Service.GovernanceService(
+        this.govProposalTable,
+        this.govReceiptTable,
+        this.parent.semafor,
+      ),
   );
 
   readonly automateTriggerTable = Models.Automate.Entity.triggerTableFactory(this.parent.database);
