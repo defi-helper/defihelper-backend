@@ -13,6 +13,7 @@ import { UserType } from '@api/schema/user';
 import container from '@container';
 import { ContactBroker, ContactStatus, UserContact } from '@models/Notification/Entity';
 import { Role } from '@models/User/Entity';
+import { UserNotificationType } from '@models/UserNotification/Entity';
 import { DateTimeType, PaginateList, PaginationArgument, SortArgument, UuidType } from '../types';
 
 export const UserContactBrokerEnum = new GraphQLEnumType({
@@ -214,7 +215,19 @@ export const UserContactCreateMutation: GraphQLFieldConfig<any, Request> = {
     }
 
     const { broker, address, name } = input;
-    return container.model.userContactService().create(broker, address, currentUser, name);
+    const contact = await container.model
+      .userContactService()
+      .create(broker, address, currentUser, name);
+
+    await Promise.all(
+      Object.values(UserNotificationType).map((t) =>
+        container.model
+          .userNotificationService()
+          .enable(contact, t as UserNotificationType, '12:00'),
+      ),
+    );
+
+    return contact;
   },
 };
 
