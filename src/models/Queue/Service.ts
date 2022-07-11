@@ -3,6 +3,7 @@ import { Factory } from '@services/Container';
 import { LogService } from '@models/Log/Service';
 import { Log } from '@services/Log';
 import dayjs from 'dayjs';
+import * as amqp from 'amqplib';
 import { Rabbit } from 'rabbit-queue';
 import { Task, TaskStatus, Table, Process } from './Entity';
 import * as Handlers from '../../queue';
@@ -162,7 +163,7 @@ export class QueueService {
     const rabbit = this.rabbitmq();
     rabbit.createQueue(
       queue ?? 'tasks_default',
-      { durable: false, maxPriority: 9 },
+      { durable: false, maxPriority: 9, priority: 9 } as amqp.Options.AssertQueue,
       async (msg, ack) => {
         if (isStoped) return;
         isConsume = true;
