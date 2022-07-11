@@ -45,7 +45,13 @@ export const LandingMediumPostsQuery: GraphQLFieldConfig<any, Request> = {
   type: GraphQLNonNull(GraphQLList(GraphQLNonNull(LandingMediumPostType))),
   resolve: async () => {
     const cached = await container.cache().promises.get('defihelper:landing:posts-collecting');
-    if (cached) return JSON.parse(cached);
+    if (cached) {
+      const parsedResponse = JSON.parse(cached);
+      return (parsedResponse ?? []).map((post: MediumPostType) => ({
+        ...post,
+        createdAt: dayjs(post.createdAt),
+      }));
+    }
 
     const locked = await container
       .semafor()
