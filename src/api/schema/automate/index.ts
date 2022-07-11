@@ -1018,19 +1018,6 @@ export const ContractMetricType = new GraphQLObjectType({
   },
 });
 
-function cacheGet(tokenKey: string): Promise<string | null> {
-  return new Promise((resolve) =>
-    container.cache().get(`defihelper:automate:${tokenKey}`, (err, result) => {
-      if (err || !result) return resolve(null);
-      return resolve(result);
-    }),
-  );
-}
-
-function cacheSet(tokenKey: string, value: string): void {
-  container.cache().setex(`defihelper:automate:${tokenKey}`, 300, value);
-}
-
 export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
   name: 'AutomateContractType',
   fields: {
@@ -1117,6 +1104,7 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
       description: 'restake at',
       resolve: async (contract, _, { dataLoader, currentUser }) => {
         if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+        const cache = container.cache();
 
         if (contract.type !== Automate.ContractType.Autorestake) {
           return null;
@@ -1129,7 +1117,9 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
           return null;
         }
 
-        const cachedState = await cacheGet(`nextRestake:${contract.id}`);
+        const cachedState = await cache.promises.get(
+          `defihelper:automate:nextRestake:${contract.id}`,
+        );
         if (cachedState) {
           return dayjs(cachedState);
         }
@@ -1165,7 +1155,11 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
           new BN(apr).toNumber(),
         );
         if (nextRestakeDate) {
-          await cacheSet(`nextRestake:${contract.id}`, nextRestakeDate.toISOString());
+          await cache.promises.setex(
+            `defihelper:automate:nextRestake:${contract.id}`,
+            300,
+            nextRestakeDate.toISOString(),
+          );
         }
 
         return nextRestakeDate;

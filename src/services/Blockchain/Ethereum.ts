@@ -33,19 +33,6 @@ function providerRandomizerFactory(factories: Array<Factory<ethers.providers.Jso
   };
 }
 
-function cacheGet(tokenKey: string): Promise<string | null> {
-  return new Promise((resolve) =>
-    container.cache().get(`defihelper:token:${tokenKey}`, (err, result) => {
-      if (err || !result) return resolve(null);
-      return resolve(result);
-    }),
-  );
-}
-
-function cacheSet(tokenKey: string, value: string): void {
-  container.cache().setex(`defihelper:token:${tokenKey}`, 3600, value);
-}
-
 function signersFactory(
   consumersPrivateKeys: string[],
   provider: ethers.providers.JsonRpcProvider,
@@ -164,8 +151,9 @@ function useEtherscanContractAbi(host: string): ContractABIResolver {
  */
 function coingeckoPriceFeedUSD(coinApiId: string): NativePriceFeedUSD {
   return async () => {
-    const key = `ethereum:native:${coinApiId}:price`;
-    const chainNativeUSD = await cacheGet(key);
+    const cache = container.cache();
+    const key = `token:ethereum:native:${coinApiId}:price`;
+    const chainNativeUSD = await cache.promises.get(key);
     if (!chainNativeUSD) {
       const {
         data: {
@@ -179,7 +167,7 @@ function coingeckoPriceFeedUSD(coinApiId: string): NativePriceFeedUSD {
           },
         },
       );
-      cacheSet(key, usd);
+      await cache.promises.setex(key, 3600, usd);
       return usd;
     }
 
@@ -192,13 +180,13 @@ function debankPriceFeed(network: string): { usd: TokenPriceFeedUSD } {
     usd: async (address: string) => {
       const key = `ethereum:${network}:${address}:price`;
 
-      const cachedPrice = await cacheGet(key);
+      const cachedPrice = await container.cache().promises.get(key);
       if (cachedPrice) {
         return cachedPrice;
       }
 
       const { price } = await container.debank().getToken(network, address);
-      cacheSet(key, price.toString());
+      await container.cache().promises.setex(key, 3600, price.toString());
 
       return price.toString();
     },
