@@ -20,7 +20,7 @@ export function queuesInit(connect: Rabbit, queues: QueueConfig[]) {
   return Promise.all(
     queues.map((queue) =>
       connect
-        .createQueue(queue.name, { durable: false })
+        .createQueue(queue.name, { durable: false, maxPriority: 9 })
         .then(() => connect.bindToTopic(queue.name, queue.topic)),
     ),
   );
