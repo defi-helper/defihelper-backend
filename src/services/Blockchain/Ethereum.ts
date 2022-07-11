@@ -153,7 +153,7 @@ function coingeckoPriceFeedUSD(coinApiId: string): NativePriceFeedUSD {
   return async () => {
     const cache = container.cache();
     const key = `token:ethereum:native:${coinApiId}:price`;
-    const chainNativeUSD = await cache.promises.get(key);
+    const chainNativeUSD = await cache.promises.get(key).catch(() => null);
     if (!chainNativeUSD) {
       const {
         data: {

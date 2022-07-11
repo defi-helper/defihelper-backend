@@ -1117,9 +1117,9 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
           return null;
         }
 
-        const cachedState = await cache.promises.get(
-          `defihelper:automate:nextRestake:${contract.id}`,
-        );
+        const cachedState = await cache.promises
+          .get(`defihelper:automate:nextRestake:${contract.id}`)
+          .catch(() => null);
         if (cachedState) {
           return dayjs(cachedState);
         }
