@@ -2385,10 +2385,14 @@ export const WalletUpdateStatisticsMutation: GraphQLFieldConfig<any, Request> = 
     await Promise.all([
       container.model
         .queueService()
-        .push('metricsWalletBalancesDeBankFiller', { id }, { priority: 9 }),
+        .push('metricsWalletBalancesDeBankFiller', { id }, { topic: 'metricCurrent', priority: 9 }),
       container.model
         .queueService()
-        .push('metricsWalletProtocolsBalancesDeBankFiller', { id }, { priority: 9 }),
+        .push(
+          'metricsWalletProtocolsBalancesDeBankFiller',
+          { id },
+          { topic: 'metricCurrent', priority: 9 },
+        ),
     ]);
 
     return true;
@@ -2477,11 +2481,18 @@ export const WalletMetricScanMutation: GraphQLFieldConfig<any, Request> = {
         .where({ wallet: wallet.id, contract: contract.id })
         .first();
       if (!link) throw new UserInputError('Wallet not linked to contract');
-      await container.model.queueService().push('metricsWalletScanMutation', {
-        contract: contract.id,
-        wallet: wallet.id,
-        txId,
-      });
+      await container.model.queueService().push(
+        'metricsWalletScanMutation',
+        {
+          contract: contract.id,
+          wallet: wallet.id,
+          txId,
+        },
+        {
+          topic: 'metricCurrent',
+          priority: 9,
+        },
+      );
 
       return true;
     },

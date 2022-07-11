@@ -3,8 +3,8 @@ import { v4 as uuid } from 'uuid';
 import { Factory } from '@services/Container';
 import { Emitter } from '@services/Event';
 import container from '@container';
-import { Bill, BillStatus, BillTable, Transfer, TransferTable } from './Entity';
 import { WalletBlockchain } from '@models/Wallet/Entity';
+import { Bill, BillStatus, BillTable, Transfer, TransferTable } from './Entity';
 
 export class BillingService {
   public readonly onTransferCreated = new Emitter<Transfer>(async (transfer) => {
