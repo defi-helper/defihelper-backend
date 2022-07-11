@@ -108,6 +108,10 @@ export async function optimalRestakeNearesDate(
   apy: number,
   seq: number = 365,
 ): Promise<Dayjs | null> {
+  if (!balance) {
+    return null;
+  }
+
   const apd = apy / 365;
   let fee = 3;
   if (blockchain === 'ethereum') {

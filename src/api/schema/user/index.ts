@@ -1017,6 +1017,10 @@ export const UserType = new GraphQLObjectType<User, Request>({
       type: GraphQLNonNull(RoleType),
       description: 'Access role',
     },
+    name: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'User portfolio name',
+    },
     locale: {
       type: GraphQLNonNull(LocaleEnum),
       description: 'Current user locale',
@@ -2405,6 +2409,9 @@ export const UserUpdateMutation: GraphQLFieldConfig<any, Request> = {
             role: {
               type: RoleType,
             },
+            name: {
+              type: GraphQLString,
+            },
             locale: {
               type: LocaleEnum,
             },
@@ -2413,18 +2420,27 @@ export const UserUpdateMutation: GraphQLFieldConfig<any, Request> = {
       ),
     },
   },
-  resolve: onlyAllowed('user.update', async (root, { id, input }) => {
+  resolve: onlyAllowed('user.update-own', async (root, { id, input }, { currentUser, acl }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
     const user = await container.model.userTable().where('id', id).first();
     if (!user) throw new UserInputError('User not found');
+    if (currentUser.role !== Role.Admin && currentUser.id !== user.id) {
+      throw new UserInputError('Foreign account');
+    }
 
-    const { role, locale } = input as { role?: Role; locale?: Locale };
-    const updated = await container.model.userService().update({
+    const { role, name, locale } = input as { role?: Role; name?: string; locale?: Locale };
+    const updatedFields = {
       ...user,
-      role: role !== undefined ? role : user.role,
+      name: name !== undefined ? name : user.name,
       locale: locale !== undefined ? locale : user.locale,
-    });
+    };
+    if (role !== undefined) {
+      if (!acl.isAllowed('user', 'update')) throw new ForbiddenError('FORBIDDEN');
+      updatedFields.role = role;
+    }
 
-    return updated;
+    return container.model.userService().update(updatedFields);
   }),
 };
 

@@ -42,10 +42,6 @@ import {
   walletTableName,
   WalletBlockchainType,
 } from '@models/Wallet/Entity';
-import {
-  contractTableName as automateContractTableName,
-  ContractVerificationStatus,
-} from '@models/Automate/Entity';
 import { AuthenticationError, ForbiddenError, UserInputError } from 'apollo-server-express';
 import BN from 'bignumber.js';
 import { Blockchain } from '@models/types';
@@ -681,23 +677,6 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
                     .where(`${walletTableName}.user`, currentUser.id)
                     .andWhere(
                       database.raw(`${metricWalletTableName}.data->>'stakingUSD' IS NOT NULL`),
-                    )
-                    .whereNotIn(
-                      `${metricWalletTableName}.contract`,
-                      container.model
-                        .automateContractTable()
-                        .distinct(`${automateContractTableName}.contract`)
-                        .innerJoin(
-                          walletTableName,
-                          `${walletTableName}.id`,
-                          `${automateContractTableName}.wallet`,
-                        )
-                        .where(`${walletTableName}.user`, currentUser.id)
-                        .whereNotNull(`${automateContractTableName}.contract`)
-                        .andWhere(
-                          `${automateContractTableName}.verification`,
-                          ContractVerificationStatus.Confirmed,
-                        ),
                     )
                     .whereNotIn(
                       `${metricWalletTableName}.contract`,
