@@ -22,7 +22,7 @@ import BN from 'bignumber.js';
 import DataLoader from 'dataloader';
 
 class Cache {
-  public readonly cache = container.cache();
+  public readonly cache = container.cacheLegacy();
 
   constructor(public readonly prefix: string, public readonly ttl: number) {}
 

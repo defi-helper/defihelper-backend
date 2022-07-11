@@ -44,7 +44,7 @@ export default async (process: Process) => {
       .first(),
   ]);
 
-  container.cache().setex(
+  container.cacheLegacy().setex(
     'defihelper:treasury:stats',
     259200, // 3 days
     JSON.stringify({

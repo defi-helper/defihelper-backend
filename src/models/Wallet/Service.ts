@@ -39,7 +39,7 @@ export class WalletService {
       container.model.queueService().push('eventsWalletCreated', {
         id: wallet.id,
       }),
-      container.cache().publish(
+      container.cacheLegacy().publish(
         'defihelper:channel:onWalletCreated',
         JSON.stringify({
           id: wallet.id,

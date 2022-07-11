@@ -46,7 +46,7 @@ export class ModelContainer extends Container<typeof AppContainer> {
   readonly sessionService = singleton(
     () =>
       new Models.User.Service.SessionService(
-        this.parent.cache,
+        this.parent.cacheLegacy,
         'defihelper:session',
         this.parent.parent.session.ttl,
       ),

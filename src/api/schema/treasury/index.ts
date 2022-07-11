@@ -40,7 +40,7 @@ export const TreasuryQuery: GraphQLFieldConfig<any, Request> = {
         walletsCount: '0',
         trackedUSD: '0',
       };
-      container.cache().get('defihelper:treasury:stats', (err, reply) => {
+      container.cacheLegacy().get('defihelper:treasury:stats', (err, reply) => {
         if (err || reply === null) {
           return resolve(def);
         }
