@@ -8,6 +8,8 @@ export default {
     'hello world': 'hello world',
     'dollar': ['dollar', 'dollars'],
     'Confirm': 'Confirm',
+    'Your Telegram account ({{username}}) has been successfully connected to your DeFiHelper account.':
+      'Your Telegram account ({{username}}) has been successfully connected to your DeFiHelper account.',
     'Any questions? Drop us a reply!': 'Any questions? Drop us a reply!',
     'DeFiHelper team': 'DeFiHelper team',
     'We are excited to see you join the DeFiHelper community!':

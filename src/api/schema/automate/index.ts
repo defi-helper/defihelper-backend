@@ -25,6 +25,7 @@ import {
 import { apyBoost, optimalRestakeNearesDate } from '@services/RestakeStrategy';
 import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
 import { metricContractTableName } from '@models/Metric/Entity';
+import dayjs from 'dayjs';
 import {
   DateTimeType,
   onlyAllowed,
@@ -1017,6 +1018,19 @@ export const ContractMetricType = new GraphQLObjectType({
   },
 });
 
+function cacheGet(tokenKey: string): Promise<string | null> {
+  return new Promise((resolve) =>
+    container.cache().get(`defihelper:automate:${tokenKey}`, (err, result) => {
+      if (err || !result) return resolve(null);
+      return resolve(result);
+    }),
+  );
+}
+
+function cacheSet(tokenKey: string, value: string): void {
+  container.cache().setex(`defihelper:automate:${tokenKey}`, 300, value);
+}
+
 export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
   name: 'AutomateContractType',
   fields: {
@@ -1101,8 +1115,8 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
     restakeAt: {
       type: DateTimeType,
       description: 'restake at',
-      resolve: async (contract, _, { dataLoader }) => {
-        // const cache = container.cache();
+      resolve: async (contract, _, { dataLoader, currentUser }) => {
+        if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
         if (contract.type !== Automate.ContractType.Autorestake) {
           return null;
@@ -1115,10 +1129,10 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
           return null;
         }
 
-        // const cachedState = await cache.getAsync(`nextRestake:${contract.id}`);
-        // if (cachedState) {
-        //  return dayjs(cachedState);
-        // }
+        const cachedState = await cacheGet(`nextRestake:${contract.id}`);
+        if (cachedState) {
+          return dayjs(cachedState);
+        }
 
         const stakingContract = await dataLoader.contract().load(contract.contract);
         if (!stakingContract) return null;
@@ -1136,11 +1150,12 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
 
         if (!apr) return null;
 
-        const automateOwnerWallet = await dataLoader.wallet().load(contract.wallet);
-        if (!automateOwnerWallet) return null;
-
-        const walletMetric = await dataLoader.walletMetric().load(automateOwnerWallet.id);
-        if (!walletMetric) return null;
+        const walletMetric = await dataLoader
+          .contractUserMetric({
+            userId: currentUser.id,
+            walletType: [WalletBlockchainModelType.Contract, WalletBlockchainModelType.Wallet],
+          })
+          .load(contract.contract);
 
         const nextRestakeDate = await optimalRestakeNearesDate(
           stakingContract.blockchain,
@@ -1149,8 +1164,10 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
           new BN(walletMetric.earnedUSD).toNumber(),
           new BN(apr).toNumber(),
         );
+        if (nextRestakeDate) {
+          await cacheSet(`nextRestake:${contract.id}`, nextRestakeDate.toISOString());
+        }
 
-        // await cache.setAsync(`nextRestake:${contract.id}`, result.toISOString(), 300); // 5 minutes
         return nextRestakeDate;
       },
     },
