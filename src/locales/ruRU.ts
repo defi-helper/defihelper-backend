@@ -15,6 +15,8 @@ export default {
     'Confirm': 'Подтвердить',
     'Any questions? Drop us a reply!': 'Остались вопросы? Отправьте их в ответ на это письмо!',
     'DeFiHelper team': 'Команда DeFiHelper',
+    'Your Telegram account ({{username}}) has been successfully connected to your DeFiHelper account.':
+      'Ваш Telegram аккаунт ({{username}}) успешно привязан к вашему DefiHelper аккаунту.',
     'We are excited to see you join the DeFiHelper community!':
       'Мы рады видеть тебя в рядах сообщества DeFiHelper!',
     'Please confirm your E-Mail address <b>{{email}}</b> by clicking on the following link:':
