@@ -160,16 +160,20 @@ export class QueueService {
     let isConsume = false;
     let isStoped = false;
     const rabbit = this.rabbitmq();
-    rabbit.createQueue(queue ?? 'tasks_default', { durable: false }, async (msg, ack) => {
-      if (isStoped) return;
-      isConsume = true;
-      const task: Task = JSON.parse(msg.content.toString());
-      this.logger().info(`Handle task: ${task.id}`);
-      await this.handle(task);
-      ack();
-      if (isStoped) setTimeout(() => rabbit.close(), 500); // for ack work
-      isConsume = false;
-    });
+    rabbit.createQueue(
+      queue ?? 'tasks_default',
+      { durable: false, maxPriority: 9 },
+      async (msg, ack) => {
+        if (isStoped) return;
+        isConsume = true;
+        const task: Task = JSON.parse(msg.content.toString());
+        this.logger().info(`Handle task: ${task.id}`);
+        await this.handle(task);
+        ack();
+        if (isStoped) setTimeout(() => rabbit.close(), 500); // for ack work
+        isConsume = false;
+      },
+    );
 
     return {
       stop: () => {
