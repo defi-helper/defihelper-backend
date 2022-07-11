@@ -10,9 +10,17 @@ export interface ConnectFactoryConfig {
   readonly tls?: boolean;
 }
 
+export interface PromisifyRedisClient extends RedisClient {
+  promises: {
+    get(key: string): Promise<string | null>;
+    set(key: string, value: string): Promise<'OK'>;
+    setex(key: string, ttl: number, value: string): Promise<string>;
+  };
+}
+
 export function redisConnectFactory(config: ConnectFactoryConfig) {
-  return () =>
-    redis.createClient({
+  return () => {
+    const client = redis.createClient({
       tls: config.tls
         ? {
             host: config.host,
@@ -23,7 +31,33 @@ export function redisConnectFactory(config: ConnectFactoryConfig) {
       port: config.port,
       password: config.password,
       db: config.database,
-    });
+    }) as PromisifyRedisClient;
+    client.promises = {
+      get(key) {
+        return new Promise((resolve, reject) =>
+          client.get(key, (err, result) => {
+            return err ? reject(err) : resolve(result);
+          }),
+        );
+      },
+      set(key, value) {
+        return new Promise((resolve, reject) =>
+          client.set(key, value, (err, result) => {
+            return err ? reject(err) : resolve(result);
+          }),
+        );
+      },
+      setex(key, ttl, value) {
+        return new Promise((resolve, reject) =>
+          client.setex(key, ttl, value, (err, result) => {
+            return err ? reject(err) : resolve(result);
+          }),
+        );
+      },
+    };
+
+    return client;
+  };
 }
 
 export function redisSubscriberFactory(

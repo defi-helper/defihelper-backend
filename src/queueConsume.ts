@@ -15,8 +15,8 @@ container.model
       throw new Error(`Queue "${options.queue}" not found`);
     }
 
-    container.rabbitmq().on('disconnected', () => {
-      throw new Error('Rabbit disconnected');
+    container.rabbitmq().on('disconnected', (error) => {
+      throw new Error(`Rabbit disconnected: ${error.message}`);
     });
     const consumer = container.model.queueService().consume({ queue: options.queue });
 

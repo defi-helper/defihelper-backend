@@ -60,7 +60,9 @@ export class TelegramService implements ITelegramService {
           await container.model.queueService().push('sendTelegram', {
             chatId: message.chat.id,
             template: 'welcomeTemplate',
-            params: {},
+            params: {
+              username: message?.from?.username,
+            },
             locale: user?.locale || 'enUS',
           });
         }
