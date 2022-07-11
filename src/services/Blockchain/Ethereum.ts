@@ -180,7 +180,10 @@ function debankPriceFeed(network: string): { usd: TokenPriceFeedUSD } {
     usd: async (address: string) => {
       const key = `ethereum:${network}:${address}:price`;
 
-      const cachedPrice = await container.cache().promises.get(key);
+      const cachedPrice = await container
+        .cache()
+        .promises.get(key)
+        .catch(() => null);
       if (cachedPrice) {
         return cachedPrice;
       }

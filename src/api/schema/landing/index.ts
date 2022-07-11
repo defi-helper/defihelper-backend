@@ -44,7 +44,10 @@ export const LandingMediumPostType = new GraphQLObjectType<MediumPostType>({
 export const LandingMediumPostsQuery: GraphQLFieldConfig<any, Request> = {
   type: GraphQLNonNull(GraphQLList(GraphQLNonNull(LandingMediumPostType))),
   resolve: async () => {
-    const cached = await container.cache().promises.get('defihelper:landing:posts-collecting');
+    const cached = await container
+      .cache()
+      .promises.get('defihelper:landing:posts-collecting')
+      .catch(() => null);
     if (cached) {
       const parsedResponse = JSON.parse(cached);
       return (parsedResponse ?? []).map((post: MediumPostType) => ({

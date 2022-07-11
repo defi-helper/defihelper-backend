@@ -1033,7 +1033,10 @@ export const UserType = new GraphQLObjectType<User, Request>({
       type: GraphQLNonNull(GraphQLBoolean),
       description: 'Is portfolio collected',
       resolve: async (user) => {
-        const cacheKey = container.cache().promises.get(`defihelper:portfolio-preload:${user.id}`);
+        const cacheKey = container
+          .cache()
+          .promises.get(`defihelper:portfolio-preload:${user.id}`)
+          .catch(() => null);
 
         if (cacheKey === null) {
           container.model
