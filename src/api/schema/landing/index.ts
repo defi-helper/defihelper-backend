@@ -41,37 +41,20 @@ export const LandingMediumPostType = new GraphQLObjectType<MediumPostType>({
   },
 });
 
-const cacheGet = (): Promise<Array<MediumPostType> | null> => {
-  return new Promise((resolve) =>
-    container.cache().get('defihelper:landing:posts-collecting', (err, result) => {
-      if (err || !result) return resolve(null);
-      const list: Array<MediumPostType> = JSON.parse(result);
-
-      return resolve(list.map((v) => ({ ...v, createdAt: dayjs(v.createdAt) })));
-    }),
-  );
-};
-
-const cacheSet = (value: Array<MediumPostType>): Promise<string> => {
-  return new Promise((resolve, reject) =>
-    container.cache().setex(
-      'defihelper:landing:posts-collecting',
-      86400, // 1 day
-      JSON.stringify(value),
-      (err, reply) => {
-        if (err) return reject(err);
-
-        return resolve(reply);
-      },
-    ),
-  );
-};
-
 export const LandingMediumPostsQuery: GraphQLFieldConfig<any, Request> = {
   type: GraphQLNonNull(GraphQLList(GraphQLNonNull(LandingMediumPostType))),
   resolve: async () => {
-    const cached = await cacheGet();
-    if (cached) return cached;
+    const cached = await container
+      .cache()
+      .promises.get('defihelper:landing:posts-collecting')
+      .catch(() => null);
+    if (cached) {
+      const parsedResponse = JSON.parse(cached);
+      return (parsedResponse ?? []).map((post: MediumPostType) => ({
+        ...post,
+        createdAt: dayjs(post.createdAt),
+      }));
+    }
 
     const locked = await container
       .semafor()
@@ -101,7 +84,9 @@ export const LandingMediumPostsQuery: GraphQLFieldConfig<any, Request> = {
               }))
               .filter((v) => new LanguageDetect().detect(v.text)[0][0] === 'english'),
           );
-        await cacheSet(postsList);
+        await container
+          .cache()
+          .promises.setex('defihelper:landing:posts-collecting', 86400, JSON.stringify(postsList));
       } catch (e) {
         console.error(e);
       }
