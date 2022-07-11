@@ -1030,7 +1030,7 @@ export const UserType = new GraphQLObjectType<User, Request>({
       description: 'Is portfolio collected',
       resolve: async (user) => {
         const cacheKey: boolean | null = await new Promise((resolve) => {
-          container.cache().get(`defihelper:portfolio-preload:${user.id}`, (err, reply) => {
+          container.cacheLegacy().get(`defihelper:portfolio-preload:${user.id}`, (err, reply) => {
             if (err || reply === null) {
               return resolve(null);
             }
@@ -1043,7 +1043,7 @@ export const UserType = new GraphQLObjectType<User, Request>({
           container.model
             .queueService()
             .push('metricsUserPortfolioFiller', { id: user.id }, { priority: 9 });
-          container.cache().setex(
+          container.cacheLegacy().setex(
             `defihelper:portfolio-preload:${user.id}`,
             3600, // 1 hour
             'true',

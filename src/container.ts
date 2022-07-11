@@ -6,7 +6,12 @@ import { consoleFactory } from '@services/Log';
 import * as Blockchain from '@services/Blockchain';
 import { I18nContainer } from '@services/I18n/container';
 import { ModelContainer } from '@models/container';
-import { redisConnectFactory, redisLockFactory, redisSubscriberFactory } from '@services/Cache';
+import {
+  redisConnectFactory,
+  redisLegacyConnectFactory,
+  redisLockFactory,
+  redisSubscriberFactory,
+} from '@services/Cache';
 import { ACLContainer } from '@services/ACL/container';
 import { TemplateContainer } from '@services/Template/container';
 import { emailServiceFactory } from '@services/Email';
@@ -25,11 +30,13 @@ class AppContainer extends Container<typeof config> {
 
   readonly rabbitmq = singleton(rabbitmqFactory(this.parent.rabbitmq));
 
+  readonly cacheLegacy = singleton(redisLegacyConnectFactory(this.parent.cache));
+
   readonly cache = singleton(redisConnectFactory(this.parent.cache));
 
-  readonly cacheSubscriber = singletonParametric(redisSubscriberFactory(this.cache, 100));
+  readonly cacheSubscriber = singletonParametric(redisSubscriberFactory(this.cacheLegacy, 100));
 
-  readonly semafor = singleton(redisLockFactory(this.cache));
+  readonly semafor = singleton(redisLockFactory(this.cacheLegacy));
 
   readonly email = singleton(emailServiceFactory(this.parent.email));
 
@@ -58,7 +65,9 @@ class AppContainer extends Container<typeof config> {
 
   readonly template = new TemplateContainer(this);
 
-  readonly treasury = singleton(() => new TreasuryService(this.cache, 'defihelper:treasury', 60));
+  readonly treasury = singleton(
+    () => new TreasuryService(this.cacheLegacy, 'defihelper:treasury', 60),
+  );
 
   readonly model = new ModelContainer(this);
 }

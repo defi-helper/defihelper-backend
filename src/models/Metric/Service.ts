@@ -29,7 +29,7 @@ import {
 
 export class MetricContractService {
   public readonly onWalletCreated = new Emitter<MetricWallet>(async (metric) =>
-    container.cache().publish(
+    container.cacheLegacy().publish(
       'defihelper:channel:onWalletMetricUpdated',
       JSON.stringify({
         id: metric.id,
@@ -40,7 +40,7 @@ export class MetricContractService {
   );
 
   public readonly onWalletTokenCreated = new Emitter<MetricWalletToken>(async (metric) => {
-    container.cache().publish(
+    container.cacheLegacy().publish(
       'defihelper:channel:onWalletTokenMetricUpdated',
       JSON.stringify({
         id: metric.id,

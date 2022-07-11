@@ -1,6 +1,7 @@
 import { Factory } from '@services/Container';
 import redis, { RedisClient } from 'redis';
 import asyncify from 'callback-to-async-iterator';
+import Redis from 'ioredis';
 
 export interface ConnectFactoryConfig {
   readonly host?: string;
@@ -10,7 +11,7 @@ export interface ConnectFactoryConfig {
   readonly tls?: boolean;
 }
 
-export function redisConnectFactory(config: ConnectFactoryConfig) {
+export function redisLegacyConnectFactory(config: ConnectFactoryConfig) {
   return () =>
     redis.createClient({
       tls: config.tls
@@ -23,6 +24,16 @@ export function redisConnectFactory(config: ConnectFactoryConfig) {
       port: config.port,
       password: config.password,
       db: config.database,
+    });
+}
+
+export function redisConnectFactory(config: ConnectFactoryConfig) {
+  return () =>
+    new Redis({
+      port: config.port,
+      host: config.host,
+      password: config.password,
+      db: Number(config.database) ?? 0,
     });
 }
 

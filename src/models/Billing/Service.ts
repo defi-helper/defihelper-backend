@@ -3,12 +3,12 @@ import { v4 as uuid } from 'uuid';
 import { Factory } from '@services/Container';
 import { Emitter } from '@services/Event';
 import container from '@container';
-import { Bill, BillStatus, BillTable, Transfer, TransferTable } from './Entity';
 import { WalletBlockchain } from '@models/Wallet/Entity';
+import { Bill, BillStatus, BillTable, Transfer, TransferTable } from './Entity';
 
 export class BillingService {
   public readonly onTransferCreated = new Emitter<Transfer>(async (transfer) => {
-    container.cache().publish(
+    container.cacheLegacy().publish(
       'defihelper:channel:onBillingTransferCreated',
       JSON.stringify({
         id: transfer.id,
@@ -17,7 +17,7 @@ export class BillingService {
   });
 
   public readonly onTransferUpdated = new Emitter<Transfer>(async (transfer) => {
-    container.cache().publish(
+    container.cacheLegacy().publish(
       'defihelper:channel:onBillingTransferUpdated',
       JSON.stringify({
         id: transfer.id,

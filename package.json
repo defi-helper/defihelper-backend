@@ -76,6 +76,7 @@
     "graphql": "^15.5.0",
     "graphql-subscriptions": "^1.2.1",
     "husky": "^7.0.0",
+    "ioredis": "^5.1.0",
     "jimp": "^0.16.1",
     "knex": "^0.21.1",
     "languagedetect": "^2.0.0",

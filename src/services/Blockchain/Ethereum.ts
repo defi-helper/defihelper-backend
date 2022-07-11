@@ -35,7 +35,7 @@ function providerRandomizerFactory(factories: Array<Factory<ethers.providers.Jso
 
 function cacheGet(tokenKey: string): Promise<string | null> {
   return new Promise((resolve) =>
-    container.cache().get(`defihelper:token:${tokenKey}`, (err, result) => {
+    container.cacheLegacy().get(`defihelper:token:${tokenKey}`, (err, result) => {
       if (err || !result) return resolve(null);
       return resolve(result);
     }),
@@ -43,7 +43,7 @@ function cacheGet(tokenKey: string): Promise<string | null> {
 }
 
 function cacheSet(tokenKey: string, value: string): void {
-  container.cache().setex(`defihelper:token:${tokenKey}`, 3600, value);
+  container.cacheLegacy().setex(`defihelper:token:${tokenKey}`, 3600, value);
 }
 
 function signersFactory(
