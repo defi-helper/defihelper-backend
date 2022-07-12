@@ -41,8 +41,6 @@ export default {
     'automate:trigger:everyDay:description': 'Вызов триггера каждый день',
     'automate:trigger:everyHour:name': 'Периодически',
     'automate:trigger:everyHour:description': 'Вызов триггера каждый час',
-    'automate:action:skipReason:notAvailableNotification': 'Недостаточно нотификаций',
-    'automate:action:skipReason:lowFeeFunds': 'Недостаточно средств на балансе',
     'automate:action:notification:paramsDescription':
       'Отправить уведомление в контакт {{contactId}}',
     'automate:action:ethereumAutomateRun:paramsDescription': 'Запуск автоматизации {{id}}',
