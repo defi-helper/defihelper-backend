@@ -5,11 +5,16 @@ export interface MetricMap {
   [k: string]: string;
 }
 
-interface Metric {
+export interface Metric {
   id: string;
   data: MetricMap;
   date: Date;
   createdAt: Date;
+}
+
+export interface Registry {
+  data: MetricMap;
+  date: Date;
 }
 
 export interface MetricBlockchain extends Metric {
@@ -83,6 +88,21 @@ export const metricWalletTableName = 'metric_wallet';
 export const metricWalletTableFactory = tableFactoryLegacy<MetricWallet>(metricWalletTableName);
 
 export type MetricWalletTable = ReturnType<ReturnType<typeof metricWalletTableFactory>>;
+
+export interface MetricWalletRegistry extends Registry {
+  contract: string;
+  wallet: string;
+}
+
+export const metricWalletRegistryTableName = 'metric_wallet_registry';
+
+export const metricWalletRegistryTableFactory = tableFactoryLegacy<MetricWalletRegistry>(
+  metricWalletRegistryTableName,
+);
+
+export type MetricWalletRegistryTable = ReturnType<
+  ReturnType<typeof metricWalletRegistryTableFactory>
+>;
 
 export interface MetricWalletTask {
   id: string;

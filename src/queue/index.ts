@@ -17,6 +17,7 @@ export * as metricsContractScannerBroker from './metrics/contractScannerBroker';
 export * as metricsContractHistory from './metrics/contractHistory';
 export * as metricsWalletBroker from './metrics/walletBroker';
 export * as metricsWalletHistory from './metrics/walletHistory';
+export * as metricsWalletRegistrySync from './metrics/registry/walletSync';
 export * as metricsContractCurrent from './metrics/contractCurrent';
 export * as metricsContractBlock from './metrics/contractBlock';
 export * as metricsContractAprWeekReal from './metrics/contractAprWeekReal';

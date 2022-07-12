@@ -77,19 +77,7 @@ export const ConditionType = new GraphQLObjectType<Automate.Condition, Request>(
       type: GraphQLNonNull(DateTimeType),
       description: 'Created at date',
     },
-    restakeAt: {
-      type: DateTimeType,
-      description: 'Next restake date',
-    },
   },
-});
-
-export const ActionSkipReasonEnum = new GraphQLEnumType({
-  name: 'AutomateSkipReasonEnum',
-  values: Object.keys(Automate.ActionSkipReason).reduce(
-    (res, handler) => ({ ...res, [handler]: { value: handler } }),
-    {} as GraphQLEnumValueConfigMap,
-  ),
 });
 
 export const ActionTypeEnum = new GraphQLEnumType({
@@ -125,13 +113,6 @@ export const ActionType = new GraphQLObjectType<Automate.Action, Request>({
     priority: {
       type: GraphQLNonNull(GraphQLInt),
       description: 'Execution priority (ascending)',
-    },
-    skipReason: {
-      type: ActionSkipReasonEnum,
-      description: 'Skip reason',
-      resolve: ({ skipReason }, _, { i18n }) => {
-        return skipReason ? i18n.t(`automate:action:skipReason:${skipReason}`) : null;
-      },
     },
     createdAt: {
       type: GraphQLNonNull(DateTimeType),
@@ -257,20 +238,6 @@ export const TriggerType = new GraphQLObjectType<Automate.Trigger>({
     createdAt: {
       type: GraphQLNonNull(DateTimeType),
       description: 'Created at date',
-    },
-    restakeAt: {
-      type: DateTimeType,
-      description: 'Next restake date',
-      resolve: async (trigger) => {
-        const optimalRestakeCondition = await container.model
-          .automateConditionTable()
-          .where({
-            trigger: trigger.id,
-            type: 'ethereumOptimalAutomateRun',
-          })
-          .first();
-        return optimalRestakeCondition?.restakeAt ?? null;
-      },
     },
     conditions: {
       type: GraphQLNonNull(

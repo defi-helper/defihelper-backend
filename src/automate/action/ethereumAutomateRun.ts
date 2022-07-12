@@ -1,7 +1,6 @@
 import container from '@container';
 import {
   Action,
-  ActionSkipReason,
   contractTableName,
   ContractVerificationStatus,
   EthereumAutomateTransaction,
@@ -28,11 +27,6 @@ export function paramsVerify(params: any): params is Params {
 }
 
 export default async function (this: Action, params: Params) {
-  await container.model.automateService().updateAction({
-    ...this,
-    skipReason: null,
-  });
-
   const contract = await container.model.automateContractTable().where('id', params.id).first();
   if (!contract) throw new Error('Contract not found');
   if (contract.verification !== ContractVerificationStatus.Confirmed) {
@@ -83,10 +77,6 @@ export default async function (this: Action, params: Params) {
     );
   const nativeTokenUSD = await network.nativeTokenPrice();
   if (walletBalance.multipliedBy(nativeTokenUSD).lt(1)) {
-    await container.model.automateService().updateAction({
-      ...this,
-      skipReason: ActionSkipReason.LowFeeFunds,
-    });
     throw new Error(`Insufficient funds "${walletBalance.toString(10)}" to start automation`);
   }
 
