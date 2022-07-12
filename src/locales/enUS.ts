@@ -8,6 +8,8 @@ export default {
     'hello world': 'hello world',
     'dollar': ['dollar', 'dollars'],
     'Confirm': 'Confirm',
+    'Your Telegram account ({{username}}) has been successfully connected to your DeFiHelper account.':
+      'Your Telegram account ({{username}}) has been successfully connected to your DeFiHelper account.',
     'Any questions? Drop us a reply!': 'Any questions? Drop us a reply!',
     'DeFiHelper team': 'DeFiHelper team',
     'We are excited to see you join the DeFiHelper community!':
@@ -34,8 +36,6 @@ export default {
     'automate:trigger:everyDay:description': 'Call trigger every day',
     'automate:trigger:everyHour:name': 'Periodic',
     'automate:trigger:everyHour:description': 'Call trigger every hour',
-    'automate:action:skipReason:notAvailableNotification': 'Not available notifications',
-    'automate:action:skipReason:lowFeeFunds': 'Low fee funds',
     'automate:action:notification:paramsDescription': 'Send notification to {{contactId}}',
     'automate:action:ethereumAutomateRun:paramsDescription': 'Run automate {{id}}',
     'automate:condition:ethereumBalance:name': 'Native Token Balance',
@@ -46,7 +46,7 @@ export default {
     'automate:condition:ethereumOptimalAutomateRun:name': 'Optimized Staking',
     'automate:condition:ethereumOptimalAutomateRun:description': 'Use auto-staking',
     'automate:action:ethereumOptimalAutomateRun:paramsDescription':
-      'Autostaking for action: {{id}}',
+      'Auto-staking for action: {{id}}',
     'automate:condition:ethereumOptimalAutomateRun:paramsDescription':
       'Restake optimal run for {{id}}',
     'automate:condition:ethereumAvgGasPrice:name': 'Gas Price Fluctuation',

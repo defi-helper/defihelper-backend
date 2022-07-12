@@ -1017,6 +1017,10 @@ export const UserType = new GraphQLObjectType<User, Request>({
       type: GraphQLNonNull(RoleType),
       description: 'Access role',
     },
+    name: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'User portfolio name',
+    },
     locale: {
       type: GraphQLNonNull(LocaleEnum),
       description: 'Current user locale',
@@ -1029,21 +1033,16 @@ export const UserType = new GraphQLObjectType<User, Request>({
       type: GraphQLNonNull(GraphQLBoolean),
       description: 'Is portfolio collected',
       resolve: async (user) => {
-        const cacheKey: boolean | null = await new Promise((resolve) => {
-          container.cache().get(`defihelper:portfolio-preload:${user.id}`, (err, reply) => {
-            if (err || reply === null) {
-              return resolve(null);
-            }
-
-            return resolve(true);
-          });
-        });
+        const cacheKey = await container
+          .cache()
+          .promises.get(`defihelper:portfolio-preload:${user.id}`)
+          .catch(() => null);
 
         if (cacheKey === null) {
           container.model
             .queueService()
             .push('metricsUserPortfolioFiller', { id: user.id }, { priority: 9 });
-          container.cache().setex(
+          container.cache().promises.setex(
             `defihelper:portfolio-preload:${user.id}`,
             3600, // 1 hour
             'true',
@@ -1800,11 +1799,11 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
               description: 'Wallet address',
             },
             message: {
-              type: GraphQLNonNull(GraphQLString),
+              type: GraphQLString,
               description: 'Message',
             },
             signature: {
-              type: GraphQLNonNull(GraphQLString),
+              type: GraphQLString,
               description: 'Signed message',
             },
             code: {
@@ -1830,8 +1829,56 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
       throw new ForbiddenError('FORBIDDEN');
     }
 
-    const userService = container.model.userService();
     const { network, address, message, signature, merge, code } = input;
+    const userService = container.model.userService();
+
+    let codeRecord;
+    if (code) {
+      codeRecord = await container.model.referrerCodeTable().where({ id: code }).first();
+    }
+
+    if (signature === undefined) {
+      const duplicate = await container.model
+        .walletTable()
+        .innerJoin(
+          walletBlockchainTableName,
+          `${walletBlockchainTableName}.id`,
+          `${walletTableName}.id`,
+        )
+        .where(`${walletBlockchainTableName}.blockchain`, 'ethereum')
+        .where(`${walletBlockchainTableName}.network`, network)
+        .where(`${walletBlockchainTableName}.address`, address.toLowerCase())
+        .first();
+      if (!duplicate) {
+        const user =
+          currentUser ?? (await userService.create(Role.User, input.timezone, codeRecord));
+        await container.model
+          .walletService()
+          .createBlockchainWallet(
+            user,
+            'ethereum',
+            network,
+            Wallet.WalletBlockchainType.Wallet,
+            address.toLowerCase(),
+            '',
+            '',
+            false,
+          );
+        const sid = container.model.sessionService().generate(user);
+        userService.onAuth.emit(user);
+        return { user, sid };
+      }
+      if (!duplicate.confirmed) {
+        const user = await container.model.userTable().where('id', duplicate.user).first();
+        if (!user) return null;
+        const sid = container.model.sessionService().generate(user);
+        userService.onAuth.emit(user);
+        return { user, sid };
+      }
+    } else if (message === undefined) {
+      throw new UserInputError('Invalid signature or message');
+    }
+
     if (typeof message !== 'string' || message.length < 5) return null;
     if (!container.blockchain.ethereum.isNetwork(network)) {
       throw new UserInputError('Network unsupported');
@@ -1897,11 +1944,6 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
       };
     }
 
-    let codeRecord;
-    if (code) {
-      codeRecord = await container.model.referrerCodeTable().where({ id: code }).first();
-    }
-
     const user = currentUser ?? (await userService.create(Role.User, input.timezone, codeRecord));
     await container.model
       .walletService()
@@ -1913,6 +1955,7 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
         recoveredAddress,
         recoveredPubKey,
         '',
+        true,
       );
     const sid = container.model.sessionService().generate(user);
     userService.onAuth.emit(user);
@@ -1942,11 +1985,11 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
               description: 'Wallet address',
             },
             message: {
-              type: GraphQLNonNull(GraphQLString),
+              type: GraphQLString,
               description: 'Message',
             },
             signature: {
-              type: GraphQLNonNull(GraphQLString),
+              type: GraphQLString,
               description: 'Signed message',
             },
             code: {
@@ -1974,6 +2017,59 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
 
     const userService = container.model.userService();
     const { network, address, message, publicKey, signature, merge, code } = input;
+
+    let codeRecord;
+    if (code) {
+      codeRecord = await container.model
+        .referrerCodeTable()
+        .where({
+          id: code.id,
+        })
+        .first();
+    }
+
+    if (signature === undefined) {
+      const duplicate = await container.model
+        .walletTable()
+        .innerJoin(
+          walletBlockchainTableName,
+          `${walletBlockchainTableName}.id`,
+          `${walletTableName}.id`,
+        )
+        .where(`${walletBlockchainTableName}.blockchain`, 'waves')
+        .where(`${walletBlockchainTableName}.network`, network)
+        .where(`${walletBlockchainTableName}.address`, address)
+        .first();
+      if (!duplicate) {
+        const user =
+          currentUser ?? (await userService.create(Role.User, input.timezone, codeRecord));
+        await container.model
+          .walletService()
+          .createBlockchainWallet(
+            user,
+            'waves',
+            network,
+            Wallet.WalletBlockchainType.Wallet,
+            address,
+            '',
+            '',
+            false,
+          );
+        const sid = container.model.sessionService().generate(user);
+        userService.onAuth.emit(user);
+        return { user, sid };
+      }
+      if (!duplicate.confirmed) {
+        const user = await container.model.userTable().where('id', duplicate.user).first();
+        if (!user) return null;
+        const sid = container.model.sessionService().generate(user);
+        userService.onAuth.emit(user);
+        return { user, sid };
+      }
+    } else if (message === undefined) {
+      throw new UserInputError('Invalid signature or message');
+    }
+
     if (typeof message !== 'string' || message.length < 5) return null;
     try {
       dayjs().tz(input.timezone);
@@ -2030,16 +2126,6 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
       return { user, sid };
     }
 
-    let codeRecord;
-    if (code) {
-      codeRecord = await container.model
-        .referrerCodeTable()
-        .where({
-          id: code.id,
-        })
-        .first();
-    }
-
     const user = currentUser ?? (await userService.create(Role.User, input.timezone, codeRecord));
     await container.model
       .walletService()
@@ -2051,6 +2137,7 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
         recoveredAddress,
         publicKey,
         '',
+        true,
       );
     const sid = container.model.sessionService().generate(user);
     userService.onAuth.emit(user);
@@ -2187,6 +2274,7 @@ export const AddWalletMutation: GraphQLFieldConfig<any, Request> = {
         address,
         '',
         '',
+        false,
       );
     const sid = container.model.sessionService().generate(currentUser);
 
@@ -2292,10 +2380,14 @@ export const WalletUpdateStatisticsMutation: GraphQLFieldConfig<any, Request> = 
     await Promise.all([
       container.model
         .queueService()
-        .push('metricsWalletBalancesDeBankFiller', { id }, { priority: 9 }),
+        .push('metricsWalletBalancesDeBankFiller', { id }, { topic: 'metricCurrent', priority: 9 }),
       container.model
         .queueService()
-        .push('metricsWalletProtocolsBalancesDeBankFiller', { id }, { priority: 9 }),
+        .push(
+          'metricsWalletProtocolsBalancesDeBankFiller',
+          { id },
+          { topic: 'metricCurrent', priority: 9 },
+        ),
     ]);
 
     return true;
@@ -2316,6 +2408,9 @@ export const UserUpdateMutation: GraphQLFieldConfig<any, Request> = {
             role: {
               type: RoleType,
             },
+            name: {
+              type: GraphQLString,
+            },
             locale: {
               type: LocaleEnum,
             },
@@ -2324,18 +2419,27 @@ export const UserUpdateMutation: GraphQLFieldConfig<any, Request> = {
       ),
     },
   },
-  resolve: onlyAllowed('user.update', async (root, { id, input }) => {
+  resolve: onlyAllowed('user.update-own', async (root, { id, input }, { currentUser, acl }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
     const user = await container.model.userTable().where('id', id).first();
     if (!user) throw new UserInputError('User not found');
+    if (currentUser.role !== Role.Admin && currentUser.id !== user.id) {
+      throw new UserInputError('Foreign account');
+    }
 
-    const { role, locale } = input as { role?: Role; locale?: Locale };
-    const updated = await container.model.userService().update({
+    const { role, name, locale } = input as { role?: Role; name?: string; locale?: Locale };
+    const updatedFields = {
       ...user,
-      role: role !== undefined ? role : user.role,
+      name: name !== undefined ? name : user.name,
       locale: locale !== undefined ? locale : user.locale,
-    });
+    };
+    if (role !== undefined) {
+      if (!acl.isAllowed('user', 'update')) throw new ForbiddenError('FORBIDDEN');
+      updatedFields.role = role;
+    }
 
-    return updated;
+    return container.model.userService().update(updatedFields);
   }),
 };
 
@@ -2372,11 +2476,18 @@ export const WalletMetricScanMutation: GraphQLFieldConfig<any, Request> = {
         .where({ wallet: wallet.id, contract: contract.id })
         .first();
       if (!link) throw new UserInputError('Wallet not linked to contract');
-      await container.model.queueService().push('metricsWalletScanMutation', {
-        contract: contract.id,
-        wallet: wallet.id,
-        txId,
-      });
+      await container.model.queueService().push(
+        'metricsWalletScanMutation',
+        {
+          contract: contract.id,
+          wallet: wallet.id,
+          txId,
+        },
+        {
+          topic: 'metricCurrent',
+          priority: 9,
+        },
+      );
 
       return true;
     },

@@ -24,6 +24,7 @@ export class UserService {
     const created: User = {
       id: uuid(),
       role,
+      name: '',
       locale,
       referrer: codeRecord?.id ?? null,
       isPorfolioCollected: false,

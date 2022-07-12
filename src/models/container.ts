@@ -185,6 +185,10 @@ export class ModelContainer extends Container<typeof AppContainer> {
 
   readonly metricWalletTable = Models.Metric.Entity.metricWalletTableFactory(this.parent.database);
 
+  readonly metricWalletRegistryTable = Models.Metric.Entity.metricWalletRegistryTableFactory(
+    this.parent.database,
+  );
+
   readonly metricWalletTaskTable = Models.Metric.Entity.metricWalletTaskTableFactory(
     this.parent.database,
   );
@@ -198,11 +202,13 @@ export class ModelContainer extends Container<typeof AppContainer> {
   readonly metricService = singleton(
     () =>
       new Models.Metric.Service.MetricContractService(
+        this.parent.database,
         this.metricBlockchainTable,
         this.metricProtocolTable,
         this.metricContractTable,
         this.metricContractTaskTable,
         this.metricWalletTable,
+        this.metricWalletRegistryTable,
         this.metricWalletTaskTable,
         this.metricWalletTokenTable,
         this.metricTokenTable,
@@ -259,7 +265,11 @@ export class ModelContainer extends Container<typeof AppContainer> {
 
   readonly governanceService = singleton(
     () =>
-      new Models.Governance.Service.GovernanceService(this.govProposalTable, this.govReceiptTable),
+      new Models.Governance.Service.GovernanceService(
+        this.govProposalTable,
+        this.govReceiptTable,
+        this.parent.semafor,
+      ),
   );
 
   readonly automateTriggerTable = Models.Automate.Entity.triggerTableFactory(this.parent.database);

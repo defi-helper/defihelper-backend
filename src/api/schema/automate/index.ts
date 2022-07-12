@@ -22,8 +22,10 @@ import {
   GraphQLList,
   GraphQLFieldConfigMap,
 } from 'graphql';
-import { apyBoost } from '@services/RestakeStrategy';
+import { apyBoost, optimalRestakeNearesDate } from '@services/RestakeStrategy';
 import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
+import { metricContractTableName } from '@models/Metric/Entity';
+import dayjs from 'dayjs';
 import {
   DateTimeType,
   onlyAllowed,
@@ -75,19 +77,7 @@ export const ConditionType = new GraphQLObjectType<Automate.Condition, Request>(
       type: GraphQLNonNull(DateTimeType),
       description: 'Created at date',
     },
-    restakeAt: {
-      type: DateTimeType,
-      description: 'Next restake date',
-    },
   },
-});
-
-export const ActionSkipReasonEnum = new GraphQLEnumType({
-  name: 'AutomateSkipReasonEnum',
-  values: Object.keys(Automate.ActionSkipReason).reduce(
-    (res, handler) => ({ ...res, [handler]: { value: handler } }),
-    {} as GraphQLEnumValueConfigMap,
-  ),
 });
 
 export const ActionTypeEnum = new GraphQLEnumType({
@@ -123,13 +113,6 @@ export const ActionType = new GraphQLObjectType<Automate.Action, Request>({
     priority: {
       type: GraphQLNonNull(GraphQLInt),
       description: 'Execution priority (ascending)',
-    },
-    skipReason: {
-      type: ActionSkipReasonEnum,
-      description: 'Skip reason',
-      resolve: ({ skipReason }, _, { i18n }) => {
-        return skipReason ? i18n.t(`automate:action:skipReason:${skipReason}`) : null;
-      },
     },
     createdAt: {
       type: GraphQLNonNull(DateTimeType),
@@ -255,20 +238,6 @@ export const TriggerType = new GraphQLObjectType<Automate.Trigger>({
     createdAt: {
       type: GraphQLNonNull(DateTimeType),
       description: 'Created at date',
-    },
-    restakeAt: {
-      type: DateTimeType,
-      description: 'Next restake date',
-      resolve: async (trigger) => {
-        const optimalRestakeCondition = await container.model
-          .automateConditionTable()
-          .where({
-            trigger: trigger.id,
-            type: 'ethereumOptimalAutomateRun',
-          })
-          .first();
-        return optimalRestakeCondition?.restakeAt ?? null;
-      },
     },
     conditions: {
       type: GraphQLNonNull(
@@ -1096,6 +1065,72 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
     },
     rejectReason: {
       type: GraphQLNonNull(GraphQLString),
+    },
+    restakeAt: {
+      type: DateTimeType,
+      description: 'restake at',
+      resolve: async (contract, _, { dataLoader, currentUser }) => {
+        if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+        const cache = container.cache();
+
+        if (contract.type !== Automate.ContractType.Autorestake) {
+          return null;
+        }
+
+        if (
+          !contract.contract ||
+          contract.verification !== Automate.ContractVerificationStatus.Confirmed
+        ) {
+          return null;
+        }
+
+        const cachedState = await cache.promises
+          .get(`defihelper:automate:nextRestake:${contract.id}`)
+          .catch(() => null);
+        if (cachedState) {
+          return dayjs(cachedState);
+        }
+
+        const stakingContract = await dataLoader.contract().load(contract.contract);
+        if (!stakingContract) return null;
+
+        const { apr } = (await container.model
+          .metricContractTable()
+          .column(
+            container
+              .database()
+              .raw(`(${metricContractTableName}.data->>'aprYear')::numeric AS apr`),
+          )
+          .where('contract', stakingContract.id)
+          .orderBy(`${metricContractTableName}.date`, 'DESC')
+          .first()) as unknown as { apr?: number };
+
+        if (!apr) return null;
+
+        const walletMetric = await dataLoader
+          .contractUserMetric({
+            userId: currentUser.id,
+            walletType: [WalletBlockchainModelType.Contract, WalletBlockchainModelType.Wallet],
+          })
+          .load(contract.contract);
+
+        const nextRestakeDate = await optimalRestakeNearesDate(
+          stakingContract.blockchain,
+          stakingContract.network,
+          new BN(walletMetric.stakingUSD).toNumber(),
+          new BN(walletMetric.earnedUSD).toNumber(),
+          new BN(apr).toNumber(),
+        );
+        if (nextRestakeDate) {
+          await cache.promises.setex(
+            `defihelper:automate:nextRestake:${contract.id}`,
+            300,
+            nextRestakeDate.toISOString(),
+          );
+        }
+
+        return nextRestakeDate;
+      },
     },
     metric: {
       type: GraphQLNonNull(ContractMetricType),

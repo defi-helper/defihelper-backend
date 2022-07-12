@@ -1,4 +1,5 @@
 import container from '@container';
+import Knex from 'knex';
 import { v4 as uuid } from 'uuid';
 import { Blockchain } from '@models/types';
 import { Emitter } from '@services/Event';
@@ -25,6 +26,8 @@ import {
   MetricWalletTable,
   MetricWalletToken,
   MetricWalletTokenTable,
+  MetricWalletRegistryTable,
+  metricWalletRegistryTableName,
 } from './Entity';
 
 export class MetricContractService {
@@ -52,11 +55,13 @@ export class MetricContractService {
   });
 
   constructor(
+    readonly database: Factory<Knex>,
     readonly metricBlockchainTable: Factory<MetricBlockchainTable>,
     readonly metricProtocolTable: Factory<MetricProtocolTable>,
     readonly metricContractTable: Factory<MetricContractTable>,
     readonly metricContractTaskTable: Factory<MetricContractTaskTable>,
     readonly metricWalletTable: Factory<MetricWalletTable>,
+    readonly metricWalletRegistryTable: Factory<MetricWalletRegistryTable>,
     readonly metricWalletTaskTable: Factory<MetricWalletTaskTable>,
     readonly metricWalletTokenTable: Factory<MetricWalletTokenTable>,
     readonly metricTokenTable: Factory<MetricTokenTable>,
@@ -135,10 +140,50 @@ export class MetricContractService {
       date,
       createdAt: new Date(),
     };
-    await this.metricWalletTable().insert(created);
+    const registryDuplicate = await this.metricWalletRegistryTable()
+      .where({
+        contract: created.contract,
+        wallet: created.wallet,
+      })
+      .orderBy('date', 'desc')
+      .first();
+    await this.database().transaction(async (trx) =>
+      Promise.all([
+        this.metricWalletTable().insert(created).transacting(trx),
+        !registryDuplicate || registryDuplicate.date < date
+          ? this.metricWalletRegistryTable()
+              .insert({
+                contract: created.contract,
+                wallet: created.wallet,
+                data: created.data,
+                date: created.date,
+              })
+              .onConflict(['contract', 'wallet'])
+              .merge()
+              .transacting(trx)
+          : null,
+      ]),
+    );
+
     this.onWalletCreated.emit(created);
 
     return created;
+  }
+
+  async walletRegistrySync() {
+    return this.database().raw(
+      `insert into "${metricWalletRegistryTableName}"
+      ${
+        this.metricWalletTable()
+          .columns('contract', 'wallet', 'data', 'date')
+          .distinctOn('contract', 'wallet')
+          .orderBy('contract')
+          .orderBy('wallet')
+          .orderBy('date', 'desc')
+          .toSQL().sql
+      }
+      on conflict ("contract", "wallet") do update set "data" = excluded."data", "date" = excluded."date"`,
+    );
   }
 
   async setWalletTask(contract: Contract, wallet: Wallet, task: Task) {

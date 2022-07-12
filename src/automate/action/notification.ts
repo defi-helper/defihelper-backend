@@ -1,5 +1,5 @@
 import container from '@container';
-import { Action, ActionSkipReason } from '@models/Automate/Entity';
+import { Action } from '@models/Automate/Entity';
 import { ContactStatus, NotificationType } from '@models/Notification/Entity';
 import * as uuid from 'uuid';
 
@@ -21,11 +21,6 @@ export function paramsVerify(params: any): params is Params {
 }
 
 export default async function (this: Action, params: Params) {
-  await container.model.automateService().updateAction({
-    ...this,
-    skipReason: null,
-  });
-
   const { contactId, message } = params;
 
   const contact = await container.model.userContactTable().where('id', contactId).first();
@@ -37,10 +32,6 @@ export default async function (this: Action, params: Params) {
 
   const availableNotifications = await container.model.storeService().availableNotifications(user);
   if (availableNotifications <= 0) {
-    await container.model.automateService().updateAction({
-      ...this,
-      skipReason: ActionSkipReason.NotAvailableNotification,
-    });
     throw new Error('Not available notifications');
   }
 
