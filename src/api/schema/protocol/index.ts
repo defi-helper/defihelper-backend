@@ -36,7 +36,6 @@ import {
   metricContractTableName,
   metricProtocolTableName,
   metricWalletRegistryTableName,
-  metricWalletTableName,
 } from '@models/Metric/Entity';
 import {
   walletBlockchainTableName,
@@ -729,45 +728,32 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
         listSelect = listSelect
           .column(database.raw('COALESCE("myStaked", 0) AS "myStaked"'))
           .leftJoin(
-            database
-              .columns(database.raw('SUM("myStaked") as "myStaked"'), 'contract')
-              .from(
-                container.model
-                  .metricWalletTable()
-                  .distinctOn(
-                    `${metricWalletTableName}.contract`,
-                    `${metricWalletTableName}.wallet`,
-                  )
-                  .column(`${metricWalletTableName}.contract`)
-                  .column(`${metricWalletTableName}.wallet`)
-                  .column(
-                    database.raw(
-                      `(COALESCE(${metricWalletTableName}.data->>'stakingUSD', '0'))::numeric AS "myStaked"`,
-                    ),
-                  )
-                  .innerJoin(
-                    walletTableName,
-                    `${walletTableName}.id`,
-                    `${metricWalletTableName}.wallet`,
-                  )
-                  .innerJoin(
-                    contractTableName,
-                    `${contractTableName}.id`,
-                    `${metricWalletTableName}.contract`,
-                  )
-                  .where(function () {
-                    this.where(`${walletTableName}.user`, currentUser.id);
-                    if (uuid.validate(String(root?.id))) {
-                      this.where(`${contractTableName}.protocol`, root.id);
-                    } else if (filter.protocol !== undefined) {
-                      this.whereIn(`${contractTableName}.protocol`, filter.protocol);
-                    }
-                  })
-                  .orderBy(`${metricWalletTableName}.contract`)
-                  .orderBy(`${metricWalletTableName}.wallet`)
-                  .orderBy(`${metricWalletTableName}.date`, 'DESC')
-                  .as('subquery'),
+            container.model
+              .metricWalletRegistryTable()
+              .column(`${metricWalletRegistryTableName}.contract`)
+              .column(
+                database.raw(
+                  `SUM((COALESCE(${metricWalletRegistryTableName}.data->>'stakingUSD', '0'))::numeric) AS "myStaked"`,
+                ),
               )
+              .innerJoin(
+                walletTableName,
+                `${walletTableName}.id`,
+                `${metricWalletRegistryTableName}.wallet`,
+              )
+              .innerJoin(
+                contractTableName,
+                `${contractTableName}.id`,
+                `${metricWalletRegistryTableName}.contract`,
+              )
+              .where(function () {
+                this.where(`${walletTableName}.user`, currentUser.id);
+                if (uuid.validate(String(root?.id))) {
+                  this.where(`${contractTableName}.protocol`, root.id);
+                } else if (filter.protocol !== undefined) {
+                  this.whereIn(`${contractTableName}.protocol`, filter.protocol);
+                }
+              })
               .groupBy('contract')
               .as('metric'),
             `${contractTableName}.id`,
@@ -901,45 +887,32 @@ export const ContractDebankListQuery: GraphQLFieldConfig<any, Request> = {
         listSelect = listSelect
           .column(database.raw('COALESCE("myStaked", 0) AS "myStaked"'))
           .leftJoin(
-            database
-              .columns(database.raw('SUM("myStaked") as "myStaked"'), 'contract')
-              .from(
-                container.model
-                  .metricWalletTable()
-                  .distinctOn(
-                    `${metricWalletTableName}.contract`,
-                    `${metricWalletTableName}.wallet`,
-                  )
-                  .column(`${metricWalletTableName}.contract`)
-                  .column(`${metricWalletTableName}.wallet`)
-                  .column(
-                    database.raw(
-                      `(COALESCE(${metricWalletTableName}.data->>'stakingUSD', '0'))::numeric AS "myStaked"`,
-                    ),
-                  )
-                  .innerJoin(
-                    walletTableName,
-                    `${walletTableName}.id`,
-                    `${metricWalletTableName}.wallet`,
-                  )
-                  .innerJoin(
-                    contractTableName,
-                    `${contractTableName}.id`,
-                    `${metricWalletTableName}.contract`,
-                  )
-                  .where(function () {
-                    this.where(`${walletTableName}.user`, currentUser.id);
-                    if (uuid.validate(String(root?.id))) {
-                      this.where(`${contractTableName}.protocol`, root.id);
-                    } else if (filter.protocol !== undefined) {
-                      this.whereIn(`${contractTableName}.protocol`, filter.protocol);
-                    }
-                  })
-                  .orderBy(`${metricWalletTableName}.contract`)
-                  .orderBy(`${metricWalletTableName}.wallet`)
-                  .orderBy(`${metricWalletTableName}.date`, 'DESC')
-                  .as('subquery'),
+            container.model
+              .metricWalletRegistryTable()
+              .column(`${metricWalletRegistryTableName}.contract`)
+              .column(
+                database.raw(
+                  `SUM((COALESCE(${metricWalletRegistryTableName}.data->>'stakingUSD', '0'))::numeric) AS "myStaked"`,
+                ),
               )
+              .innerJoin(
+                walletTableName,
+                `${walletTableName}.id`,
+                `${metricWalletRegistryTableName}.wallet`,
+              )
+              .innerJoin(
+                contractTableName,
+                `${contractTableName}.id`,
+                `${metricWalletRegistryTableName}.contract`,
+              )
+              .where(function () {
+                this.where(`${walletTableName}.user`, currentUser.id);
+                if (uuid.validate(String(root?.id))) {
+                  this.where(`${contractTableName}.protocol`, root.id);
+                } else if (filter.protocol !== undefined) {
+                  this.whereIn(`${contractTableName}.protocol`, filter.protocol);
+                }
+              })
               .groupBy('contract')
               .as('metric'),
             `${contractTableName}.id`,
@@ -1875,28 +1848,31 @@ export const ProtocolType: GraphQLObjectType = new GraphQLObjectType<Protocol, R
       resolve: async (protocol, { metric, group, filter, sort, pagination }) => {
         const database = container.database();
         const select = container.model
-          .metricWalletTable()
-          .distinctOn(
-            `${metricWalletTableName}.contract`,
-            `${metricWalletTableName}.wallet`,
-            'date',
+          .metricWalletRegistryTable()
+          .column(
+            database.raw(`(${metricWalletRegistryTableName}.data->>'${metric}')::numeric AS value`),
           )
-          .column(database.raw(`(${metricWalletTableName}.data->>'${metric}')::numeric AS value`))
-          .column(database.raw(`DATE_TRUNC('${group}', ${metricWalletTableName}.date) AS "date"`))
+          .column(
+            database.raw(`DATE_TRUNC('${group}', ${metricWalletRegistryTableName}.date) AS "date"`),
+          )
           .innerJoin(
             contractTableName,
             `${contractTableName}.id`,
-            `${metricWalletTableName}.contract`,
+            `${metricWalletRegistryTableName}.contract`,
           )
           .innerJoin(
             contractBlockchainTableName,
             `${contractTableName}.id`,
             `${contractBlockchainTableName}.id`,
           )
-          .innerJoin(walletTableName, `${walletTableName}.id`, `${metricWalletTableName}.wallet`)
+          .innerJoin(
+            walletTableName,
+            `${walletTableName}.id`,
+            `${metricWalletRegistryTableName}.wallet`,
+          )
           .where(function () {
             this.where(`${contractTableName}.protocol`, protocol.id).andWhere(
-              database.raw(`${metricWalletTableName}.data->>'${metric}' IS NOT NULL`),
+              database.raw(`${metricWalletRegistryTableName}.data->>'${metric}' IS NOT NULL`),
             );
             if (Array.isArray(filter.user) && filter.user.length > 0) {
               this.whereIn(`${walletTableName}.user`, filter.user);
@@ -1909,16 +1885,21 @@ export const ProtocolType: GraphQLObjectType = new GraphQLObjectType<Protocol, R
               }
             }
             if (filter.dateAfter) {
-              this.andWhere(`${metricWalletTableName}.date`, '>=', filter.dateAfter.toDate());
+              this.andWhere(
+                `${metricWalletRegistryTableName}.date`,
+                '>=',
+                filter.dateAfter.toDate(),
+              );
             }
             if (filter.dateBefore) {
-              this.andWhere(`${metricWalletTableName}.date`, '<', filter.dateBefore.toDate());
+              this.andWhere(
+                `${metricWalletRegistryTableName}.date`,
+                '<',
+                filter.dateBefore.toDate(),
+              );
             }
           })
-          .orderBy(`${metricWalletTableName}.contract`)
-          .orderBy(`${metricWalletTableName}.wallet`)
-          .orderBy('date')
-          .orderBy(`${metricWalletTableName}.date`, 'DESC');
+          .orderBy('date');
 
         return container
           .database()

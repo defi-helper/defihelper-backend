@@ -1,11 +1,11 @@
 import container from '@container';
 import BN from 'bignumber.js';
 import {
-  metricWalletTableName,
   MetricWalletField,
   metricContractTableName,
   MetricContractAPRField,
   metricWalletTokenTableName,
+  metricWalletRegistryTableName,
 } from '@models/Metric/Entity';
 import { walletContractLinkTableName } from '@models/Protocol/Entity';
 import {
@@ -48,25 +48,21 @@ export const userBlockchainLoader = () =>
 export const userLastMetricLoader = ({ metric }: { metric: MetricWalletField }) =>
   new DataLoader<string, string>(async (usersId) => {
     const database = container.database();
-    const map = await container
-      .database()
-      .column('user')
-      .sum('v AS v')
-      .from(
-        container.model
-          .metricWalletTable()
-          .distinctOn(`${metricWalletTableName}.wallet`, `${metricWalletTableName}.contract`)
-          .column(`${walletTableName}.user`)
-          .column(database.raw(`(${metricWalletTableName}.data->>'${metric}')::numeric AS v`))
-          .innerJoin(walletTableName, `${walletTableName}.id`, `${metricWalletTableName}.wallet`)
-          .whereIn(`${walletTableName}.user`, usersId)
-          .whereNull(`${walletTableName}.deletedAt`)
-          .andWhere(database.raw(`${metricWalletTableName}.data->>'${metric}' IS NOT NULL`))
-          .orderBy(`${metricWalletTableName}.wallet`)
-          .orderBy(`${metricWalletTableName}.contract`)
-          .orderBy(`${metricWalletTableName}.date`, 'DESC')
-          .as('metric'),
+    const map = await container.model
+      .metricWalletRegistryTable()
+      .column(`${walletTableName}.user`)
+      .column(
+        database.raw(
+          `SUM((COALESCE(${metricWalletRegistryTableName}.data->>'${metric}', '0'))::numeric) AS v`,
+        ),
       )
+      .innerJoin(
+        walletTableName,
+        `${walletTableName}.id`,
+        `${metricWalletRegistryTableName}.wallet`,
+      )
+      .whereIn(`${walletTableName}.user`, usersId)
+      .whereNull(`${walletTableName}.deletedAt`)
       .groupBy('user')
       .then((rows) => new Map(rows.map(({ user, v }) => [user, v])));
 
@@ -101,6 +97,7 @@ export const userLastAPRLoader = ({ metric }: { metric: MetricContractAPRField }
           {} as { [contract: string]: string },
         ),
       );
+    /*
     const stakedMap = await container
       .database()
       .column('user')
@@ -108,22 +105,55 @@ export const userLastAPRLoader = ({ metric }: { metric: MetricContractAPRField }
       .sum('v AS staked')
       .from(
         container.model
-          .metricWalletTable()
-          .distinctOn(`${walletTableName}.user`, `${metricWalletTableName}.contract`)
+          .metricWalletRegistryTable()
           .column(`${walletTableName}.user`)
-          .column(`${metricWalletTableName}.contract`)
-          .column(database.raw(`(${metricWalletTableName}.data->>'stakingUSD')::numeric AS v`))
-          .innerJoin(walletTableName, `${walletTableName}.id`, `${metricWalletTableName}.wallet`)
+          .column(`${metricWalletRegistryTableName}.contract`)
+          .column(
+            database.raw(
+              `(COALESCE(${metricWalletRegistryTableName}.data->>'stakingUSD', '0'))::numeric AS v`,
+            ),
+          )
+          .innerJoin(
+            walletTableName,
+            `${walletTableName}.id`,
+            `${metricWalletRegistryTableName}.wallet`,
+          )
           .whereIn(`${walletTableName}.user`, usersId)
           .whereNull(`${walletTableName}.deletedAt`)
-          .andWhere(database.raw(`${metricWalletTableName}.data->>'stakingUSD' IS NOT NULL`))
-          .orderBy(`${walletTableName}.user`)
-          .orderBy(`${metricWalletTableName}.contract`)
-          .orderBy(`${metricWalletTableName}.date`, 'DESC')
           .as('metric'),
       )
       .groupBy('user')
       .groupBy('contract')
+      .then((rows) =>
+        rows.reduce(
+          (map, { user, contract, staked }) => ({
+            ...map,
+            [user]: {
+              ...(map[user] ?? {}),
+              [contract]: staked,
+            },
+          }),
+          {} as { [user: string]: { [contract: string]: string } },
+        ),
+      );
+      */
+    const stakedMap = await container.model
+      .metricWalletRegistryTable()
+      .column(`${walletTableName}.user`)
+      .column(`${metricWalletRegistryTableName}.contract`)
+      .column(
+        database.raw(
+          `SUM((COALESCE(${metricWalletRegistryTableName}.data->>'stakingUSD', '0'))::numeric) AS staked`,
+        ),
+      )
+      .innerJoin(
+        walletTableName,
+        `${walletTableName}.id`,
+        `${metricWalletRegistryTableName}.wallet`,
+      )
+      .whereIn(`${walletTableName}.user`, usersId)
+      .whereNull(`${walletTableName}.deletedAt`)
+      .groupBy('user', 'contract')
       .then((rows) =>
         rows.reduce(
           (map, { user, contract, staked }) => ({
@@ -237,19 +267,19 @@ export const walletLastMetricLoader = () =>
       .sum('earnedUSD AS earnedUSD')
       .from(
         container.model
-          .metricWalletTable()
-          .distinctOn('wallet', 'contract')
-          .column(`${metricWalletTableName}.wallet`)
+          .metricWalletRegistryTable()
+          .column(`${metricWalletRegistryTableName}.wallet`)
           .column(
-            database.raw(`(${metricWalletTableName}.data->>'stakingUSD')::numeric AS "stakingUSD"`),
+            database.raw(
+              `(COALESCE(${metricWalletRegistryTableName}.data->>'stakingUSD', '0'))::numeric AS "stakingUSD"`,
+            ),
           )
           .column(
-            database.raw(`(${metricWalletTableName}.data->>'earnedUSD')::numeric AS "earnedUSD"`),
+            database.raw(
+              `(COALESCE(${metricWalletRegistryTableName}.data->>'earnedUSD', '0'))::numeric AS "earnedUSD"`,
+            ),
           )
           .whereIn('wallet', walletsId)
-          .orderBy('wallet')
-          .orderBy('contract')
-          .orderBy('date', 'DESC')
           .as('metric'),
       )
       .groupBy('wallet')
