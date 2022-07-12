@@ -185,6 +185,10 @@ export class ModelContainer extends Container<typeof AppContainer> {
 
   readonly metricWalletTable = Models.Metric.Entity.metricWalletTableFactory(this.parent.database);
 
+  readonly metricWalletRegistryTable = Models.Metric.Entity.metricWalletRegistryTableFactory(
+    this.parent.database,
+  );
+
   readonly metricWalletTaskTable = Models.Metric.Entity.metricWalletTaskTableFactory(
     this.parent.database,
   );
@@ -198,11 +202,13 @@ export class ModelContainer extends Container<typeof AppContainer> {
   readonly metricService = singleton(
     () =>
       new Models.Metric.Service.MetricContractService(
+        this.parent.database,
         this.metricBlockchainTable,
         this.metricProtocolTable,
         this.metricContractTable,
         this.metricContractTaskTable,
         this.metricWalletTable,
+        this.metricWalletRegistryTable,
         this.metricWalletTaskTable,
         this.metricWalletTokenTable,
         this.metricTokenTable,

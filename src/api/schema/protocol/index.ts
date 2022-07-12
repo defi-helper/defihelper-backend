@@ -35,6 +35,7 @@ import { apyBoost } from '@services/RestakeStrategy';
 import {
   metricContractTableName,
   metricProtocolTableName,
+  metricWalletRegistryTableName,
   metricWalletTableName,
 } from '@models/Metric/Entity';
 import {
@@ -662,35 +663,40 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
             }
             if (currentUser && typeof autorestakeCandidate === 'boolean') {
               const candidateSelect = database
-                .select('contract')
+                .select('m.contract')
                 .from(
                   container.model
-                    .metricWalletTable()
-                    .distinctOn(`${metricWalletTableName}.contract`)
-                    .column(`${metricWalletTableName}.contract`)
-                    .column(`${metricWalletTableName}.data`)
+                    .metricWalletRegistryTable()
+                    .column(`${metricWalletRegistryTableName}.contract`)
+                    .column(
+                      database.raw(
+                        `SUM((COALESCE(${metricWalletRegistryTableName}.data->>'stakingUSD', '0'))::numeric) AS staked`,
+                      ),
+                    )
                     .innerJoin(
                       walletTableName,
-                      `${metricWalletTableName}.wallet`,
+                      `${metricWalletRegistryTableName}.wallet`,
+                      `${walletTableName}.id`,
+                    )
+                    .innerJoin(
+                      walletBlockchainTableName,
+                      `${walletBlockchainTableName}.id`,
                       `${walletTableName}.id`,
                     )
                     .where(`${walletTableName}.user`, currentUser.id)
-                    .andWhere(
-                      database.raw(`${metricWalletTableName}.data->>'stakingUSD' IS NOT NULL`),
-                    )
+                    .where(`${walletBlockchainTableName}.type`, WalletBlockchainType.Wallet)
                     .whereNotIn(
-                      `${metricWalletTableName}.contract`,
+                      `${metricWalletRegistryTableName}.contract`,
                       container.model
                         .userContractLinkTable()
                         .column('contract')
                         .where('user', currentUser.id)
                         .where('type', UserContractLinkType.AutorestakeHide),
                     )
-                    .orderBy(`${metricWalletTableName}.contract`)
-                    .orderBy(`${metricWalletTableName}.date`, 'desc')
+                    .groupBy(`${metricWalletRegistryTableName}.contract`)
                     .as('m'),
                 )
-                .where(database.raw(`(data->>'stakingUSD')::numeric`), '>', 0);
+                .where('m.staked', '>', 0);
               if (autorestakeCandidate) {
                 this.whereIn(`${contractTableName}.id`, candidateSelect);
               } else {
