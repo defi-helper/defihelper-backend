@@ -37,10 +37,11 @@ export default async (process: Process) => {
     };
   }
 
-  await container.model.tokenAliasService().update({
-    ...tokenAlias,
-    logoUrl: tokenAlias.logoUrl || (token?.logo_url ?? null),
-  });
+  if (!tokenAlias.logoUrl) {
+    tokenAlias.logoUrl = token?.logo_url ?? null;
+  }
+
+  await container.model.tokenAliasService().update(tokenAlias);
 
   return process.done();
 };
