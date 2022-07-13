@@ -8,6 +8,7 @@
   "scripts": {
     "lint": "eslint --ignore-path .gitignore --fix './src/**/*.ts'",
     "copyTemplates": "./scripts/copy-templates.sh",
+    "migrate": "node ./dist/migrate.js",
     "build": "tsc -p ./ && npm run copyTemplates",
     "build:dev": "tsc -p ./ && npm run copyTemplates",
     "watch": "tsc-watch -p ./ --pretty --onSuccess './scripts/watch-success.sh'",
