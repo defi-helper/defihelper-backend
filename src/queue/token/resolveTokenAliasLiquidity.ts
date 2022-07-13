@@ -28,13 +28,18 @@ export default async (process: Process) => {
     return process.done();
   }
 
-  const isLiquid =
-    token?.is_verified === true || token?.is_core === true || token?.is_wallet === true;
-  await container.model.tokenAliasService().update({
-    ...tokenAlias,
-    liquidity: isLiquid ? TokenAliasLiquidity.Unstable : TokenAliasLiquidity.Trash,
-    logoUrl: tokenAlias.logoUrl || (token?.logo_url ?? null),
-  });
+  if ([TokenAliasLiquidity.Trash, TokenAliasLiquidity.Unknown].includes(tokenAlias.liquidity)) {
+    tokenAlias.liquidity =
+      token?.is_verified === true || token?.is_core === true || token?.is_wallet === true
+        ? TokenAliasLiquidity.Unstable
+        : TokenAliasLiquidity.Trash;
+  }
+
+  if (!tokenAlias.logoUrl) {
+    tokenAlias.logoUrl = token?.logo_url ?? null;
+  }
+
+  await container.model.tokenAliasService().update(tokenAlias);
 
   return process.done();
 };

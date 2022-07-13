@@ -186,6 +186,26 @@ handlers:
       command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run schedule -- --period monthStart"'
       schedule: "0 0 1 * *"
 
+migrator:
+  nodeSelector:
+    group_name: "apps-jobs"
+  labels:
+    app: migrator
+    component: migrator
+    environment: dev
+  tolerations:
+    - key: node-role.kubernetes.io/apps-jobs
+      operator: "Equal"
+      value: "true"
+      effect: NoSchedule
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 200m
+    limits:
+      memory: 256Mi
+      cpu: 1200m
+
 autoscaling:
   enabled: true
   minReplicas: 2
