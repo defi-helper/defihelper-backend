@@ -32,7 +32,7 @@ import {
   TokenAliasStakedStatisticsType,
   TokenAliasType,
 } from '@api/schema/token';
-import { metricWalletRegistryTableName, metricWalletTokenTableName } from '@models/Metric/Entity';
+import { metricWalletTableName, metricWalletTokenTableName } from '@models/Metric/Entity';
 import {
   TokenAlias,
   TokenAliasLiquidity,
@@ -388,36 +388,32 @@ export const WalletBlockchainType = new GraphQLObjectType<
       resolve: async (wallet, { metric, group, filter, sort, pagination }) => {
         const database = container.database();
         const select = container.model
-          .metricWalletRegistryTable()
-          .column(
-            database.raw(`(${metricWalletRegistryTableName}.data->>'${metric}')::numeric AS value`),
+          .metricWalletTable()
+          .distinctOn(
+            `${metricWalletTableName}.wallet`,
+            `${metricWalletTableName}.contract`,
+            'date',
           )
-          .column(
-            database.raw(`DATE_TRUNC('${group}', ${metricWalletRegistryTableName}.date) AS "date"`),
-          )
+          .column(database.raw(`(${metricWalletTableName}.data->>'${metric}')::numeric AS value`))
+          .column(database.raw(`DATE_TRUNC('${group}', ${metricWalletTableName}.date) AS "date"`))
           .where(function () {
-            this.where(`${metricWalletRegistryTableName}.wallet`, wallet.id).andWhere(
-              database.raw(`${metricWalletRegistryTableName}.data->>'${metric}' IS NOT NULL`),
+            this.where(`${metricWalletTableName}.wallet`, wallet.id).andWhere(
+              database.raw(`${metricWalletTableName}.data->>'${metric}' IS NOT NULL`),
             );
             if (Array.isArray(filter.contract) && filter.contract.length > 0) {
-              this.whereIn(`${metricWalletRegistryTableName}.contract`, filter.contract);
+              this.whereIn(`${metricWalletTableName}.contract`, filter.contract);
             }
             if (filter.dateAfter) {
-              this.andWhere(
-                `${metricWalletRegistryTableName}.date`,
-                '>=',
-                filter.dateAfter.toDate(),
-              );
+              this.andWhere(`${metricWalletTableName}.date`, '>=', filter.dateAfter.toDate());
             }
             if (filter.dateBefore) {
-              this.andWhere(
-                `${metricWalletRegistryTableName}.date`,
-                '<',
-                filter.dateBefore.toDate(),
-              );
+              this.andWhere(`${metricWalletTableName}.date`, '<', filter.dateBefore.toDate());
             }
           })
-          .orderBy('date');
+          .orderBy(`${metricWalletTableName}.wallet`)
+          .orderBy(`${metricWalletTableName}.contract`)
+          .orderBy('date')
+          .orderBy(`${metricWalletTableName}.date`, 'DESC');
 
         return container
           .database()
@@ -1392,24 +1388,19 @@ export const UserType = new GraphQLObjectType<User, Request>({
       resolve: async (user, { metric, group, filter, sort, pagination }) => {
         const database = container.database();
         const select = container.model
-          .metricWalletRegistryTable()
-          .column(
-            database.raw(`(${metricWalletRegistryTableName}.data->>'${metric}')::numeric AS value`),
+          .metricWalletTable()
+          .distinctOn(
+            `${metricWalletTableName}.wallet`,
+            `${metricWalletTableName}.contract`,
+            'date',
           )
-          .column(
-            database.raw(`DATE_TRUNC('${group}', ${metricWalletRegistryTableName}.date) AS "date"`),
-          )
-          .innerJoin(
-            walletTableName,
-            `${walletTableName}.id`,
-            `${metricWalletRegistryTableName}.wallet`,
-          )
+          .column(database.raw(`(${metricWalletTableName}.data->>'${metric}')::numeric AS value`))
+          .column(database.raw(`DATE_TRUNC('${group}', ${metricWalletTableName}.date) AS "date"`))
+          .innerJoin(walletTableName, `${walletTableName}.id`, `${metricWalletTableName}.wallet`)
           .where(function () {
             this.where(`${walletTableName}.user`, user.id)
               .whereNull(`${walletTableName}.deletedAt`)
-              .andWhere(
-                database.raw(`${metricWalletRegistryTableName}.data->>'${metric}' IS NOT NULL`),
-              );
+              .andWhere(database.raw(`${metricWalletTableName}.data->>'${metric}' IS NOT NULL`));
             if (filter.blockchain) {
               const { protocol, network } = filter.blockchain;
               this.andWhere(`${walletBlockchainTableName}.blockchain`, protocol);
@@ -1418,27 +1409,22 @@ export const UserType = new GraphQLObjectType<User, Request>({
               }
             }
             if (Array.isArray(filter.wallet) && filter.wallet.length > 0) {
-              this.whereIn(`${metricWalletRegistryTableName}.wallet`, filter.wallet);
+              this.whereIn(`${metricWalletTableName}.wallet`, filter.wallet);
             }
             if (Array.isArray(filter.contract) && filter.contract.length > 0) {
-              this.whereIn(`${metricWalletRegistryTableName}.contract`, filter.contract);
+              this.whereIn(`${metricWalletTableName}.contract`, filter.contract);
             }
             if (filter.dateAfter) {
-              this.andWhere(
-                `${metricWalletRegistryTableName}.date`,
-                '>=',
-                filter.dateAfter.toDate(),
-              );
+              this.andWhere(`${metricWalletTableName}.date`, '>=', filter.dateAfter.toDate());
             }
             if (filter.dateBefore) {
-              this.andWhere(
-                `${metricWalletRegistryTableName}.date`,
-                '<',
-                filter.dateBefore.toDate(),
-              );
+              this.andWhere(`${metricWalletTableName}.date`, '<', filter.dateBefore.toDate());
             }
           })
-          .orderBy('date');
+          .orderBy(`${metricWalletTableName}.wallet`)
+          .orderBy(`${metricWalletTableName}.contract`)
+          .orderBy('date')
+          .orderBy(`${metricWalletTableName}.date`, 'DESC');
 
         return container
           .database()
