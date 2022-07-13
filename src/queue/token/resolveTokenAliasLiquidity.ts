@@ -18,7 +18,7 @@ export interface ApiTokenResponse {
 export default async (process: Process) => {
   const params = process.task.params as Params;
 
-  let tokenAlias = await container.model.tokenAliasTable().where(`id`, params.aliasId).first();
+  const tokenAlias = await container.model.tokenAliasTable().where(`id`, params.aliasId).first();
   if (!tokenAlias) {
     throw new Error('token alias not found');
   }
@@ -29,12 +29,10 @@ export default async (process: Process) => {
   }
 
   if ([TokenAliasLiquidity.Trash, TokenAliasLiquidity.Unknown].includes(tokenAlias.liquidity)) {
-    const isLiquid =
-      token?.is_verified === true || token?.is_core === true || token?.is_wallet === true;
-    tokenAlias = {
-      ...tokenAlias,
-      liquidity: isLiquid ? TokenAliasLiquidity.Unstable : TokenAliasLiquidity.Trash,
-    };
+    tokenAlias.liquidity =
+      token?.is_verified === true || token?.is_core === true || token?.is_wallet === true
+        ? TokenAliasLiquidity.Unstable
+        : TokenAliasLiquidity.Trash;
   }
 
   if (!tokenAlias.logoUrl) {
