@@ -66,6 +66,7 @@ migrator:
     app: migrator
     component: migrator
     environment: dev
+  command: ["/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run migrate"]
   resources:
     requests:
       memory: 128Mi

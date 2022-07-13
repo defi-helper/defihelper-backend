@@ -193,6 +193,7 @@ migrator:
     app: migrator
     component: migrator
     environment: dev
+  command: ["/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run migrate"]
   tolerations:
     - key: node-role.kubernetes.io/apps-jobs
       operator: "Equal"
