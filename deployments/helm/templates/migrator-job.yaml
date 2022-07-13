@@ -26,7 +26,8 @@ spec:
       containers:
       - name: migrator
         image: "{{ $.Values.image.repository }}/{{ .Values.images.app.name }}:{{ $.Values.image.tag }}"
-        command: ["node", "run", "migrate"]
+#        command: ["node", "run", "migrate"]
+        command: ["sleep", "300"]
         imagePullPolicy: Always
         volumeMounts:
           - mountPath: /app/configuration
