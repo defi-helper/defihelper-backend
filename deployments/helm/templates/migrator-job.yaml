@@ -26,12 +26,12 @@ spec:
       containers:
       - name: migrator
         image: "{{ $.Values.image.repository }}/{{ .Values.images.app.name }}:{{ $.Values.image.tag }}"
-        command: ["npm", "run", "migrate""]
+        command: ["node", "run", "migrate"]
         imagePullPolicy: Always
         volumeMounts:
-        - mountPath: /app/configuration
-          name: configuration
-          readOnly: true
+          - mountPath: /app/configuration
+            name: configuration
+            readOnly: true
         resources:
           {{- toYaml .Values.migrator.resources | nindent 12 }}
       volumes:
