@@ -11,4 +11,7 @@ container.rabbitmq().on('disconnected', () => {
 container.model
   .queueService()
   .deferred(options.limit)
-  .then(() => container.logger().info(`Publish deferred "${options.limit}" queue tasks`));
+  .then(() => {
+    container.logger().info(`Publish deferred "${options.limit}" queue tasks`);
+    process.exit(0);
+  });

@@ -10,4 +10,4 @@ const { command, _unknown: unknown = [] } = cla([{ name: 'command', defaultOptio
 if (!isKey(router, command)) throw new Error('Undefined command');
 
 const handler = router[command] as (argv: string[]) => any;
-handler(unknown);
+Promise.resolve(handler(unknown)).then(() => process.exit(0));
