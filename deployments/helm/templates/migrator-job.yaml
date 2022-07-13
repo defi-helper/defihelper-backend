@@ -25,7 +25,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: migrator
-        image: "{{ $.Values.image.repository }}/{{ $images.app.name }}:{{ $.Values.image.tag }}"
+        image: "{{ $.Values.image.repository }}/{{ .Values.images.app.name }}:{{ $.Values.image.tag }}"
         command: ["npm", "run", "migrate""]
         imagePullPolicy: Always
         volumeMounts:
