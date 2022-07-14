@@ -1868,6 +1868,9 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
         userService.onAuth.emit(user);
         return { user, sid };
       }
+      if (currentUser) {
+        return null;
+      }
       if (!duplicate.confirmed) {
         const user = await container.model.userTable().where('id', duplicate.user).first();
         if (!user) return null;
@@ -2058,6 +2061,9 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
         const sid = container.model.sessionService().generate(user);
         userService.onAuth.emit(user);
         return { user, sid };
+      }
+      if (currentUser) {
+        return null;
       }
       if (!duplicate.confirmed) {
         const user = await container.model.userTable().where('id', duplicate.user).first();
