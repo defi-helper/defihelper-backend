@@ -2202,10 +2202,15 @@ export const UserProtocolListQuery: GraphQLFieldConfig<any, Request> = {
           )
           .where(`${walletTableName}.user`, userId),
       )
+      .andWhere(function () {
+        if (sort) {
+          this.andWhere(sort);
+        }
+      })
       .andWhere('hidden', false);
 
     return {
-      list: await select.clone().orderBy(sort).limit(pagination.limit).offset(pagination.offset),
+      list: await select.clone().limit(pagination.limit).offset(pagination.offset),
       pagination: {
         count: await select.clone().count().first(),
       },
