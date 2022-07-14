@@ -2207,7 +2207,7 @@ export const UserProtocolListQuery: GraphQLFieldConfig<any, Request> = {
           .where(`${walletTableName}.user`, userId),
       )
       .andWhere(function () {
-        if (filter.hidden) {
+        if (typeof filter.hidden === 'boolean') {
           this.andWhere('hidden', filter.hidden);
         }
       });
