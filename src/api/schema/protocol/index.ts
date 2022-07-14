@@ -2081,7 +2081,7 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
     },
     sort: SortArgument(
       'ProtocolListSortInputType',
-      ['id', 'name', 'address', 'createdAt'],
+      ['id', 'name', 'createdAt'],
       [{ column: 'name', order: 'asc' }],
     ),
     pagination: PaginationArgument('ProtocolListPaginationInputType'),
@@ -2181,9 +2181,14 @@ export const UserProtocolListQuery: GraphQLFieldConfig<any, Request> = {
       }),
       defaultValue: {},
     },
+    sort: SortArgument(
+      'UserProtocolListSortInputType',
+      ['id', 'name', 'createdAt'],
+      [{ column: 'name', order: 'asc' }],
+    ),
     pagination: PaginationArgument('UserProtocolListPaginationInputType'),
   },
-  resolve: async (root, { filter, pagination }, { currentUser }) => {
+  resolve: async (root, { filter, sort, pagination }, { currentUser }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
     const { userId } = filter;
@@ -2213,7 +2218,7 @@ export const UserProtocolListQuery: GraphQLFieldConfig<any, Request> = {
       });
 
     return {
-      list: await select.clone().limit(pagination.limit).offset(pagination.offset),
+      list: await select.clone().limit(pagination.limit).orderBy(sort).offset(pagination.offset),
       pagination: {
         count: await select.clone().count().first(),
       },
