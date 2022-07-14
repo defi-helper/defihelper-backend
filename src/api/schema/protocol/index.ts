@@ -2173,13 +2173,17 @@ export const UserProtocolListQuery: GraphQLFieldConfig<any, Request> = {
             type: GraphQLNonNull(UuidType),
             description: 'Target user ID',
           },
+          hidden: {
+            type: GraphQLBoolean,
+            description: 'Only hidden/visible',
+          },
         },
       }),
       defaultValue: {},
     },
     pagination: PaginationArgument('UserProtocolListPaginationInputType'),
   },
-  resolve: async (root, { filter, sort, pagination }, { currentUser }) => {
+  resolve: async (root, { filter, pagination }, { currentUser }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
     const { userId } = filter;
@@ -2203,11 +2207,10 @@ export const UserProtocolListQuery: GraphQLFieldConfig<any, Request> = {
           .where(`${walletTableName}.user`, userId),
       )
       .andWhere(function () {
-        if (sort) {
-          this.andWhere(sort);
+        if (filter.hidden) {
+          this.andWhere('hidden', filter.hidden);
         }
-      })
-      .andWhere('hidden', false);
+      });
 
     return {
       list: await select.clone().limit(pagination.limit).offset(pagination.offset),
