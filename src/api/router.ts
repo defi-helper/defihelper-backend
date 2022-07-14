@@ -65,6 +65,7 @@ export function route({ express, server }: { express: Express; server: Server })
           users: userSchemas.UserListQuery,
           protocol: protocolSchemas.ProtocolQuery,
           protocols: protocolSchemas.ProtocolListQuery,
+          userProtocols: protocolSchemas.UserProtocolListQuery,
           contracts: protocolSchemas.ContractListQuery,
           proposal: proposalSchemas.ProposalQuery,
           proposals: proposalSchemas.ProposalListQuery,

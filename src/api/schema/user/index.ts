@@ -1701,6 +1701,7 @@ export const UserListQuery: GraphQLFieldConfig<any, Request> = {
       if (role !== undefined) {
         this.andWhere('role', role);
       }
+
       if (wallet) {
         const { blockchain, type, search } = wallet;
         this.whereIn(
