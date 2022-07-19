@@ -2052,6 +2052,10 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
           blockchain: {
             type: BlockchainFilterInputType,
           },
+          linked: {
+            type: UuidType,
+            description: 'Target user ID',
+          },
           favorite: {
             type: GraphQLBoolean,
             description: 'Is favorite',
@@ -2081,14 +2085,14 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
     },
     sort: SortArgument(
       'ProtocolListSortInputType',
-      ['id', 'name', 'createdAt'],
+      ['id', 'name', 'address', 'createdAt'],
       [{ column: 'name', order: 'asc' }],
     ),
     pagination: PaginationArgument('ProtocolListPaginationInputType'),
   },
   resolve: async (root, { filter, sort, pagination }, { currentUser }) => {
     const database = container.database();
-    const { id, blockchain, favorite, hidden, isDebank, search, automate } = filter;
+    const { id, blockchain, linked, favorite, hidden, isDebank, search, automate } = filter;
     const select = container.model.protocolTable().where(function () {
       if (Array.isArray(id)) {
         this.whereIn('id', id);
@@ -2122,7 +2126,25 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
           this.whereNotIn('id', favoriteSelect);
         }
       }
-
+      if (linked !== undefined) {
+        this.whereIn(
+          'id',
+          container.model
+            .contractTable()
+            .column('protocol')
+            .innerJoin(
+              walletContractLinkTableName,
+              `${contractTableName}.id`,
+              `${walletContractLinkTableName}.contract`,
+            )
+            .innerJoin(
+              walletTableName,
+              `${walletContractLinkTableName}.wallet`,
+              `${walletTableName}.id`,
+            )
+            .where(`${walletTableName}.user`, linked),
+        );
+      }
       if (typeof hidden === 'boolean') {
         this.andWhere('hidden', hidden);
       }
@@ -2155,70 +2177,6 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
 
     return {
       list: await select.clone().orderBy(sort).limit(pagination.limit).offset(pagination.offset),
-      pagination: {
-        count: await select.clone().count().first(),
-      },
-    };
-  },
-};
-
-export const UserProtocolListQuery: GraphQLFieldConfig<any, Request> = {
-  type: GraphQLNonNull(PaginateList('UserProtocolListQuery', GraphQLNonNull(ProtocolType))),
-  args: {
-    filter: {
-      type: new GraphQLInputObjectType({
-        name: 'UserProtocolListFilterInputType',
-        fields: {
-          userId: {
-            type: GraphQLNonNull(UuidType),
-            description: 'Target user ID',
-          },
-          hidden: {
-            type: GraphQLBoolean,
-            description: 'Only hidden/visible',
-          },
-        },
-      }),
-      defaultValue: {},
-    },
-    sort: SortArgument(
-      'UserProtocolListSortInputType',
-      ['id', 'name', 'createdAt'],
-      [{ column: 'name', order: 'asc' }],
-    ),
-    pagination: PaginationArgument('UserProtocolListPaginationInputType'),
-  },
-  resolve: async (root, { filter, sort, pagination }, { currentUser }) => {
-    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
-
-    const { userId } = filter;
-    const select = container.model
-      .protocolTable()
-      .whereIn(
-        'id',
-        container.model
-          .contractTable()
-          .column('protocol')
-          .innerJoin(
-            walletContractLinkTableName,
-            `${contractTableName}.id`,
-            `${walletContractLinkTableName}.contract`,
-          )
-          .innerJoin(
-            walletTableName,
-            `${walletContractLinkTableName}.wallet`,
-            `${walletTableName}.id`,
-          )
-          .where(`${walletTableName}.user`, userId),
-      )
-      .andWhere(function () {
-        if (typeof filter.hidden === 'boolean') {
-          this.andWhere('hidden', filter.hidden);
-        }
-      });
-
-    return {
-      list: await select.clone().limit(pagination.limit).orderBy(sort).offset(pagination.offset),
       pagination: {
         count: await select.clone().count().first(),
       },
