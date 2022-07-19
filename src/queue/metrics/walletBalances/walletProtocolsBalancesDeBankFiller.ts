@@ -11,19 +11,30 @@ import {
   contractDebankTableName,
   contractTableName,
   protocolTableName,
+  TokenContractLinkType,
 } from '@models/Protocol/Entity';
-import { TokenAliasLiquidity, TokenCreatedBy, Token } from '@models/Token/Entity';
+import { TokenAliasLiquidity, TokenCreatedBy, Token, tokenTableName } from '@models/Token/Entity';
 import BN from 'bignumber.js';
 import { ProtocolListItem } from '@services/Debank';
+import { MetricWalletToken, metricWalletTokenTableName } from '@models/Metric/Entity';
 
 interface Params {
   id: string;
 }
 
+const makePoolHashAddress = (tokens: { id: string; chain: string; protocolId: string }[]) => {
+  return container.cryptography().md5(
+    tokens
+      .map((supply) => supply.id + supply.chain + supply.protocolId)
+      // .sort((a, b) => a.localeCompare(b)) todo uncomment later
+      .join(':'),
+  );
+};
 export default async (process: Process) => {
   const { id: walletId } = process.task.params as Params;
 
   const walletMetrics = container.model.metricService();
+  const contractService = container.model.contractService();
   const targetWallet = await container.model
     .walletTable()
     .innerJoin(
@@ -50,6 +61,29 @@ export default async (process: Process) => {
       type: WalletBlockchainType.Wallet,
     })
     .orderBy('createdAt', 'desc');
+
+  const database = container.database();
+  const lastTokenMetricsAcrossWallets = await chainsWallets.reduce(async (prev, curr) => {
+    return {
+      ...prev,
+      [curr.id]: await container.model
+        .metricWalletTokenTable()
+        .distinctOn(`${metricWalletTokenTableName}.wallet`, `${metricWalletTokenTableName}.token`)
+        .column(`${tokenTableName}.*`)
+        .column(
+          database.raw(`(${metricWalletTokenTableName}.data->>'balance')::numeric AS balance`),
+        )
+        .innerJoin(tokenTableName, `${metricWalletTokenTableName}.token`, `${tokenTableName}.id`)
+        .whereIn(
+          `${metricWalletTokenTableName}.wallet`,
+          chainsWallets.map((wallet) => wallet.id),
+        )
+        .whereNull(`${metricWalletTokenTableName}.contract`)
+        .orderBy(`${metricWalletTokenTableName}.wallet`)
+        .orderBy(`${metricWalletTokenTableName}.token`)
+        .orderBy(`${metricWalletTokenTableName}.date`, 'DESC'),
+    };
+  }, {});
 
   const protocolAdaptersMap = await container.model
     .protocolTable()
@@ -138,8 +172,12 @@ export default async (process: Process) => {
         (a) => a.detail_types.toString() === ['common'].toString() && a.detail.supply_token_list,
       )
       .map((contract) => {
+        if (!contract.detail.supply_token_list) {
+          throw new Error('Supply token list not found');
+        }
+
         const tokens = [
-          ...(contract.detail.supply_token_list || []).map((v) => ({
+          ...contract.detail.supply_token_list.map((v) => ({
             ...v,
             type: 'liquidity',
             protocolId: protocol.id,
@@ -156,96 +194,16 @@ export default async (process: Process) => {
           protocol: protocol.id,
           tokens,
           contractName:
-            contract.detail.supply_token_list?.map(({ symbol }) => symbol).join('/') || '',
-          hashAddress: container
-            .cryptography()
-            .md5(
-              contract.detail.supply_token_list
-                ?.map((supply) => supply.id + supply.chain + protocol.id)
-                ?.join(':') || '',
-            ),
+            contract.detail.supply_token_list.map(({ symbol }) => symbol).join('/') || '',
+          hashAddress: makePoolHashAddress(
+            contract.detail.supply_token_list.map(({ id, chain }) => ({
+              id,
+              chain,
+              protocolId: protocol.id,
+            })),
+          ),
         };
       }),
-  );
-
-  const protocolsRewardTokens = debankUserProtocolsList.flatMap(
-    ({
-      portfolio_item_list,
-      id: protocolId,
-      logo_url: protocolLogo,
-      name: protocolName,
-      tvl: protocolTvl,
-    }) =>
-      portfolio_item_list
-        .filter(
-          ({ detail_types, detail }) =>
-            detail_types.toString() === ['reward'].toString() && detail.token_list,
-        )
-        .flatMap(({ detail }) =>
-          (detail.token_list || []).map((v) => ({
-            ...v,
-            type: 'reward',
-            protocolId,
-            protocolLogo,
-            protocolName,
-            protocolTvl,
-          })),
-        ),
-  );
-
-  const existingRewardProtocolsContracts = await container.model
-    .contractTable()
-    .column(`${protocolTableName}.debankId as protocolDebankId`)
-    .column(`${protocolTableName}.id as protocolId`)
-    .column(`${contractDebankTableName}.*`)
-    .column(`${contractTableName}.*`)
-    .innerJoin(contractDebankTableName, `${contractDebankTableName}.id`, `${contractTableName}.id`)
-    .innerJoin(protocolTableName, `${protocolTableName}.id`, `${contractTableName}.protocol`)
-    .whereIn(
-      `${protocolTableName}.debankId`,
-      protocolsRewardTokens.map((v) => v.protocolId),
-    )
-    .andWhere(`${contractDebankTableName}.address`, 'reward');
-
-  const existingTokensProtocols = await container.model.protocolTable().whereIn(
-    'debankId',
-    protocolsRewardTokens.map((v) => v.protocolId),
-  );
-
-  const protocolRewardTokenExistingContracts = await Promise.all(
-    protocolsRewardTokens.map(async (token) => {
-      let protocol = existingTokensProtocols.find((v) => v.debankId === token.protocolId);
-      if (!protocol) {
-        protocol = await container.model
-          .protocolService()
-          .create(
-            'debankByApiReadonly',
-            token.protocolName,
-            '',
-            token.protocolLogo,
-            token.protocolLogo,
-            null,
-            undefined,
-            true,
-            { tvl: token.protocolTvl.toString(10) },
-            token.protocolId,
-          );
-      }
-
-      const existing = existingRewardProtocolsContracts.find(
-        (v) => token.protocolId === v.protocolDebankId,
-      );
-      if (existing) {
-        return { ...existing, debankId: protocol.debankId };
-      }
-
-      return {
-        debankId: protocol.debankId,
-        ...(await container.model
-          .contractService()
-          .createDebank(protocol, 'reward', '', {}, '', null, true)),
-      };
-    }),
   );
 
   const existingContracts = await container.model
@@ -301,7 +259,6 @@ export default async (process: Process) => {
     .tokenTable()
     .whereIn('address', [
       ...stakingContracts.flatMap(({ tokens }) => tokens.map((token) => token.id.toLowerCase())),
-      ...protocolsRewardTokens.map((v) => v.id.toLowerCase()),
     ]);
 
   const debankTokensList = stakingContracts.flatMap((contract) =>
@@ -312,6 +269,7 @@ export default async (process: Process) => {
     })),
   );
 
+  const touchedMetrics: { [walletId: string]: MetricWalletToken[] } = {};
   const appliedTokens: {
     [walletUuid: string]: {
       [contractUuid: string]: {
@@ -376,107 +334,6 @@ export default async (process: Process) => {
       ),
     };
   };
-
-  await Promise.all(
-    protocolsRewardTokens.map(async (token) => {
-      let tokenRecord = existingTokens.find(
-        (exstng) =>
-          exstng.address.toLowerCase() === token.id.toLowerCase() &&
-          exstng.network === container.debank().chainResolver(token.chain)?.numbered,
-      );
-
-      if (!tokenRecord) {
-        let tokenRecordAlias = await container.model
-          .tokenAliasTable()
-          .where('name', 'ilike', token.name)
-          .first();
-
-        if (!tokenRecordAlias) {
-          tokenRecordAlias = await container.model
-            .tokenAliasService()
-            .create(
-              token.name ?? '',
-              token.symbol ?? '',
-              TokenAliasLiquidity.Unstable,
-              token.logo_url || null,
-            );
-        }
-
-        try {
-          tokenRecord = await container.model
-            .tokenService()
-            .create(
-              tokenRecordAlias,
-              'ethereum',
-              container.debank().chainResolver(token.chain)?.numbered ?? '',
-              token.id.toLowerCase(),
-              token.name ?? '',
-              token.symbol ?? '',
-              token.decimals,
-              TokenCreatedBy.Scanner,
-            );
-        } catch (e: any) {
-          // uniq violation
-          if (e.code !== '23505') {
-            throw e;
-          }
-
-          tokenRecord = await container.model
-            .tokenTable()
-            .where('blockchain', 'ethereum')
-            .andWhere('network', container.debank().chainResolver(token.chain)?.numbered)
-            .andWhere('address', token.id.toLowerCase())
-            .first();
-
-          if (!tokenRecord) {
-            throw new Error('[1] can`t find token on fly, seems like a bug');
-          }
-        }
-      } else {
-        const tokenRecordAlias = await container.model
-          .tokenAliasTable()
-          .where('name', 'ilike', token.name)
-          .first();
-
-        if (tokenRecordAlias && token.logo_url && tokenRecordAlias.logoUrl !== token.logo_url) {
-          await container.model.tokenAliasService().update({
-            ...tokenRecordAlias,
-            logoUrl: token.logo_url,
-          });
-        }
-      }
-
-      const walletByChain = chainsWallets.find(
-        (wallet) => wallet.network === container.debank().chainResolver(token.chain)?.numbered,
-      );
-
-      if (!walletByChain) {
-        return null;
-      }
-
-      const rewardContract = protocolRewardTokenExistingContracts.find(
-        (v) => v.debankId === token.protocolId,
-      );
-      if (!rewardContract) {
-        throw new Error('Reward contract must be found');
-      }
-
-      if (rewardContract.adapter !== 'debankByApiReadonly') {
-        return null;
-      }
-
-      return applyTokenBalance(
-        walletByChain,
-        rewardContract,
-        {
-          ...tokenRecord,
-          price: new BN(token.price),
-          amount: new BN(token.amount),
-        },
-        'earned',
-      );
-    }),
-  );
 
   await Promise.all(
     debankTokensList.map(async (token) => {
@@ -560,6 +417,14 @@ export default async (process: Process) => {
         throw new Error('Contract must be found');
       }
 
+      await contractService.tokenLink(contract, [
+        {
+          token: tokenRecord,
+          type:
+            token.type === 'reward' ? TokenContractLinkType.Reward : TokenContractLinkType.Stake,
+        },
+      ]);
+
       return applyTokenBalance(
         walletByChain,
         contract,
@@ -632,23 +497,62 @@ export default async (process: Process) => {
               },
               new Date(),
             ),
-            ...Object.keys(contract).map((tokenIndex) => {
+            ...Object.keys(contract).map(async (tokenIndex) => {
               const contractSummary = appliedTokens[walletIndex][contractIndex][tokenIndex];
 
-              return walletMetrics.createWalletToken(
+              const mwt = await walletMetrics.createWalletToken(
                 contractSummary.contractEntity,
                 contractSummary.walletEntity,
                 contractSummary.tokenEntity,
                 {
-                  usd: new BN(contractSummary.tokenEntity.price)
-                    .multipliedBy(contractSummary.tokenEntity.amount)
+                  usd: contractSummary.stakedUSD.plus(contractSummary.earnedUSD).toString(10),
+                  balance: contractSummary.stakedBalance
+                    .plus(contractSummary.earnedBalance)
                     .toString(10),
-                  balance: new BN(contractSummary.tokenEntity.amount).toString(10),
                 },
                 new Date(),
               );
+
+              if (!touchedMetrics[contractSummary.walletEntity.id]) {
+                touchedMetrics[contractSummary.walletEntity.id] = [];
+              }
+              touchedMetrics[contractSummary.walletEntity.id].push(mwt);
+
+              return mwt;
             }),
           ] as Promise<any>[]);
+        }),
+      );
+    }),
+  );
+
+  await Promise.all(
+    Object.entries(lastTokenMetricsAcrossWallets).map(([lastMetricWalletId, metrics]) => {
+      return Promise.all(
+        // fixme
+        (metrics as any[]).map((metricEntry: any) => {
+          if (
+            touchedMetrics[lastMetricWalletId].some((exstng) => exstng.token === metricEntry.id) ||
+            metricEntry.balance === '0'
+          ) {
+            return null;
+          }
+
+          const foundTargetWallet = chainsWallets.find((w) => w.id === lastMetricWalletId);
+          if (!foundTargetWallet) {
+            throw new Error('Wallet not found');
+          }
+
+          return walletMetrics.createWalletToken(
+            null,
+            foundTargetWallet,
+            metricEntry,
+            {
+              usd: '0',
+              balance: '0',
+            },
+            new Date(),
+          );
         }),
       );
     }),
