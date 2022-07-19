@@ -67,7 +67,7 @@ export default async (process: Process) => {
     [walletId: string]: (Token & { balance: string; contract: string })[];
   } = await chainsWallets.reduce(async (prev, curr) => {
     return {
-      ...prev,
+      ...(await prev),
       [curr.id]: await container.model
         .metricWalletTokenTable()
         .distinctOn(`${metricWalletTokenTableName}.wallet`, `${metricWalletTokenTableName}.token`)
@@ -83,7 +83,7 @@ export default async (process: Process) => {
         .orderBy(`${metricWalletTokenTableName}.token`)
         .orderBy(`${metricWalletTokenTableName}.date`, 'DESC'),
     };
-  }, {});
+  }, Promise.resolve({}));
 
   const protocolAdaptersMap = await container.model
     .protocolTable()
