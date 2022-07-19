@@ -63,27 +63,28 @@ export default async (process: Process) => {
     .orderBy('createdAt', 'desc');
 
   const database = container.database();
-  const lastTokenMetricsAcrossWallets = await chainsWallets.reduce(async (prev, curr) => {
-    return {
-      ...prev,
-      [curr.id]: await container.model
-        .metricWalletTokenTable()
-        .distinctOn(`${metricWalletTokenTableName}.wallet`, `${metricWalletTokenTableName}.token`)
-        .column(`${tokenTableName}.*`)
-        .column(
-          database.raw(`(${metricWalletTokenTableName}.data->>'balance')::numeric AS balance`),
-        )
-        .innerJoin(tokenTableName, `${metricWalletTokenTableName}.token`, `${tokenTableName}.id`)
-        .whereIn(
-          `${metricWalletTokenTableName}.wallet`,
-          chainsWallets.map((wallet) => wallet.id),
-        )
-        .whereNull(`${metricWalletTokenTableName}.contract`)
-        .orderBy(`${metricWalletTokenTableName}.wallet`)
-        .orderBy(`${metricWalletTokenTableName}.token`)
-        .orderBy(`${metricWalletTokenTableName}.date`, 'DESC'),
-    };
-  }, {});
+  const lastTokenMetricsAcrossWallets: { [walletId: string]: (Token & { balance: string })[] } =
+    await chainsWallets.reduce(async (prev, curr) => {
+      return {
+        ...prev,
+        [curr.id]: await container.model
+          .metricWalletTokenTable()
+          .distinctOn(`${metricWalletTokenTableName}.wallet`, `${metricWalletTokenTableName}.token`)
+          .column(`${tokenTableName}.*`)
+          .column(
+            database.raw(`(${metricWalletTokenTableName}.data->>'balance')::numeric AS balance`),
+          )
+          .innerJoin(tokenTableName, `${metricWalletTokenTableName}.token`, `${tokenTableName}.id`)
+          .whereIn(
+            `${metricWalletTokenTableName}.wallet`,
+            chainsWallets.map((wallet) => wallet.id),
+          )
+          .whereNull(`${metricWalletTokenTableName}.contract`)
+          .orderBy(`${metricWalletTokenTableName}.wallet`)
+          .orderBy(`${metricWalletTokenTableName}.token`)
+          .orderBy(`${metricWalletTokenTableName}.date`, 'DESC'),
+      };
+    }, {});
 
   const protocolAdaptersMap = await container.model
     .protocolTable()
@@ -529,8 +530,7 @@ export default async (process: Process) => {
   await Promise.all(
     Object.entries(lastTokenMetricsAcrossWallets).map(([lastMetricWalletId, metrics]) => {
       return Promise.all(
-        // fixme
-        (metrics as any[]).map((metricEntry: any) => {
+        metrics.map((metricEntry) => {
           if (
             touchedMetrics[lastMetricWalletId].some((exstng) => exstng.token === metricEntry.id) ||
             metricEntry.balance === '0'
