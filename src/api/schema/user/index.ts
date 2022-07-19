@@ -1137,33 +1137,40 @@ export const UserType = new GraphQLObjectType<User, Request>({
         pagination: PaginationArgument('UserTokenAliasListPaginationInputType'),
       },
       resolve: async (user, { filter, pagination }) => {
-        let select = container.model
+        const linkedTokenSelect = container.model
           .metricWalletTokenTable()
-          .column(`${tokenAliasTableName}.*`)
-          .innerJoin(tokenTableName, `${tokenTableName}.id`, `${metricWalletTokenTableName}.token`)
-          .innerJoin(tokenAliasTableName, `${tokenAliasTableName}.id`, `${tokenTableName}.alias`)
+          .distinct(`${metricWalletTokenTableName}.token`)
           .innerJoin(
             walletTableName,
             `${walletTableName}.id`,
             `${metricWalletTokenTableName}.wallet`,
           )
           .where(`${walletTableName}.user`, user.id)
-          .whereNull(`${walletTableName}.deletedAt`)
-          .groupBy(`${tokenAliasTableName}.id`);
-
-        if (Array.isArray(filter.liquidity) && filter.liquidity.length > 0) {
-          select = select.whereIn(`${tokenAliasTableName}.liquidity`, filter.liquidity);
-        }
-
+          .whereNull(`${walletTableName}.deletedAt`);
         if (filter.protocol) {
-          select = select
+          linkedTokenSelect
             .innerJoin(
               protocolContractTableName,
               `${protocolContractTableName}.id`,
               `${metricWalletTokenTableName}.contract`,
             )
-            .andWhere(`${protocolContractTableName}.protocol`, filter.protocol);
+            .where(`${protocolContractTableName}.protocol`, filter.protocol);
         }
+        const linkedTokenIds = await linkedTokenSelect.then((rows) =>
+          rows.map(({ token }) => token),
+        );
+
+        const select = container.model
+          .tokenAliasTable()
+          .column(`${tokenAliasTableName}.*`)
+          .innerJoin(tokenTableName, `${tokenAliasTableName}.id`, `${tokenTableName}.alias`)
+          .where(function () {
+            this.whereIn(`${tokenTableName}.id`, linkedTokenIds);
+            if (Array.isArray(filter.liquidity) && filter.liquidity.length > 0) {
+              this.whereIn(`${tokenAliasTableName}.liquidity`, filter.liquidity);
+            }
+          })
+          .groupBy(`${tokenAliasTableName}.id`);
 
         return {
           list: await select
@@ -1492,7 +1499,7 @@ export const UserType = new GraphQLObjectType<User, Request>({
       },
       resolve: async (user, { metric, group, filter, sort, pagination }) => {
         const database = container.database();
-        let select = container.model
+        const select = container.model
           .metricWalletTokenTable()
           .distinctOn(
             `${metricWalletTokenTableName}.wallet`,
@@ -1506,11 +1513,15 @@ export const UserType = new GraphQLObjectType<User, Request>({
           .column(
             database.raw(`DATE_TRUNC('${group}', ${metricWalletTokenTableName}.date) AS "date"`),
           )
+          .column(`${tokenAliasTableName}.id AS tokenAliasId`)
+          .column(`${tokenAliasTableName}.liquidity AS tokenAliasLiquidity`)
           .innerJoin(
             walletTableName,
             `${walletTableName}.id`,
             `${metricWalletTokenTableName}.wallet`,
           )
+          .innerJoin(tokenTableName, `${tokenTableName}.id`, `${metricWalletTokenTableName}.token`)
+          .innerJoin(tokenAliasTableName, `${tokenAliasTableName}.id`, `${tokenTableName}.alias`)
           .where(function () {
             this.where(`${walletTableName}.user`, user.id)
               .whereNull(`${walletTableName}.deletedAt`)
@@ -1546,32 +1557,6 @@ export const UserType = new GraphQLObjectType<User, Request>({
           .orderBy(`${metricWalletTokenTableName}.token`)
           .orderBy('date')
           .orderBy(`${metricWalletTokenTableName}.date`, 'DESC');
-        if (filter) {
-          if (filter.tokenAlias) {
-            select = select
-              .innerJoin(
-                tokenTableName,
-                `${tokenTableName}.id`,
-                `${metricWalletTokenTableName}.token`,
-              )
-              .innerJoin(
-                tokenAliasTableName,
-                `${tokenAliasTableName}.id`,
-                `${tokenTableName}.alias`,
-              )
-              .where(function () {
-                if (Array.isArray(filter.tokenAlias.id) && filter.tokenAlias.id.length > 0) {
-                  this.whereIn(`${tokenAliasTableName}.id`, filter.tokenAlias.id);
-                }
-                if (
-                  Array.isArray(filter.tokenAlias.liquidity) &&
-                  filter.tokenAlias.liquidity.length > 0
-                ) {
-                  this.whereIn(`${tokenAliasTableName}.liquidity`, filter.tokenAlias.liquidity);
-                }
-              });
-          }
-        }
 
         return container
           .database()
@@ -1582,6 +1567,19 @@ export const UserType = new GraphQLObjectType<User, Request>({
           .avg({ avg: 'value' })
           .sum({ sum: 'value' })
           .from(select.as('metric'))
+          .where(function () {
+            if (filter.tokenAlias) {
+              if (Array.isArray(filter.tokenAlias.id) && filter.tokenAlias.id.length > 0) {
+                this.whereIn('tokenAliasId', filter.tokenAlias.id);
+              }
+              if (
+                Array.isArray(filter.tokenAlias.liquidity) &&
+                filter.tokenAlias.liquidity.length > 0
+              ) {
+                this.whereIn('tokenAliasLiquidity', filter.tokenAlias.liquidity);
+              }
+            }
+          })
           .groupBy('date')
           .orderBy(sort)
           .limit(pagination.limit)

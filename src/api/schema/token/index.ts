@@ -491,7 +491,7 @@ export const TokenAliasStakedStatisticsType = new GraphQLObjectType<
   },
 });
 
-export const TokenAliasType = new GraphQLObjectType<TokenAlias>({
+export const TokenAliasType = new GraphQLObjectType<TokenAlias, Request>({
   name: 'TokenAlias',
   fields: {
     id: {
@@ -516,60 +516,22 @@ export const TokenAliasType = new GraphQLObjectType<TokenAlias>({
     },
     metric: {
       type: GraphQLNonNull(TokenAliasMetricType),
-      resolve: async (tokenAlias, args, { currentUser }) => {
-        const emptyMetric = {
-          myBalance: '0',
-          myUSD: '0',
-          myPortfolioPercent: '0',
-        };
+      resolve: async (tokenAlias, args, { currentUser, dataLoader }) => {
         if (!currentUser) {
-          return emptyMetric;
+          return {
+            myBalance: '0',
+            myUSD: '0',
+            myPortfolioPercent: '0',
+          };
         }
 
-        const database = container.database();
-        const metric = await container
-          .database()
-          .sum({ myBalance: 'balance', myUSD: 'usd' })
-          .from(
-            container.model
-              .metricWalletTokenTable()
-              .distinctOn(
-                `${metricWalletTokenTableName}.wallet`,
-                `${metricWalletTokenTableName}.contract`,
-                `${metricWalletTokenTableName}.token`,
-              )
-              .columns([
-                database.raw(`(${metricWalletTokenTableName}.data->>'usd')::numeric AS usd`),
-                database.raw(
-                  `(${metricWalletTokenTableName}.data->>'balance')::numeric AS balance`,
-                ),
-              ])
-              .innerJoin(`${tokenTableName} AS t`, 't.id', `${metricWalletTokenTableName}.token`)
-              .innerJoin(
-                `${walletTableName} AS wlt`,
-                `${metricWalletTokenTableName}.wallet`,
-                'wlt.id',
-              )
-              .whereRaw(
-                `(${metricWalletTokenTableName}.data->>'usd' IS NOT NULL OR ${metricWalletTokenTableName}.data->>'balance' IS NOT NULL)`,
-              )
-              .andWhere('t.alias', tokenAlias.id)
-              .andWhere('wlt.user', currentUser.id)
-              .orderBy(`${metricWalletTokenTableName}.wallet`)
-              .orderBy(`${metricWalletTokenTableName}.contract`)
-              .orderBy(`${metricWalletTokenTableName}.token`)
-              .orderBy(`${metricWalletTokenTableName}.date`, 'DESC')
-              .as('metric'),
-          )
-          .first();
-
-        if (!metric) {
-          return emptyMetric;
-        }
+        const metric = await dataLoader
+          .tokenAliasUserLastMetric({ user: currentUser.id })
+          .load(tokenAlias.id);
 
         return {
-          myBalance: metric.myBalance || '0',
-          myUSD: metric.myUSD || '0',
+          myBalance: metric.balance,
+          myUSD: metric.usd,
           myPortfolioPercent: 0,
         };
       },

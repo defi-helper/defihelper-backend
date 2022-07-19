@@ -97,46 +97,6 @@ export const userLastAPRLoader = ({ metric }: { metric: MetricContractAPRField }
           {} as { [contract: string]: string },
         ),
       );
-    /*
-    const stakedMap = await container
-      .database()
-      .column('user')
-      .column('contract')
-      .sum('v AS staked')
-      .from(
-        container.model
-          .metricWalletRegistryTable()
-          .column(`${walletTableName}.user`)
-          .column(`${metricWalletRegistryTableName}.contract`)
-          .column(
-            database.raw(
-              `(COALESCE(${metricWalletRegistryTableName}.data->>'stakingUSD', '0'))::numeric AS v`,
-            ),
-          )
-          .innerJoin(
-            walletTableName,
-            `${walletTableName}.id`,
-            `${metricWalletRegistryTableName}.wallet`,
-          )
-          .whereIn(`${walletTableName}.user`, usersId)
-          .whereNull(`${walletTableName}.deletedAt`)
-          .as('metric'),
-      )
-      .groupBy('user')
-      .groupBy('contract')
-      .then((rows) =>
-        rows.reduce(
-          (map, { user, contract, staked }) => ({
-            ...map,
-            [user]: {
-              ...(map[user] ?? {}),
-              [contract]: staked,
-            },
-          }),
-          {} as { [user: string]: { [contract: string]: string } },
-        ),
-      );
-      */
     const stakedMap = await container.model
       .metricWalletRegistryTable()
       .column(`${walletTableName}.user`)
