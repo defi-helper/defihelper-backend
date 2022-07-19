@@ -1773,10 +1773,6 @@ export const AuthThroughAdminMutation: GraphQLFieldConfig<any, Request> = {
       throw new UserInputError('User not found');
     }
 
-    if (user.role === Role.Admin) {
-      throw new UserInputError('You can`t login to admin`s account');
-    }
-
     const sid = container.model.sessionService().generate(user);
     return { user, sid };
   }),

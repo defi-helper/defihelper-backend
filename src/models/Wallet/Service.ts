@@ -180,9 +180,9 @@ export class WalletService {
           : blockchainWallet.address,
     };
     await this.database.transaction(async (trx) => {
-      await this.walletTable().where('id', wallet.id).update(wallet).transacting(trx);
+      await this.walletTable().where('id', wallet.id).update(walletUpdated).transacting(trx);
       await this.walletBlockchainTable()
-        .where('id', wallet.id)
+        .where('id', blockchainWallet.id)
         .update(walletBlockchainUpdated)
         .transacting(trx);
     });
@@ -202,9 +202,9 @@ export class WalletService {
     };
 
     await this.database.transaction(async (trx) => {
-      await this.walletTable().where('id', wallet.id).update(wallet).transacting(trx);
+      await this.walletTable().where('id', wallet.id).update(walletUpdated).transacting(trx);
       await this.walletExchangeTable()
-        .where('id', wallet.id)
+        .where('id', walletExchange.id)
         .update(walletExchange)
         .transacting(trx);
     });
@@ -244,7 +244,7 @@ export class WalletService {
     walletId: string,
     reason: WalletSuspenseReason | null,
   ): Promise<WalletSuspenseReason | null> {
-    await this.walletTable().where({ id: walletId }).update({
+    await this.walletTable().where('id', walletId).update({
       suspendReason: reason,
     });
 
