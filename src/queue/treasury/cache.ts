@@ -1,5 +1,5 @@
 import container from '@container';
-import { metricWalletTokenTableName } from '@models/Metric/Entity';
+import { metricWalletTokenRegistryTableName } from '@models/Metric/Entity';
 import { Process } from '@models/Queue/Entity';
 import { TokenAliasLiquidity, tokenAliasTableName, tokenTableName } from '@models/Token/Entity';
 import { Role } from '@models/User/Entity';
@@ -12,35 +12,26 @@ export default async (process: Process) => {
     container.model.contractTable().count().where('hidden', false).first(),
     container.model.userTable().count().whereIn('role', [Role.User, Role.Admin]).first(),
     container.model.walletTable().count().first(),
-    container
-      .database()
-      .sum('usd AS usd')
-      .from(
-        container.model
-          .metricWalletTokenTable()
-          .distinctOn(
-            `${metricWalletTokenTableName}.wallet`,
-            `${metricWalletTokenTableName}.contract`,
-            `${metricWalletTokenTableName}.token`,
-          )
-          .column(`${metricWalletTokenTableName}.token`)
-          .column(database.raw(`(${metricWalletTokenTableName}.data->>'usd')::numeric AS usd`))
-          .innerJoin(tokenTableName, `${metricWalletTokenTableName}.token`, `${tokenTableName}.id`)
-          .innerJoin(tokenAliasTableName, `${tokenTableName}.alias`, `${tokenAliasTableName}.id`)
-          .where(function () {
-            this.whereIn(`${tokenAliasTableName}.liquidity`, [
-              TokenAliasLiquidity.Stable,
-              TokenAliasLiquidity.Unstable,
-            ]);
-            this.andWhere(database.raw(`${metricWalletTokenTableName}.data->>'usd' IS NOT NULL`));
-            this.andWhere(database.raw(`${metricWalletTokenTableName}.data->>'usd' != 'NaN'`));
-          })
-          .orderBy(`${metricWalletTokenTableName}.wallet`)
-          .orderBy(`${metricWalletTokenTableName}.contract`)
-          .orderBy(`${metricWalletTokenTableName}.token`)
-          .orderBy(`${metricWalletTokenTableName}.date`, 'DESC')
-          .as('metric'),
+    container.model
+      .metricWalletTokenRegistryTable()
+      .column(
+        database.raw(
+          `SUM((COALESCE(${metricWalletTokenRegistryTableName}.data->>'usd', '0'))::numeric) AS usd`,
+        ),
       )
+      .innerJoin(
+        tokenTableName,
+        `${metricWalletTokenRegistryTableName}.token`,
+        `${tokenTableName}.id`,
+      )
+      .innerJoin(tokenAliasTableName, `${tokenTableName}.alias`, `${tokenAliasTableName}.id`)
+      .where(function () {
+        this.whereIn(`${tokenAliasTableName}.liquidity`, [
+          TokenAliasLiquidity.Stable,
+          TokenAliasLiquidity.Unstable,
+        ]);
+        this.where(database.raw(`${metricWalletTokenRegistryTableName}.data->>'usd' != 'NaN'`));
+      })
       .first(),
   ]);
 

@@ -4,8 +4,8 @@ import {
   MetricWalletField,
   metricContractTableName,
   MetricContractAPRField,
-  metricWalletTokenTableName,
   metricWalletRegistryTableName,
+  metricWalletTokenRegistryTableName,
 } from '@models/Metric/Entity';
 import { walletContractLinkTableName } from '@models/Protocol/Entity';
 import {
@@ -154,35 +154,42 @@ export const userTokenLastMetricLoader = ({
   contract?: { id?: string[] } | null;
   tokenAlias?: { liquidity?: TokenAliasLiquidity[] };
 }) =>
-  new DataLoader<string, string>(async (usersId) => {
+  new DataLoader<string, { usd: string }>(async (usersId) => {
     const database = container.database();
-    let select = container.model
-      .metricWalletTokenTable()
-      .distinctOn(`${metricWalletTokenTableName}.wallet`, `${metricWalletTokenTableName}.token`)
+    const select = container.model
+      .metricWalletTokenRegistryTable()
       .column(`${walletTableName}.user`)
-      .column(database.raw(`(${metricWalletTokenTableName}.data->>'usd')::numeric AS v`))
-      .innerJoin(walletTableName, `${walletTableName}.id`, `${metricWalletTokenTableName}.wallet`)
+      .column(
+        database.raw(
+          `SUM((COALESCE(${metricWalletTokenRegistryTableName}.data->>'usd', '0'))::numeric) as usd`,
+        ),
+      )
+      .innerJoin(
+        walletTableName,
+        `${walletTableName}.id`,
+        `${metricWalletTokenRegistryTableName}.wallet`,
+      )
       .where(function () {
-        this.whereIn(`${walletTableName}.user`, usersId)
-          .whereNull(`${walletTableName}.deletedAt`)
-          .andWhere(database.raw(`${metricWalletTokenTableName}.data->>'usd' IS NOT NULL`));
+        this.whereIn(`${walletTableName}.user`, usersId);
+        this.whereNull(`${walletTableName}.deletedAt`);
         if (typeof contract === 'object') {
           if (contract !== null) {
             if (Array.isArray(contract.id)) {
-              this.whereIn(`${metricWalletTokenTableName}.contract`, contract.id);
+              this.whereIn(`${metricWalletTokenRegistryTableName}.contract`, contract.id);
             }
           } else {
-            this.whereNull(`${metricWalletTokenTableName}.contract`);
+            this.whereNull(`${metricWalletTokenRegistryTableName}.contract`);
           }
         }
       })
-      .orderBy(`${metricWalletTokenTableName}.wallet`)
-      .orderBy(`${metricWalletTokenTableName}.token`)
-      .orderBy(`${metricWalletTokenTableName}.date`, 'DESC');
+      .groupBy(`${walletTableName}.user`);
     if (typeof tokenAlias === 'object') {
-      select = select
-        .clone()
-        .innerJoin(tokenTableName, `${tokenTableName}.id`, `${metricWalletTokenTableName}.token`)
+      select
+        .innerJoin(
+          tokenTableName,
+          `${tokenTableName}.id`,
+          `${metricWalletTokenRegistryTableName}.token`,
+        )
         .innerJoin(tokenAliasTableName, `${tokenAliasTableName}.id`, `${tokenTableName}.alias`)
         .where(function () {
           if (Array.isArray(tokenAlias.liquidity) && tokenAlias.liquidity.length > 0) {
@@ -190,16 +197,9 @@ export const userTokenLastMetricLoader = ({
           }
         });
     }
+    const map = await select.then((rows) => new Map(rows.map(({ user, usd }) => [user, { usd }])));
 
-    const map = await container
-      .database()
-      .column('user')
-      .sum('v AS v')
-      .from(select.clone().as('metric'))
-      .groupBy('user')
-      .then((rows) => new Map(rows.map(({ user, v }) => [user, v])));
-
-    return usersId.map((id) => map.get(id) ?? '0');
+    return usersId.map((id) => map.get(id) ?? { usd: '0' });
   });
 
 export const walletLoader = () =>
@@ -220,29 +220,21 @@ export const walletLoader = () =>
 export const walletLastMetricLoader = () =>
   new DataLoader<string, { [k in MetricWalletField]: string } | null>(async (walletsId) => {
     const database = container.database();
-    const map = await container
-      .database()
-      .column('wallet')
-      .sum('stakingUSD AS stakingUSD')
-      .sum('earnedUSD AS earnedUSD')
-      .from(
-        container.model
-          .metricWalletRegistryTable()
-          .column(`${metricWalletRegistryTableName}.wallet`)
-          .column(
-            database.raw(
-              `(COALESCE(${metricWalletRegistryTableName}.data->>'stakingUSD', '0'))::numeric AS "stakingUSD"`,
-            ),
-          )
-          .column(
-            database.raw(
-              `(COALESCE(${metricWalletRegistryTableName}.data->>'earnedUSD', '0'))::numeric AS "earnedUSD"`,
-            ),
-          )
-          .whereIn('wallet', walletsId)
-          .as('metric'),
+    const map = await container.model
+      .metricWalletRegistryTable()
+      .column(`${metricWalletRegistryTableName}.wallet`)
+      .column(
+        database.raw(
+          `SUM((COALESCE(${metricWalletRegistryTableName}.data->>'stakingUSD', '0'))::numeric) AS "stakingUSD"`,
+        ),
       )
-      .groupBy('wallet')
+      .column(
+        database.raw(
+          `SUM((COALESCE(${metricWalletRegistryTableName}.data->>'earnedUSD', '0'))::numeric) AS "earnedUSD"`,
+        ),
+      )
+      .whereIn(`${metricWalletRegistryTableName}.wallet`, walletsId)
+      .groupBy(`${metricWalletRegistryTableName}.wallet`)
       .then(
         (rows) =>
           new Map(
@@ -260,53 +252,44 @@ export const walletTokenLastMetricLoader = (filter: {
   new DataLoader<string, { wallet: string; balance: string; usd: string }>(
     async (walletsId: ReadonlyArray<string>) => {
       const database = container.database();
-      const map = await container
-        .database()
-        .column('wallet')
-        .sum('usd AS usd')
-        .sum('balance AS balance')
-        .from(
-          container.model
-            .metricWalletTokenTable()
-            .distinctOn(
-              `${metricWalletTokenTableName}.wallet`,
-              `${metricWalletTokenTableName}.token`,
-            )
-            .column(`${metricWalletTokenTableName}.wallet`)
-            .column(database.raw(`(${metricWalletTokenTableName}.data->>'usd')::numeric AS usd`))
-            .column(
-              database.raw(`(${metricWalletTokenTableName}.data->>'balance')::numeric AS balance`),
-            )
-            .innerJoin(
-              tokenTableName,
-              `${metricWalletTokenTableName}.token`,
-              `${tokenTableName}.id`,
-            )
-            .innerJoin(tokenAliasTableName, `${tokenTableName}.alias`, `${tokenAliasTableName}.id`)
-            .where(function () {
-              this.whereIn(`${metricWalletTokenTableName}.wallet`, walletsId);
-              if (Array.isArray(filter.contract)) {
-                if (filter.contract.length > 0) {
-                  this.whereIn(`${metricWalletTokenTableName}.contract`, filter.contract);
-                } else {
-                  this.whereNull(`${metricWalletTokenTableName}.contract`);
-                }
-              }
-              if (filter.tokenAlias) {
-                if (Array.isArray(filter.tokenAlias.id)) {
-                  this.whereIn(`${tokenAliasTableName}.id`, filter.tokenAlias.id);
-                }
-                if (Array.isArray(filter.tokenAlias.liquidity)) {
-                  this.whereIn(`${tokenAliasTableName}.liquidity`, filter.tokenAlias.liquidity);
-                }
-              }
-            })
-            .orderBy(`${metricWalletTokenTableName}.wallet`)
-            .orderBy(`${metricWalletTokenTableName}.token`)
-            .orderBy(`${metricWalletTokenTableName}.date`, 'DESC')
-            .as('metric'),
+      const map = await container.model
+        .metricWalletTokenRegistryTable()
+        .column(`${metricWalletTokenRegistryTableName}.wallet`)
+        .column(
+          database.raw(
+            `SUM((COALESCE(${metricWalletTokenRegistryTableName}.data->>'usd', '0'))::numeric) AS usd`,
+          ),
         )
-        .groupBy('wallet')
+        .column(
+          database.raw(
+            `SUM((COALESCE(${metricWalletTokenRegistryTableName}.data->>'balance', '0'))::numeric) AS balance`,
+          ),
+        )
+        .innerJoin(
+          tokenTableName,
+          `${metricWalletTokenRegistryTableName}.token`,
+          `${tokenTableName}.id`,
+        )
+        .innerJoin(tokenAliasTableName, `${tokenTableName}.alias`, `${tokenAliasTableName}.id`)
+        .where(function () {
+          this.whereIn(`${metricWalletTokenRegistryTableName}.wallet`, walletsId);
+          if (Array.isArray(filter.contract)) {
+            if (filter.contract.length > 0) {
+              this.whereIn(`${metricWalletTokenRegistryTableName}.contract`, filter.contract);
+            } else {
+              this.whereNull(`${metricWalletTokenRegistryTableName}.contract`);
+            }
+          }
+          if (filter.tokenAlias) {
+            if (Array.isArray(filter.tokenAlias.id)) {
+              this.whereIn(`${tokenAliasTableName}.id`, filter.tokenAlias.id);
+            }
+            if (Array.isArray(filter.tokenAlias.liquidity)) {
+              this.whereIn(`${tokenAliasTableName}.liquidity`, filter.tokenAlias.liquidity);
+            }
+          }
+        })
+        .groupBy(`${metricWalletTokenRegistryTableName}.wallet`)
         .then(
           (rows) =>
             new Map(rows.map(({ wallet, balance, usd }) => [wallet, { wallet, balance, usd }])),

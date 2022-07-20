@@ -28,6 +28,7 @@ import {
   MetricWalletTokenTable,
   MetricWalletRegistryTable,
   metricWalletRegistryTableName,
+  MetricWalletTokenRegistryTable,
 } from './Entity';
 
 export class MetricContractService {
@@ -64,6 +65,7 @@ export class MetricContractService {
     readonly metricWalletRegistryTable: Factory<MetricWalletRegistryTable>,
     readonly metricWalletTaskTable: Factory<MetricWalletTaskTable>,
     readonly metricWalletTokenTable: Factory<MetricWalletTokenTable>,
+    readonly metricWalletTokenRegistryTable: Factory<MetricWalletTokenRegistryTable>,
     readonly metricTokenTable: Factory<MetricTokenTable>,
   ) {}
 
@@ -145,7 +147,6 @@ export class MetricContractService {
         contract: created.contract,
         wallet: created.wallet,
       })
-      .orderBy('date', 'desc')
       .first();
     await this.database().transaction(async (trx) =>
       Promise.all([
@@ -153,6 +154,7 @@ export class MetricContractService {
         !registryDuplicate || registryDuplicate.date < date
           ? this.metricWalletRegistryTable()
               .insert({
+                id: uuid(),
                 contract: created.contract,
                 wallet: created.wallet,
                 data: created.data,
@@ -229,10 +231,52 @@ export class MetricContractService {
       date,
       createdAt: new Date(),
     };
-    await this.metricWalletTokenTable().insert(created);
+    await this.database().transaction(async (trx) =>
+      Promise.all([
+        this.metricWalletTokenTable().insert(created).transacting(trx),
+        this.updateWalletTokenRegistry(created, trx),
+      ]),
+    );
+
     this.onWalletTokenCreated.emit(created);
 
     return created;
+  }
+
+  async updateWalletTokenRegistry(metric: MetricWalletToken, trx?: Knex.Transaction<any, any>) {
+    const duplicate = await this.metricWalletTokenRegistryTable()
+      .where({
+        contract: metric.contract,
+        wallet: metric.wallet,
+        token: metric.token,
+      })
+      .first();
+    if (!duplicate) {
+      const query = this.metricWalletTokenRegistryTable()
+        .insert({
+          id: uuid(),
+          contract: metric.contract,
+          wallet: metric.wallet,
+          token: metric.token,
+          data: metric.data,
+          date: metric.date,
+        })
+        .onConflict(['contract', 'wallet', 'token'])
+        .ignore();
+      if (trx) query.transacting(trx);
+      return query;
+    }
+    if (duplicate.date < metric.date) {
+      const query = this.metricWalletTokenRegistryTable()
+        .update({
+          data: metric.data,
+          date: metric.date,
+        })
+        .where('id', duplicate.id);
+      if (trx) query.transacting(trx);
+      return query;
+    }
+    return null;
   }
 
   async createToken(token: Token, data: MetricMap, date: Date) {

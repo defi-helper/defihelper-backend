@@ -21,7 +21,7 @@ import {
   GraphQLString,
   GraphQLUnionType,
 } from 'graphql';
-import { metricWalletTokenTableName } from '@models/Metric/Entity';
+import { metricWalletTokenRegistryTableName } from '@models/Metric/Entity';
 import {
   contractBlockchainTableName,
   contractTableName,
@@ -364,67 +364,57 @@ export const TokenAliasStakedStatisticsType = new GraphQLObjectType<
     metric: {
       type: GraphQLNonNull(TokenAliasMetricType),
       resolve: async (tokenAlias, args, { currentUser }) => {
-        const emptyMetric = {
-          myBalance: '0',
-          myUSD: '0',
-          myPortfolioPercent: '0',
-        };
         if (!currentUser) {
-          return emptyMetric;
+          return {
+            myBalance: '0',
+            myUSD: '0',
+            myPortfolioPercent: '0',
+          };
         }
 
         const database = container.database();
-        const metric = await container
-          .database()
-          .sum({ myBalance: 'balance', myUSD: 'usd' })
-          .from(
-            container.model
-              .metricWalletTokenTable()
-              .distinctOn(
-                `${metricWalletTokenTableName}.wallet`,
-                `${metricWalletTokenTableName}.contract`,
-                `${metricWalletTokenTableName}.token`,
-              )
-              .columns([
-                database.raw(`(${metricWalletTokenTableName}.data->>'usd')::numeric AS usd`),
-                database.raw(
-                  `(${metricWalletTokenTableName}.data->>'balance')::numeric AS balance`,
-                ),
-              ])
-              .innerJoin(`${tokenTableName} AS t`, 't.id', `${metricWalletTokenTableName}.token`)
-              .innerJoin(
-                `${walletTableName} AS wlt`,
-                `${metricWalletTokenTableName}.wallet`,
-                'wlt.id',
-              )
-              .innerJoin(
-                `${contractTableName} AS ct`,
-                `${metricWalletTokenTableName}.contract`,
-                'ct.id',
-              )
-              .innerJoin(`${contractBlockchainTableName} AS ctb`, `ctb.id`, 'ct.id')
-              .innerJoin(`${protocolTableName} AS pt`, 'ct.protocol', 'pt.id')
-              .whereRaw(
-                `(${metricWalletTokenTableName}.data->>'usd' IS NOT NULL OR ${metricWalletTokenTableName}.data->>'balance' IS NOT NULL)`,
-              )
-              .andWhere('t.alias', tokenAlias.id)
-              .andWhere('wlt.user', currentUser.id)
-              .andWhere('pt.id', tokenAlias.protocol)
-              .orderBy(`${metricWalletTokenTableName}.wallet`)
-              .orderBy(`${metricWalletTokenTableName}.contract`)
-              .orderBy(`${metricWalletTokenTableName}.token`)
-              .orderBy(`${metricWalletTokenTableName}.date`, 'DESC')
-              .as('metric'),
+        const metric = await container.model
+          .metricWalletTokenRegistryTable()
+          .column(
+            database.raw(
+              `SUM((COALESCE(${metricWalletTokenRegistryTableName}.data->>'usd', '0'))::numeric) AS usd`,
+            ),
           )
+          .column(
+            database.raw(
+              `SUM((COALESCE(${metricWalletTokenRegistryTableName}.data->>'balance', '0'))::numeric) AS balance`,
+            ),
+          )
+          .innerJoin(
+            tokenTableName,
+            `${tokenTableName}.id`,
+            `${metricWalletTokenRegistryTableName}.token`,
+          )
+          .innerJoin(
+            walletTableName,
+            `${metricWalletTokenRegistryTableName}.wallet`,
+            `${walletTableName}.id`,
+          )
+          .innerJoin(
+            contractTableName,
+            `${metricWalletTokenRegistryTableName}.contract`,
+            `${contractTableName}.id`,
+          )
+          .innerJoin(
+            contractBlockchainTableName,
+            `${contractBlockchainTableName}.id`,
+            `${contractTableName}.id`,
+          )
+          .innerJoin(protocolTableName, `${contractTableName}.protocol`, `${protocolTableName}.id`)
+          .where(`${tokenTableName}.alias`, tokenAlias.id)
+          .where(`${walletTableName}.user`, currentUser.id)
+          .whereNull(`${walletTableName}.deletedAt`)
+          .where(`${protocolTableName}.id`, tokenAlias.protocol)
           .first();
 
-        if (!metric) {
-          return emptyMetric;
-        }
-
         return {
-          myBalance: metric.myBalance || '0',
-          myUSD: metric.myUSD || '0',
+          myBalance: metric?.myBalance ?? '0',
+          myUSD: metric?.myUSD ?? '0',
           myPortfolioPercent: 0,
         };
       },

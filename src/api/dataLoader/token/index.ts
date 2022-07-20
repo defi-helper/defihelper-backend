@@ -1,5 +1,5 @@
 import container from '@container';
-import { metricWalletTokenTableName } from '@models/Metric/Entity';
+import { metricWalletTokenRegistryTableName } from '@models/Metric/Entity';
 import { TokenAlias, tokenAliasTableName, tokenTableName } from '@models/Token/Entity';
 import { walletTableName } from '@models/Wallet/Entity';
 import DataLoader from 'dataloader';
@@ -17,40 +17,34 @@ export const tokenAliasLoader = () =>
 export const tokenAliasUserLastMetricLoader = ({ user }: { user: string }) =>
   new DataLoader<string, { usd: string; balance: string }>(async (tokenAliasIds) => {
     const database = container.database();
-    const select = container.model
-      .metricWalletTokenTable()
-      .distinctOn(
-        `${metricWalletTokenTableName}.contract`,
-        `${metricWalletTokenTableName}.wallet`,
-        `${metricWalletTokenTableName}.token`,
-      )
-      .column(`${tokenAliasTableName}.id AS alias`)
+    const map = await container.model
+      .metricWalletTokenRegistryTable()
+      .column(`${tokenAliasTableName}.id as alias`)
       .column(
-        database.raw(`(COALESCE(${metricWalletTokenTableName}.data->>'usd', '0'))::numeric AS usd`),
+        database.raw(
+          `SUM((COALESCE(${metricWalletTokenRegistryTableName}.data->>'balance', '0'))::numeric) as balance`,
+        ),
       )
       .column(
         database.raw(
-          `(COALESCE(${metricWalletTokenTableName}.data->>'balance', '0'))::numeric AS balance`,
+          `SUM((COALESCE(${metricWalletTokenRegistryTableName}.data->>'usd', '0'))::numeric) as usd`,
         ),
       )
-      .innerJoin(walletTableName, `${walletTableName}.id`, `${metricWalletTokenTableName}.wallet`)
-      .innerJoin(tokenTableName, `${tokenTableName}.id`, `${metricWalletTokenTableName}.token`)
+      .innerJoin(
+        walletTableName,
+        `${walletTableName}.id`,
+        `${metricWalletTokenRegistryTableName}.wallet`,
+      )
+      .innerJoin(
+        tokenTableName,
+        `${tokenTableName}.id`,
+        `${metricWalletTokenRegistryTableName}.token`,
+      )
       .innerJoin(tokenAliasTableName, `${tokenAliasTableName}.id`, `${tokenTableName}.alias`)
       .where(`${walletTableName}.user`, user)
       .whereNull(`${walletTableName}.deletedAt`)
       .whereIn(`${tokenAliasTableName}.id`, tokenAliasIds)
-      .orderBy(`${metricWalletTokenTableName}.contract`)
-      .orderBy(`${metricWalletTokenTableName}.wallet`)
-      .orderBy(`${metricWalletTokenTableName}.token`)
-      .orderBy(`${metricWalletTokenTableName}.date`, 'DESC');
-
-    const map = await container
-      .database()
-      .column('alias')
-      .sum('usd AS usd')
-      .sum('balance AS balance')
-      .from(select.clone().as('metric'))
-      .groupBy('alias')
+      .groupBy(`${tokenAliasTableName}.id`)
       .then((rows) => new Map(rows.map(({ alias, usd, balance }) => [alias, { usd, balance }])));
 
     return tokenAliasIds.map((id) => map.get(id) ?? { usd: '0', balance: '0' });

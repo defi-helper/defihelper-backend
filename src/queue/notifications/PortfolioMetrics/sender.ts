@@ -47,7 +47,7 @@ export default async (process: Process) => {
   const chatId = contact.params?.chatId;
   if (!chatId) return process.error(new Error('Chat id not found'));
 
-  const [totalStackedUSD, totalEarnedUSD, totalTokensUSD] = await Promise.all([
+  const [totalStackedUSD, totalEarnedUSD, { usd: totalTokensUSD }] = await Promise.all([
     dataLoader.userMetric({ metric: 'stakingUSD' }).load(contact.user),
     dataLoader.userMetric({ metric: 'earnedUSD' }).load(contact.user),
     dataLoader

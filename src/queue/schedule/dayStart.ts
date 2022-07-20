@@ -16,6 +16,7 @@ export default async (process: Process) => {
     queue.push('metricsContractAprWeekRealBroker', {}),
     queue.push('metricsUserBalancesBroker', {}),
     queue.push('metricsWalletRegistrySync', {}),
+    queue.push('metricsWalletTokenRegistrySync', {}),
   ]);
 
   return process.done();

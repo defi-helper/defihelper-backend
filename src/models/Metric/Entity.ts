@@ -13,6 +13,7 @@ export interface Metric {
 }
 
 export interface Registry {
+  id: string;
   data: MetricMap;
   date: Date;
 }
@@ -132,6 +133,22 @@ export const metricWalletTokenTableFactory = tableFactoryLegacy<MetricWalletToke
 );
 
 export type MetricWalletTokenTable = ReturnType<ReturnType<typeof metricWalletTokenTableFactory>>;
+
+export interface MetricWalletTokenRegistry extends Registry {
+  contract: string | null;
+  wallet: string;
+  token: string;
+}
+
+export const metricWalletTokenRegistryTableName = 'metric_wallet_token_registry';
+
+export const metricWalletTokenRegistryTableFactory = tableFactoryLegacy<MetricWalletTokenRegistry>(
+  metricWalletTokenRegistryTableName,
+);
+
+export type MetricWalletTokenRegistryTable = ReturnType<
+  ReturnType<typeof metricWalletTokenRegistryTableFactory>
+>;
 
 export interface MetricToken extends Metric {
   token: string;
