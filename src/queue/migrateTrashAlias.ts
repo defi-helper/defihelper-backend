@@ -11,8 +11,7 @@ export default async (process: Process) => {
     .column(`${tokenAliasTableName}.id as aliasId`)
     .innerJoin(tokenTableName, `${tokenTableName}.alias`, `${tokenAliasTableName}.id`)
     .where('liquidity', TokenAliasLiquidity.Trash)
-    .andWhere('blockchain', 'ethereum')
-    .limit(100);
+    .andWhere('blockchain', 'ethereum');
 
   const lag = 259200 / tokenAliasList.length; // 3 days
   await tokenAliasList.reduce<Promise<dayjs.Dayjs>>(async (prev, params) => {
