@@ -26,7 +26,7 @@ const makePoolHashAddress = (tokens: { id: string; chain: string; protocolId: st
   return container.cryptography().md5(
     tokens
       .map((supply) => supply.id + supply.chain + supply.protocolId)
-      // .sort((a, b) => a.localeCompare(b)) todo uncomment later
+      .sort((a, b) => a.localeCompare(b))
       .join(':'),
   );
 };
