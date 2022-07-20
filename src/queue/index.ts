@@ -104,4 +104,4 @@ export * as treasuryStatsCache from './treasury/cache';
 export * as utilsTokensLogoBroker from './utils/tokensLogoBroker';
 
 export * as sendTelegramNews from './sendTelegramNews';
-export * as migrateNotifications from './migrateNotifications';
+export * as migrateTrashAlias from './migrateTrashAlias';
