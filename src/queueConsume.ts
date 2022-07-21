@@ -10,7 +10,7 @@ if (!container.parent.rabbitmq.queues.map(({ name }) => name).includes(options.q
 }
 
 container.rabbitmq().on('disconnected', (error) => {
-  throw new Error(`Rabbit disconnected: ${error instanceof Error ? error.message : String(error)}`);
+  throw new Error(`Rabbit disconnected: ${error}`);
 });
 const consumer = container.model.queueService().consume({ queue: options.queue });
 
