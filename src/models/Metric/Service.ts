@@ -79,13 +79,13 @@ export class MetricContractService {
       throw new Error('No aprYear found');
     }
 
-    if (!new BN(aprYear).isZero() || contract.hidden) {
+    if (new BN(aprYear).isZero() || !contract.hidden) {
       return;
     }
 
     await container.model.contractService().updateBlockchain({
       ...contract,
-      hidden: true,
+      hidden: false,
     });
   });
 
