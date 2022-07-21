@@ -3,11 +3,17 @@ import Knex from 'knex';
 import { v4 as uuid } from 'uuid';
 import { Blockchain } from '@models/types';
 import { Emitter } from '@services/Event';
-import { Protocol, Contract } from '@models/Protocol/Entity';
+import {
+  Protocol,
+  Contract,
+  contractTableName,
+  contractBlockchainTableName,
+} from '@models/Protocol/Entity';
 import { Factory } from '@services/Container';
 import { Wallet } from '@models/Wallet/Entity';
 import { Token } from '@models/Token/Entity';
 import { Task } from '@models/Queue/Entity';
+import BN from 'bignumber.js';
 import {
   MetricBlockchain,
   MetricBlockchainTable,
@@ -52,6 +58,35 @@ export class MetricContractService {
         token: metric.token,
       }),
     );
+  });
+
+  public readonly onContractCreated = new Emitter<MetricContract>(async (metric) => {
+    const contract = await container.model
+      .contractTable()
+      .innerJoin(
+        contractBlockchainTableName,
+        `${contractBlockchainTableName}.id`,
+        `${contractTableName}.id`,
+      )
+      .where('id', metric.contract)
+      .first();
+    if (!contract) {
+      throw new Error('No contract found');
+    }
+
+    const { aprYear } = metric.data;
+    if (!aprYear) {
+      throw new Error('No aprYear found');
+    }
+
+    if (!new BN(aprYear).isZero() || contract.hidden) {
+      return;
+    }
+
+    await container.model.contractService().updateBlockchain({
+      ...contract,
+      hidden: true,
+    });
   });
 
   constructor(
@@ -103,6 +138,7 @@ export class MetricContractService {
       createdAt: new Date(),
     };
     await this.metricContractTable().insert(created);
+    this.onContractCreated.emit(created);
 
     return created;
   }
