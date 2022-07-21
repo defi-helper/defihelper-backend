@@ -47,16 +47,16 @@ export default async (process: Process) => {
   const chatId = contact.params?.chatId;
   if (!chatId) return process.error(new Error('Chat id not found'));
 
-  const [totalStackedUSD, totalEarnedUSD, { usd: totalTokensUSD }] = await Promise.all([
-    dataLoader.userMetric({ metric: 'stakingUSD' }).load(contact.user),
-    dataLoader.userMetric({ metric: 'earnedUSD' }).load(contact.user),
-    dataLoader
-      .userTokenMetric({
-        contract: null,
-        tokenAlias: { liquidity: [TokenAliasLiquidity.Stable, TokenAliasLiquidity.Unstable] },
-      })
-      .load(contact.user),
-  ]);
+  const [{ stakingUSD: totalStackedUSD, earnedUSD: totalEarnedUSD }, { usd: totalTokensUSD }] =
+    await Promise.all([
+      dataLoader.userMetric().load(contact.user),
+      dataLoader
+        .userTokenMetric({
+          contract: null,
+          tokenAlias: { liquidity: [TokenAliasLiquidity.Stable, TokenAliasLiquidity.Unstable] },
+        })
+        .load(contact.user),
+    ]);
 
   if (!totalStackedUSD) return process.done().info('no totalStackedUSD');
   const totalEarnedUSDFixedFloating = new BN(totalEarnedUSD).toFixed(2);
