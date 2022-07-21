@@ -56,6 +56,12 @@ export class MetricContractService {
     );
   });
 
+  public readonly onContractCreated = new Emitter<MetricContract>(async (metric) => {
+    container.model.queueService().push('eventsMetricContractCreated', {
+      id: metric.id,
+    });
+  });
+
   constructor(
     readonly database: Factory<Knex>,
     readonly metricBlockchainTable: Factory<MetricBlockchainTable>,
@@ -106,6 +112,7 @@ export class MetricContractService {
       createdAt: new Date(),
     };
     await this.metricContractTable().insert(created);
+    this.onContractCreated.emit(created);
 
     return created;
   }
