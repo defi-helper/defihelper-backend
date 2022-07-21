@@ -1,5 +1,6 @@
 import { Blockchain } from '@models/types';
 import { tableFactoryLegacy } from '@services/Database';
+import Knex from 'knex';
 
 export interface MetricMap {
   [k: string]: string;
@@ -16,6 +17,18 @@ export interface Registry {
   id: string;
   data: MetricMap;
   date: Date;
+}
+
+export namespace QueryModify {
+  export function lastValue<T extends Metric>(
+    query: Knex.QueryBuilder<T, T[]>,
+    byFields: string[],
+  ) {
+    query
+      .distinctOn(...byFields)
+      .orderBy(byFields)
+      .orderBy('date', 'desc');
+  }
 }
 
 export interface MetricBlockchain extends Metric {

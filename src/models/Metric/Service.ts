@@ -1,6 +1,8 @@
 import container from '@container';
 import Knex from 'knex';
 import { v4 as uuid } from 'uuid';
+import dayjs from 'dayjs';
+import BN from 'bignumber.js';
 import { Blockchain } from '@models/types';
 import { Emitter } from '@services/Event';
 import { Protocol, Contract } from '@models/Protocol/Entity';
@@ -27,9 +29,13 @@ import {
   MetricWalletToken,
   MetricWalletTokenTable,
   MetricWalletRegistryTable,
-  metricWalletRegistryTableName,
   MetricWalletTokenRegistryTable,
+  QueryModify,
 } from './Entity';
+
+function calcChange(current: string, prev: string | undefined) {
+  return prev && Number(prev) !== 0 ? new BN(current).div(prev).toFixed(8) : '0';
+}
 
 export class MetricContractService {
   public readonly onWalletCreated = new Emitter<MetricWallet>(async (metric) =>
@@ -134,11 +140,61 @@ export class MetricContractService {
   }
 
   async createWallet(contract: Contract, wallet: Wallet, data: MetricMap, date: Date) {
+    const [dayBefore, weekBefore, monthBefore] = await Promise.all([
+      this.metricWalletTable()
+        .modify(QueryModify.lastValue, ['contract', 'wallet'])
+        .where({
+          contract: contract.id,
+          wallet: wallet.id,
+        })
+        .whereBetween('date', [
+          dayjs(date).add(-2, 'day').toDate(),
+          dayjs(date).add(-1, 'day').toDate(),
+        ])
+        .first(),
+      this.metricWalletTable()
+        .modify(QueryModify.lastValue, ['contract', 'wallet'])
+        .where({
+          contract: contract.id,
+          wallet: wallet.id,
+        })
+        .whereBetween('date', [
+          dayjs(date).add(-2, 'week').toDate(),
+          dayjs(date).add(-1, 'week').toDate(),
+        ])
+        .first(),
+      this.metricWalletTable()
+        .modify(QueryModify.lastValue, ['contract', 'wallet'])
+        .where({
+          contract: contract.id,
+          wallet: wallet.id,
+        })
+        .whereBetween('date', [
+          dayjs(date).add(-2, 'month').toDate(),
+          dayjs(date).add(-1, 'month').toDate(),
+        ])
+        .first(),
+    ]);
+
     const created: MetricWallet = {
       id: uuid(),
       contract: contract.id,
       wallet: wallet.id,
-      data,
+      data: {
+        ...data,
+        stakingDailyChange: calcChange(data.staking, dayBefore?.data.staking),
+        stakingWeeklyChange: calcChange(data.staking, weekBefore?.data.staking),
+        stakingMonthlyChange: calcChange(data.staking, monthBefore?.data.staking),
+        stakingUSDDailyChange: calcChange(data.stakingUSD, dayBefore?.data.stakingUSD),
+        stakingUSDWeeklyChange: calcChange(data.stakingUSD, weekBefore?.data.stakingUSD),
+        stakingUSDMonthlyChange: calcChange(data.stakingUSD, monthBefore?.data.stakingUSD),
+        earnedDailyChange: calcChange(data.earned, dayBefore?.data.earned),
+        earnedWeeklyChange: calcChange(data.earned, weekBefore?.data.earned),
+        earnedMonthlyChange: calcChange(data.earned, monthBefore?.data.earned),
+        earnedUSDDailyChange: calcChange(data.earnedUSD, dayBefore?.data.earnedUSD),
+        earnedUSDWeeklyChange: calcChange(data.earnedUSD, weekBefore?.data.earnedUSD),
+        earnedUSDMonthlyChange: calcChange(data.earnedUSD, monthBefore?.data.earnedUSD),
+      },
       date,
       createdAt: new Date(),
     };
@@ -172,20 +228,38 @@ export class MetricContractService {
     return created;
   }
 
-  async walletRegistrySync() {
-    return this.database().raw(
-      `insert into "${metricWalletRegistryTableName}"
-      ${
-        this.metricWalletTable()
-          .columns('contract', 'wallet', 'data', 'date')
-          .distinctOn('contract', 'wallet')
-          .orderBy('contract')
-          .orderBy('wallet')
-          .orderBy('date', 'desc')
-          .toSQL().sql
-      }
-      on conflict ("contract", "wallet") do update set "data" = excluded."data", "date" = excluded."date"`,
-    );
+  async updateWalletRegistry(metric: MetricWallet, trx?: Knex.Transaction<any, any>) {
+    const duplicate = await this.metricWalletRegistryTable()
+      .where({
+        contract: metric.contract,
+        wallet: metric.wallet,
+      })
+      .first();
+    if (!duplicate) {
+      const query = this.metricWalletRegistryTable()
+        .insert({
+          id: uuid(),
+          contract: metric.contract,
+          wallet: metric.wallet,
+          data: metric.data,
+          date: metric.date,
+        })
+        .onConflict(['contract', 'wallet'])
+        .ignore();
+      if (trx) query.transacting(trx);
+      return query;
+    }
+    if (duplicate.date < metric.date) {
+      const query = this.metricWalletRegistryTable()
+        .update({
+          data: metric.data,
+          date: metric.date,
+        })
+        .where('id', duplicate.id);
+      if (trx) query.transacting(trx);
+      return query;
+    }
+    return null;
   }
 
   async setWalletTask(contract: Contract, wallet: Wallet, task: Task) {
@@ -222,12 +296,59 @@ export class MetricContractService {
     data: MetricMap,
     date: Date,
   ) {
+    const [dayBefore, weekBefore, monthBefore] = await Promise.all([
+      this.metricWalletTokenTable()
+        .modify(QueryModify.lastValue, ['contract', 'wallet', 'token'])
+        .where({
+          contract: contract?.id ?? null,
+          wallet: wallet.id,
+          token: token.id,
+        })
+        .whereBetween('date', [
+          dayjs(date).add(-2, 'day').toDate(),
+          dayjs(date).add(-1, 'day').toDate(),
+        ])
+        .first(),
+      this.metricWalletTokenTable()
+        .modify(QueryModify.lastValue, ['contract', 'wallet', 'token'])
+        .where({
+          contract: contract?.id ?? null,
+          wallet: wallet.id,
+          token: token.id,
+        })
+        .whereBetween('date', [
+          dayjs(date).add(-2, 'week').toDate(),
+          dayjs(date).add(-1, 'week').toDate(),
+        ])
+        .first(),
+      this.metricWalletTokenTable()
+        .modify(QueryModify.lastValue, ['contract', 'wallet', 'token'])
+        .where({
+          contract: contract?.id ?? null,
+          wallet: wallet.id,
+          token: token.id,
+        })
+        .whereBetween('date', [
+          dayjs(date).add(-2, 'month').toDate(),
+          dayjs(date).add(-1, 'month').toDate(),
+        ])
+        .first(),
+    ]);
+
     const created: MetricWalletToken = {
       id: uuid(),
       contract: contract ? contract.id : null,
       wallet: wallet.id,
       token: token.id,
-      data,
+      data: {
+        ...data,
+        balanceDailyChange: calcChange(data.balance, dayBefore?.data.balance),
+        balanceWeeklyChange: calcChange(data.balance, weekBefore?.data.balance),
+        balanceMonthlyChange: calcChange(data.balance, monthBefore?.data.balance),
+        usdDailyChange: calcChange(data.usd, dayBefore?.data.usd),
+        usdWeeklyChange: calcChange(data.usd, weekBefore?.data.usd),
+        usdMonthlyChange: calcChange(data.usd, monthBefore?.data.usd),
+      },
       date,
       createdAt: new Date(),
     };
