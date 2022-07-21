@@ -75,6 +75,7 @@ export * as notificationAutomateWalletsNotEnoughFundsNotify from './notification
 export * as notificationAutomateWalletsNotEnoughFundsBroker from './notifications/AutomateWalletsNotEnoughFunds/broker';
 
 /* events */
+export * as eventsMetricContractCreated from './events/metricContractCreated';
 export * as eventsContractBlockchainCreated from './events/contractBlockchainCreated';
 export * as eventsContractBlockchainUpdated from './events/contractBlockchainUpdated';
 export * as eventsUserCreated from './events/userCreated';
