@@ -31,7 +31,7 @@ export default async (process: Process) => {
   }
 
   const walletBlockchain = await container.model
-    .contractTable()
+    .walletTable()
     .innerJoin(
       walletBlockchainTableName,
       `${walletBlockchainTableName}.id`,
