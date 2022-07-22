@@ -4,7 +4,7 @@ import { Process } from '@models/Queue/Entity';
 import { Blockchain } from '@models/types';
 import { isKey } from '@services/types';
 import { ethers } from 'ethers';
-import { abi as storeAbi } from '@defihelper/networks/abi/Store.json';
+import { abi as storeAbi } from '@defihelper/networks/abi/StoreV1.json';
 import contracts from '@defihelper/networks/contracts.json';
 
 async function registerBuy(blockchain: Blockchain, network: string, events: ethers.Event[]) {
@@ -66,7 +66,7 @@ export default async (process: Process) => {
   const to = from + step > currentBlockNumber ? currentBlockNumber : from + step;
 
   const networkContracts = contracts[network] as { [name: string]: { address: string } };
-  const storeAddress = networkContracts.Store.address;
+  const storeAddress = networkContracts.StoreUpgradable.address;
   const store = container.blockchain[blockchain].contract(storeAddress, storeAbi, provider);
 
   await registerBuy(blockchain, network, await store.queryFilter(store.filters.Buy(), from, to));
