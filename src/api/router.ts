@@ -57,10 +57,7 @@ export function route({ express, server }: { express: Express; server: Server })
             resolve: () => 'pong',
           },
           config: configSchemas.ConfigQuery,
-          me: {
-            type: userSchemas.UserType,
-            resolve: (root, args, { currentUser }) => currentUser,
-          },
+          me: userSchemas.MeQuery,
           userReferrer: userSchemas.UserReferrerCodeQuery,
           users: userSchemas.UserListQuery,
           protocol: protocolSchemas.ProtocolQuery,

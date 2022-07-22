@@ -1778,6 +1778,34 @@ export const UserReferrerCodeQuery: GraphQLFieldConfig<any, Request> = {
   },
 };
 
+export const MeQuery: GraphQLFieldConfig<any, Request> = {
+  type: UserType,
+  args: {
+    input: {
+      type: GraphQLNonNull(
+        new GraphQLInputObjectType({
+          name: 'MeInputType',
+          fields: {
+            timezone: {
+              type: GraphQLString,
+              description: 'Timezone',
+            },
+          },
+        }),
+      ),
+    },
+  },
+  resolve: (root, { input }, { currentUser }) => {
+    return currentUser
+      ? container.model.userService().update({
+          ...currentUser,
+          timezone: input.timezone ?? currentUser.timezone,
+          lastSeenAt: new Date(),
+        })
+      : null;
+  },
+};
+
 export const UserListQuery: GraphQLFieldConfig<any, Request> = {
   type: GraphQLNonNull(PaginateList('UserListQuery', GraphQLNonNull(UserType))),
   args: {

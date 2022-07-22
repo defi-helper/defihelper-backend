@@ -34,6 +34,7 @@ export class UserService {
       isPorfolioCollected: false,
       timezone,
       authAt: new Date(),
+      lastSeenAt: new Date(),
       createdAt: new Date(),
       updatedAt: new Date(),
     };
