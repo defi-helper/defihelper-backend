@@ -91,6 +91,9 @@ export const WalletTokenAliasMetricType = new GraphQLObjectType({
     usd: {
       type: GraphQLNonNull(GraphQLString),
     },
+    usdChange: {
+      type: GraphQLNonNull(MetricChangeType),
+    },
     portfolioPercent: {
       type: GraphQLNonNull(GraphQLString),
     },
@@ -109,13 +112,27 @@ export const WalletTokenAliasType = new GraphQLObjectType<
     metric: {
       type: GraphQLNonNull(WalletTokenAliasMetricType),
       resolve: async ({ wallet, tokenAlias }, args, { dataLoader }) => {
-        const metric = await dataLoader
+        const tokenMetric = await dataLoader
           .walletTokenMetric({ tokenAlias: { id: [tokenAlias.id] } })
           .load(wallet.id);
 
         return {
-          balance: metric?.balance ?? '0',
-          usd: metric?.usd ?? '0',
+          balance: tokenMetric.balance,
+          usd: tokenMetric.usd,
+          usdChange: {
+            day:
+              Number(tokenMetric.usdDayBefore) !== 0
+                ? new BN(tokenMetric.usd).div(tokenMetric.usdDayBefore).toString(10)
+                : '0',
+            week:
+              Number(tokenMetric.usdWeekBefore) !== 0
+                ? new BN(tokenMetric.usd).div(tokenMetric.usdWeekBefore).toString(10)
+                : '0',
+            month:
+              Number(tokenMetric.usdMonthBefore) !== 0
+                ? new BN(tokenMetric.usd).div(tokenMetric.usdMonthBefore).toString(10)
+                : '0',
+          },
           portfolioPercent: '0',
         };
       },

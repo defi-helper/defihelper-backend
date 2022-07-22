@@ -1,14 +1,8 @@
 import { AuthenticationError, UserInputError } from 'apollo-server-express';
 import container from '@container';
 import { Request } from 'express';
-import {
-  PriceFeed,
-  Token,
-  TokenAlias,
-  TokenAliasLiquidity,
-  tokenTableName,
-} from '@models/Token/Entity';
-import { walletTableName } from '@models/Wallet/Entity';
+import BN from 'bignumber.js';
+import { PriceFeed, Token, TokenAlias, TokenAliasLiquidity } from '@models/Token/Entity';
 import {
   GraphQLBoolean,
   GraphQLEnumType,
@@ -21,15 +15,10 @@ import {
   GraphQLString,
   GraphQLUnionType,
 } from 'graphql';
-import { metricWalletTokenRegistryTableName } from '@models/Metric/Entity';
-import {
-  contractBlockchainTableName,
-  contractTableName,
-  protocolTableName,
-} from '@models/Protocol/Entity';
 import {
   BlockchainEnum,
   BlockchainFilterInputType,
+  MetricChangeType,
   onlyAllowed,
   PaginateList,
   PaginationArgument,
@@ -330,6 +319,9 @@ export const TokenAliasMetricType = new GraphQLObjectType({
     myUSD: {
       type: GraphQLNonNull(GraphQLString),
     },
+    myUSDChange: {
+      type: GraphQLNonNull(MetricChangeType),
+    },
     myPortfolioPercent: {
       type: GraphQLNonNull(GraphQLString),
     },
@@ -337,7 +329,8 @@ export const TokenAliasMetricType = new GraphQLObjectType({
 });
 
 export const TokenAliasStakedStatisticsType = new GraphQLObjectType<
-  TokenAlias & { protocol: string }
+  TokenAlias & { protocol: string },
+  Request
 >({
   name: 'TokenAliasStakedStatistics',
   fields: {
@@ -363,7 +356,7 @@ export const TokenAliasStakedStatisticsType = new GraphQLObjectType<
     },
     metric: {
       type: GraphQLNonNull(TokenAliasMetricType),
-      resolve: async (tokenAlias, args, { currentUser }) => {
+      resolve: async (tokenAlias, args, { currentUser, dataLoader }) => {
         if (!currentUser) {
           return {
             myBalance: '0',
@@ -371,50 +364,27 @@ export const TokenAliasStakedStatisticsType = new GraphQLObjectType<
             myPortfolioPercent: '0',
           };
         }
-
-        const database = container.database();
-        const metric = await container.model
-          .metricWalletTokenRegistryTable()
-          .column(
-            database.raw(
-              `SUM((COALESCE(${metricWalletTokenRegistryTableName}.data->>'usd', '0'))::numeric) AS usd`,
-            ),
-          )
-          .column(
-            database.raw(
-              `SUM((COALESCE(${metricWalletTokenRegistryTableName}.data->>'balance', '0'))::numeric) AS balance`,
-            ),
-          )
-          .innerJoin(
-            tokenTableName,
-            `${tokenTableName}.id`,
-            `${metricWalletTokenRegistryTableName}.token`,
-          )
-          .innerJoin(
-            walletTableName,
-            `${metricWalletTokenRegistryTableName}.wallet`,
-            `${walletTableName}.id`,
-          )
-          .innerJoin(
-            contractTableName,
-            `${metricWalletTokenRegistryTableName}.contract`,
-            `${contractTableName}.id`,
-          )
-          .innerJoin(
-            contractBlockchainTableName,
-            `${contractBlockchainTableName}.id`,
-            `${contractTableName}.id`,
-          )
-          .innerJoin(protocolTableName, `${contractTableName}.protocol`, `${protocolTableName}.id`)
-          .where(`${tokenTableName}.alias`, tokenAlias.id)
-          .where(`${walletTableName}.user`, currentUser.id)
-          .whereNull(`${walletTableName}.deletedAt`)
-          .where(`${protocolTableName}.id`, tokenAlias.protocol)
-          .first();
+        const tokenMetric = await dataLoader
+          .tokenAliasUserLastMetric({ user: currentUser.id, protocol: tokenAlias.protocol })
+          .load(tokenAlias.id);
 
         return {
-          myBalance: metric?.myBalance ?? '0',
-          myUSD: metric?.myUSD ?? '0',
+          myBalance: tokenMetric.balance,
+          myUSD: tokenMetric.usd,
+          myUSDChange: {
+            day:
+              Number(tokenMetric.usdDayBefore) !== 0
+                ? new BN(tokenMetric.usd).div(tokenMetric.usdDayBefore).toString(10)
+                : '0',
+            week:
+              Number(tokenMetric.usdWeekBefore) !== 0
+                ? new BN(tokenMetric.usd).div(tokenMetric.usdWeekBefore).toString(10)
+                : '0',
+            month:
+              Number(tokenMetric.usdMonthBefore) !== 0
+                ? new BN(tokenMetric.usd).div(tokenMetric.usdMonthBefore).toString(10)
+                : '0',
+          },
           myPortfolioPercent: 0,
         };
       },
@@ -511,17 +481,35 @@ export const TokenAliasType = new GraphQLObjectType<TokenAlias, Request>({
           return {
             myBalance: '0',
             myUSD: '0',
+            myUSDChange: {
+              day: '0',
+              week: '0',
+              month: '0',
+            },
             myPortfolioPercent: '0',
           };
         }
-
-        const metric = await dataLoader
+        const tokenMetric = await dataLoader
           .tokenAliasUserLastMetric({ user: currentUser.id })
           .load(tokenAlias.id);
 
         return {
-          myBalance: metric.balance,
-          myUSD: metric.usd,
+          myBalance: tokenMetric.balance,
+          myUSD: tokenMetric.usd,
+          myUSDChange: {
+            day:
+              Number(tokenMetric.usdDayBefore) !== 0
+                ? new BN(tokenMetric.usd).div(tokenMetric.usdDayBefore).toString(10)
+                : '0',
+            week:
+              Number(tokenMetric.usdWeekBefore) !== 0
+                ? new BN(tokenMetric.usd).div(tokenMetric.usdWeekBefore).toString(10)
+                : '0',
+            month:
+              Number(tokenMetric.usdMonthBefore) !== 0
+                ? new BN(tokenMetric.usd).div(tokenMetric.usdMonthBefore).toString(10)
+                : '0',
+          },
           myPortfolioPercent: 0,
         };
       },
