@@ -372,6 +372,24 @@ export class ContractService {
     return created;
   }
 
+  async walletLinkDebank(contract: Contract, blockchainWallet: WalletBlockchain) {
+    const duplicate = await this.walletLinkTable()
+      .where('contract', contract.id)
+      .andWhere('wallet', blockchainWallet.id)
+      .first();
+    if (duplicate) return duplicate;
+
+    const created = {
+      id: uuid(),
+      contract: contract.id,
+      wallet: blockchainWallet.id,
+      createdAt: new Date(),
+    };
+    await this.walletLinkTable().insert(created).onConflict(['contract', 'wallet']).ignore();
+
+    return created;
+  }
+
   async walletUnlink(contract: Contract, wallet: WalletBlockchain) {
     const duplicate = await this.walletLinkTable()
       .where('contract', contract.id)

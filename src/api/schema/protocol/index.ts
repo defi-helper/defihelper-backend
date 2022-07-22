@@ -36,7 +36,6 @@ import {
   metricContractTableName,
   metricProtocolTableName,
   metricWalletRegistryTableName,
-  metricWalletTableName,
 } from '@models/Metric/Entity';
 import {
   walletBlockchainTableName,
@@ -1849,28 +1848,31 @@ export const ProtocolType: GraphQLObjectType = new GraphQLObjectType<Protocol, R
       resolve: async (protocol, { metric, group, filter, sort, pagination }) => {
         const database = container.database();
         const select = container.model
-          .metricWalletTable()
-          .distinctOn(
-            `${metricWalletTableName}.contract`,
-            `${metricWalletTableName}.wallet`,
-            'date',
+          .metricWalletRegistryTable()
+          .column(
+            database.raw(`(${metricWalletRegistryTableName}.data->>'${metric}')::numeric AS value`),
           )
-          .column(database.raw(`(${metricWalletTableName}.data->>'${metric}')::numeric AS value`))
-          .column(database.raw(`DATE_TRUNC('${group}', ${metricWalletTableName}.date) AS "date"`))
+          .column(
+            database.raw(`DATE_TRUNC('${group}', ${metricWalletRegistryTableName}.date) AS "date"`),
+          )
           .innerJoin(
             contractTableName,
             `${contractTableName}.id`,
-            `${metricWalletTableName}.contract`,
+            `${metricWalletRegistryTableName}.contract`,
           )
           .innerJoin(
             contractBlockchainTableName,
             `${contractTableName}.id`,
             `${contractBlockchainTableName}.id`,
           )
-          .innerJoin(walletTableName, `${walletTableName}.id`, `${metricWalletTableName}.wallet`)
+          .innerJoin(
+            walletTableName,
+            `${walletTableName}.id`,
+            `${metricWalletRegistryTableName}.wallet`,
+          )
           .where(function () {
             this.where(`${contractTableName}.protocol`, protocol.id).andWhere(
-              database.raw(`${metricWalletTableName}.data->>'${metric}' IS NOT NULL`),
+              database.raw(`${metricWalletRegistryTableName}.data->>'${metric}' IS NOT NULL`),
             );
             if (Array.isArray(filter.user) && filter.user.length > 0) {
               this.whereIn(`${walletTableName}.user`, filter.user);
@@ -1883,16 +1885,21 @@ export const ProtocolType: GraphQLObjectType = new GraphQLObjectType<Protocol, R
               }
             }
             if (filter.dateAfter) {
-              this.andWhere(`${metricWalletTableName}.date`, '>=', filter.dateAfter.toDate());
+              this.andWhere(
+                `${metricWalletRegistryTableName}.date`,
+                '>=',
+                filter.dateAfter.toDate(),
+              );
             }
             if (filter.dateBefore) {
-              this.andWhere(`${metricWalletTableName}.date`, '<', filter.dateBefore.toDate());
+              this.andWhere(
+                `${metricWalletRegistryTableName}.date`,
+                '<',
+                filter.dateBefore.toDate(),
+              );
             }
           })
-          .orderBy(`${metricWalletTableName}.contract`)
-          .orderBy(`${metricWalletTableName}.wallet`)
-          .orderBy('date')
-          .orderBy(`${metricWalletTableName}.date`, 'DESC');
+          .orderBy('date');
 
         return container
           .database()
@@ -2045,10 +2052,6 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
           blockchain: {
             type: BlockchainFilterInputType,
           },
-          linked: {
-            type: UuidType,
-            description: 'Target user ID',
-          },
           favorite: {
             type: GraphQLBoolean,
             description: 'Is favorite',
@@ -2078,14 +2081,14 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
     },
     sort: SortArgument(
       'ProtocolListSortInputType',
-      ['id', 'name', 'address', 'createdAt'],
+      ['id', 'name', 'createdAt'],
       [{ column: 'name', order: 'asc' }],
     ),
     pagination: PaginationArgument('ProtocolListPaginationInputType'),
   },
   resolve: async (root, { filter, sort, pagination }, { currentUser }) => {
     const database = container.database();
-    const { id, blockchain, linked, favorite, hidden, isDebank, search, automate } = filter;
+    const { id, blockchain, favorite, hidden, isDebank, search, automate } = filter;
     const select = container.model.protocolTable().where(function () {
       if (Array.isArray(id)) {
         this.whereIn('id', id);
@@ -2119,25 +2122,7 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
           this.whereNotIn('id', favoriteSelect);
         }
       }
-      if (linked !== undefined) {
-        this.whereIn(
-          'id',
-          container.model
-            .contractTable()
-            .column('protocol')
-            .innerJoin(
-              walletContractLinkTableName,
-              `${contractTableName}.id`,
-              `${walletContractLinkTableName}.contract`,
-            )
-            .innerJoin(
-              walletTableName,
-              `${walletContractLinkTableName}.wallet`,
-              `${walletTableName}.id`,
-            )
-            .where(`${walletTableName}.user`, linked),
-        );
-      }
+
       if (typeof hidden === 'boolean') {
         this.andWhere('hidden', hidden);
       }
@@ -2170,6 +2155,70 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
 
     return {
       list: await select.clone().orderBy(sort).limit(pagination.limit).offset(pagination.offset),
+      pagination: {
+        count: await select.clone().count().first(),
+      },
+    };
+  },
+};
+
+export const UserProtocolListQuery: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(PaginateList('UserProtocolListQuery', GraphQLNonNull(ProtocolType))),
+  args: {
+    filter: {
+      type: new GraphQLInputObjectType({
+        name: 'UserProtocolListFilterInputType',
+        fields: {
+          userId: {
+            type: GraphQLNonNull(UuidType),
+            description: 'Target user ID',
+          },
+          hidden: {
+            type: GraphQLBoolean,
+            description: 'Only hidden/visible',
+          },
+        },
+      }),
+      defaultValue: {},
+    },
+    sort: SortArgument(
+      'UserProtocolListSortInputType',
+      ['id', 'name', 'createdAt'],
+      [{ column: 'name', order: 'asc' }],
+    ),
+    pagination: PaginationArgument('UserProtocolListPaginationInputType'),
+  },
+  resolve: async (root, { filter, sort, pagination }, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const { userId } = filter;
+    const select = container.model
+      .protocolTable()
+      .whereIn(
+        'id',
+        container.model
+          .contractTable()
+          .column('protocol')
+          .innerJoin(
+            walletContractLinkTableName,
+            `${contractTableName}.id`,
+            `${walletContractLinkTableName}.contract`,
+          )
+          .innerJoin(
+            walletTableName,
+            `${walletContractLinkTableName}.wallet`,
+            `${walletTableName}.id`,
+          )
+          .where(`${walletTableName}.user`, userId),
+      )
+      .andWhere(function () {
+        if (typeof filter.hidden === 'boolean') {
+          this.andWhere('hidden', filter.hidden);
+        }
+      });
+
+    return {
+      list: await select.clone().limit(pagination.limit).orderBy(sort).offset(pagination.offset),
       pagination: {
         count: await select.clone().count().first(),
       },
