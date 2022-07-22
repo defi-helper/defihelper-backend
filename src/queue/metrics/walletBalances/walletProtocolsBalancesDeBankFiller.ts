@@ -425,7 +425,7 @@ export default async (process: Process) => {
               token.type === 'reward' ? TokenContractLinkType.Reward : TokenContractLinkType.Stake,
           },
         ]),
-        contractService.walletLinkDebank(contract, walletByChain),
+        contractService.walletLink(contract, walletByChain),
       ]);
 
       return applyTokenBalance(

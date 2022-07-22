@@ -2159,19 +2159,21 @@ export const UserProtocolListQuery: GraphQLFieldConfig<any, Request> = {
   type: GraphQLNonNull(PaginateList('UserProtocolListQuery', GraphQLNonNull(ProtocolType))),
   args: {
     filter: {
-      type: new GraphQLInputObjectType({
-        name: 'UserProtocolListFilterInputType',
-        fields: {
-          userId: {
-            type: GraphQLNonNull(UuidType),
-            description: 'Target user ID',
+      type: GraphQLNonNull(
+        new GraphQLInputObjectType({
+          name: 'UserProtocolListFilterInputType',
+          fields: {
+            user: {
+              type: GraphQLNonNull(UuidType),
+              description: 'Target user ID',
+            },
+            hidden: {
+              type: GraphQLBoolean,
+              description: 'Only hidden/visible',
+            },
           },
-          hidden: {
-            type: GraphQLBoolean,
-            description: 'Only hidden/visible',
-          },
-        },
-      }),
+        }),
+      ),
       defaultValue: {},
     },
     sort: SortArgument(
@@ -2202,7 +2204,8 @@ export const UserProtocolListQuery: GraphQLFieldConfig<any, Request> = {
             `${walletContractLinkTableName}.wallet`,
             `${walletTableName}.id`,
           )
-          .where(`${walletTableName}.user`, userId),
+          .where(`${walletTableName}.user`, userId)
+          .andWhere(`${walletTableName}.deletedAt`, null),
       )
       .andWhere(function () {
         if (typeof filter.hidden === 'boolean') {

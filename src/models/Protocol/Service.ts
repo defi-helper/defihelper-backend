@@ -13,7 +13,6 @@ import {
   Contract,
   ContractTable,
   WalletContractLinkTable,
-  WalletContractLink,
   ProtocolLinkMap,
   ProtocolUserFavoriteTable,
   MetadataTable,
@@ -141,32 +140,12 @@ export class ContractService {
   });
 
   public readonly onWalletLink = new Emitter<{
-    contract: Contract & ContractBlockchainType;
+    contract: Contract;
     wallet: WalletBlockchain;
-    link: WalletContractLink;
-  }>(({ contract, wallet, link }) => {
-    if (
-      contract.blockchain !== 'ethereum' ||
-      !container.blockchain.ethereum.isNetwork(wallet.network) ||
-      contract.deployBlockNumber === null ||
-      contract.deployBlockNumber === '0'
-    ) {
-      return null;
-    }
-    const { hasProvider, hasProviderHistorical } = container.blockchain.ethereum.byNetwork(
-      wallet.network,
-    );
-    if (hasProvider) {
-      container.model
-        .queueService()
-        .push('metricsWalletCurrent', { contract: link.contract, wallet: link.wallet });
-    }
-    if (hasProviderHistorical) {
-      container.model
-        .queueService()
-        .push('metricsWalletHistory', { contract: link.contract, wallet: link.wallet });
-    }
-    return null;
+  }>(({ contract, wallet }) => {
+    container.model
+      .queueService()
+      .push('eventsWalletContractLinked', { contractId: contract.id, walletId: wallet.id });
   });
 
   constructor(
@@ -350,16 +329,7 @@ export class ContractService {
     await this.contractTable().where({ id: contract.id }).delete();
   }
 
-  async walletLink(
-    contract: Contract & ContractBlockchainType,
-    blockchainWallet: WalletBlockchain,
-  ) {
-    const duplicate = await this.walletLinkTable()
-      .where('contract', contract.id)
-      .andWhere('wallet', blockchainWallet.id)
-      .first();
-    if (duplicate) return duplicate;
-
+  async walletLink(contract: Contract, blockchainWallet: WalletBlockchain) {
     const created = {
       id: uuid(),
       contract: contract.id,
@@ -367,25 +337,7 @@ export class ContractService {
       createdAt: new Date(),
     };
     await this.walletLinkTable().insert(created).onConflict(['contract', 'wallet']).ignore();
-    this.onWalletLink.emit({ contract, wallet: blockchainWallet, link: created });
-
-    return created;
-  }
-
-  async walletLinkDebank(contract: Contract, blockchainWallet: WalletBlockchain) {
-    const duplicate = await this.walletLinkTable()
-      .where('contract', contract.id)
-      .andWhere('wallet', blockchainWallet.id)
-      .first();
-    if (duplicate) return duplicate;
-
-    const created = {
-      id: uuid(),
-      contract: contract.id,
-      wallet: blockchainWallet.id,
-      createdAt: new Date(),
-    };
-    await this.walletLinkTable().insert(created).onConflict(['contract', 'wallet']).ignore();
+    this.onWalletLink.emit({ contract, wallet: blockchainWallet });
 
     return created;
   }
