@@ -840,6 +840,8 @@ export const ContractDebankListQuery: GraphQLFieldConfig<any, Request> = {
     pagination: PaginationArgument('ContractDebankListPaginationInputType'),
   },
   resolve: async (root, { filter, sort, pagination }, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
     const database = container.database();
     const select = container.model
       .contractTable()
@@ -850,11 +852,50 @@ export const ContractDebankListQuery: GraphQLFieldConfig<any, Request> = {
       )
       .column(`${contractTableName}.*`)
       .column(`${contractDebankTableName}.*`)
+      .column(database.raw('COALESCE("myStaked", 0) AS "myStaked"'))
+      .column(
+        database.raw(
+          `(COALESCE(${contractDebankTableName}.metric->>'tvl', '0'))::numeric AS "tvl"`,
+        ),
+      )
+      .leftJoin(
+        container.model
+          .metricWalletRegistryTable()
+          .column(`${metricWalletRegistryTableName}.contract`)
+          .column(
+            database.raw(
+              `SUM((COALESCE(${metricWalletRegistryTableName}.data->>'stakingUSD', '0'))::numeric) AS "myStaked"`,
+            ),
+          )
+          .innerJoin(
+            walletTableName,
+            `${walletTableName}.id`,
+            `${metricWalletRegistryTableName}.wallet`,
+          )
+          .innerJoin(
+            contractTableName,
+            `${contractTableName}.id`,
+            `${metricWalletRegistryTableName}.contract`,
+          )
+          .where(function () {
+            this.where(`${walletTableName}.user`, currentUser.id);
+            if (uuid.validate(String(root?.id))) {
+              this.where(`${contractTableName}.protocol`, root.id);
+            } else if (filter.protocol !== undefined) {
+              this.whereIn(`${contractTableName}.protocol`, filter.protocol);
+            }
+          })
+          .groupBy('contract')
+          .as('metric'),
+        `${contractTableName}.id`,
+        'metric.contract',
+      )
       .where(function () {
-        const { id, protocol, hidden, userLink, search } = filter;
+        const { id, protocol, hidden, search } = filter;
         if (id) {
           this.where(`${contractTableName}.id`, id);
         } else {
+          this.where('myStaked', '>', 0);
           if (uuid.validate(String(root?.id))) {
             this.where('protocol', root.id);
           } else if (protocol !== undefined) {
@@ -862,16 +903,6 @@ export const ContractDebankListQuery: GraphQLFieldConfig<any, Request> = {
           }
           if (typeof hidden === 'boolean') {
             this.andWhere('hidden', hidden);
-          }
-          if (userLink !== undefined && currentUser) {
-            this.whereIn(
-              `${contractTableName}.id`,
-              container.model
-                .userContractLinkTable()
-                .column('contract')
-                .where('user', currentUser.id)
-                .where('type', userLink),
-            );
           }
           if (search !== undefined && search !== '') {
             this.andWhere(function () {
@@ -881,65 +912,9 @@ export const ContractDebankListQuery: GraphQLFieldConfig<any, Request> = {
           }
         }
       });
-    let listSelect = select.clone();
-    const sortColumns = sort.map(({ column }: { column: string }) => column);
-    if (sortColumns.includes('myStaked')) {
-      if (currentUser) {
-        listSelect = listSelect
-          .column(database.raw('COALESCE("myStaked", 0) AS "myStaked"'))
-          .leftJoin(
-            container.model
-              .metricWalletRegistryTable()
-              .column(`${metricWalletRegistryTableName}.contract`)
-              .column(
-                database.raw(
-                  `SUM((COALESCE(${metricWalletRegistryTableName}.data->>'stakingUSD', '0'))::numeric) AS "myStaked"`,
-                ),
-              )
-              .innerJoin(
-                walletTableName,
-                `${walletTableName}.id`,
-                `${metricWalletRegistryTableName}.wallet`,
-              )
-              .innerJoin(
-                contractTableName,
-                `${contractTableName}.id`,
-                `${metricWalletRegistryTableName}.contract`,
-              )
-              .where(function () {
-                this.where(`${walletTableName}.user`, currentUser.id);
-                if (uuid.validate(String(root?.id))) {
-                  this.where(`${contractTableName}.protocol`, root.id);
-                } else if (filter.protocol !== undefined) {
-                  this.whereIn(`${contractTableName}.protocol`, filter.protocol);
-                }
-              })
-              .groupBy('contract')
-              .as('metric'),
-            `${contractTableName}.id`,
-            'metric.contract',
-          );
-      } else {
-        listSelect = listSelect
-          .column(`${contractTableName}.*`)
-          .column(`${contractBlockchainTableName}.*`)
-          .column(database.raw(`'0' AS "myStaked"`));
-      }
-    }
-    if (sortColumns.includes('tvl')) {
-      listSelect = listSelect.column(
-        database.raw(
-          `(COALESCE(${contractDebankTableName}.metric->>'tvl', '0'))::numeric AS "tvl"`,
-        ),
-      );
-    }
 
     return {
-      list: await listSelect
-        .clone()
-        .orderBy(sort)
-        .limit(pagination.limit)
-        .offset(pagination.offset),
+      list: await select.clone().orderBy(sort).limit(pagination.limit).offset(pagination.offset),
       pagination: {
         count: await select.clone().clearSelect().count().first(),
       },
