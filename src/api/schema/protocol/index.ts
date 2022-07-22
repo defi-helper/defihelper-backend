@@ -2186,7 +2186,7 @@ export const UserProtocolListQuery: GraphQLFieldConfig<any, Request> = {
   resolve: async (root, { filter, sort, pagination }, { currentUser }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
-    const { userId } = filter;
+    const { user } = filter;
     const select = container.model
       .protocolTable()
       .whereIn(
@@ -2204,7 +2204,7 @@ export const UserProtocolListQuery: GraphQLFieldConfig<any, Request> = {
             `${walletContractLinkTableName}.wallet`,
             `${walletTableName}.id`,
           )
-          .where(`${walletTableName}.user`, userId)
+          .where(`${walletTableName}.user`, user)
           .andWhere(`${walletTableName}.deletedAt`, null),
       )
       .andWhere(function () {
