@@ -80,6 +80,7 @@ export * as eventsContractBlockchainCreated from './events/contractBlockchainCre
 export * as eventsContractBlockchainUpdated from './events/contractBlockchainUpdated';
 export * as eventsUserCreated from './events/userCreated';
 export * as eventsWalletCreated from './events/walletCreated';
+export * as eventsWalletContractLinked from './events/walletContractLinked';
 export * as eventsWalletChangeOwner from './events/walletChangeOwner';
 export * as eventsAutomateContractVerificationConfirmed from './events/automate/contractVerificationConfirmed';
 export * as followContractEvent from './scanner/followContractEvent';
