@@ -1884,9 +1884,21 @@ export const AuthDemoMutation: GraphQLFieldConfig<any, Request> = {
       .orderBy('createdAt', 'asc')
       .first();
     if (!user) return null;
-    container.model.userService().onAuth.emit(user);
-    const sid = container.model.sessionService().generate(user);
-    return { user, sid };
+
+    return container.model
+      .userService()
+      .auth(
+        user,
+        await container.model
+          .walletTable()
+          .innerJoin(
+            walletBlockchainTableName,
+            `${walletBlockchainTableName}.id`,
+            `${walletTableName}.id`,
+          )
+          .where('user', user.id)
+          .first(),
+      );
   },
 };
 
@@ -1908,8 +1920,7 @@ export const AuthThroughAdminMutation: GraphQLFieldConfig<any, Request> = {
       throw new UserInputError('User not found');
     }
 
-    const sid = container.model.sessionService().generate(user);
-    return { user, sid };
+    return container.model.userService().auth(user);
   }),
 };
 
@@ -1963,51 +1974,50 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
     const { network, address, message, signature, merge, code } = input;
     const userService = container.model.userService();
 
-    let codeRecord;
-    if (code) {
-      codeRecord = await container.model.referrerCodeTable().where({ id: code }).first();
-    }
+    const codeRecord = code
+      ? await container.model.referrerCodeTable().where({ id: code }).first()
+      : undefined;
 
     if (signature === undefined) {
-      const duplicate = await container.model
+      const duplicateWallet = await container.model
         .walletTable()
         .innerJoin(
           walletBlockchainTableName,
           `${walletBlockchainTableName}.id`,
           `${walletTableName}.id`,
         )
-        .where(`${walletBlockchainTableName}.blockchain`, 'ethereum')
-        .where(`${walletBlockchainTableName}.network`, network)
-        .where(`${walletBlockchainTableName}.address`, address.toLowerCase())
+        .where({
+          blockchain: 'ethereum',
+          network,
+          address: address.toLowerCase(),
+        })
         .first();
-      if (!duplicate) {
+      if (!duplicateWallet) {
         const user =
           currentUser ?? (await userService.create(Role.User, input.timezone, codeRecord));
-        await container.model
-          .walletService()
-          .createBlockchainWallet(
-            user,
-            'ethereum',
-            network,
-            Wallet.WalletBlockchainType.Wallet,
-            address.toLowerCase(),
-            '',
-            '',
-            false,
-          );
-        const sid = container.model.sessionService().generate(user);
-        userService.onAuth.emit(user);
-        return { user, sid };
+        return userService.auth(
+          user,
+          await container.model
+            .walletService()
+            .createBlockchainWallet(
+              user,
+              'ethereum',
+              network,
+              Wallet.WalletBlockchainType.Wallet,
+              address.toLowerCase(),
+              '',
+              '',
+              false,
+            ),
+        );
       }
-      if (currentUser) {
+      if (currentUser && currentUser.id !== duplicateWallet.user) {
         return null;
       }
-      if (!duplicate.confirmed) {
-        const user = await container.model.userTable().where('id', duplicate.user).first();
+      if (!duplicateWallet.confirmed) {
+        const user = await container.model.userTable().where('id', duplicateWallet.user).first();
         if (!user) return null;
-        const sid = container.model.sessionService().generate(user);
-        userService.onAuth.emit(user);
-        return { user, sid };
+        return userService.auth(user, duplicateWallet);
       }
     } else if (message === undefined) {
       throw new UserInputError('Invalid signature or message');
@@ -2029,7 +2039,7 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
     const recoveredAddress = utils.recoverAddress(hashBytes, signature).toLowerCase();
     if (address.toLowerCase() !== recoveredAddress) return null;
 
-    const duplicate = await container.model
+    const duplicateWallet = await container.model
       .walletTable()
       .innerJoin(
         walletBlockchainTableName,
@@ -2043,58 +2053,44 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
       })
       .first();
 
-    if (duplicate) {
-      const user = await container.model.userTable().where('id', duplicate.user).first();
+    if (duplicateWallet) {
+      const user = await container.model.userTable().where('id', duplicateWallet.user).first();
       if (!user) return null;
 
       if (merge) {
         if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
-        await container.model.walletService().changeOwner(duplicate, currentUser);
-
-        const sid = container.model.sessionService().generate(currentUser);
-        userService.onAuth.emit(currentUser);
-        return { user: currentUser, sid };
-      }
-
-      if (duplicate.deletedAt) {
-        await container.model.walletService().restoreBlockchainWallet(duplicate);
+        await container.model.walletService().changeOwner(duplicateWallet, currentUser);
+        return userService.auth(currentUser, duplicateWallet);
       }
 
       if (user.timezone !== input.timezone) {
-        await userService.update({
-          ...user,
-          timezone: input.timezone,
-        });
+        user.timezone = await userService
+          .update({
+            ...user,
+            timezone: input.timezone,
+          })
+          .then(({ timezone }) => timezone);
       }
 
-      const sid = container.model.sessionService().generate(user);
-      userService.onAuth.emit(user);
-      return {
-        user: {
-          ...user,
-          timezone: input.timezone,
-        },
-        sid,
-      };
+      return userService.auth(user, duplicateWallet);
     }
 
     const user = currentUser ?? (await userService.create(Role.User, input.timezone, codeRecord));
-    await container.model
-      .walletService()
-      .createBlockchainWallet(
-        user,
-        'ethereum',
-        network,
-        Wallet.WalletBlockchainType.Wallet,
-        recoveredAddress,
-        recoveredPubKey,
-        '',
-        true,
-      );
-    const sid = container.model.sessionService().generate(user);
-    userService.onAuth.emit(user);
-
-    return { user, sid };
+    return userService.auth(
+      user,
+      await container.model
+        .walletService()
+        .createBlockchainWallet(
+          user,
+          'ethereum',
+          network,
+          Wallet.WalletBlockchainType.Wallet,
+          recoveredAddress,
+          recoveredPubKey,
+          '',
+          true,
+        ),
+    );
   },
 };
 
@@ -2152,56 +2148,55 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
     const userService = container.model.userService();
     const { network, address, message, publicKey, signature, merge, code } = input;
 
-    let codeRecord;
-    if (code) {
-      codeRecord = await container.model
-        .referrerCodeTable()
-        .where({
-          id: code.id,
-        })
-        .first();
-    }
+    const codeRecord = code
+      ? await container.model
+          .referrerCodeTable()
+          .where({
+            id: code.id,
+          })
+          .first()
+      : undefined;
 
     if (signature === undefined) {
-      const duplicate = await container.model
+      const duplicateWallet = await container.model
         .walletTable()
         .innerJoin(
           walletBlockchainTableName,
           `${walletBlockchainTableName}.id`,
           `${walletTableName}.id`,
         )
-        .where(`${walletBlockchainTableName}.blockchain`, 'waves')
-        .where(`${walletBlockchainTableName}.network`, network)
-        .where(`${walletBlockchainTableName}.address`, address)
+        .where({
+          blockchain: 'waves',
+          network,
+          address,
+        })
         .first();
-      if (!duplicate) {
+      if (!duplicateWallet) {
         const user =
           currentUser ?? (await userService.create(Role.User, input.timezone, codeRecord));
-        await container.model
-          .walletService()
-          .createBlockchainWallet(
-            user,
-            'waves',
-            network,
-            Wallet.WalletBlockchainType.Wallet,
-            address,
-            '',
-            '',
-            false,
-          );
-        const sid = container.model.sessionService().generate(user);
-        userService.onAuth.emit(user);
-        return { user, sid };
+        return userService.auth(
+          user,
+          await container.model
+            .walletService()
+            .createBlockchainWallet(
+              user,
+              'waves',
+              network,
+              Wallet.WalletBlockchainType.Wallet,
+              address,
+              '',
+              '',
+              false,
+            ),
+        );
       }
-      if (currentUser) {
+      if (currentUser && currentUser.id !== duplicateWallet.user) {
         return null;
       }
-      if (!duplicate.confirmed) {
-        const user = await container.model.userTable().where('id', duplicate.user).first();
+      if (!duplicateWallet.confirmed) {
+        const user = await container.model.userTable().where('id', duplicateWallet.user).first();
         if (!user) return null;
-        const sid = container.model.sessionService().generate(user);
-        userService.onAuth.emit(user);
-        return { user, sid };
+        return userService.auth(user, duplicateWallet);
       }
     } else if (message === undefined) {
       throw new UserInputError('Invalid signature or message');
@@ -2227,7 +2222,7 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
     const recoveredAddress = WavesCrypto.address({ publicKey }, network === 'test' ? 'T' : 'W');
     if (!isValidSignature || recoveredAddress !== address) return null;
 
-    const duplicate = await container.model
+    const duplicateWallet = await container.model
       .walletTable()
       .innerJoin(
         walletBlockchainTableName,
@@ -2241,45 +2236,44 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
       })
       .first();
 
-    if (duplicate) {
-      const user = await container.model.userTable().where('id', duplicate.user).first();
+    if (duplicateWallet) {
+      const user = await container.model.userTable().where('id', duplicateWallet.user).first();
       if (!user) return null;
 
       if (merge) {
         if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
-        await container.model.walletService().changeOwner(duplicate, currentUser);
-
-        const sid = container.model.sessionService().generate(currentUser);
-        userService.onAuth.emit(currentUser);
-        return { user: currentUser, sid };
+        await container.model.walletService().changeOwner(duplicateWallet, currentUser);
+        return userService.auth(currentUser, duplicateWallet);
       }
 
-      if (duplicate.deletedAt) {
-        await container.model.walletService().restoreBlockchainWallet(duplicate);
+      if (user.timezone !== input.timezone) {
+        user.timezone = await userService
+          .update({
+            ...user,
+            timezone: input.timezone,
+          })
+          .then(({ timezone }) => timezone);
       }
 
-      const sid = container.model.sessionService().generate(user);
-      userService.onAuth.emit(user);
-      return { user, sid };
+      return userService.auth(user, duplicateWallet);
     }
 
     const user = currentUser ?? (await userService.create(Role.User, input.timezone, codeRecord));
-    await container.model
-      .walletService()
-      .createBlockchainWallet(
-        user,
-        'waves',
-        network,
-        Wallet.WalletBlockchainType.Wallet,
-        recoveredAddress,
-        publicKey,
-        '',
-        true,
-      );
-    const sid = container.model.sessionService().generate(user);
-    userService.onAuth.emit(user);
-
-    return { user, sid };
+    return userService.auth(
+      user,
+      await container.model
+        .walletService()
+        .createBlockchainWallet(
+          user,
+          'waves',
+          network,
+          Wallet.WalletBlockchainType.Wallet,
+          recoveredAddress,
+          publicKey,
+          '',
+          true,
+        ),
+    );
   },
 };
 
