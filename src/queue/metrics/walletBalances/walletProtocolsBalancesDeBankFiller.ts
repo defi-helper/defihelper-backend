@@ -417,12 +417,15 @@ export default async (process: Process) => {
         throw new Error('Contract must be found');
       }
 
-      await contractService.tokenLink(contract, [
-        {
-          token: tokenRecord,
-          type:
-            token.type === 'reward' ? TokenContractLinkType.Reward : TokenContractLinkType.Stake,
-        },
+      await Promise.all([
+        contractService.tokenLink(contract, [
+          {
+            token: tokenRecord,
+            type:
+              token.type === 'reward' ? TokenContractLinkType.Reward : TokenContractLinkType.Stake,
+          },
+        ]),
+        contractService.walletLink(contract, walletByChain),
       ]);
 
       return applyTokenBalance(
@@ -565,6 +568,6 @@ export default async (process: Process) => {
     }),
   );
 
-  container.model.walletService().statisticsUpdated(targetWallet);
+  await container.model.walletService().statisticsUpdated(targetWallet);
   return process.done();
 };
