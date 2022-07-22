@@ -366,7 +366,7 @@ export class ContractService {
       wallet: blockchainWallet.id,
       createdAt: new Date(),
     };
-    await this.walletLinkTable().insert(created);
+    await this.walletLinkTable().insert(created).onConflict(['contract', 'wallet']).ignore();
     this.onWalletLink.emit({ contract, wallet: blockchainWallet, link: created });
 
     return created;

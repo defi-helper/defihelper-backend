@@ -446,7 +446,7 @@ export default async (process: Process) => {
       const wallet = appliedTokens[walletIndex];
 
       return Promise.all(
-        Object.keys(wallet).map(async (contractIndex) => {
+        Object.keys(wallet).map((contractIndex) => {
           const contract = appliedTokens[walletIndex][contractIndex];
 
           const walletSummary = Object.keys(contract).reduce<{
