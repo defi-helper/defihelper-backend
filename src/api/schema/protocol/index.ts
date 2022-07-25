@@ -649,9 +649,15 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
             const { buyLiquidity, autorestake, autorestakeCandidate } = filter.automate;
             if (typeof buyLiquidity === 'boolean') {
               if (buyLiquidity) {
-                this.where(database.raw("automate->>'buyLiquidity' IS NOT NULL"));
+                this.where(function () {
+                  this.where(database.raw("automate->>'buyLiquidity' IS NOT NULL"));
+                  this.orWhere(database.raw("automate->>'lpTokensManager' IS NOT NULL"));
+                });
               } else {
-                this.where(database.raw("automate->>'buyLiquidity' IS NULL"));
+                this.where(function () {
+                  this.where(database.raw("automate->>'buyLiquidity' IS NULL"));
+                  this.orWhere(database.raw("automate->>'lpTokensManager' IS NULL"));
+                });
               }
             }
             if (typeof autorestake === 'boolean') {
@@ -2112,7 +2118,10 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
               from ${contractTableName}
               inner join ${contractBlockchainTableName} on ${contractBlockchainTableName}.id = ${contractTableName}.id
               where ${contractTableName}.protocol = ${protocolTableName}.id
-              and ${contractBlockchainTableName}.automate->>'buyLiquidity' IS NOT NULL
+              and (
+                ${contractBlockchainTableName}.automate->>'buyLiquidity' IS NOT NULL
+                or ${contractBlockchainTableName}.automate->>'lpTokensManager' IS NOT NULL
+              )
             )`),
             automate.buyLiquidity ? '>' : '=',
             0,
