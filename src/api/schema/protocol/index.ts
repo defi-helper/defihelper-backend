@@ -98,6 +98,20 @@ export const ContractMetricType = new GraphQLObjectType({
   },
 });
 
+export const ContractAutomateBuyLiquidityType = new GraphQLObjectType({
+  name: 'ContractAutomateBuyLiquidityType',
+  fields: {
+    router: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Liquidity pool router address',
+    },
+    pair: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Target pool address',
+    },
+  },
+});
+
 export const ContractAutomatesType = new GraphQLObjectType<ContractAutomate, Request>({
   name: 'ContractAutomatesType',
   fields: {
@@ -111,20 +125,12 @@ export const ContractAutomatesType = new GraphQLObjectType<ContractAutomate, Req
       resolve: ({ autorestakeAdapter }) => autorestakeAdapter,
     },
     buyLiquidity: {
-      type: new GraphQLObjectType({
-        name: 'ContractAutomatesBuyLiquidityType',
-        fields: {
-          router: {
-            type: GraphQLNonNull(GraphQLString),
-            description: 'Liquidity pool router address',
-          },
-          pair: {
-            type: GraphQLNonNull(GraphQLString),
-            description: 'Target pool address',
-          },
-        },
-      }),
+      type: ContractAutomateBuyLiquidityType,
       description: 'Buy liquidity automate config',
+    },
+    lpTokensManager: {
+      type: ContractAutomateBuyLiquidityType,
+      description: 'Liquidity pool tokens manager automate config',
     },
   },
 });
