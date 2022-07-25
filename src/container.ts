@@ -16,6 +16,7 @@ import { rabbitmqFactory } from '@services/Rabbitmq';
 import { cryptographyServiceFactory } from '@services/Cryptography';
 import { cexServicesProviderFactory } from '@services/Cex';
 import { debankServiceFactory } from '@services/Debank';
+import { wavesNodeServiceFactory } from '@services/WavesNode';
 import config from './config';
 
 class AppContainer extends Container<typeof config> {
@@ -42,6 +43,8 @@ class AppContainer extends Container<typeof config> {
   readonly cryptography = singleton(cryptographyServiceFactory(this.parent.cryptography.key));
 
   readonly debank = singleton(debankServiceFactory());
+
+  readonly waves = singleton(wavesNodeServiceFactory());
 
   readonly socialStats = singleton(() => new SocialStatsGateway(this.parent.socialStats));
 
