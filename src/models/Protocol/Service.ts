@@ -235,6 +235,7 @@ export class ContractService {
         adapters: automate.adapters,
         autorestakeAdapter: automate.autorestakeAdapter,
         buyLiquidity: automate.buyLiquidity,
+        lpTokensManager: automate.lpTokensManager,
       },
       blockchain,
       deployBlockNumber,
