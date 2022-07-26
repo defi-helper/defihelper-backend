@@ -1,9 +1,14 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
-import { TokenAliasLiquidity, TokenCreatedBy, tokenTableName } from '@models/Token/Entity';
+import {
+  TokenAlias,
+  TokenAliasLiquidity,
+  TokenCreatedBy,
+  tokenTableName,
+} from '@models/Token/Entity';
 import BN from 'bignumber.js';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
-import { metricWalletTokenTableName } from '@models/Metric/Entity';
+import { MetricWalletToken, metricWalletTokenTableName } from '@models/Metric/Entity';
 
 interface Params {
   id: string;
@@ -38,7 +43,7 @@ export default async (process: Process) => {
       name: (tokenAsset.name ?? '').replace(/\0/g, '').trim(),
       symbol: (tokenAsset.symbol ?? '').replace(/\0/g, '').trim(),
       price: await container.waves().assetPrice(tokenAsset.id),
-      amount: tokenAsset.balance,
+      amount: tokenAsset.amount,
     })),
   );
 
@@ -46,7 +51,7 @@ export default async (process: Process) => {
     .tokenTable()
     .whereIn(
       'address',
-      wavesAssetList.map((token) => token.id.toLowerCase()),
+      wavesAssetList.map((token) => token.id),
     )
     .andWhere('blockchain', blockchainWallet.blockchain)
     .andWhere('network', blockchainWallet.network);
@@ -64,14 +69,12 @@ export default async (process: Process) => {
     .orderBy(`${metricWalletTokenTableName}.token`)
     .orderBy(`${metricWalletTokenTableName}.date`, 'DESC');
 
-  const createdMetrics = await Promise.all(
-    wavesAssetList.map(async (tokenAsset) => {
-      let tokenRecord = existingTokensRecords.find(
-        (exstng) => exstng.address.toLowerCase() === tokenAsset.id,
-      );
+  const createdMetrics = await wavesAssetList.reduce<Promise<MetricWalletToken[]>>(
+    async (prev, tokenAsset) => {
+      let tokenRecord = existingTokensRecords.find((exstng) => exstng.address === tokenAsset.id);
 
       if (!tokenRecord) {
-        let tokenRecordAlias = await container.model
+        let tokenRecordAlias: TokenAlias | undefined = await container.model
           .tokenAliasTable()
           .where('name', 'ilike', tokenAsset.name)
           .first();
@@ -88,7 +91,7 @@ export default async (process: Process) => {
             tokenRecordAlias,
             blockchainWallet.blockchain,
             blockchainWallet.network,
-            tokenAsset.id.toLowerCase(),
+            tokenAsset.id,
             tokenAsset.name,
             tokenAsset.symbol,
             new BN(tokenAsset.decimals).toNumber(),
@@ -97,20 +100,24 @@ export default async (process: Process) => {
       }
 
       if (tokenAsset.price === null) {
-        return null;
+        return await prev;
       }
 
-      return walletMetrics.createWalletToken(
-        null,
-        blockchainWallet,
-        tokenRecord,
-        {
-          usd: tokenAsset.price.multipliedBy(tokenAsset.amount).toString(10),
-          balance: tokenAsset.amount.toString(10),
-        },
-        new Date(),
-      );
-    }),
+      return [
+        ...(await prev),
+        await walletMetrics.createWalletToken(
+          null,
+          blockchainWallet,
+          tokenRecord,
+          {
+            usd: tokenAsset.price.multipliedBy(tokenAsset.amount).toString(10),
+            balance: tokenAsset.amount.toString(10),
+          },
+          new Date(),
+        ),
+      ];
+    },
+    Promise.resolve([]),
   );
 
   await Promise.all(
@@ -136,6 +143,7 @@ export default async (process: Process) => {
   if (!owner) {
     throw new Error('Onwer must be accesible here');
   }
+
   container.model.userService().portfolioCollectedSuccessful(owner);
   container.model.walletService().statisticsUpdated(blockchainWallet);
 
