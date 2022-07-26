@@ -15,7 +15,9 @@ interface Asset {
 
 export class WavesNodeService {
   protected nodeUrl = 'https://nodes.wavesnodes.com';
+
   protected matcherUrl = 'https://matcher.waves.exchange';
+
   private httpClient = axios.create();
 
   constructor(
