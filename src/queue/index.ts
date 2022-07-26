@@ -56,7 +56,9 @@ export * as metricsUserBalancesBroker from './metrics/walletBalances/userBalance
 export * as metricsUserBalancesFiller from './metrics/walletBalances/userBalancesFiller';
 
 export * as metricsWalletBalancesDeBankFiller from './metrics/walletBalances/walletBalancesDeBankFiller';
+
 export * as metricsWalletBalancesWavesFiller from './metrics/walletBalances/walletBalancesWavesFiller';
+export * as metricsWalletBalancesWavesBroker from './metrics/walletBalances/walletWavesBalancesBroker';
 
 export * as metricsWalletProtocolsBalancesDeBankFiller from './metrics/walletBalances/walletProtocolsBalancesDeBankFiller';
 export * as metricsWalletProtocolsBalancesDeBankBroker from './metrics/walletBalances/walletProtocolsBalancesDeBankBroker';

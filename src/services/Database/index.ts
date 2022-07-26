@@ -16,10 +16,6 @@ export function pgConnectFactory(config: ConnectFactoryConfig) {
   return () => {
     return knex({
       client: 'pg',
-      pool: {
-        min: 1,
-        max: 30,
-      },
       connection: {
         host: config.host,
         port: config.port,
