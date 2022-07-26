@@ -11,6 +11,7 @@ export enum TokenAliasLiquidity {
 export interface TokenAlias {
   id: string;
   name: string;
+  symbol: string;
   liquidity: TokenAliasLiquidity;
   logoUrl: string | null;
   protocol: string | null;
