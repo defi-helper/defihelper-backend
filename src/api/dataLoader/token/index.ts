@@ -1,5 +1,6 @@
 import container from '@container';
-import { metricWalletTokenRegistryTableName } from '@models/Metric/Entity';
+import { metricWalletTokenRegistryTableName, QueryModify } from '@models/Metric/Entity';
+import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
 import { TokenAlias, tokenAliasTableName, tokenTableName } from '@models/Token/Entity';
 import { walletTableName } from '@models/Wallet/Entity';
 import DataLoader from 'dataloader';
@@ -14,22 +15,43 @@ export const tokenAliasLoader = () =>
     return tokensAliasId.map((id) => map.get(id) ?? null);
   });
 
-export const tokenAliasUserLastMetricLoader = ({ user }: { user: string }) =>
-  new DataLoader<string, { usd: string; balance: string }>(async (tokenAliasIds) => {
-    const database = container.database();
-    const map = await container.model
+export const tokenAliasUserLastMetricLoader = ({
+  user,
+  protocol,
+}: {
+  user: string;
+  protocol?: string;
+}) =>
+  new DataLoader<
+    string,
+    {
+      usd: string;
+      balance: string;
+      usdDayBefore: string;
+      usdWeekBefore: string;
+      usdMonthBefore: string;
+    }
+  >(async (tokenAliasIds) => {
+    const select = container.model
       .metricWalletTokenRegistryTable()
       .column(`${tokenAliasTableName}.id as alias`)
-      .column(
-        database.raw(
-          `SUM((COALESCE(${metricWalletTokenRegistryTableName}.data->>'balance', '0'))::numeric) as balance`,
-        ),
-      )
-      .column(
-        database.raw(
-          `SUM((COALESCE(${metricWalletTokenRegistryTableName}.data->>'usd', '0'))::numeric) as usd`,
-        ),
-      )
+      .modify(QueryModify.sumMetric, [
+        'balance',
+        `${metricWalletTokenRegistryTableName}.data->>'balance'`,
+      ])
+      .modify(QueryModify.sumMetric, ['usd', `${metricWalletTokenRegistryTableName}.data->>'usd'`])
+      .modify(QueryModify.sumMetric, [
+        'usdDayBefore',
+        `${metricWalletTokenRegistryTableName}.data->>'usdDayBefore'`,
+      ])
+      .modify(QueryModify.sumMetric, [
+        'usdWeekBefore',
+        `${metricWalletTokenRegistryTableName}.data->>'usdWeekBefore'`,
+      ])
+      .modify(QueryModify.sumMetric, [
+        'usdMonthBefore',
+        `${metricWalletTokenRegistryTableName}.data->>'usdMonthBefore'`,
+      ])
       .innerJoin(
         walletTableName,
         `${walletTableName}.id`,
@@ -44,8 +66,55 @@ export const tokenAliasUserLastMetricLoader = ({ user }: { user: string }) =>
       .where(`${walletTableName}.user`, user)
       .whereNull(`${walletTableName}.deletedAt`)
       .whereIn(`${tokenAliasTableName}.id`, tokenAliasIds)
-      .groupBy(`${tokenAliasTableName}.id`)
-      .then((rows) => new Map(rows.map(({ alias, usd, balance }) => [alias, { usd, balance }])));
+      .groupBy(`${tokenAliasTableName}.id`);
+    if (protocol !== undefined) {
+      select
+        .innerJoin(
+          contractTableName,
+          `${metricWalletTokenRegistryTableName}.contract`,
+          `${contractTableName}.id`,
+        )
+        .innerJoin(
+          contractBlockchainTableName,
+          `${contractBlockchainTableName}.id`,
+          `${contractTableName}.id`,
+        )
+        .where(`${contractTableName}.protocol`, protocol);
+    }
 
-    return tokenAliasIds.map((id) => map.get(id) ?? { usd: '0', balance: '0' });
+    const map = await select.then(
+      (
+        rows: Array<{
+          alias: string;
+          balance: string;
+          usd: string;
+          usdDayBefore: string;
+          usdWeekBefore: string;
+          usdMonthBefore: string;
+        }>,
+      ) =>
+        new Map(
+          rows.map(({ alias, usd, balance, usdDayBefore, usdWeekBefore, usdMonthBefore }) => [
+            alias,
+            {
+              usd,
+              usdDayBefore,
+              usdWeekBefore,
+              usdMonthBefore,
+              balance,
+            },
+          ]),
+        ),
+    );
+
+    return tokenAliasIds.map(
+      (id) =>
+        map.get(id) ?? {
+          usd: '0',
+          balance: '0',
+          usdDayBefore: '0',
+          usdWeekBefore: '0',
+          usdMonthBefore: '0',
+        },
+    );
   });

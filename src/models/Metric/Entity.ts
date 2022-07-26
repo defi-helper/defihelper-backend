@@ -29,6 +29,15 @@ export namespace QueryModify {
       .orderBy(byFields)
       .orderBy('date', 'desc');
   }
+
+  export function sumMetric(query: Knex.QueryBuilder, field: string | [string, string]) {
+    const [alias, fieldName] = Array.isArray(field) ? field : [null, field];
+    query.column(
+      query.client.raw(
+        `SUM((COALESCE(${fieldName}, '0'))::numeric)${alias ? ` AS "${alias}"` : ''}`,
+      ),
+    );
+  }
 }
 
 export interface MetricBlockchain extends Metric {

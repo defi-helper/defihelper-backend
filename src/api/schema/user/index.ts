@@ -54,6 +54,7 @@ import {
   BlockchainEnum,
   BlockchainFilterInputType,
   DateTimeType,
+  MetricChangeType,
   MetricChartType,
   MetricColumnType,
   MetricGroupEnum,
@@ -90,6 +91,9 @@ export const WalletTokenAliasMetricType = new GraphQLObjectType({
     usd: {
       type: GraphQLNonNull(GraphQLString),
     },
+    usdChange: {
+      type: GraphQLNonNull(MetricChangeType),
+    },
     portfolioPercent: {
       type: GraphQLNonNull(GraphQLString),
     },
@@ -108,13 +112,27 @@ export const WalletTokenAliasType = new GraphQLObjectType<
     metric: {
       type: GraphQLNonNull(WalletTokenAliasMetricType),
       resolve: async ({ wallet, tokenAlias }, args, { dataLoader }) => {
-        const metric = await dataLoader
+        const tokenMetric = await dataLoader
           .walletTokenMetric({ tokenAlias: { id: [tokenAlias.id] } })
           .load(wallet.id);
 
         return {
-          balance: metric?.balance ?? '0',
-          usd: metric?.usd ?? '0',
+          balance: tokenMetric.balance,
+          usd: tokenMetric.usd,
+          usdChange: {
+            day:
+              Number(tokenMetric.usdDayBefore) !== 0
+                ? new BN(tokenMetric.usd).div(tokenMetric.usdDayBefore).toString(10)
+                : '0',
+            week:
+              Number(tokenMetric.usdWeekBefore) !== 0
+                ? new BN(tokenMetric.usd).div(tokenMetric.usdWeekBefore).toString(10)
+                : '0',
+            month:
+              Number(tokenMetric.usdMonthBefore) !== 0
+                ? new BN(tokenMetric.usd).div(tokenMetric.usdMonthBefore).toString(10)
+                : '0',
+          },
           portfolioPercent: '0',
         };
       },
@@ -128,8 +146,14 @@ export const WalletMetricType = new GraphQLObjectType({
     stakedUSD: {
       type: GraphQLNonNull(GraphQLString),
     },
+    stakedUSDChange: {
+      type: GraphQLNonNull(MetricChangeType),
+    },
     earnedUSD: {
       type: GraphQLNonNull(GraphQLString),
+    },
+    earnedUSDChange: {
+      type: GraphQLNonNull(MetricChangeType),
     },
     balance: {
       type: GraphQLNonNull(GraphQLString),
@@ -137,8 +161,14 @@ export const WalletMetricType = new GraphQLObjectType({
     usd: {
       type: GraphQLNonNull(GraphQLString),
     },
+    usdChange: {
+      type: GraphQLNonNull(MetricChangeType),
+    },
     worth: {
       type: GraphQLNonNull(GraphQLString),
+    },
+    worthChange: {
+      type: GraphQLNonNull(MetricChangeType),
     },
   },
 });
@@ -564,15 +594,78 @@ export const WalletBlockchainType = new GraphQLObjectType<
             contract: filter.contract ?? [],
           })
           .load(wallet.id);
+        const worth = new BN(walletMetric?.stakingUSD ?? 0)
+          .plus(walletMetric?.earnedUSD ?? 0)
+          .plus(tokenMetric.usd);
+        const worthDayBefore = new BN(walletMetric?.stakingUSDDayBefore ?? 0)
+          .plus(walletMetric?.earnedUSDDayBefore ?? 0)
+          .plus(tokenMetric.usdDayBefore);
+        const worthWeekBefore = new BN(walletMetric?.stakingUSDWeekBefore ?? 0)
+          .plus(walletMetric?.earnedUSDWeekBefore ?? 0)
+          .plus(tokenMetric.usdWeekBefore);
+        const worthMonthBefore = new BN(walletMetric?.stakingUSDMonthBefore ?? 0)
+          .plus(walletMetric?.earnedUSDMonthBefore ?? 0)
+          .plus(tokenMetric.usdMonthBefore);
 
         const stakedUSD = walletMetric?.stakingUSD ?? '0';
         const earnedUSD = walletMetric?.earnedUSD ?? '0';
         return {
           stakedUSD,
+          stakedUSDChange: {
+            day:
+              walletMetric && Number(walletMetric.stakingUSDDayBefore) !== 0
+                ? new BN(walletMetric.stakingUSD).div(walletMetric.stakingUSDDayBefore).toString(10)
+                : '0',
+            week:
+              walletMetric && Number(walletMetric.stakingUSDWeekBefore) !== 0
+                ? new BN(walletMetric.stakingUSD)
+                    .div(walletMetric.stakingUSDWeekBefore)
+                    .toString(10)
+                : '0',
+            month:
+              walletMetric && Number(walletMetric.stakingUSDMonthBefore) !== 0
+                ? new BN(walletMetric.stakingUSD)
+                    .div(walletMetric.stakingUSDMonthBefore)
+                    .toString(10)
+                : '0',
+          },
           earnedUSD,
+          earnedUSDChange: {
+            day:
+              walletMetric && Number(walletMetric.earnedUSDDayBefore) !== 0
+                ? new BN(walletMetric.earnedUSD).div(walletMetric.earnedUSDDayBefore).toString(10)
+                : '0',
+            week:
+              walletMetric && Number(walletMetric.earnedUSDWeekBefore) !== 0
+                ? new BN(walletMetric.earnedUSD).div(walletMetric.earnedUSDWeekBefore).toString(10)
+                : '0',
+            month:
+              walletMetric && Number(walletMetric.earnedUSDMonthBefore) !== 0
+                ? new BN(walletMetric.earnedUSD).div(walletMetric.earnedUSDMonthBefore).toString(10)
+                : '0',
+          },
           balance: tokenMetric.balance,
           usd: tokenMetric.usd,
-          worth: new BN(stakedUSD).plus(earnedUSD).plus(tokenMetric.usd).toString(10),
+          usdChange: {
+            day:
+              Number(tokenMetric.usdDayBefore) !== 0
+                ? new BN(tokenMetric.usd).div(tokenMetric.usdDayBefore).toString(10)
+                : '0',
+            week:
+              Number(tokenMetric.usdWeekBefore) !== 0
+                ? new BN(tokenMetric.usd).div(tokenMetric.usdWeekBefore).toString(10)
+                : '0',
+            month:
+              Number(tokenMetric.usdMonthBefore) !== 0
+                ? new BN(tokenMetric.usd).div(tokenMetric.usdMonthBefore).toString(10)
+                : '0',
+          },
+          worth: worth.toString(10),
+          worthChange: {
+            day: worthDayBefore.gt(0) ? worth.div(worthDayBefore).toString(10) : '0',
+            week: worthWeekBefore.gt(0) ? worth.div(worthWeekBefore).toString(10) : '0',
+            month: worthMonthBefore.gt(0) ? worth.div(worthMonthBefore).toString(10) : '0',
+          },
         };
       },
     },
@@ -952,14 +1045,26 @@ export const UserMetricType = new GraphQLObjectType({
     balanceUSD: {
       type: GraphQLNonNull(GraphQLString),
     },
+    balanceUSDChange: {
+      type: GraphQLNonNull(MetricChangeType),
+    },
     stakedUSD: {
       type: GraphQLNonNull(GraphQLString),
+    },
+    stakedUSDChange: {
+      type: GraphQLNonNull(MetricChangeType),
     },
     earnedUSD: {
       type: GraphQLNonNull(GraphQLString),
     },
+    earnedUSDChange: {
+      type: GraphQLNonNull(MetricChangeType),
+    },
     worth: {
       type: GraphQLNonNull(GraphQLString),
+    },
+    worthChange: {
+      type: GraphQLNonNull(MetricChangeType),
     },
     apy: {
       type: GraphQLNonNull(GraphQLString),
@@ -1575,20 +1680,82 @@ export const UserType = new GraphQLObjectType<User, Request>({
     metric: {
       type: GraphQLNonNull(UserMetricType),
       resolve: async (user, args, { dataLoader }) => {
-        const stakedUSD = await dataLoader.userMetric({ metric: 'stakingUSD' }).load(user.id);
-        const earnedUSD = await dataLoader.userMetric({ metric: 'earnedUSD' }).load(user.id);
-        const { usd: balanceUSD } = await dataLoader
+        const walletMetric = await dataLoader.userMetric().load(user.id);
+        const tokenMetric = await dataLoader
           .userTokenMetric({
             contract: null,
             tokenAlias: { liquidity: [TokenAliasLiquidity.Stable, TokenAliasLiquidity.Unstable] },
           })
           .load(user.id);
+        const worth = new BN(walletMetric.stakingUSD)
+          .plus(walletMetric.earnedUSD)
+          .plus(tokenMetric.usd);
+        const worthDayBefore = new BN(walletMetric.stakingUSDDayBefore)
+          .plus(walletMetric.earnedUSDDayBefore)
+          .plus(tokenMetric.usdDayBefore);
+        const worthWeekBefore = new BN(walletMetric.stakingUSDWeekBefore)
+          .plus(walletMetric.earnedUSDWeekBefore)
+          .plus(tokenMetric.usdWeekBefore);
+        const worthMonthBefore = new BN(walletMetric.stakingUSDMonthBefore)
+          .plus(walletMetric.earnedUSDMonthBefore)
+          .plus(tokenMetric.usdMonthBefore);
 
         return {
-          balanceUSD,
-          stakedUSD,
-          earnedUSD,
-          worth: new BN(stakedUSD).plus(earnedUSD).plus(balanceUSD).toString(10),
+          balanceUSD: tokenMetric.usd,
+          balanceUSDChange: {
+            day:
+              Number(tokenMetric.usdDayBefore) !== 0
+                ? new BN(tokenMetric.usd).div(tokenMetric.usdDayBefore).toString(10)
+                : '0',
+            week:
+              Number(tokenMetric.usdWeekBefore) !== 0
+                ? new BN(tokenMetric.usd).div(tokenMetric.usdWeekBefore).toString(10)
+                : '0',
+            month:
+              Number(tokenMetric.usdMonthBefore) !== 0
+                ? new BN(tokenMetric.usd).div(tokenMetric.usdMonthBefore).toString(10)
+                : '0',
+          },
+          stakedUSD: walletMetric.stakingUSD,
+          stakedUSDChange: {
+            day:
+              Number(walletMetric.stakingUSDDayBefore) !== 0
+                ? new BN(walletMetric.stakingUSD).div(walletMetric.stakingUSDDayBefore).toString(10)
+                : '0',
+            week:
+              Number(walletMetric.stakingUSDWeekBefore) !== 0
+                ? new BN(walletMetric.stakingUSD)
+                    .div(walletMetric.stakingUSDWeekBefore)
+                    .toString(10)
+                : '0',
+            month:
+              Number(walletMetric.stakingUSDMonthBefore) !== 0
+                ? new BN(walletMetric.stakingUSD)
+                    .div(walletMetric.stakingUSDMonthBefore)
+                    .toString(10)
+                : '0',
+          },
+          earnedUSD: walletMetric.earnedUSD,
+          earnedUSDChange: {
+            day:
+              Number(walletMetric.earnedUSDDayBefore) !== 0
+                ? new BN(walletMetric.earnedUSD).div(walletMetric.earnedUSDDayBefore).toString(10)
+                : '0',
+            week:
+              Number(walletMetric.earnedUSDWeekBefore) !== 0
+                ? new BN(walletMetric.earnedUSD).div(walletMetric.earnedUSDWeekBefore).toString(10)
+                : '0',
+            month:
+              Number(walletMetric.earnedUSDMonthBefore) !== 0
+                ? new BN(walletMetric.earnedUSD).div(walletMetric.earnedUSDMonthBefore).toString(10)
+                : '0',
+          },
+          worth: worth.toString(10),
+          worthChange: {
+            day: worthDayBefore.gt(0) ? worth.div(worthDayBefore).toString(10) : '0',
+            week: worthWeekBefore.gt(0) ? worth.div(worthWeekBefore).toString(10) : '0',
+            month: worthMonthBefore.gt(0) ? worth.div(worthMonthBefore).toString(10) : '0',
+          },
           apy: await dataLoader.userAPRMetric({ metric: 'aprYear' }).load(user.id),
         };
       },
@@ -1625,6 +1792,32 @@ export const UserReferrerCodeQuery: GraphQLFieldConfig<any, Request> = {
     container.model.referrerCodeService().visit(codeRecord);
 
     return codeRecord;
+  },
+};
+
+export const MeQuery: GraphQLFieldConfig<any, Request> = {
+  type: UserType,
+  args: {
+    input: {
+      type: new GraphQLInputObjectType({
+        name: 'MeInputType',
+        fields: {
+          timezone: {
+            type: GraphQLString,
+            description: 'Timezone',
+          },
+        },
+      }),
+    },
+  },
+  resolve: (root, { input }, { currentUser }) => {
+    return currentUser
+      ? container.model.userService().update({
+          ...currentUser,
+          timezone: input?.timezone ?? currentUser.timezone,
+          lastSeenAt: new Date(),
+        })
+      : null;
   },
 };
 
@@ -1734,9 +1927,21 @@ export const AuthDemoMutation: GraphQLFieldConfig<any, Request> = {
       .orderBy('createdAt', 'asc')
       .first();
     if (!user) return null;
-    container.model.userService().onAuth.emit(user);
-    const sid = container.model.sessionService().generate(user);
-    return { user, sid };
+
+    return container.model
+      .userService()
+      .auth(
+        user,
+        await container.model
+          .walletTable()
+          .innerJoin(
+            walletBlockchainTableName,
+            `${walletBlockchainTableName}.id`,
+            `${walletTableName}.id`,
+          )
+          .where('user', user.id)
+          .first(),
+      );
   },
 };
 
@@ -1758,8 +1963,7 @@ export const AuthThroughAdminMutation: GraphQLFieldConfig<any, Request> = {
       throw new UserInputError('User not found');
     }
 
-    const sid = container.model.sessionService().generate(user);
-    return { user, sid };
+    return container.model.userService().auth(user);
   }),
 };
 
@@ -1813,51 +2017,50 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
     const { network, address, message, signature, merge, code } = input;
     const userService = container.model.userService();
 
-    let codeRecord;
-    if (code) {
-      codeRecord = await container.model.referrerCodeTable().where({ id: code }).first();
-    }
+    const codeRecord = code
+      ? await container.model.referrerCodeTable().where({ id: code }).first()
+      : undefined;
 
     if (signature === undefined) {
-      const duplicate = await container.model
+      const duplicateWallet = await container.model
         .walletTable()
         .innerJoin(
           walletBlockchainTableName,
           `${walletBlockchainTableName}.id`,
           `${walletTableName}.id`,
         )
-        .where(`${walletBlockchainTableName}.blockchain`, 'ethereum')
-        .where(`${walletBlockchainTableName}.network`, network)
-        .where(`${walletBlockchainTableName}.address`, address.toLowerCase())
+        .where({
+          blockchain: 'ethereum',
+          network,
+          address: address.toLowerCase(),
+        })
         .first();
-      if (!duplicate) {
+      if (!duplicateWallet) {
         const user =
           currentUser ?? (await userService.create(Role.User, input.timezone, codeRecord));
-        await container.model
-          .walletService()
-          .createBlockchainWallet(
-            user,
-            'ethereum',
-            network,
-            Wallet.WalletBlockchainType.Wallet,
-            address.toLowerCase(),
-            '',
-            '',
-            false,
-          );
-        const sid = container.model.sessionService().generate(user);
-        userService.onAuth.emit(user);
-        return { user, sid };
+        return userService.auth(
+          user,
+          await container.model
+            .walletService()
+            .createBlockchainWallet(
+              user,
+              'ethereum',
+              network,
+              Wallet.WalletBlockchainType.Wallet,
+              address.toLowerCase(),
+              '',
+              '',
+              false,
+            ),
+        );
       }
-      if (currentUser) {
+      if (currentUser && currentUser.id !== duplicateWallet.user) {
         return null;
       }
-      if (!duplicate.confirmed) {
-        const user = await container.model.userTable().where('id', duplicate.user).first();
+      if (!duplicateWallet.confirmed) {
+        const user = await container.model.userTable().where('id', duplicateWallet.user).first();
         if (!user) return null;
-        const sid = container.model.sessionService().generate(user);
-        userService.onAuth.emit(user);
-        return { user, sid };
+        return userService.auth(user, duplicateWallet);
       }
     } else if (message === undefined) {
       throw new UserInputError('Invalid signature or message');
@@ -1879,7 +2082,7 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
     const recoveredAddress = utils.recoverAddress(hashBytes, signature).toLowerCase();
     if (address.toLowerCase() !== recoveredAddress) return null;
 
-    const duplicate = await container.model
+    const duplicateWallet = await container.model
       .walletTable()
       .innerJoin(
         walletBlockchainTableName,
@@ -1893,58 +2096,44 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
       })
       .first();
 
-    if (duplicate) {
-      const user = await container.model.userTable().where('id', duplicate.user).first();
+    if (duplicateWallet) {
+      const user = await container.model.userTable().where('id', duplicateWallet.user).first();
       if (!user) return null;
 
       if (merge) {
         if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
-        await container.model.walletService().changeOwner(duplicate, currentUser);
-
-        const sid = container.model.sessionService().generate(currentUser);
-        userService.onAuth.emit(currentUser);
-        return { user: currentUser, sid };
-      }
-
-      if (duplicate.deletedAt) {
-        await container.model.walletService().restoreBlockchainWallet(duplicate);
+        await container.model.walletService().changeOwner(duplicateWallet, currentUser);
+        return userService.auth(currentUser, duplicateWallet);
       }
 
       if (user.timezone !== input.timezone) {
-        await userService.update({
-          ...user,
-          timezone: input.timezone,
-        });
+        user.timezone = await userService
+          .update({
+            ...user,
+            timezone: input.timezone,
+          })
+          .then(({ timezone }) => timezone);
       }
 
-      const sid = container.model.sessionService().generate(user);
-      userService.onAuth.emit(user);
-      return {
-        user: {
-          ...user,
-          timezone: input.timezone,
-        },
-        sid,
-      };
+      return userService.auth(user, duplicateWallet);
     }
 
     const user = currentUser ?? (await userService.create(Role.User, input.timezone, codeRecord));
-    await container.model
-      .walletService()
-      .createBlockchainWallet(
-        user,
-        'ethereum',
-        network,
-        Wallet.WalletBlockchainType.Wallet,
-        recoveredAddress,
-        recoveredPubKey,
-        '',
-        true,
-      );
-    const sid = container.model.sessionService().generate(user);
-    userService.onAuth.emit(user);
-
-    return { user, sid };
+    return userService.auth(
+      user,
+      await container.model
+        .walletService()
+        .createBlockchainWallet(
+          user,
+          'ethereum',
+          network,
+          Wallet.WalletBlockchainType.Wallet,
+          recoveredAddress,
+          recoveredPubKey,
+          '',
+          true,
+        ),
+    );
   },
 };
 
@@ -2002,56 +2191,55 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
     const userService = container.model.userService();
     const { network, address, message, publicKey, signature, merge, code } = input;
 
-    let codeRecord;
-    if (code) {
-      codeRecord = await container.model
-        .referrerCodeTable()
-        .where({
-          id: code.id,
-        })
-        .first();
-    }
+    const codeRecord = code
+      ? await container.model
+          .referrerCodeTable()
+          .where({
+            id: code.id,
+          })
+          .first()
+      : undefined;
 
     if (signature === undefined) {
-      const duplicate = await container.model
+      const duplicateWallet = await container.model
         .walletTable()
         .innerJoin(
           walletBlockchainTableName,
           `${walletBlockchainTableName}.id`,
           `${walletTableName}.id`,
         )
-        .where(`${walletBlockchainTableName}.blockchain`, 'waves')
-        .where(`${walletBlockchainTableName}.network`, network)
-        .where(`${walletBlockchainTableName}.address`, address)
+        .where({
+          blockchain: 'waves',
+          network,
+          address,
+        })
         .first();
-      if (!duplicate) {
+      if (!duplicateWallet) {
         const user =
           currentUser ?? (await userService.create(Role.User, input.timezone, codeRecord));
-        await container.model
-          .walletService()
-          .createBlockchainWallet(
-            user,
-            'waves',
-            network,
-            Wallet.WalletBlockchainType.Wallet,
-            address,
-            '',
-            '',
-            false,
-          );
-        const sid = container.model.sessionService().generate(user);
-        userService.onAuth.emit(user);
-        return { user, sid };
+        return userService.auth(
+          user,
+          await container.model
+            .walletService()
+            .createBlockchainWallet(
+              user,
+              'waves',
+              network,
+              Wallet.WalletBlockchainType.Wallet,
+              address,
+              '',
+              '',
+              false,
+            ),
+        );
       }
-      if (currentUser) {
+      if (currentUser && currentUser.id !== duplicateWallet.user) {
         return null;
       }
-      if (!duplicate.confirmed) {
-        const user = await container.model.userTable().where('id', duplicate.user).first();
+      if (!duplicateWallet.confirmed) {
+        const user = await container.model.userTable().where('id', duplicateWallet.user).first();
         if (!user) return null;
-        const sid = container.model.sessionService().generate(user);
-        userService.onAuth.emit(user);
-        return { user, sid };
+        return userService.auth(user, duplicateWallet);
       }
     } else if (message === undefined) {
       throw new UserInputError('Invalid signature or message');
@@ -2077,7 +2265,7 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
     const recoveredAddress = WavesCrypto.address({ publicKey }, network === 'test' ? 'T' : 'W');
     if (!isValidSignature || recoveredAddress !== address) return null;
 
-    const duplicate = await container.model
+    const duplicateWallet = await container.model
       .walletTable()
       .innerJoin(
         walletBlockchainTableName,
@@ -2091,45 +2279,44 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
       })
       .first();
 
-    if (duplicate) {
-      const user = await container.model.userTable().where('id', duplicate.user).first();
+    if (duplicateWallet) {
+      const user = await container.model.userTable().where('id', duplicateWallet.user).first();
       if (!user) return null;
 
       if (merge) {
         if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
-        await container.model.walletService().changeOwner(duplicate, currentUser);
-
-        const sid = container.model.sessionService().generate(currentUser);
-        userService.onAuth.emit(currentUser);
-        return { user: currentUser, sid };
+        await container.model.walletService().changeOwner(duplicateWallet, currentUser);
+        return userService.auth(currentUser, duplicateWallet);
       }
 
-      if (duplicate.deletedAt) {
-        await container.model.walletService().restoreBlockchainWallet(duplicate);
+      if (user.timezone !== input.timezone) {
+        user.timezone = await userService
+          .update({
+            ...user,
+            timezone: input.timezone,
+          })
+          .then(({ timezone }) => timezone);
       }
 
-      const sid = container.model.sessionService().generate(user);
-      userService.onAuth.emit(user);
-      return { user, sid };
+      return userService.auth(user, duplicateWallet);
     }
 
     const user = currentUser ?? (await userService.create(Role.User, input.timezone, codeRecord));
-    await container.model
-      .walletService()
-      .createBlockchainWallet(
-        user,
-        'waves',
-        network,
-        Wallet.WalletBlockchainType.Wallet,
-        recoveredAddress,
-        publicKey,
-        '',
-        true,
-      );
-    const sid = container.model.sessionService().generate(user);
-    userService.onAuth.emit(user);
-
-    return { user, sid };
+    return userService.auth(
+      user,
+      await container.model
+        .walletService()
+        .createBlockchainWallet(
+          user,
+          'waves',
+          network,
+          Wallet.WalletBlockchainType.Wallet,
+          recoveredAddress,
+          publicKey,
+          '',
+          true,
+        ),
+    );
   },
 };
 

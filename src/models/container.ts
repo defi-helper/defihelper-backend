@@ -39,27 +39,6 @@ export class ModelContainer extends Container<typeof AppContainer> {
       ),
   );
 
-  readonly userTable = Models.User.Entity.tableFactory(this.parent.database);
-
-  readonly userService = singleton(() => new Models.User.Service.UserService(this.userTable));
-
-  readonly sessionService = singleton(
-    () =>
-      new Models.User.Service.SessionService(
-        this.parent.cache,
-        'defihelper:session',
-        this.parent.parent.session.ttl,
-      ),
-  );
-
-  readonly userNotificationTable = Models.UserNotification.Entity.userNotificationTableFactory(
-    this.parent.database,
-  );
-
-  readonly userNotificationService = singleton(
-    () => new Models.UserNotification.Service.UserNotificationService(this.userNotificationTable),
-  );
-
   readonly walletTable = Models.Wallet.Entity.walletTableFactory(this.parent.database);
 
   readonly walletService = singleton(
@@ -79,6 +58,30 @@ export class ModelContainer extends Container<typeof AppContainer> {
 
   readonly walletExchangeTable = Models.Wallet.Entity.walletExchangeTableFactory(
     this.parent.database,
+  );
+
+  readonly sessionService = singleton(
+    () =>
+      new Models.User.Service.SessionService(
+        this.parent.cache,
+        'defihelper:session',
+        this.parent.parent.session.ttl,
+      ),
+  );
+
+  readonly userTable = Models.User.Entity.tableFactory(this.parent.database);
+
+  readonly userService = singleton(
+    () =>
+      new Models.User.Service.UserService(this.userTable, this.sessionService, this.walletService),
+  );
+
+  readonly userNotificationTable = Models.UserNotification.Entity.userNotificationTableFactory(
+    this.parent.database,
+  );
+
+  readonly userNotificationService = singleton(
+    () => new Models.UserNotification.Service.UserNotificationService(this.userNotificationTable),
   );
 
   readonly protocolTable = Models.Protocol.Entity.protocolTableFactory(this.parent.database);

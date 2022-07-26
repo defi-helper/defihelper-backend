@@ -186,6 +186,7 @@ export class AdapterService {
       Error,
       module: { exports: new Error('Adapter not evaluated') },
       console,
+      mode: 'prod',
       bignumber: BigNumber,
       dayjs,
       axios,

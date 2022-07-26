@@ -40,7 +40,7 @@ export class DataLoaderContainer extends Container<{}> {
 
   readonly userBlockchains = singleton(userBlockchainLoader);
 
-  readonly userMetric = singletonParametric(userLastMetricLoader);
+  readonly userMetric = singleton(userLastMetricLoader);
 
   readonly userAPRMetric = singletonParametric(userLastAPRLoader);
 
