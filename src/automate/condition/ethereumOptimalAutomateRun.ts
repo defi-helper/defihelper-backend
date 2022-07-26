@@ -4,7 +4,6 @@ import { EthereumAutomateAdapter, EthereumProtocolAdapter } from '@services/Bloc
 import axios from 'axios';
 import BN from 'bignumber.js';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
-import dayjs from 'dayjs';
 import * as uuid from 'uuid';
 import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
 
@@ -157,11 +156,6 @@ export default async function (this: Condition, params: Params) {
     headers: {
       'Content-Type': 'application/json',
     },
-  });
-
-  await container.model.automateService().updateCondition({
-    ...condition,
-    restakeAt: dayjs().add(new BN(optimalRes.t).multipliedBy(86400).toNumber(), 'second').toDate(),
   });
 
   return new BN(optimalRes.v).lte(0);

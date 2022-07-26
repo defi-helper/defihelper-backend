@@ -1,14 +1,8 @@
 import { AuthenticationError, UserInputError } from 'apollo-server-express';
 import container from '@container';
 import { Request } from 'express';
-import {
-  PriceFeed,
-  Token,
-  TokenAlias,
-  TokenAliasLiquidity,
-  tokenTableName,
-} from '@models/Token/Entity';
-import { walletTableName } from '@models/Wallet/Entity';
+import BN from 'bignumber.js';
+import { PriceFeed, Token, TokenAlias, TokenAliasLiquidity } from '@models/Token/Entity';
 import {
   GraphQLBoolean,
   GraphQLEnumType,
@@ -21,15 +15,10 @@ import {
   GraphQLString,
   GraphQLUnionType,
 } from 'graphql';
-import { metricWalletTokenTableName } from '@models/Metric/Entity';
-import {
-  contractBlockchainTableName,
-  contractTableName,
-  protocolTableName,
-} from '@models/Protocol/Entity';
 import {
   BlockchainEnum,
   BlockchainFilterInputType,
+  MetricChangeType,
   onlyAllowed,
   PaginateList,
   PaginationArgument,
@@ -330,6 +319,9 @@ export const TokenAliasMetricType = new GraphQLObjectType({
     myUSD: {
       type: GraphQLNonNull(GraphQLString),
     },
+    myUSDChange: {
+      type: GraphQLNonNull(MetricChangeType),
+    },
     myPortfolioPercent: {
       type: GraphQLNonNull(GraphQLString),
     },
@@ -337,7 +329,8 @@ export const TokenAliasMetricType = new GraphQLObjectType({
 });
 
 export const TokenAliasStakedStatisticsType = new GraphQLObjectType<
-  TokenAlias & { protocol: string }
+  TokenAlias & { protocol: string },
+  Request
 >({
   name: 'TokenAliasStakedStatistics',
   fields: {
@@ -363,68 +356,35 @@ export const TokenAliasStakedStatisticsType = new GraphQLObjectType<
     },
     metric: {
       type: GraphQLNonNull(TokenAliasMetricType),
-      resolve: async (tokenAlias, args, { currentUser }) => {
-        const emptyMetric = {
-          myBalance: '0',
-          myUSD: '0',
-          myPortfolioPercent: '0',
-        };
+      resolve: async (tokenAlias, args, { currentUser, dataLoader }) => {
         if (!currentUser) {
-          return emptyMetric;
+          return {
+            myBalance: '0',
+            myUSD: '0',
+            myPortfolioPercent: '0',
+          };
         }
-
-        const database = container.database();
-        const metric = await container
-          .database()
-          .sum({ myBalance: 'balance', myUSD: 'usd' })
-          .from(
-            container.model
-              .metricWalletTokenTable()
-              .distinctOn(
-                `${metricWalletTokenTableName}.wallet`,
-                `${metricWalletTokenTableName}.contract`,
-                `${metricWalletTokenTableName}.token`,
-              )
-              .columns([
-                database.raw(`(${metricWalletTokenTableName}.data->>'usd')::numeric AS usd`),
-                database.raw(
-                  `(${metricWalletTokenTableName}.data->>'balance')::numeric AS balance`,
-                ),
-              ])
-              .innerJoin(`${tokenTableName} AS t`, 't.id', `${metricWalletTokenTableName}.token`)
-              .innerJoin(
-                `${walletTableName} AS wlt`,
-                `${metricWalletTokenTableName}.wallet`,
-                'wlt.id',
-              )
-              .innerJoin(
-                `${contractTableName} AS ct`,
-                `${metricWalletTokenTableName}.contract`,
-                'ct.id',
-              )
-              .innerJoin(`${contractBlockchainTableName} AS ctb`, `ctb.id`, 'ct.id')
-              .innerJoin(`${protocolTableName} AS pt`, 'ct.protocol', 'pt.id')
-              .whereRaw(
-                `(${metricWalletTokenTableName}.data->>'usd' IS NOT NULL OR ${metricWalletTokenTableName}.data->>'balance' IS NOT NULL)`,
-              )
-              .andWhere('t.alias', tokenAlias.id)
-              .andWhere('wlt.user', currentUser.id)
-              .andWhere('pt.id', tokenAlias.protocol)
-              .orderBy(`${metricWalletTokenTableName}.wallet`)
-              .orderBy(`${metricWalletTokenTableName}.contract`)
-              .orderBy(`${metricWalletTokenTableName}.token`)
-              .orderBy(`${metricWalletTokenTableName}.date`, 'DESC')
-              .as('metric'),
-          )
-          .first();
-
-        if (!metric) {
-          return emptyMetric;
-        }
+        const tokenMetric = await dataLoader
+          .tokenAliasUserLastMetric({ user: currentUser.id, protocol: tokenAlias.protocol })
+          .load(tokenAlias.id);
 
         return {
-          myBalance: metric.myBalance || '0',
-          myUSD: metric.myUSD || '0',
+          myBalance: tokenMetric.balance,
+          myUSD: tokenMetric.usd,
+          myUSDChange: {
+            day:
+              Number(tokenMetric.usdDayBefore) !== 0
+                ? new BN(tokenMetric.usd).div(tokenMetric.usdDayBefore).toString(10)
+                : '0',
+            week:
+              Number(tokenMetric.usdWeekBefore) !== 0
+                ? new BN(tokenMetric.usd).div(tokenMetric.usdWeekBefore).toString(10)
+                : '0',
+            month:
+              Number(tokenMetric.usdMonthBefore) !== 0
+                ? new BN(tokenMetric.usd).div(tokenMetric.usdMonthBefore).toString(10)
+                : '0',
+          },
           myPortfolioPercent: 0,
         };
       },
@@ -491,7 +451,7 @@ export const TokenAliasStakedStatisticsType = new GraphQLObjectType<
   },
 });
 
-export const TokenAliasType = new GraphQLObjectType<TokenAlias>({
+export const TokenAliasType = new GraphQLObjectType<TokenAlias, Request>({
   name: 'TokenAlias',
   fields: {
     id: {
@@ -516,60 +476,40 @@ export const TokenAliasType = new GraphQLObjectType<TokenAlias>({
     },
     metric: {
       type: GraphQLNonNull(TokenAliasMetricType),
-      resolve: async (tokenAlias, args, { currentUser }) => {
-        const emptyMetric = {
-          myBalance: '0',
-          myUSD: '0',
-          myPortfolioPercent: '0',
-        };
+      resolve: async (tokenAlias, args, { currentUser, dataLoader }) => {
         if (!currentUser) {
-          return emptyMetric;
+          return {
+            myBalance: '0',
+            myUSD: '0',
+            myUSDChange: {
+              day: '0',
+              week: '0',
+              month: '0',
+            },
+            myPortfolioPercent: '0',
+          };
         }
-
-        const database = container.database();
-        const metric = await container
-          .database()
-          .sum({ myBalance: 'balance', myUSD: 'usd' })
-          .from(
-            container.model
-              .metricWalletTokenTable()
-              .distinctOn(
-                `${metricWalletTokenTableName}.wallet`,
-                `${metricWalletTokenTableName}.contract`,
-                `${metricWalletTokenTableName}.token`,
-              )
-              .columns([
-                database.raw(`(${metricWalletTokenTableName}.data->>'usd')::numeric AS usd`),
-                database.raw(
-                  `(${metricWalletTokenTableName}.data->>'balance')::numeric AS balance`,
-                ),
-              ])
-              .innerJoin(`${tokenTableName} AS t`, 't.id', `${metricWalletTokenTableName}.token`)
-              .innerJoin(
-                `${walletTableName} AS wlt`,
-                `${metricWalletTokenTableName}.wallet`,
-                'wlt.id',
-              )
-              .whereRaw(
-                `(${metricWalletTokenTableName}.data->>'usd' IS NOT NULL OR ${metricWalletTokenTableName}.data->>'balance' IS NOT NULL)`,
-              )
-              .andWhere('t.alias', tokenAlias.id)
-              .andWhere('wlt.user', currentUser.id)
-              .orderBy(`${metricWalletTokenTableName}.wallet`)
-              .orderBy(`${metricWalletTokenTableName}.contract`)
-              .orderBy(`${metricWalletTokenTableName}.token`)
-              .orderBy(`${metricWalletTokenTableName}.date`, 'DESC')
-              .as('metric'),
-          )
-          .first();
-
-        if (!metric) {
-          return emptyMetric;
-        }
+        const tokenMetric = await dataLoader
+          .tokenAliasUserLastMetric({ user: currentUser.id })
+          .load(tokenAlias.id);
 
         return {
-          myBalance: metric.myBalance || '0',
-          myUSD: metric.myUSD || '0',
+          myBalance: tokenMetric.balance,
+          myUSD: tokenMetric.usd,
+          myUSDChange: {
+            day:
+              Number(tokenMetric.usdDayBefore) !== 0
+                ? new BN(tokenMetric.usd).div(tokenMetric.usdDayBefore).toString(10)
+                : '0',
+            week:
+              Number(tokenMetric.usdWeekBefore) !== 0
+                ? new BN(tokenMetric.usd).div(tokenMetric.usdWeekBefore).toString(10)
+                : '0',
+            month:
+              Number(tokenMetric.usdMonthBefore) !== 0
+                ? new BN(tokenMetric.usd).div(tokenMetric.usdMonthBefore).toString(10)
+                : '0',
+          },
           myPortfolioPercent: 0,
         };
       },

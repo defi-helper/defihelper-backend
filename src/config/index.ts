@@ -212,4 +212,9 @@ export default {
   log: {
     chatId: Number(process.env.LOG_TELEGRAM_CHAT ?? '0'),
   },
+  whattofarm: {
+    email: process.env.WHATTOFARM_EMAIL ?? '',
+    username: process.env.WHATTOFARM_USERNAME ?? '',
+    password: process.env.WHATTOFARM_PASSWORD ?? '',
+  },
 };

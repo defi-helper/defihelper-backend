@@ -1,0 +1,52 @@
+{{- if .Values.migrator }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-migrator
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "55"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+  labels:
+  {{- range $key, $value := .Values.migrator.labels }}
+    {{ $key }}: {{ $value }}
+  {{- end }}
+    release: {{ .Release.Name }}
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 120
+  template:
+    metadata:
+      labels:
+      {{- range $key, $value := .Values.migrator.labels }}
+        {{ $key }}: {{ $value }}
+      {{- end }}
+        release: {{ .Release.Name }}
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: migrator
+        image: "{{ $.Values.image.repository }}/{{ .Values.images.app.name }}:{{ $.Values.image.tag }}"
+        command: ["/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run migrate"]
+        imagePullPolicy: Always
+        volumeMounts:
+          - mountPath: /app/configuration
+            name: configuration
+            readOnly: true
+        resources:
+          {{- toYaml .Values.migrator.resources | nindent 12 }}
+      volumes:
+        - name: configuration
+          secret:
+            secretName: config-secrets
+      imagePullSecrets:
+        - name: docker-registry-secret
+      nodeSelector:
+      {{- range $key, $value := $.Values.migrator.nodeSelector }}
+        {{ $key }}: {{ $value }}
+      {{- end }}
+      {{- with .Values.migrator.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

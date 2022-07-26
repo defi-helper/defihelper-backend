@@ -304,6 +304,7 @@ export const WalletBillingType = new GraphQLObjectType<Wallet & WalletBlockchain
               network: wallet.network,
               account: wallet.address,
             })
+            .where('confirmed', true)
             .first(),
           container.model
             .billingBillTable()
@@ -313,6 +314,7 @@ export const WalletBillingType = new GraphQLObjectType<Wallet & WalletBlockchain
               network: wallet.network,
               account: wallet.address,
             })
+            .whereIn('status', [BillStatus.Pending, BillStatus.Accepted])
             .first(),
           container.model
             .automateTriggerTable()

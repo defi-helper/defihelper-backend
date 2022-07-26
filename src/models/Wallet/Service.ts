@@ -82,6 +82,7 @@ export class WalletService {
     address: string,
     publicKey: string,
     name: string,
+    confirmed = true,
   ): Promise<Wallet & WalletBlockchain> {
     const wallet: Wallet = {
       id: uuid(),
@@ -100,6 +101,7 @@ export class WalletService {
       network,
       address,
       publicKey,
+      confirmed,
     };
 
     await this.database.transaction(async (trx) => {
@@ -147,17 +149,28 @@ export class WalletService {
       .update({ ...wallet, deletedAt: new Date() });
   }
 
-  restoreBlockchainWallet(wallet: Wallet) {
-    return this.walletTable()
-      .where('id', wallet.id)
-      .update({ ...wallet, deletedAt: null });
-  }
-
   deleteExchangeWallet({ id }: Wallet) {
     return this.database.transaction(async (trx) => {
       await this.walletTable().where('id', id).delete().transacting(trx);
       await this.walletExchangeTable().where('id', id).delete().transacting(trx);
     });
+  }
+
+  async updateWallet(wallet: Wallet, trx?: Knex.Transaction): Promise<Wallet> {
+    const updated: Wallet = {
+      id: wallet.id,
+      user: wallet.user,
+      name: wallet.name,
+      suspendReason: wallet.suspendReason,
+      statisticsCollectedAt: wallet.statisticsCollectedAt,
+      deletedAt: wallet.deletedAt,
+      updatedAt: new Date(),
+      createdAt: wallet.createdAt,
+    };
+    const query = this.walletTable().where('id', wallet.id).update(updated);
+    if (trx) query.transacting(trx);
+    await query;
+    return updated;
   }
 
   async updateBlockchainWallet(
@@ -166,10 +179,6 @@ export class WalletService {
   ): Promise<Wallet & WalletBlockchain> {
     if (wallet.id !== blockchainWallet.id) throw new Error('Invalid wallet ID');
 
-    const walletUpdated: Wallet = {
-      ...wallet,
-      updatedAt: new Date(),
-    };
     const walletBlockchainUpdated: WalletBlockchain = {
       ...blockchainWallet,
       address:
@@ -177,15 +186,18 @@ export class WalletService {
           ? blockchainWallet.address.toLowerCase()
           : blockchainWallet.address,
     };
-    await this.database.transaction(async (trx) => {
-      await this.walletTable().where('id', wallet.id).update(wallet).transacting(trx);
-      await this.walletBlockchainTable()
-        .where('id', wallet.id)
-        .update(walletBlockchainUpdated)
-        .transacting(trx);
-    });
 
-    return { ...walletUpdated, ...walletBlockchainUpdated };
+    return this.database.transaction(async (trx) => {
+      const [walletUpdated] = await Promise.all([
+        this.updateWallet(wallet, trx),
+        this.walletBlockchainTable()
+          .where('id', blockchainWallet.id)
+          .update(walletBlockchainUpdated)
+          .transacting(trx),
+      ]);
+
+      return { ...walletUpdated, ...walletBlockchainUpdated };
+    });
   }
 
   async updateExchangeWallet(
@@ -200,9 +212,9 @@ export class WalletService {
     };
 
     await this.database.transaction(async (trx) => {
-      await this.walletTable().where('id', wallet.id).update(wallet).transacting(trx);
+      await this.walletTable().where('id', wallet.id).update(walletUpdated).transacting(trx);
       await this.walletExchangeTable()
-        .where('id', wallet.id)
+        .where('id', walletExchange.id)
         .update(walletExchange)
         .transacting(trx);
     });
@@ -242,7 +254,7 @@ export class WalletService {
     walletId: string,
     reason: WalletSuspenseReason | null,
   ): Promise<WalletSuspenseReason | null> {
-    await this.walletTable().where({ id: walletId }).update({
+    await this.walletTable().where('id', walletId).update({
       suspendReason: reason,
     });
 

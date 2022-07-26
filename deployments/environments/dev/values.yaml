@@ -18,10 +18,10 @@ images:
     name: app
     resources:
       requests:
-        memory: 64Mi
+        memory: 128Mi
         cpu: 100m
       limits:
-        memory: 128Mi
+        memory: 256Mi
         cpu: 300m
 
 service:
@@ -44,22 +44,35 @@ ingress:
       hosts:
         - backend-dev.defihelper.info
 
-#handlers:
-#  labels:
-#    app: backend
-#    component: cronHandler
-#    environment: dev
-#  resources:
-#    requests:
-#      memory: 128Mi
-#      cpu: 200m
-#    limits:
-#      memory: 256Mi
-#      cpu: 300m
-#  schedules:
-#    queue-deferred:
-#      command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue:deferred"'
-#      schedule: "* * * * *"
+handlers:
+  labels:
+    app: backend
+    component: cronHandler
+    environment: prod
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 100m
+    limits:
+      memory: 128Mi
+      cpu: 100m
+  schedules:
+    queue-deferred:
+      command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue:deferred"'
+      schedule: "* * * * *"
+
+migrator:
+  labels:
+    app: migrator
+    component: migrator
+    environment: dev
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 200m
+    limits:
+      memory: 256Mi
+      cpu: 1200m
 
 resources: {}
 autoscaling:

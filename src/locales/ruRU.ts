@@ -15,6 +15,8 @@ export default {
     'Confirm': 'Подтвердить',
     'Any questions? Drop us a reply!': 'Остались вопросы? Отправьте их в ответ на это письмо!',
     'DeFiHelper team': 'Команда DeFiHelper',
+    'Your Telegram account ({{username}}) has been successfully connected to your DeFiHelper account.':
+      'Ваш Telegram аккаунт ({{username}}) успешно привязан к вашему DefiHelper аккаунту.',
     'We are excited to see you join the DeFiHelper community!':
       'Мы рады видеть тебя в рядах сообщества DeFiHelper!',
     'Please confirm your E-Mail address <b>{{email}}</b> by clicking on the following link:':
@@ -39,8 +41,6 @@ export default {
     'automate:trigger:everyDay:description': 'Вызов триггера каждый день',
     'automate:trigger:everyHour:name': 'Периодически',
     'automate:trigger:everyHour:description': 'Вызов триггера каждый час',
-    'automate:action:skipReason:notAvailableNotification': 'Недостаточно нотификаций',
-    'automate:action:skipReason:lowFeeFunds': 'Недостаточно средств на балансе',
     'automate:action:notification:paramsDescription':
       'Отправить уведомление в контакт {{contactId}}',
     'automate:action:ethereumAutomateRun:paramsDescription': 'Запуск автоматизации {{id}}',

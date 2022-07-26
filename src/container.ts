@@ -17,6 +17,7 @@ import { cryptographyServiceFactory } from '@services/Cryptography';
 import { cexServicesProviderFactory } from '@services/Cex';
 import { debankServiceFactory } from '@services/Debank';
 import { wavesNodeServiceFactory } from '@services/WavesNode';
+import { WhatToFarmGateway } from '@services/WhatToFarm';
 import config from './config';
 
 class AppContainer extends Container<typeof config> {
@@ -45,6 +46,8 @@ class AppContainer extends Container<typeof config> {
   readonly debank = singleton(debankServiceFactory());
 
   readonly waves = singleton(wavesNodeServiceFactory());
+
+  readonly whattofarm = singleton(() => new WhatToFarmGateway());
 
   readonly socialStats = singleton(() => new SocialStatsGateway(this.parent.socialStats));
 

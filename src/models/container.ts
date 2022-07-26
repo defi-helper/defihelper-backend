@@ -39,27 +39,6 @@ export class ModelContainer extends Container<typeof AppContainer> {
       ),
   );
 
-  readonly userTable = Models.User.Entity.tableFactory(this.parent.database);
-
-  readonly userService = singleton(() => new Models.User.Service.UserService(this.userTable));
-
-  readonly sessionService = singleton(
-    () =>
-      new Models.User.Service.SessionService(
-        this.parent.cache,
-        'defihelper:session',
-        this.parent.parent.session.ttl,
-      ),
-  );
-
-  readonly userNotificationTable = Models.UserNotification.Entity.userNotificationTableFactory(
-    this.parent.database,
-  );
-
-  readonly userNotificationService = singleton(
-    () => new Models.UserNotification.Service.UserNotificationService(this.userNotificationTable),
-  );
-
   readonly walletTable = Models.Wallet.Entity.walletTableFactory(this.parent.database);
 
   readonly walletService = singleton(
@@ -79,6 +58,30 @@ export class ModelContainer extends Container<typeof AppContainer> {
 
   readonly walletExchangeTable = Models.Wallet.Entity.walletExchangeTableFactory(
     this.parent.database,
+  );
+
+  readonly sessionService = singleton(
+    () =>
+      new Models.User.Service.SessionService(
+        this.parent.cache,
+        'defihelper:session',
+        this.parent.parent.session.ttl,
+      ),
+  );
+
+  readonly userTable = Models.User.Entity.tableFactory(this.parent.database);
+
+  readonly userService = singleton(
+    () =>
+      new Models.User.Service.UserService(this.userTable, this.sessionService, this.walletService),
+  );
+
+  readonly userNotificationTable = Models.UserNotification.Entity.userNotificationTableFactory(
+    this.parent.database,
+  );
+
+  readonly userNotificationService = singleton(
+    () => new Models.UserNotification.Service.UserNotificationService(this.userNotificationTable),
   );
 
   readonly protocolTable = Models.Protocol.Entity.protocolTableFactory(this.parent.database);
@@ -185,6 +188,10 @@ export class ModelContainer extends Container<typeof AppContainer> {
 
   readonly metricWalletTable = Models.Metric.Entity.metricWalletTableFactory(this.parent.database);
 
+  readonly metricWalletRegistryTable = Models.Metric.Entity.metricWalletRegistryTableFactory(
+    this.parent.database,
+  );
+
   readonly metricWalletTaskTable = Models.Metric.Entity.metricWalletTaskTableFactory(
     this.parent.database,
   );
@@ -193,18 +200,24 @@ export class ModelContainer extends Container<typeof AppContainer> {
     this.parent.database,
   );
 
+  readonly metricWalletTokenRegistryTable =
+    Models.Metric.Entity.metricWalletTokenRegistryTableFactory(this.parent.database);
+
   readonly metricTokenTable = Models.Metric.Entity.metricTokenTableFactory(this.parent.database);
 
   readonly metricService = singleton(
     () =>
       new Models.Metric.Service.MetricContractService(
+        this.parent.database,
         this.metricBlockchainTable,
         this.metricProtocolTable,
         this.metricContractTable,
         this.metricContractTaskTable,
         this.metricWalletTable,
+        this.metricWalletRegistryTable,
         this.metricWalletTaskTable,
         this.metricWalletTokenTable,
+        this.metricWalletTokenRegistryTable,
         this.metricTokenTable,
       ),
   );
@@ -259,7 +272,11 @@ export class ModelContainer extends Container<typeof AppContainer> {
 
   readonly governanceService = singleton(
     () =>
-      new Models.Governance.Service.GovernanceService(this.govProposalTable, this.govReceiptTable),
+      new Models.Governance.Service.GovernanceService(
+        this.govProposalTable,
+        this.govReceiptTable,
+        this.parent.semafor,
+      ),
   );
 
   readonly automateTriggerTable = Models.Automate.Entity.triggerTableFactory(this.parent.database);

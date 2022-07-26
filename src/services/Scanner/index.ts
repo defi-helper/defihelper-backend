@@ -35,7 +35,7 @@ export interface EventListener {
 
 export interface EventListenerConfig {
   promptly?: {} | null;
-  historical?: { syncHeight: number } | null;
+  historical?: { syncHeight: number; saveEvents: boolean } | null;
 }
 
 export interface WalletsInteractedWith {

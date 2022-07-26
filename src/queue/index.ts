@@ -17,6 +17,8 @@ export * as metricsContractScannerBroker from './metrics/contractScannerBroker';
 export * as metricsContractHistory from './metrics/contractHistory';
 export * as metricsWalletBroker from './metrics/walletBroker';
 export * as metricsWalletHistory from './metrics/walletHistory';
+export * as metricsWalletRegistrySync from './metrics/registry/walletSync';
+export * as metricsWalletTokenRegistrySync from './metrics/registry/walletTokenSync';
 export * as metricsContractCurrent from './metrics/contractCurrent';
 export * as metricsContractBlock from './metrics/contractBlock';
 export * as metricsContractAprWeekReal from './metrics/contractAprWeekReal';
@@ -73,10 +75,12 @@ export * as notificationAutomateWalletsNotEnoughFundsNotify from './notification
 export * as notificationAutomateWalletsNotEnoughFundsBroker from './notifications/AutomateWalletsNotEnoughFunds/broker';
 
 /* events */
+export * as eventsMetricContractCreated from './events/metricContractCreated';
 export * as eventsContractBlockchainCreated from './events/contractBlockchainCreated';
 export * as eventsContractBlockchainUpdated from './events/contractBlockchainUpdated';
 export * as eventsUserCreated from './events/userCreated';
 export * as eventsWalletCreated from './events/walletCreated';
+export * as eventsWalletContractLinked from './events/walletContractLinked';
 export * as eventsWalletChangeOwner from './events/walletChangeOwner';
 export * as eventsAutomateContractVerificationConfirmed from './events/automate/contractVerificationConfirmed';
 export * as followContractEvent from './scanner/followContractEvent';
@@ -103,4 +107,4 @@ export * as treasuryStatsCache from './treasury/cache';
 export * as utilsTokensLogoBroker from './utils/tokensLogoBroker';
 
 export * as sendTelegramNews from './sendTelegramNews';
-export * as migrateNotifications from './migrateNotifications';
+export * as migrateTrashAlias from './migrateTrashAlias';

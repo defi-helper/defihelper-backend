@@ -3,35 +3,28 @@ import 'module-alias/register';
 import cli from 'command-line-args';
 import container from './container';
 
-container.model
-  .migrationService()
-  .up()
-  .then(async () => {
-    const options = cli([{ name: 'period', type: String }]);
+const options = cli([{ name: 'period', type: String }]);
 
-    const queue = container.model.queueService();
-    switch (options.period) {
-      case 'minute10':
-        await queue.push('scheduleMinute10', {});
-        break;
-      case 'hourStart':
-        await queue.push('scheduleHourStart', {});
-        break;
-      case 'dayStart':
-        await queue.push('scheduleDayStart', {});
-        break;
-      case 'weekStart':
-        await queue.push('scheduleWeekStart', {});
-        break;
-      case 'monthStart':
-        await queue.push('scheduleMonthStart', {});
-        break;
-      default:
-        throw new Error('Invalid period');
-    }
+function pushPeriod() {
+  const queue = container.model.queueService();
+  switch (options.period) {
+    case 'minute10':
+      return queue.push('scheduleMinute10', {});
+    case 'hourStart':
+      return queue.push('scheduleHourStart', {});
+    case 'dayStart':
+      return queue.push('scheduleDayStart', {});
+    case 'weekStart':
+      return queue.push('scheduleWeekStart', {});
+    case 'monthStart':
+      return queue.push('scheduleMonthStart', {});
+    default:
+      throw new Error('Invalid period');
+  }
+}
 
-    process.exit(0);
-  })
+pushPeriod()
+  .then(() => process.exit(0))
   .catch((e) => {
     container.logger().error(e);
     process.exit(1);

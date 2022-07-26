@@ -29,6 +29,7 @@ export interface WalletBlockchain {
   network: string;
   address: string;
   publicKey: string;
+  confirmed: boolean;
 }
 
 export enum WalletExchangeType {

@@ -1,15 +1,43 @@
 import { Blockchain } from '@models/types';
 import { tableFactoryLegacy } from '@services/Database';
+import Knex from 'knex';
 
 export interface MetricMap {
   [k: string]: string;
 }
 
-interface Metric {
+export interface Metric {
   id: string;
   data: MetricMap;
   date: Date;
   createdAt: Date;
+}
+
+export interface Registry {
+  id: string;
+  data: MetricMap;
+  date: Date;
+}
+
+export namespace QueryModify {
+  export function lastValue<T extends Metric>(
+    query: Knex.QueryBuilder<T, T[]>,
+    byFields: string[],
+  ) {
+    query
+      .distinctOn(...byFields)
+      .orderBy(byFields)
+      .orderBy('date', 'desc');
+  }
+
+  export function sumMetric(query: Knex.QueryBuilder, field: string | [string, string]) {
+    const [alias, fieldName] = Array.isArray(field) ? field : [null, field];
+    query.column(
+      query.client.raw(
+        `SUM((COALESCE(${fieldName}, '0'))::numeric)${alias ? ` AS "${alias}"` : ''}`,
+      ),
+    );
+  }
 }
 
 export interface MetricBlockchain extends Metric {
@@ -84,6 +112,21 @@ export const metricWalletTableFactory = tableFactoryLegacy<MetricWallet>(metricW
 
 export type MetricWalletTable = ReturnType<ReturnType<typeof metricWalletTableFactory>>;
 
+export interface MetricWalletRegistry extends Registry {
+  contract: string;
+  wallet: string;
+}
+
+export const metricWalletRegistryTableName = 'metric_wallet_registry';
+
+export const metricWalletRegistryTableFactory = tableFactoryLegacy<MetricWalletRegistry>(
+  metricWalletRegistryTableName,
+);
+
+export type MetricWalletRegistryTable = ReturnType<
+  ReturnType<typeof metricWalletRegistryTableFactory>
+>;
+
 export interface MetricWalletTask {
   id: string;
   contract: string;
@@ -112,6 +155,22 @@ export const metricWalletTokenTableFactory = tableFactoryLegacy<MetricWalletToke
 );
 
 export type MetricWalletTokenTable = ReturnType<ReturnType<typeof metricWalletTokenTableFactory>>;
+
+export interface MetricWalletTokenRegistry extends Registry {
+  contract: string | null;
+  wallet: string;
+  token: string;
+}
+
+export const metricWalletTokenRegistryTableName = 'metric_wallet_token_registry';
+
+export const metricWalletTokenRegistryTableFactory = tableFactoryLegacy<MetricWalletTokenRegistry>(
+  metricWalletTokenRegistryTableName,
+);
+
+export type MetricWalletTokenRegistryTable = ReturnType<
+  ReturnType<typeof metricWalletTokenRegistryTableFactory>
+>;
 
 export interface MetricToken extends Metric {
   token: string;

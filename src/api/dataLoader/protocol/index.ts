@@ -11,7 +11,7 @@ import {
   MetricContractAPRField,
   MetricContractField,
   metricContractTableName,
-  metricWalletTableName,
+  metricWalletRegistryTableName,
 } from '@models/Metric/Entity';
 import {
   walletBlockchainTableName,
@@ -149,49 +149,35 @@ export const protocolUserLastMetricLoader = ({ userId }: { userId: string }) =>
       const notCachedIds = protocolsId.filter((protocolId) => cachedMap[protocolId] === undefined);
       const metrics =
         notCachedIds.length > 0
-          ? await container
-              .database()
-              .column('protocol')
-              .sum('stakingUSD AS stakingUSD')
-              .sum('earnedUSD AS earnedUSD')
-              .min('date AS minUpdatedAt')
-              .from(
-                container.model
-                  .metricWalletTable()
-                  .distinctOn(
-                    `${metricWalletTableName}.contract`,
-                    `${metricWalletTableName}.wallet`,
-                  )
-                  .column(`${contractTableName}.protocol`)
-                  .column(
-                    database.raw(
-                      `(${metricWalletTableName}.data->>'stakingUSD')::numeric AS "stakingUSD"`,
-                    ),
-                  )
-                  .column(
-                    database.raw(
-                      `(${metricWalletTableName}.data->>'earnedUSD')::numeric AS "earnedUSD"`,
-                    ),
-                  )
-                  .column(`${metricWalletTableName}.date AS date`)
-                  .innerJoin(
-                    contractTableName,
-                    `${contractTableName}.id`,
-                    `${metricWalletTableName}.contract`,
-                  )
-                  .innerJoin(
-                    walletTableName,
-                    `${walletTableName}.id`,
-                    `${metricWalletTableName}.wallet`,
-                  )
-                  .whereIn(`${contractTableName}.protocol`, protocolsId)
-                  .andWhere(`${walletTableName}.user`, userId)
-                  .whereNull(`${walletTableName}.deletedAt`)
-                  .orderBy(`${metricWalletTableName}.contract`)
-                  .orderBy(`${metricWalletTableName}.wallet`)
-                  .orderBy(`${metricWalletTableName}.date`, 'DESC')
-                  .as('metric'),
+          ? await container.model
+              .metricWalletRegistryTable()
+              .column(`${contractTableName}.protocol`)
+              .column(
+                database.raw(
+                  `SUM((COALESCE(${metricWalletRegistryTableName}.data->>'stakingUSD', '0'))::numeric) AS "stakingUSD"`,
+                ),
               )
+              .column(
+                database.raw(
+                  `SUM((COALESCE(${metricWalletRegistryTableName}.data->>'earnedUSD', '0'))::numeric) AS "earnedUSD"`,
+                ),
+              )
+              .min(`${metricWalletRegistryTableName}.date AS minUpdatedAt`)
+              .innerJoin(
+                contractTableName,
+                `${contractTableName}.id`,
+                `${metricWalletRegistryTableName}.contract`,
+              )
+              .innerJoin(
+                walletTableName,
+                `${walletTableName}.id`,
+                `${metricWalletRegistryTableName}.wallet`,
+              )
+              .whereIn(`${contractTableName}.protocol`, protocolsId)
+              .where(`${walletTableName}.user`, userId)
+              .whereNull(`${walletTableName}.deletedAt`)
+              .where(`${contractTableName}.deprecated`, false)
+              .where(`${contractTableName}.hidden`, false)
               .groupBy('protocol')
           : [];
       const map = metrics.reduce(
@@ -261,25 +247,28 @@ export const protocolUserLastAPRLoader = ({
     const stakedMetric =
       notCachedIds.length > 0
         ? await container.model
-            .metricWalletTable()
-            .distinctOn(`${metricWalletTableName}.contract`)
-            .column(`${metricWalletTableName}.contract`)
+            .metricWalletRegistryTable()
             .column(`${contractTableName}.protocol`)
+            .column(`${metricWalletRegistryTableName}.contract`)
             .column(
-              database.raw(`(${metricWalletTableName}.data->>'stakingUSD')::numeric AS staked`),
+              database.raw(
+                `SUM((COALESCE(${metricWalletRegistryTableName}.data->>'stakingUSD', '0'))::numeric) AS "staked"`,
+              ),
             )
             .innerJoin(
               contractTableName,
               `${contractTableName}.id`,
-              `${metricWalletTableName}.contract`,
+              `${metricWalletRegistryTableName}.contract`,
             )
-            .innerJoin(walletTableName, `${walletTableName}.id`, `${metricWalletTableName}.wallet`)
+            .innerJoin(
+              walletTableName,
+              `${walletTableName}.id`,
+              `${metricWalletRegistryTableName}.wallet`,
+            )
             .whereIn(`${contractTableName}.protocol`, protocolsId)
             .andWhere(`${walletTableName}.user`, userId)
             .whereNull(`${walletTableName}.deletedAt`)
-            .andWhere(database.raw(`${metricWalletTableName}.data->>'stakingUSD' IS NOT NULL`))
-            .orderBy(`${metricWalletTableName}.contract`)
-            .orderBy(`${metricWalletTableName}.date`, 'DESC')
+            .groupBy(`${contractTableName}.protocol`, `${metricWalletRegistryTableName}.contract`)
         : [];
     const stakedMap = stakedMetric.reduce(
       (map, { protocol, contract, staked }) => ({
@@ -356,38 +345,34 @@ export const contractUserLastMetricLoader = ({
 }) =>
   new DataLoader<string, { stakingUSD: string; earnedUSD: string }>(async (contractsId) => {
     const database = container.database();
-    const map = await container
-      .database()
-      .column('contract')
-      .sum('stakingUSD AS stakingUSD')
-      .sum('earnedUSD AS earnedUSD')
-      .from(
-        container.model
-          .metricWalletTable()
-          .distinctOn(`${metricWalletTableName}.contract`, `${metricWalletTableName}.wallet`)
-          .column(`${metricWalletTableName}.contract`)
-          .column(
-            database.raw(`(${metricWalletTableName}.data->>'stakingUSD')::numeric AS "stakingUSD"`),
-          )
-          .column(
-            database.raw(`(${metricWalletTableName}.data->>'earnedUSD')::numeric AS "earnedUSD"`),
-          )
-          .innerJoin(walletTableName, `${walletTableName}.id`, `${metricWalletTableName}.wallet`)
-          .innerJoin(
-            walletBlockchainTableName,
-            `${walletTableName}.id`,
-            `${walletBlockchainTableName}.id`,
-          )
-          .where(function () {
-            this.where(`${walletTableName}.user`, userId)
-              .whereNull(`${walletTableName}.deletedAt`)
-              .whereIn(`${walletBlockchainTableName}.type`, walletType);
-          })
-          .orderBy(`${metricWalletTableName}.contract`)
-          .orderBy(`${metricWalletTableName}.wallet`)
-          .orderBy(`${metricWalletTableName}.date`, 'DESC')
-          .as('metric'),
+    const map = await container.model
+      .metricWalletRegistryTable()
+      .column(`${metricWalletRegistryTableName}.contract`)
+      .column(
+        database.raw(
+          `SUM((COALESCE(${metricWalletRegistryTableName}.data->>'stakingUSD', '0'))::numeric) AS "stakingUSD"`,
+        ),
       )
+      .column(
+        database.raw(
+          `SUM((COALESCE(${metricWalletRegistryTableName}.data->>'earnedUSD', '0'))::numeric) AS "earnedUSD"`,
+        ),
+      )
+      .innerJoin(
+        walletTableName,
+        `${walletTableName}.id`,
+        `${metricWalletRegistryTableName}.wallet`,
+      )
+      .innerJoin(
+        walletBlockchainTableName,
+        `${walletTableName}.id`,
+        `${walletBlockchainTableName}.id`,
+      )
+      .where(function () {
+        this.where(`${walletTableName}.user`, userId)
+          .whereNull(`${walletTableName}.deletedAt`)
+          .whereIn(`${walletBlockchainTableName}.type`, walletType);
+      })
       .groupBy('contract')
       .then(
         (rows) =>

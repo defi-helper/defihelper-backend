@@ -17,11 +17,12 @@ import * as proposalSchemas from '@api/schema/proposal';
 import * as tokenSchemas from '@api/schema/token';
 import * as storeSchemas from '@api/schema/store';
 import * as governanceSchemas from '@api/schema/governance';
-import * as Automate from '@api/schema/automate';
+import * as automateSchemas from '@api/schema/automate';
 import * as restakeStrategySchemas from '@api/schema/restakeStrategy';
 import * as treasurySchemas from '@api/schema/treasury';
 import * as monitoringSchemas from '@api/schema/monitoring';
 import * as landingSchemas from '@api/schema/landing';
+import * as tradingSchemas from '@api/schema/trading';
 import Jimp from 'jimp';
 import { metricContractTableName } from '@models/Metric/Entity';
 import {
@@ -56,14 +57,12 @@ export function route({ express, server }: { express: Express; server: Server })
             resolve: () => 'pong',
           },
           config: configSchemas.ConfigQuery,
-          me: {
-            type: userSchemas.UserType,
-            resolve: (root, args, { currentUser }) => currentUser,
-          },
+          me: userSchemas.MeQuery,
           userReferrer: userSchemas.UserReferrerCodeQuery,
           users: userSchemas.UserListQuery,
           protocol: protocolSchemas.ProtocolQuery,
           protocols: protocolSchemas.ProtocolListQuery,
+          userProtocols: protocolSchemas.UserProtocolListQuery,
           contracts: protocolSchemas.ContractListQuery,
           proposal: proposalSchemas.ProposalQuery,
           proposals: proposalSchemas.ProposalListQuery,
@@ -81,10 +80,10 @@ export function route({ express, server }: { express: Express; server: Server })
           govProposals: governanceSchemas.GovProposalListQuery,
           govReceipt: governanceSchemas.GovReceiptQuery,
           govVotes: governanceSchemas.GovVotesQuery,
-          automateDescription: Automate.DescriptionQuery,
-          automateTrigger: Automate.TriggerQuery,
-          automateTriggers: Automate.TriggerListQuery,
-          automateContracts: Automate.ContractListQuery,
+          automateDescription: automateSchemas.DescriptionQuery,
+          automateTrigger: automateSchemas.TriggerQuery,
+          automateTriggers: automateSchemas.TriggerListQuery,
+          automateContracts: automateSchemas.ContractListQuery,
           govToken: governanceSchemas.GovTokenQuery,
           restakeStrategy: restakeStrategySchemas.RestakeStrategyQuery,
           treasury: treasurySchemas.TreasuryQuery,
@@ -150,18 +149,19 @@ export function route({ express, server }: { express: Express; server: Server })
           productUpdate: storeSchemas.ProductUpdateMutation,
           productDelete: storeSchemas.ProductDeleteMutation,
           billingTransferCreate: billingSchemas.AddTransferMutation,
-          automateTriggerCreate: Automate.TriggerCreateMutation,
-          automateTriggerUpdate: Automate.TriggerUpdateMutation,
-          automateTriggerDelete: Automate.TriggerDeleteMutation,
-          automateConditionCreate: Automate.ConditionCreateMutation,
-          automateConditionUpdate: Automate.ConditionUpdateMutation,
-          automateConditionDelete: Automate.ConditionDeleteMutation,
-          automateActionCreate: Automate.ActionCreateMutation,
-          automateActionUpdate: Automate.ActionUpdateMutation,
-          automateActionDelete: Automate.ActionDeleteMutation,
-          automateContractCreate: Automate.ContractCreateMutation,
-          automateContractUpdate: Automate.ContractUpdateMutation,
-          automateContractDelete: Automate.ContractDeleteMutation,
+          automateTriggerCreate: automateSchemas.TriggerCreateMutation,
+          automateTriggerUpdate: automateSchemas.TriggerUpdateMutation,
+          automateTriggerDelete: automateSchemas.TriggerDeleteMutation,
+          automateConditionCreate: automateSchemas.ConditionCreateMutation,
+          automateConditionUpdate: automateSchemas.ConditionUpdateMutation,
+          automateConditionDelete: automateSchemas.ConditionDeleteMutation,
+          automateActionCreate: automateSchemas.ActionCreateMutation,
+          automateActionUpdate: automateSchemas.ActionUpdateMutation,
+          automateActionDelete: automateSchemas.ActionDeleteMutation,
+          automateContractCreate: automateSchemas.ContractCreateMutation,
+          automateContractUpdate: automateSchemas.ContractUpdateMutation,
+          automateContractDelete: automateSchemas.ContractDeleteMutation,
+          tradingAuth: tradingSchemas.TradingAuthMutation,
         },
       }),
       subscription: new GraphQLObjectType<any, Request>({
