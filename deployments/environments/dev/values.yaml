@@ -65,13 +65,6 @@ broker:
           limits:
             memory: 512Mi
             cpu: 500m
-        nodeSelector:
-          group_name: "apps-jobs"
-        tolerations:
-          - key: node-role.kubernetes.io/apps-jobs
-            operator: "Equal"
-            value: "true"
-            effect: NoSchedule
       events-trigger:
         name: events-trigger
         command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run trigger:event"'
@@ -85,13 +78,6 @@ broker:
           limits:
             memory: 256Mi
             cpu: 500m
-        nodeSelector:
-          group_name: "apps-jobs"
-        tolerations:
-          - key: node-role.kubernetes.io/apps-jobs
-            operator: "Equal"
-            value: "true"
-            effect: NoSchedule
       trigger:
         name: trigger
         command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue:consume -- -q tasks_trigger"'
@@ -105,13 +91,6 @@ broker:
           limits:
             memory: 256Mi
             cpu: 500m
-        nodeSelector:
-          group_name: "apps-jobs"
-        tolerations:
-          - key: node-role.kubernetes.io/apps-jobs
-            operator: "Equal"
-            value: "true"
-            effect: NoSchedule
       metrics:
         name: metrics
         command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue:consume -- -q tasks_metricCurrent"'
@@ -125,13 +104,6 @@ broker:
           limits:
             memory: 256Mi
             cpu: 500m
-        nodeSelector:
-          group_name: "apps-jobs"
-        tolerations:
-          - key: node-role.kubernetes.io/apps-jobs
-            operator: "Equal"
-            value: "true"
-            effect: NoSchedule
       history:
         name: history
         command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue:consume -- -q tasks_metricHistory"'
@@ -145,13 +117,6 @@ broker:
           limits:
             memory: 256Mi
             cpu: 500m
-        nodeSelector:
-          group_name: "apps-jobs"
-        tolerations:
-          - key: node-role.kubernetes.io/apps-jobs
-            operator: "Equal"
-            value: "true"
-            effect: NoSchedule
 
 handlers:
   labels:
