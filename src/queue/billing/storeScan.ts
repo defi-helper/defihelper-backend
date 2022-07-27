@@ -4,7 +4,7 @@ import { Process } from '@models/Queue/Entity';
 import { Blockchain } from '@models/types';
 import { isKey } from '@services/types';
 import { ethers } from 'ethers';
-import { abi as storeAbi } from '@defihelper/networks/abi/StoreV1.json';
+import { abi as storeAbi } from '@defihelper/networks/abi/StoreV2.json';
 import contracts from '@defihelper/networks/contracts.json';
 
 async function registerBuy(blockchain: Blockchain, network: string, events: ethers.Event[]) {
