@@ -3,7 +3,8 @@ import { Factory } from '@services/Container';
 import BN from 'bignumber.js';
 import axios from 'axios';
 import { Debank } from '@services/Debank';
-import { PromisifyRedisClient } from '@services/Cache';
+import { Semafor } from '@services/Cache';
+import { ConsoleLogger } from '@services/Log';
 
 interface Asset {
   id: string;
@@ -13,7 +14,16 @@ interface Asset {
   decimals: number;
 }
 
-export class WavesNodeService {
+interface RIBalance {
+  assetId: string;
+  balance: number;
+  issueTransaction?: {
+    decimals: number;
+    name: string;
+  };
+}
+
+export class WavesNodeGateway {
   protected nodeUrl = 'https://nodes.wavesnodes.com';
 
   protected matcherUrl = 'https://matcher.waves.exchange';
@@ -21,31 +31,39 @@ export class WavesNodeService {
   private httpClient = axios.create();
 
   constructor(
-    public readonly cache: Factory<PromisifyRedisClient>,
+    public readonly cache: Factory<Semafor>,
     private readonly debank: Factory<Debank>,
+    private readonly logger: Factory<ConsoleLogger>,
   ) {}
 
   async resolveUSDNPriceInUSD(): Promise<BN> {
-    const key = 'defihelper:waves:usdn-usd-price';
-    const cachedPrice = await this.cache().promises.get(key);
-    if (cachedPrice) {
-      return new BN(cachedPrice);
-    }
+    const price = await this.cache().synchronized(
+      `defihelper:waves:usdn-usd-price`,
+      async () => {
+        const token = await this.debank().getToken(
+          'eth',
+          '0x674C6Ad92Fd080e4004b2312b45f796a192D27a0',
+        ); // usdn
 
-    const token = await this.debank().getToken('eth', '0x674C6Ad92Fd080e4004b2312b45f796a192D27a0'); // usdn
+        return new BN(token.price).toString(10);
+      },
+      { ttl: 1800 },
+    );
 
-    await this.cache().promises.setex(key, 1800, new BN(token.price).toString(10));
-    return new BN(token.price);
+    return new BN(price);
   }
 
-  async nodeRequest(endpoint: string, path: string): Promise<any> {
-    const request = await this.httpClient.get(endpoint + path);
-    return request.data;
+  async nodeRequest<T>(endpoint: string, path: string): Promise<T> {
+    try {
+      return await this.httpClient.get(endpoint + path).then((v) => v.data);
+    } catch (e) {
+      this.logger().error(`Waves gateway: ${endpoint + path}, message: ${e}`);
+      throw e;
+    }
   }
 
   async nativeBalance(address: string): Promise<BN> {
-    const balance = await nodeInteraction.balance(address, this.nodeUrl);
-    return new BN(balance);
+    return nodeInteraction.balance(address, this.nodeUrl).then((v) => new BN(v));
   }
 
   async assetPrice(address: string): Promise<BN | null> {
@@ -55,7 +73,7 @@ export class WavesNodeService {
     }
 
     // asset price in usdn
-    const { bids } = await this.nodeRequest(
+    const { bids } = await this.nodeRequest<{ bids: [price: number, amount: number][] }>(
       this.matcherUrl,
       `/api/v1/orderbook/${
         address === 'waves' ? address.toUpperCase() : address
@@ -70,11 +88,14 @@ export class WavesNodeService {
   }
 
   async assetsOnWallet(address: string): Promise<Asset[]> {
-    const { balances } = await this.nodeRequest(this.nodeUrl, `/assets/balance/${address}`);
-    const wavesTokensBalance = await this.nativeBalance(address);
+    const { balances } = await this.nodeRequest<{ balances: RIBalance[] }>(
+      this.nodeUrl,
+      `/assets/balance/${address}`,
+    );
 
+    const wavesTokensBalance = await this.nativeBalance(address);
     const assetsBalances = balances
-      .map((item: any) => {
+      .map((item) => {
         if (!item.issueTransaction) {
           return null;
         }
@@ -87,7 +108,7 @@ export class WavesNodeService {
           decimals: item.issueTransaction.decimals,
         };
       })
-      .filter((item: any) => Boolean(item));
+      .filter((item) => Boolean(item)) as Asset[];
 
     return [
       ...assetsBalances,
@@ -102,9 +123,10 @@ export class WavesNodeService {
   }
 }
 
-export function wavesNodeServiceFactory(
-  cache: Factory<PromisifyRedisClient>,
+export function wavesNodeGatewayFactory(
+  cache: Factory<Semafor>,
   debank: Factory<Debank>,
-): Factory<WavesNodeService> {
-  return () => new WavesNodeService(cache, debank);
+  logger: Factory<ConsoleLogger>,
+): Factory<WavesNodeGateway> {
+  return () => new WavesNodeGateway(cache, debank, logger);
 }
