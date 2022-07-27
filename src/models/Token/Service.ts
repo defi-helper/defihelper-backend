@@ -71,6 +71,7 @@ export class TokenService {
           aliasId: token.alias,
           network: token.network,
           address: token.address,
+          debug: 'token-on-created',
         });
       }
     }
