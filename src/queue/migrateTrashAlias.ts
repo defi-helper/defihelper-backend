@@ -17,9 +17,16 @@ export default async (process: Process) => {
   await tokenAliasList.reduce<Promise<dayjs.Dayjs>>(async (prev, params) => {
     const startAt = await prev;
 
-    await container.model
-      .queueService()
-      .push('resolveTokenAliasLiquidity', params, { startAt: startAt.toDate() });
+    await container.model.queueService().push(
+      'resolveTokenAliasLiquidity',
+      {
+        ...params,
+        debug: 'migrate-trash',
+      },
+      {
+        startAt: startAt.toDate(),
+      },
+    );
     return startAt.clone().add(lag, 'seconds');
   }, Promise.resolve(dayjs()));
 

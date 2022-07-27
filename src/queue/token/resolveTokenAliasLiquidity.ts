@@ -25,6 +25,10 @@ export default async (process: Process) => {
 
   const token = await container.debank().getToken(params.network, params.address);
   if (!token) {
+    await container.model.tokenAliasService().update({
+      ...tokenAlias,
+      liquidity: TokenAliasLiquidity.Trash,
+    });
     return process.done();
   }
 
