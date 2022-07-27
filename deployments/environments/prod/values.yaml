@@ -153,7 +153,6 @@ broker:
             value: "true"
             effect: NoSchedule
 
-
 handlers:
   labels:
     app: backend
