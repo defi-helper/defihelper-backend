@@ -81,12 +81,17 @@ export default async (process: Process) => {
   const createdMetrics = await wavesAssetList.reduce<Promise<MetricWalletToken[]>>(
     async (prev, tokenAsset) => {
       const prevMetrics = await prev;
+
+      if (tokenAsset.amount.multipliedBy(tokenAsset.price ?? 0).lt(1)) {
+        return prev;
+      }
+
       let tokenRecord = existingTokensRecords.find((exstng) => exstng.address === tokenAsset.id);
 
       if (!tokenRecord) {
         let tokenRecordAlias: TokenAlias | undefined = await container.model
           .tokenAliasTable()
-          .where('name', 'ilike', tokenAsset.name)
+          .where('symbol', 'ilike', tokenAsset.name)
           .first();
 
         if (!tokenRecordAlias) {

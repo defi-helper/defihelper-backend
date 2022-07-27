@@ -3,7 +3,7 @@ import { Factory } from '@services/Container';
 import BN from 'bignumber.js';
 import axios from 'axios';
 import { Debank } from '@services/Debank';
-import { Semafor } from '@services/Cache';
+import { PromisifyRedisClient, Semafor } from '@services/Cache';
 import { ConsoleLogger } from '@services/Log';
 
 interface Asset {
@@ -31,21 +31,27 @@ export class WavesNodeGateway {
   private httpClient = axios.create();
 
   constructor(
-    public readonly cache: Factory<Semafor>,
+    public readonly semafor: Factory<Semafor>,
+    public readonly cache: Factory<PromisifyRedisClient>,
     private readonly debank: Factory<Debank>,
     private readonly logger: Factory<ConsoleLogger>,
   ) {}
 
   async resolveUSDNPriceInUSD(): Promise<BN> {
-    const price = await this.cache().synchronized(
-      `defihelper:waves:usdn-usd-price`,
+    const cacheKey = 'defihelper:waves:usdn-usd-price:value';
+    const price = await this.semafor().synchronized(
+      `defihelper:waves:usdn-usd-price:sync`,
       async () => {
-        const token = await this.debank().getToken(
+        const fromCache = await this.cache().promises.get(cacheKey);
+        if (fromCache) return fromCache;
+
+        const { price: tokenPrice } = await this.debank().getToken(
           'eth',
           '0x674C6Ad92Fd080e4004b2312b45f796a192D27a0',
         ); // usdn
+        await this.cache().promises.set(cacheKey, new BN(tokenPrice).toString(10));
 
-        return new BN(token.price).toString(10);
+        return new BN(tokenPrice).toString(10);
       },
       { ttl: 1800 },
     );
@@ -66,7 +72,7 @@ export class WavesNodeGateway {
     try {
       return await nodeInteraction.balance(address, this.nodeUrl).then((v) => new BN(v));
     } catch (e) {
-      this.logger().error(`Waves gateway w/ lib error, message: ${e}`);
+      this.logger().error(`Waves gateway(waves lib) error, message: ${e}`);
       throw e;
     }
   }
@@ -129,9 +135,10 @@ export class WavesNodeGateway {
 }
 
 export function wavesNodeGatewayFactory(
-  cache: Factory<Semafor>,
+  semafor: Factory<Semafor>,
+  cache: Factory<PromisifyRedisClient>,
   debank: Factory<Debank>,
   logger: Factory<ConsoleLogger>,
 ): Factory<WavesNodeGateway> {
-  return () => new WavesNodeGateway(cache, debank, logger);
+  return () => new WavesNodeGateway(semafor, cache, debank, logger);
 }
