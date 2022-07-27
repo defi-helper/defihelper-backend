@@ -63,7 +63,12 @@ export class WavesNodeGateway {
   }
 
   async nativeBalance(address: string): Promise<BN> {
-    return nodeInteraction.balance(address, this.nodeUrl).then((v) => new BN(v));
+    try {
+      return await nodeInteraction.balance(address, this.nodeUrl).then((v) => new BN(v));
+    } catch (e) {
+      this.logger().error(`Waves gateway w/ lib error, message: ${e}`);
+      throw e;
+    }
   }
 
   async assetPrice(address: string): Promise<BN | null> {
