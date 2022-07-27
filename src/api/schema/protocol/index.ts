@@ -98,6 +98,20 @@ export const ContractMetricType = new GraphQLObjectType({
   },
 });
 
+export const ContractAutomateBuyLiquidityType = new GraphQLObjectType({
+  name: 'ContractAutomateBuyLiquidityType',
+  fields: {
+    router: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Liquidity pool router address',
+    },
+    pair: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Target pool address',
+    },
+  },
+});
+
 export const ContractAutomatesType = new GraphQLObjectType<ContractAutomate, Request>({
   name: 'ContractAutomatesType',
   fields: {
@@ -111,20 +125,12 @@ export const ContractAutomatesType = new GraphQLObjectType<ContractAutomate, Req
       resolve: ({ autorestakeAdapter }) => autorestakeAdapter,
     },
     buyLiquidity: {
-      type: new GraphQLObjectType({
-        name: 'ContractAutomatesBuyLiquidityType',
-        fields: {
-          router: {
-            type: GraphQLNonNull(GraphQLString),
-            description: 'Liquidity pool router address',
-          },
-          pair: {
-            type: GraphQLNonNull(GraphQLString),
-            description: 'Target pool address',
-          },
-        },
-      }),
+      type: ContractAutomateBuyLiquidityType,
       description: 'Buy liquidity automate config',
+    },
+    lpTokensManager: {
+      type: ContractAutomateBuyLiquidityType,
+      description: 'Liquidity pool tokens manager automate config',
     },
   },
 });
@@ -649,9 +655,15 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
             const { buyLiquidity, autorestake, autorestakeCandidate } = filter.automate;
             if (typeof buyLiquidity === 'boolean') {
               if (buyLiquidity) {
-                this.where(database.raw("automate->>'buyLiquidity' IS NOT NULL"));
+                this.where(function () {
+                  this.where(database.raw("automate->>'buyLiquidity' IS NOT NULL"));
+                  this.orWhere(database.raw("automate->>'lpTokensManager' IS NOT NULL"));
+                });
               } else {
-                this.where(database.raw("automate->>'buyLiquidity' IS NULL"));
+                this.where(function () {
+                  this.where(database.raw("automate->>'buyLiquidity' IS NULL"));
+                  this.orWhere(database.raw("automate->>'lpTokensManager' IS NULL"));
+                });
               }
             }
             if (typeof autorestake === 'boolean') {
@@ -2112,7 +2124,10 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
               from ${contractTableName}
               inner join ${contractBlockchainTableName} on ${contractBlockchainTableName}.id = ${contractTableName}.id
               where ${contractTableName}.protocol = ${protocolTableName}.id
-              and ${contractBlockchainTableName}.automate->>'buyLiquidity' IS NOT NULL
+              and (
+                ${contractBlockchainTableName}.automate->>'buyLiquidity' IS NOT NULL
+                or ${contractBlockchainTableName}.automate->>'lpTokensManager' IS NOT NULL
+              )
             )`),
             automate.buyLiquidity ? '>' : '=',
             0,
