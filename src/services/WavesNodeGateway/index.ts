@@ -55,7 +55,7 @@ export class WavesNodeGateway {
 
         return tokenPriceString;
       },
-      { ttl: 1000 },
+      { ttl: 5 },
     );
 
     return new BN(price);
