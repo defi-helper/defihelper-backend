@@ -17,6 +17,7 @@ function array(value: string): string[] {
 }
 
 export default {
+  mode: process.env.NODE_ENV ?? 'development',
   api: {
     port: int(process.env.API_PORT ?? '8080'),
     internalUrl: process.env.API_INTERNAL_URL ?? 'https://backend-local.defihelper.io',
@@ -83,6 +84,13 @@ export default {
         inspectors: array(process.env.ETH_RINKEBY_INSPECTORS ?? '[]'),
         consumers: array(process.env.ETH_RINKEBY_CONSUMERS ?? '[]'),
         avgBlockTime: 13.2,
+      },
+      ethGoerli: {
+        node: array(process.env.ETH_GOERLI_NODE ?? '[]'),
+        historicalNode: array(process.env.ETH_GOERLI_NODE_HISTORICAL ?? '[]'),
+        inspectors: array(process.env.ETH_GOERLI_INSPECTORS ?? '[]'),
+        consumers: array(process.env.ETH_GOERLI_CONSUMERS ?? '[]'),
+        avgBlockTime: 15,
       },
       bsc: {
         node: array(process.env.BSC_NODE ?? '[]'),
