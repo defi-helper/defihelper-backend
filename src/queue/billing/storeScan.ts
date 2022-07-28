@@ -65,8 +65,7 @@ export default async (process: Process) => {
   }
   const to = from + step > currentBlockNumber ? currentBlockNumber : from + step;
 
-  const networkContracts = contracts[network] as { [name: string]: { address: string } };
-  const storeAddress = networkContracts.StoreUpgradable.address;
+  const storeAddress = contracts[network].StoreUpgradable.address;
   const store = container.blockchain[blockchain].contract(storeAddress, storeAbi, provider);
 
   await registerBuy(blockchain, network, await store.queryFilter(store.filters.Buy(), from, to));
