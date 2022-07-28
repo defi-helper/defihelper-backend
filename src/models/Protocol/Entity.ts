@@ -58,6 +58,10 @@ export interface ContractAutomate {
     router: string;
     pair: string;
   };
+  lpTokensManager?: {
+    router: string;
+    pair: string;
+  };
 }
 
 export interface ContractMetric {

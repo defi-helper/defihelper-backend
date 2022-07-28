@@ -33,7 +33,7 @@ export default async (process: Process) => {
 
       const pool = [];
       if (isKey(networkContracts, 'Balance')) {
-        const { deployBlockNumber: balanceFrom } = networkContracts.Balance;
+        const { blockNumber: balanceFrom } = networkContracts.Balance;
 
         if (!tasksMap[network]?.billingTransferScan) {
           pool.push(
@@ -73,8 +73,9 @@ export default async (process: Process) => {
         }
       }
 
-      if (isKey(networkContracts, 'Store')) {
-        const { deployBlockNumber: storeFrom } = networkContracts.Store;
+      if (isKey(networkContracts, 'Store') || isKey(networkContracts, 'StoreUpgradable')) {
+        const { blockNumber: storeFrom } =
+          'Store' in networkContracts ? networkContracts.Store : networkContracts.StoreUpgradable;
 
         if (!tasksMap[network]?.billingFeeOracle) {
           pool.push(

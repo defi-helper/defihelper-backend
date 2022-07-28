@@ -1,6 +1,5 @@
 import { Container, singleton, singletonParametric } from '@services/Container';
 import { SocialStatsGateway } from '@services/SocialStats';
-import { TreasuryService } from '@services/Treasury';
 import { pgConnectFactory } from '@services/Database';
 import { consoleFactory } from '@services/Log';
 import * as Blockchain from '@services/Blockchain';
@@ -65,8 +64,6 @@ class AppContainer extends Container<typeof config> {
   readonly acl = new ACLContainer(this);
 
   readonly template = new TemplateContainer(this);
-
-  readonly treasury = singleton(() => new TreasuryService(this.cache, 'defihelper:treasury', 60));
 
   readonly model = new ModelContainer(this);
 }

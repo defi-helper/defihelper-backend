@@ -44,6 +44,80 @@ ingress:
       hosts:
         - backend-dev.defihelper.info
 
+broker:
+  process:
+    labels:
+      app: app
+      component: broker
+      environment: prod
+      queue: process
+    queues:
+      queue:
+        name: queue
+        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue:consume -- -q tasks_default"'
+        replicas: 1
+        maxReplicas: 10
+        maxReadyMessagesForHpa: 10
+        resources:
+          requests:
+            memory: 256Mi
+            cpu: 100m
+          limits:
+            memory: 512Mi
+            cpu: 500m
+      events-trigger:
+        name: events-trigger
+        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run trigger:event"'
+        replicas: 1
+        maxReplicas: 20
+        maxReadyMessagesForHpa: 100
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 100m
+          limits:
+            memory: 256Mi
+            cpu: 500m
+      trigger:
+        name: trigger
+        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue:consume -- -q tasks_trigger"'
+        replicas: 1
+        maxReplicas: 20
+        maxReadyMessagesForHpa: 100
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 100m
+          limits:
+            memory: 256Mi
+            cpu: 500m
+      metrics:
+        name: metrics
+        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue:consume -- -q tasks_metricCurrent"'
+        replicas: 1
+        maxReplicas: 20
+        maxReadyMessagesForHpa: 100
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 100m
+          limits:
+            memory: 256Mi
+            cpu: 500m
+      history:
+        name: history
+        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue:consume -- -q tasks_metricHistory"'
+        replicas: 1
+        maxReplicas: 20
+        maxReadyMessagesForHpa: 100
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 100m
+          limits:
+            memory: 256Mi
+            cpu: 500m
+
 handlers:
   labels:
     app: backend
