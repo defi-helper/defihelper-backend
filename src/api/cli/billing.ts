@@ -2,18 +2,11 @@ import container from '@container';
 import { isKey } from '@services/types';
 import contracts from '@defihelper/networks/contracts.json';
 
-interface NetworkContracts {
-  [c: string]: {
-    blockNumber: number;
-  };
-}
-
 export default async ([network = '1']: string[]) => {
   if (!isKey(contracts, network)) throw new Error('Invalid network');
-  const networkContracts = contracts[network] as NetworkContracts;
-  if (!isKey(networkContracts, 'Balance')) throw new Error('Balance not found in traget network');
+  const networkContracts = contracts[network];
   const { blockNumber: balanceFrom } = networkContracts.Balance;
-  const { blockNumber: storeFrom } = networkContracts.Store ?? networkContracts.StoreUpgradable;
+  const { blockNumber: storeFrom } = networkContracts.StoreUpgradable;
 
   return Promise.all([
     container.model.queueService().push(

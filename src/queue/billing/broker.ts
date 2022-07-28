@@ -73,9 +73,8 @@ export default async (process: Process) => {
         }
       }
 
-      if (isKey(networkContracts, 'Store') || isKey(networkContracts, 'StoreUpgradable')) {
-        const { blockNumber: storeFrom } =
-          'Store' in networkContracts ? networkContracts.Store : networkContracts.StoreUpgradable;
+      if (isKey(networkContracts, 'StoreUpgradable')) {
+        const { blockNumber: storeFrom } = networkContracts.StoreUpgradable;
 
         if (!tasksMap[network]?.billingFeeOracle) {
           pool.push(
