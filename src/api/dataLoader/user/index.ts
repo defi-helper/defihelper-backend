@@ -1,7 +1,6 @@
 import container from '@container';
 import BN from 'bignumber.js';
 import {
-  MetricWalletField,
   metricContractTableName,
   MetricContractAPRField,
   metricWalletRegistryTableName,
@@ -356,17 +355,16 @@ export const walletLoader = () =>
 export const walletLastMetricLoader = () =>
   new DataLoader<
     string,
-    | ({ [k in MetricWalletField]: string } & {
-        stakingUSD: string;
-        stakingUSDDayBefore: string;
-        stakingUSDWeekBefore: string;
-        stakingUSDMonthBefore: string;
-        earnedUSD: string;
-        earnedUSDDayBefore: string;
-        earnedUSDWeekBefore: string;
-        earnedUSDMonthBefore: string;
-      })
-    | null
+    {
+      stakingUSD: string;
+      stakingUSDDayBefore: string;
+      stakingUSDWeekBefore: string;
+      stakingUSDMonthBefore: string;
+      earnedUSD: string;
+      earnedUSDDayBefore: string;
+      earnedUSDWeekBefore: string;
+      earnedUSDMonthBefore: string;
+    }
   >(async (walletsId) => {
     const map = await container.model
       .metricWalletRegistryTable()
@@ -448,7 +446,19 @@ export const walletLastMetricLoader = () =>
           ),
       );
 
-    return walletsId.map((id) => map.get(id) ?? null);
+    return walletsId.map(
+      (id) =>
+        map.get(id) ?? {
+          stakingUSD: '0',
+          stakingUSDDayBefore: '0',
+          stakingUSDWeekBefore: '0',
+          stakingUSDMonthBefore: '0',
+          earnedUSD: '0',
+          earnedUSDDayBefore: '0',
+          earnedUSDWeekBefore: '0',
+          earnedUSDMonthBefore: '0',
+        },
+    );
   });
 
 export const walletTokenLastMetricLoader = (filter: {
