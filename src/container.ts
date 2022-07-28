@@ -45,7 +45,9 @@ class AppContainer extends Container<typeof config> {
 
   readonly debank = singleton(debankServiceFactory());
 
-  readonly waves = singleton(wavesNodeGatewayFactory(this.semafor, this.debank, this.logger));
+  readonly waves = singleton(
+    wavesNodeGatewayFactory(this.semafor, this.cache, this.debank, this.logger),
+  );
 
   readonly whattofarm = singleton(() => new WhatToFarmGateway());
 

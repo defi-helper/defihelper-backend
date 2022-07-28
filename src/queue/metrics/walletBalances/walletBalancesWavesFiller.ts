@@ -74,9 +74,7 @@ export default async (process: Process) => {
       `${tokenTableName}.id`,
     )
     .whereNull(`${metricWalletTokenRegistryTableName}.contract`)
-    .where({
-      wallet: blockchainWallet.id,
-    });
+    .andWhere(`${metricWalletTokenRegistryTableName}.wallet`, blockchainWallet.id);
 
   const createdMetrics = await wavesAssetList.reduce<Promise<MetricWalletToken[]>>(
     async (prev, tokenAsset) => {

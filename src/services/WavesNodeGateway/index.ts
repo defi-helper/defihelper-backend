@@ -49,11 +49,13 @@ export class WavesNodeGateway {
           'eth',
           '0x674C6Ad92Fd080e4004b2312b45f796a192D27a0',
         ); // usdn
-        await this.cache().promises.set(cacheKey, new BN(tokenPrice).toString(10));
 
-        return new BN(tokenPrice).toString(10);
+        const tokenPriceString = new BN(tokenPrice).toString(10);
+        await this.cache().promises.setex(cacheKey, 1800, tokenPriceString);
+
+        return tokenPriceString;
       },
-      { ttl: 1800 },
+      { ttl: 1000 },
     );
 
     return new BN(price);
@@ -61,7 +63,7 @@ export class WavesNodeGateway {
 
   async nodeRequest<T>(endpoint: string, path: string): Promise<T> {
     try {
-      return await this.httpClient.get(endpoint + path).then((v) => v.data);
+      return await this.httpClient.get(endpoint + path).then(({ data }) => data);
     } catch (e) {
       this.logger().error(`Waves gateway: ${endpoint + path}, message: ${e}`);
       throw e;
@@ -91,7 +93,7 @@ export class WavesNodeGateway {
       }/DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p?depth=1`,
     );
 
-    if (!bids || !bids.length) {
+    if (!bids.length) {
       return null;
     }
 
