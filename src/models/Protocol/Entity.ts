@@ -54,10 +54,6 @@ export type ProtocolUserFavoriteTable = ReturnType<
 export interface ContractAutomate {
   autorestakeAdapter?: string;
   adapters: string[];
-  buyLiquidity?: {
-    router: string;
-    pair: string;
-  };
   lpTokensManager?: {
     router: string;
     pair: string;
