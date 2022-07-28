@@ -2544,9 +2544,10 @@ export const WalletUpdateStatisticsMutation: GraphQLFieldConfig<any, Request> = 
       .first();
     if (!wallet) throw new UserInputError('Wallet not found');
     if (wallet.user !== currentUser.id) throw new UserInputError('Foreign wallet');
+    if (wallet.blockchain !== 'ethereum') return false;
     if (
-      container.blockchain.ethereum.byNetwork(wallet.network).testnet ||
-      wallet.blockchain !== 'ethereum'
+      container.blockchain.ethereum.byNetwork(wallet.network).testnet &&
+      !(container.parent.mode === 'development' && ['5', '43113'].includes(wallet.network))
     ) {
       return false;
     }

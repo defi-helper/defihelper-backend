@@ -219,6 +219,7 @@ export interface Config {
   aurora: NetworkConfig;
   ethRopsten: NetworkConfig;
   ethRinkeby: NetworkConfig;
+  ethGoerli: NetworkConfig;
   bsc: NetworkConfig;
   polygon: NetworkConfig;
   cronos: NetworkConfig;
@@ -296,6 +297,26 @@ export class BlockchainContainer extends Container<Config> {
       },
       tokenPriceResolver: debankPriceFeed('1'),
       network: this.parent.ethRinkeby,
+    }),
+    '5': networkFactory({
+      id: '5',
+      testnet: true,
+      name: 'Ethereum Goerli',
+      icon: 'ethereumRegular',
+      explorerURL: new URL('https://goerli.etherscan.io'),
+      txExplorerURL: new URL('https://goerli.etherscan.io//tx'),
+      walletExplorerURL: new URL('https://goerli.etherscan.io//address'),
+      etherscanApiURL: null,
+      getContractAbi: useEtherscanContractAbi('https://api-goerli.etherscan.io/api'),
+      getAvgGasPrice: avgGasPriceFeedManual('2000000000'),
+      nativeTokenPrice: coingeckoPriceFeedUSD('ethereum'),
+      nativeTokenDetails: {
+        decimals: 18,
+        symbol: 'GoerliETH',
+        name: 'Goerli Ethereum',
+      },
+      tokenPriceResolver: debankPriceFeed('1'),
+      network: this.parent.ethGoerli,
     }),
     '10': networkFactory({
       id: '10',
