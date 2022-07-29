@@ -38,7 +38,6 @@ export default async (process: Process) => {
       contact.params.chatId,
     );
   } catch (error: any) {
-    console.info(error);
     if (error?.response?.statusCode === 403) {
       await container.model.userContactService().deactivate(contact);
       return process.done().info('Target contact deactivated due to dialog blocking');
