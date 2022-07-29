@@ -62,6 +62,7 @@ import {
   onlyAllowed,
   UuidType,
   WalletBlockchainTypeEnum,
+  MetricChangeType,
 } from '../types';
 import { TokenType } from '../token';
 
@@ -89,8 +90,14 @@ export const ContractMetricType = new GraphQLObjectType({
     myStaked: {
       type: GraphQLNonNull(GraphQLString),
     },
+    myStakedChange: {
+      type: GraphQLNonNull(MetricChangeType),
+    },
     myEarned: {
       type: GraphQLNonNull(GraphQLString),
+    },
+    myEarnedChange: {
+      type: GraphQLNonNull(MetricChangeType),
     },
     myAPYBoost: {
       type: GraphQLNonNull(GraphQLString),
@@ -339,7 +346,17 @@ export const ContractType: GraphQLObjectType = new GraphQLObjectType<
           aprYear: contract.metric.aprYear ?? '0',
           aprWeekReal: contract.metric.aprWeekReal,
           myStaked: '0',
+          myStakedChange: {
+            day: '0',
+            week: '0',
+            month: '0',
+          },
           myEarned: '0',
+          myEarnedChange: {
+            day: '0',
+            week: '0',
+            month: '0',
+          },
           myAPYBoost: '0',
         };
         if (!currentUser) {
@@ -365,7 +382,35 @@ export const ContractType: GraphQLObjectType = new GraphQLObjectType<
         return {
           ...metric,
           myStaked: userMetric.stakingUSD,
+          myStakedChange: {
+            day:
+              Number(userMetric.stakingUSDDayBefore) !== 0
+                ? new BN(userMetric.stakingUSD).div(userMetric.stakingUSDDayBefore).toString(10)
+                : '0',
+            week:
+              Number(userMetric.stakingUSDWeekBefore) !== 0
+                ? new BN(userMetric.stakingUSD).div(userMetric.stakingUSDWeekBefore).toString(10)
+                : '0',
+            month:
+              Number(userMetric.stakingUSDMonthBefore) !== 0
+                ? new BN(userMetric.stakingUSD).div(userMetric.stakingUSDMonthBefore).toString(10)
+                : '0',
+          },
           myEarned: userMetric.earnedUSD,
+          myEarnedChange: {
+            day:
+              Number(userMetric.earnedUSDDayBefore) !== 0
+                ? new BN(userMetric.earnedUSD).div(userMetric.earnedUSDDayBefore).toString(10)
+                : '0',
+            week:
+              Number(userMetric.earnedUSDWeekBefore) !== 0
+                ? new BN(userMetric.earnedUSD).div(userMetric.earnedUSDWeekBefore).toString(10)
+                : '0',
+            month:
+              Number(userMetric.earnedUSDMonthBefore) !== 0
+                ? new BN(userMetric.earnedUSD).div(userMetric.earnedUSDMonthBefore).toString(10)
+                : '0',
+          },
           myAPYBoost: await apyBoost(
             contract.blockchain,
             contract.network,
@@ -1479,8 +1524,14 @@ export const ProtocolMetricType = new GraphQLObjectType({
     myStaked: {
       type: GraphQLNonNull(GraphQLString),
     },
+    myStakedChange: {
+      type: GraphQLNonNull(MetricChangeType),
+    },
     myEarned: {
       type: GraphQLNonNull(GraphQLString),
+    },
+    myEarnedChange: {
+      type: GraphQLNonNull(MetricChangeType),
     },
     myAPYBoost: {
       type: GraphQLNonNull(GraphQLString),
@@ -1899,7 +1950,17 @@ export const ProtocolType: GraphQLObjectType = new GraphQLObjectType<Protocol, R
             .load(protocol.id),
           myAPY: '0',
           myStaked: '0',
+          myStakedChange: {
+            day: '0',
+            week: '0',
+            month: '0',
+          },
           myEarned: '0',
+          myEarnedChange: {
+            day: '0',
+            week: '0',
+            month: '0',
+          },
           myAPYBoost: '0',
         };
         if (!currentUser) return metric;
@@ -1915,7 +1976,35 @@ export const ProtocolType: GraphQLObjectType = new GraphQLObjectType<Protocol, R
           ...metric,
           myAPY: userApy,
           myStaked: userMetric.stakingUSD,
+          myStakedChange: {
+            day:
+              Number(userMetric.stakingUSDDayBefore) !== 0
+                ? new BN(userMetric.stakingUSD).div(userMetric.stakingUSDDayBefore).toString(10)
+                : '0',
+            week:
+              Number(userMetric.stakingUSDWeekBefore) !== 0
+                ? new BN(userMetric.stakingUSD).div(userMetric.stakingUSDWeekBefore).toString(10)
+                : '0',
+            month:
+              Number(userMetric.stakingUSDMonthBefore) !== 0
+                ? new BN(userMetric.stakingUSD).div(userMetric.stakingUSDMonthBefore).toString(10)
+                : '0',
+          },
           myEarned: userMetric.earnedUSD,
+          myEarnedChange: {
+            day:
+              Number(userMetric.earnedUSDDayBefore) !== 0
+                ? new BN(userMetric.earnedUSD).div(userMetric.earnedUSDDayBefore).toString(10)
+                : '0',
+            week:
+              Number(userMetric.earnedUSDWeekBefore) !== 0
+                ? new BN(userMetric.earnedUSD).div(userMetric.earnedUSDWeekBefore).toString(10)
+                : '0',
+            month:
+              Number(userMetric.earnedUSDMonthBefore) !== 0
+                ? new BN(userMetric.earnedUSD).div(userMetric.earnedUSDMonthBefore).toString(10)
+                : '0',
+          },
           myAPYBoost: await apyBoost(
             'ethereum',
             '43114',

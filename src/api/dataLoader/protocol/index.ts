@@ -12,6 +12,7 @@ import {
   MetricContractField,
   metricContractTableName,
   metricWalletRegistryTableName,
+  QueryModify,
 } from '@models/Metric/Entity';
 import {
   walletBlockchainTableName,
@@ -140,64 +141,133 @@ export const protocolLastMetricLoader = ({ metric }: { metric: MetricContractFie
   });
 
 export const protocolUserLastMetricLoader = ({ userId }: { userId: string }) =>
-  new DataLoader<string, { stakingUSD: string; earnedUSD: string; minUpdatedAt: string | null }>(
-    async (protocolsId) => {
-      const cache = new Cache(`defihelper:dataLoader:protocolUserLastMetric:${userId}`, 1800);
-      const cachedMap = await cache.getMap(protocolsId);
-
-      const database = container.database();
-      const notCachedIds = protocolsId.filter((protocolId) => cachedMap[protocolId] === undefined);
-      const metrics =
-        notCachedIds.length > 0
-          ? await container.model
-              .metricWalletRegistryTable()
-              .column(`${contractTableName}.protocol`)
-              .column(
-                database.raw(
-                  `SUM((COALESCE(${metricWalletRegistryTableName}.data->>'stakingUSD', '0'))::numeric) AS "stakingUSD"`,
-                ),
-              )
-              .column(
-                database.raw(
-                  `SUM((COALESCE(${metricWalletRegistryTableName}.data->>'earnedUSD', '0'))::numeric) AS "earnedUSD"`,
-                ),
-              )
-              .min(`${metricWalletRegistryTableName}.date AS minUpdatedAt`)
-              .innerJoin(
-                contractTableName,
-                `${contractTableName}.id`,
-                `${metricWalletRegistryTableName}.contract`,
-              )
-              .innerJoin(
-                walletTableName,
-                `${walletTableName}.id`,
-                `${metricWalletRegistryTableName}.wallet`,
-              )
-              .whereIn(`${contractTableName}.protocol`, protocolsId)
-              .where(`${walletTableName}.user`, userId)
-              .whereNull(`${walletTableName}.deletedAt`)
-              .where(`${contractTableName}.deprecated`, false)
-              .where(`${contractTableName}.hidden`, false)
-              .groupBy('protocol')
-          : [];
-      const map = metrics.reduce(
-        (result, { protocol, stakingUSD, earnedUSD, minUpdatedAt }) => ({
-          ...result,
-          [protocol]: {
-            stakingUSD: stakingUSD ?? '0',
-            earnedUSD: earnedUSD ?? '0',
-            minUpdatedAt: minUpdatedAt ? minUpdatedAt.toISOString() : null,
-          },
-        }),
-        cachedMap,
+  new DataLoader<
+    string,
+    {
+      stakingUSD: string;
+      stakingUSDDayBefore: string;
+      stakingUSDWeekBefore: string;
+      stakingUSDMonthBefore: string;
+      earnedUSD: string;
+      earnedUSDDayBefore: string;
+      earnedUSDWeekBefore: string;
+      earnedUSDMonthBefore: string;
+      minUpdatedAt: string | null;
+    }
+  >(async (protocolsId) => {
+    const map = await container.model
+      .metricWalletRegistryTable()
+      .column(`${contractTableName}.protocol`)
+      .modify(QueryModify.sumMetric, [
+        'stakingUSD',
+        `${metricWalletRegistryTableName}.data->>'stakingUSD'`,
+      ])
+      .modify(QueryModify.sumMetric, [
+        'stakingUSDDayBefore',
+        `${metricWalletRegistryTableName}.data->>'stakingUSDDayBefore'`,
+      ])
+      .modify(QueryModify.sumMetric, [
+        'stakingUSDWeekBefore',
+        `${metricWalletRegistryTableName}.data->>'stakingUSDWeekBefore'`,
+      ])
+      .modify(QueryModify.sumMetric, [
+        'stakingUSDMonthBefore',
+        `${metricWalletRegistryTableName}.data->>'stakingUSDMonthBefore'`,
+      ])
+      .modify(QueryModify.sumMetric, [
+        'earnedUSD',
+        `${metricWalletRegistryTableName}.data->>'earnedUSD'`,
+      ])
+      .modify(QueryModify.sumMetric, [
+        'earnedUSDDayBefore',
+        `${metricWalletRegistryTableName}.data->>'earnedUSDDayBefore'`,
+      ])
+      .modify(QueryModify.sumMetric, [
+        'earnedUSDWeekBefore',
+        `${metricWalletRegistryTableName}.data->>'earnedUSDWeekBefore'`,
+      ])
+      .modify(QueryModify.sumMetric, [
+        'earnedUSDMonthBefore',
+        `${metricWalletRegistryTableName}.data->>'earnedUSDMonthBefore'`,
+      ])
+      .min(`${metricWalletRegistryTableName}.date AS minUpdatedAt`)
+      .innerJoin(
+        contractTableName,
+        `${contractTableName}.id`,
+        `${metricWalletRegistryTableName}.contract`,
+      )
+      .innerJoin(
+        walletTableName,
+        `${walletTableName}.id`,
+        `${metricWalletRegistryTableName}.wallet`,
+      )
+      .whereIn(`${contractTableName}.protocol`, protocolsId)
+      .where(`${walletTableName}.user`, userId)
+      .whereNull(`${walletTableName}.deletedAt`)
+      .where(`${contractTableName}.deprecated`, false)
+      .where(`${contractTableName}.hidden`, false)
+      .groupBy(`${contractTableName}.protocol`)
+      .then(
+        (
+          rows: Array<{
+            protocol: string;
+            stakingUSD: string;
+            stakingUSDDayBefore: string;
+            stakingUSDWeekBefore: string;
+            stakingUSDMonthBefore: string;
+            earnedUSD: string;
+            earnedUSDDayBefore: string;
+            earnedUSDWeekBefore: string;
+            earnedUSDMonthBefore: string;
+            minUpdatedAt: Date | null;
+          }>,
+        ) =>
+          new Map(
+            rows.map(
+              ({
+                protocol,
+                stakingUSD,
+                stakingUSDDayBefore,
+                stakingUSDWeekBefore,
+                stakingUSDMonthBefore,
+                earnedUSD,
+                earnedUSDDayBefore,
+                earnedUSDWeekBefore,
+                earnedUSDMonthBefore,
+                minUpdatedAt,
+              }) => [
+                protocol,
+                {
+                  stakingUSD,
+                  stakingUSDDayBefore,
+                  stakingUSDWeekBefore,
+                  stakingUSDMonthBefore,
+                  earnedUSD,
+                  earnedUSDDayBefore,
+                  earnedUSDWeekBefore,
+                  earnedUSDMonthBefore,
+                  minUpdatedAt: minUpdatedAt ? minUpdatedAt.toISOString() : null,
+                },
+              ],
+            ),
+          ),
       );
-      await cache.setMap(notCachedIds, map);
 
-      return protocolsId.map(
-        (id) => map[id] ?? { stakingUSD: '0', earnedUSD: '0', minUpdatedAt: null },
-      );
-    },
-  );
+    return protocolsId.map(
+      (id) =>
+        map.get(id) ?? {
+          stakingUSD: '0',
+          stakingUSDDayBefore: '0',
+          stakingUSDWeekBefore: '0',
+          stakingUSDMonthBefore: '0',
+          earnedUSD: '0',
+          earnedUSDDayBefore: '0',
+          earnedUSDWeekBefore: '0',
+          earnedUSDMonthBefore: '0',
+          minUpdatedAt: null,
+        },
+    );
+  });
 
 export const protocolUserLastAPRLoader = ({
   userId,
@@ -343,21 +413,54 @@ export const contractUserLastMetricLoader = ({
   userId: string;
   walletType: WalletBlockchainType[];
 }) =>
-  new DataLoader<string, { stakingUSD: string; earnedUSD: string }>(async (contractsId) => {
-    const database = container.database();
+  new DataLoader<
+    string,
+    {
+      stakingUSD: string;
+      stakingUSDDayBefore: string;
+      stakingUSDWeekBefore: string;
+      stakingUSDMonthBefore: string;
+      earnedUSD: string;
+      earnedUSDDayBefore: string;
+      earnedUSDWeekBefore: string;
+      earnedUSDMonthBefore: string;
+    }
+  >(async (contractsId) => {
     const map = await container.model
       .metricWalletRegistryTable()
       .column(`${metricWalletRegistryTableName}.contract`)
-      .column(
-        database.raw(
-          `SUM((COALESCE(${metricWalletRegistryTableName}.data->>'stakingUSD', '0'))::numeric) AS "stakingUSD"`,
-        ),
-      )
-      .column(
-        database.raw(
-          `SUM((COALESCE(${metricWalletRegistryTableName}.data->>'earnedUSD', '0'))::numeric) AS "earnedUSD"`,
-        ),
-      )
+      .modify(QueryModify.sumMetric, [
+        'stakingUSD',
+        `${metricWalletRegistryTableName}.data->>'stakingUSD'`,
+      ])
+      .modify(QueryModify.sumMetric, [
+        'stakingUSDDayBefore',
+        `${metricWalletRegistryTableName}.data->>'stakingUSDDayBefore'`,
+      ])
+      .modify(QueryModify.sumMetric, [
+        'stakingUSDWeekBefore',
+        `${metricWalletRegistryTableName}.data->>'stakingUSDWeekBefore'`,
+      ])
+      .modify(QueryModify.sumMetric, [
+        'stakingUSDMonthBefore',
+        `${metricWalletRegistryTableName}.data->>'stakingUSDMonthBefore'`,
+      ])
+      .modify(QueryModify.sumMetric, [
+        'earnedUSD',
+        `${metricWalletRegistryTableName}.data->>'earnedUSD'`,
+      ])
+      .modify(QueryModify.sumMetric, [
+        'earnedUSDDayBefore',
+        `${metricWalletRegistryTableName}.data->>'earnedUSDDayBefore'`,
+      ])
+      .modify(QueryModify.sumMetric, [
+        'earnedUSDWeekBefore',
+        `${metricWalletRegistryTableName}.data->>'earnedUSDWeekBefore'`,
+      ])
+      .modify(QueryModify.sumMetric, [
+        'earnedUSDMonthBefore',
+        `${metricWalletRegistryTableName}.data->>'earnedUSDMonthBefore'`,
+      ])
       .innerJoin(
         walletTableName,
         `${walletTableName}.id`,
@@ -369,20 +472,65 @@ export const contractUserLastMetricLoader = ({
         `${walletBlockchainTableName}.id`,
       )
       .where(function () {
-        this.where(`${walletTableName}.user`, userId)
-          .whereNull(`${walletTableName}.deletedAt`)
-          .whereIn(`${walletBlockchainTableName}.type`, walletType);
+        this.where(`${walletTableName}.user`, userId);
+        this.whereNull(`${walletTableName}.deletedAt`);
+        this.whereIn(`${walletBlockchainTableName}.type`, walletType);
       })
-      .groupBy('contract')
+      .groupBy(`${metricWalletRegistryTableName}.contract`)
       .then(
-        (rows) =>
+        (
+          rows: Array<{
+            contract: string;
+            stakingUSD: string;
+            stakingUSDDayBefore: string;
+            stakingUSDWeekBefore: string;
+            stakingUSDMonthBefore: string;
+            earnedUSD: string;
+            earnedUSDDayBefore: string;
+            earnedUSDWeekBefore: string;
+            earnedUSDMonthBefore: string;
+          }>,
+        ) =>
           new Map(
-            rows.map(({ contract, stakingUSD, earnedUSD }) => [
-              contract,
-              { stakingUSD, earnedUSD },
-            ]),
+            rows.map(
+              ({
+                contract,
+                stakingUSD,
+                stakingUSDDayBefore,
+                stakingUSDWeekBefore,
+                stakingUSDMonthBefore,
+                earnedUSD,
+                earnedUSDDayBefore,
+                earnedUSDWeekBefore,
+                earnedUSDMonthBefore,
+              }) => [
+                contract,
+                {
+                  stakingUSD,
+                  stakingUSDDayBefore,
+                  stakingUSDWeekBefore,
+                  stakingUSDMonthBefore,
+                  earnedUSD,
+                  earnedUSDDayBefore,
+                  earnedUSDWeekBefore,
+                  earnedUSDMonthBefore,
+                },
+              ],
+            ),
           ),
       );
 
-    return contractsId.map((id) => map.get(id) ?? { stakingUSD: '0', earnedUSD: '0' });
+    return contractsId.map(
+      (id) =>
+        map.get(id) ?? {
+          stakingUSD: '0',
+          stakingUSDDayBefore: '0',
+          stakingUSDWeekBefore: '0',
+          stakingUSDMonthBefore: '0',
+          earnedUSD: '0',
+          earnedUSDDayBefore: '0',
+          earnedUSDWeekBefore: '0',
+          earnedUSDMonthBefore: '0',
+        },
+    );
   });

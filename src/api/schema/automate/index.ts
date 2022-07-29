@@ -1169,8 +1169,6 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
         if (!wallet) return def;
 
         const walletMetric = await dataLoader.walletMetric().load(wallet.id);
-        if (!walletMetric) return def;
-
         const totalBalance = new BN(walletMetric.stakingUSD)
           .plus(walletMetric.earnedUSD)
           .toNumber();
