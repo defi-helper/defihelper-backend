@@ -69,9 +69,8 @@ export default async (process: Process) => {
         });
         break;
       case ContactBroker.Telegram:
-        await container.model.queueService().push('sendTelegram', {
-          chatId: contact.params?.chatId || 0,
-          locale: user.locale,
+        await container.model.queueService().push('sendTelegramByContact', {
+          contactId: contact.id,
           ...sendParams,
         });
         break;

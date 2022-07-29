@@ -94,7 +94,6 @@ export function redisLockFactory(cache: Factory<RedisClient>) {
           if (err) return reject(err);
           if (reply === 0) return reject(new Error('Lock failed'));
           if (typeof ttl === 'number') cache().expire(key, ttl);
-
           return resolve(key);
         });
       });

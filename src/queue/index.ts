@@ -29,6 +29,7 @@ export * as metricsWalletBlock from './metrics/walletBlock';
 export * as metricsWalletScanMutation from './metrics/walletScanMutation';
 export * as sendEmail from './email/send';
 export * as sendTelegram from './telegram/send';
+export * as sendTelegramByContact from './telegram/sendByContact';
 export * as registerContractInScanner from './scanner/registerContract';
 export * as watcherResolveContractId from './scanner/resolveWatcherId';
 export * as notificationSend from './notifications/send';

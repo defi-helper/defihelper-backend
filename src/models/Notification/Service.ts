@@ -147,6 +147,25 @@ export class UserContactService {
     return activated;
   }
 
+  async deactivate(contact: UserContact): Promise<UserContact> {
+    if (contact.status === ContactStatus.Inactive) {
+      return contact;
+    }
+
+    const deactivated: UserContact = {
+      ...contact,
+      status: ContactStatus.Inactive,
+    };
+
+    await this.table()
+      .where({
+        id: deactivated.id,
+      })
+      .update(deactivated);
+
+    return deactivated;
+  }
+
   async delete(contact: UserContact): Promise<void> {
     await this.table()
       .where({
