@@ -13,10 +13,10 @@ export const TradingAuthType = new GraphQLObjectType<any, Request>({
       type: GraphQLNonNull(GraphQLString),
     },
     refreshToken: {
-      type: GraphQLNonNull(GraphQLString),
+      type: GraphQLString,
     },
     tokenExpired: {
-      type: GraphQLNonNull(DateTimeType),
+      type: DateTimeType,
     },
   },
 });
@@ -34,7 +34,7 @@ export const TradingAuthMutation: GraphQLFieldConfig<any, Request> = {
     return {
       accessToken: resp.data.access_token,
       refreshToken: resp.data.refresh_token,
-      tokenExpired: dayjs(resp.data.tokenExpired),
+      tokenExpired: resp.data.tokenExpired ? dayjs(resp.data.tokenExpired) : null,
     };
   },
 };

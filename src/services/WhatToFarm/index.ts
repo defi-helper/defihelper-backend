@@ -4,8 +4,8 @@ export interface LoginResponse {
   code: number;
   data: {
     access_token: string;
-    refresh_token: string;
-    tokenExpired: string;
+    refresh_token?: string;
+    tokenExpired?: string;
     username: string;
   };
 }
