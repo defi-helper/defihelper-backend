@@ -57,7 +57,7 @@ broker:
         command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue:consume -- -q tasks_default"'
         replicas: 1
         maxReplicas: 10
-        maxReadyMessagesForHpa: 10
+        maxReadyMessagesForHpa: 25
         resources:
           requests:
             memory: 256Mi
