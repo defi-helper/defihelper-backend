@@ -41,7 +41,7 @@ export default async (process: Process) => {
   const networkContracts = contracts[network] as { [name: string]: { address: string } };
   const balanceAddress = networkContracts.Balance.address;
   const balance = container.blockchain[blockchain].contract(balanceAddress, balanceAbi, provider);
-  const storeAddress = networkContracts.Store.address;
+  const storeAddress = networkContracts.StoreUpgradable.address;
 
   const bills = await container.model
     .billingBillTable()
