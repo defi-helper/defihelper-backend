@@ -25,11 +25,18 @@ export default async (process: Process) => {
     };
   }, {} as { [network: string]: { [handler: string]: Task } });
 
+  const { mode } = container.parent;
   const queueService = container.model.queueService();
   const { ethereum } = container.blockchain;
   await Promise.all(
     Object.entries(contracts).map(async ([network, networkContracts]) => {
-      if (!ethereum.isNetwork(network) || ethereum.byNetwork(network).testnet) return [];
+      if (!ethereum.isNetwork(network)) return [];
+      if (
+        ethereum.byNetwork(network).testnet &&
+        !(mode === 'development' && ['5', '43113'].includes(network))
+      ) {
+        return [];
+      }
 
       const pool = [];
       if (isKey(networkContracts, 'Balance')) {
@@ -46,10 +53,7 @@ export default async (process: Process) => {
                 from: balanceFrom,
                 lag: ['43114'].includes(network) ? 4 : 1,
               },
-              {
-                collisionSign: `billingTransferScan:ethereum:${network}`,
-                scanner: true,
-              },
+              { scanner: true },
             ),
           );
         }
@@ -64,10 +68,7 @@ export default async (process: Process) => {
                 from: balanceFrom,
                 lag: ['43114'].includes(network) ? 4 : 1,
               },
-              {
-                collisionSign: `billingClaimScan:ethereum:${network}`,
-                scanner: true,
-              },
+              { scanner: true },
             ),
           );
         }
@@ -87,10 +88,7 @@ export default async (process: Process) => {
                 from: storeFrom,
                 lag: ['43114'].includes(network) ? 4 : 1,
               },
-              {
-                collisionSign: `billingStoreScan:ethereum:${network}`,
-                scanner: true,
-              },
+              { scanner: true },
             ),
           );
         }
@@ -104,10 +102,7 @@ export default async (process: Process) => {
               blockchain: 'ethereum',
               network,
             },
-            {
-              collisionSign: `billingFeeOracle:ethereum:${network}`,
-              scanner: true,
-            },
+            { scanner: true },
           ),
         );
       }

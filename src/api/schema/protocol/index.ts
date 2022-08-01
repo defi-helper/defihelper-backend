@@ -131,10 +131,6 @@ export const ContractAutomatesType = new GraphQLObjectType<ContractAutomate, Req
       description: 'Autorestake adapter name',
       resolve: ({ autorestakeAdapter }) => autorestakeAdapter,
     },
-    buyLiquidity: {
-      type: ContractAutomateBuyLiquidityType,
-      description: 'Buy liquidity automate config',
-    },
     lpTokensManager: {
       type: ContractAutomateBuyLiquidityType,
       description: 'Liquidity pool tokens manager automate config',
@@ -619,6 +615,9 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
           hidden: {
             type: GraphQLBoolean,
           },
+          deprecated: {
+            type: GraphQLBoolean,
+          },
           userLink: {
             type: ContractUserLinkTypeEnum,
           },
@@ -626,9 +625,9 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
             type: new GraphQLInputObjectType({
               name: 'ContractListAutomateFilterInputType',
               fields: {
-                buyLiquidity: {
+                lpTokensManager: {
                   type: GraphQLBoolean,
-                  description: 'Has buy liquidity automate',
+                  description: 'Has LP tokens manager automate',
                 },
                 autorestake: {
                   type: GraphQLBoolean,
@@ -677,7 +676,7 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
       .column(`${contractTableName}.*`)
       .column(`${contractBlockchainTableName}.*`)
       .where(function () {
-        const { id, protocol, hidden, userLink, search } = filter;
+        const { id, protocol, hidden, deprecated, userLink, search } = filter;
         if (id) {
           this.where(`${contractTableName}.id`, id);
         } else {
@@ -696,19 +695,16 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
           if (typeof hidden === 'boolean') {
             this.andWhere('hidden', hidden);
           }
+          if (typeof deprecated === 'boolean') {
+            this.where('deprecated', deprecated);
+          }
           if (filter.automate !== undefined) {
-            const { buyLiquidity, autorestake, autorestakeCandidate } = filter.automate;
-            if (typeof buyLiquidity === 'boolean') {
-              if (buyLiquidity) {
-                this.where(function () {
-                  this.where(database.raw("automate->>'buyLiquidity' IS NOT NULL"));
-                  this.orWhere(database.raw("automate->>'lpTokensManager' IS NOT NULL"));
-                });
+            const { lpTokensManager, autorestake, autorestakeCandidate } = filter.automate;
+            if (typeof lpTokensManager === 'boolean') {
+              if (lpTokensManager) {
+                this.where(database.raw("automate->>'lpTokensManager' IS NOT NULL"));
               } else {
-                this.where(function () {
-                  this.where(database.raw("automate->>'buyLiquidity' IS NULL"));
-                  this.orWhere(database.raw("automate->>'lpTokensManager' IS NULL"));
-                });
+                this.where(database.raw("automate->>'lpTokensManager' IS NULL"));
               }
             }
             if (typeof autorestake === 'boolean') {
@@ -882,6 +878,9 @@ export const ContractDebankListQuery: GraphQLFieldConfig<any, Request> = {
           hidden: {
             type: GraphQLBoolean,
           },
+          deprecated: {
+            type: GraphQLBoolean,
+          },
           search: {
             type: GraphQLString,
           },
@@ -948,7 +947,7 @@ export const ContractDebankListQuery: GraphQLFieldConfig<any, Request> = {
         'metric.contract',
       )
       .where(function () {
-        const { id, protocol, hidden, search } = filter;
+        const { id, protocol, hidden, deprecated, search } = filter;
         if (id) {
           this.where(`${contractTableName}.id`, id);
         } else {
@@ -960,6 +959,9 @@ export const ContractDebankListQuery: GraphQLFieldConfig<any, Request> = {
           }
           if (typeof hidden === 'boolean') {
             this.andWhere('hidden', hidden);
+          }
+          if (typeof deprecated === 'boolean') {
+            this.where('deprecated', deprecated);
           }
           if (search !== undefined && search !== '') {
             this.andWhere(function () {
@@ -2138,7 +2140,7 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
             type: new GraphQLInputObjectType({
               name: 'ProtocolListFilterAutomateInputType',
               fields: {
-                buyLiquidity: {
+                lpTokensManager: {
                   type: GraphQLBoolean,
                 },
               },
@@ -2206,19 +2208,16 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
         this.andWhere('name', 'iLike', `%${search}%`);
       }
       if (typeof automate === 'object') {
-        if (typeof automate.buyLiquidity === 'boolean') {
+        if (typeof automate.lpTokensManager === 'boolean') {
           this.where(
             database.raw(`(
               select count(${contractTableName}.id)
               from ${contractTableName}
               inner join ${contractBlockchainTableName} on ${contractBlockchainTableName}.id = ${contractTableName}.id
               where ${contractTableName}.protocol = ${protocolTableName}.id
-              and (
-                ${contractBlockchainTableName}.automate->>'buyLiquidity' IS NOT NULL
-                or ${contractBlockchainTableName}.automate->>'lpTokensManager' IS NOT NULL
-              )
+              and ${contractBlockchainTableName}.automate->>'lpTokensManager' IS NOT NULL
             )`),
-            automate.buyLiquidity ? '>' : '=',
+            automate.lpTokensManager ? '>' : '=',
             0,
           );
         }

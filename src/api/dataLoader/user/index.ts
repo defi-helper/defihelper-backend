@@ -7,6 +7,7 @@ import {
   metricWalletTokenRegistryTableName,
   QueryModify,
 } from '@models/Metric/Entity';
+import { User } from '@models/User/Entity';
 import { walletContractLinkTableName } from '@models/Protocol/Entity';
 import {
   Wallet,
@@ -17,6 +18,15 @@ import {
 import DataLoader from 'dataloader';
 import { TokenAliasLiquidity, tokenAliasTableName, tokenTableName } from '@models/Token/Entity';
 import { triggerTableName } from '@models/Automate/Entity';
+
+export const userLoader = () =>
+  new DataLoader<string, User | null>(async (usersId) => {
+    const map = await container.model
+      .userTable()
+      .whereIn('id', usersId)
+      .then((rows) => new Map(rows.map((user) => [user.id, user])));
+    return usersId.map((userId) => map.get(userId) ?? null);
+  });
 
 export const userBlockchainLoader = () =>
   new DataLoader<string, Array<Pick<Wallet & WalletBlockchain, 'user' | 'blockchain' | 'network'>>>(

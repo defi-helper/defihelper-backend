@@ -234,7 +234,6 @@ export class ContractService {
       automate: {
         adapters: automate.adapters,
         autorestakeAdapter: automate.autorestakeAdapter,
-        buyLiquidity: automate.buyLiquidity,
         lpTokensManager: automate.lpTokensManager,
       },
       blockchain,
@@ -337,20 +336,24 @@ export class ContractService {
       wallet: blockchainWallet.id,
       createdAt: new Date(),
     };
-    await this.walletLinkTable().insert(created).onConflict(['contract', 'wallet']).ignore();
-    this.onWalletLink.emit({ contract, wallet: blockchainWallet });
+    const insert = await this.walletLinkTable()
+      .insert([created], ['id'])
+      .onConflict(['contract', 'wallet'])
+      .ignore();
+    if (insert.length > 0) {
+      this.onWalletLink.emit({ contract, wallet: blockchainWallet });
+    }
 
     return created;
   }
 
   async walletUnlink(contract: Contract, wallet: WalletBlockchain) {
-    const duplicate = await this.walletLinkTable()
-      .where('contract', contract.id)
-      .andWhere('wallet', wallet.id)
-      .first();
-    if (!duplicate) return;
-
-    await this.walletLinkTable().where('id', duplicate.id).delete();
+    await this.walletLinkTable()
+      .where({
+        contract: contract.id,
+        wallet: wallet.id,
+      })
+      .delete();
   }
 
   async tokenLink(

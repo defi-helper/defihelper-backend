@@ -30,7 +30,7 @@ import {
   onlyAllowed,
 } from '../types';
 
-export const VoteType = new GraphQLObjectType<Vote>({
+export const VoteType = new GraphQLObjectType<Vote, Request>({
   name: 'VoteType',
   fields: {
     id: {
@@ -40,8 +40,8 @@ export const VoteType = new GraphQLObjectType<Vote>({
     user: {
       type: GraphQLNonNull(UserType),
       description: 'Voting user',
-      resolve: (vote) => {
-        return container.model.userTable().where('id', vote.user).first();
+      resolve: (vote, args, { dataLoader }) => {
+        return dataLoader.user().load(vote.user);
       },
     },
     updatedAt: {
@@ -185,7 +185,7 @@ export const StatusEnum = new GraphQLEnumType({
   },
 });
 
-export const ProposalType = new GraphQLObjectType<Proposal>({
+export const ProposalType = new GraphQLObjectType<Proposal, Request>({
   name: 'ProposalType',
   fields: {
     id: {
@@ -207,8 +207,8 @@ export const ProposalType = new GraphQLObjectType<Proposal>({
     author: {
       type: UserType,
       description: 'Author',
-      resolve: (proposal) => {
-        return container.model.userTable().where('id', proposal.author).first();
+      resolve: (proposal, args, { dataLoader }) => {
+        return proposal.author ? dataLoader.user().load(proposal.author) : null;
       },
     },
     votes: {
@@ -233,10 +233,12 @@ export const ProposalType = new GraphQLObjectType<Proposal>({
         pagination: PaginationArgument('VoteListPaginationInputType'),
       },
       resolve: async (proposal, { filter, sort, pagination }) => {
-        let select = container.model.voteTable().where('proposal', proposal.id);
-        if (filter.user !== undefined) {
-          select = select.andWhere('user', filter.user);
-        }
+        const select = container.model.voteTable().where(function () {
+          this.where('proposal', proposal.id);
+          if (filter.user !== undefined) {
+            this.where('user', filter.user);
+          }
+        });
 
         return {
           list: await select

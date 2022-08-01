@@ -199,6 +199,20 @@ export function route({ express, server }: { express: Express; server: Server })
               container.model.logService().create(`graphql:PARSING_ERROR`, error);
               container.logger().error(error);
             },
+            executionDidStart(context) {
+              const execStartTime = Date.now();
+              return {
+                executionDidEnd() {
+                  container
+                    .logger()
+                    .debug(
+                      `"${context.request.operationName}" execute time: ${
+                        Date.now() - execStartTime
+                      }ms`,
+                    );
+                },
+              };
+            },
           };
         },
       },

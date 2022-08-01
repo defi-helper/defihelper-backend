@@ -25,11 +25,22 @@ spec:
         value: {{ $params.maxReadyMessagesForHpa }}
   minReplicas: 1
   behavior:
-    scaleDown:
+    scaleUp:
+      stabilizationWindowSeconds: 0
       policies:
-      - type: Percent
-        value: 25
-        periodSeconds: 60
+        - type: Percent
+          value: 100
+          periodSeconds: 15
+        - type: Pods
+          value: 2
+          periodSeconds: 15
+      selectPolicy: Max
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 15
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment

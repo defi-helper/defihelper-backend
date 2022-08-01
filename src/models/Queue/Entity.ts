@@ -6,7 +6,6 @@ export enum TaskStatus {
   Process = 'process',
   Done = 'done',
   Error = 'error',
-  Collision = 'collision',
 }
 
 export function hasHandler(handler: string): handler is keyof typeof Handlers {
@@ -68,7 +67,7 @@ export interface Task {
   priority: number;
   topic: string;
   scanner: boolean;
-  collisionSign: string | null;
+  executionTime: number | null;
   updatedAt: Date;
   createdAt: Date;
 }
