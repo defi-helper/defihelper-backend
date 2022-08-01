@@ -14,7 +14,6 @@ export interface PushOptions {
   startAt?: Date;
   scanner?: boolean;
   priority?: number;
-  collisionSign?: string;
   topic?: string;
 }
 
@@ -48,7 +47,7 @@ export class QueueService {
   }
 
   async push<H extends Handler>(handler: H, params: Object = {}, options: PushOptions = {}) {
-    let task: Task = {
+    const task: Task = {
       id: uuid(),
       handler,
       params,
@@ -56,29 +55,13 @@ export class QueueService {
       status: TaskStatus.Pending,
       info: '',
       error: '',
-      collisionSign: options.collisionSign ?? null,
       priority: options.priority ?? QueueService.defaultPriority,
       topic: options.topic ?? QueueService.defaultTopic,
       scanner: options.scanner ?? false,
+      executionTime: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-
-    if (typeof options.collisionSign === 'string') {
-      const duplicate = await this.queueTable()
-        .where({
-          collisionSign: options.collisionSign,
-        })
-        .whereIn('status', [TaskStatus.Pending, TaskStatus.Process])
-        .first();
-      if (duplicate) {
-        task = {
-          ...task,
-          status: TaskStatus.Collision,
-          error: `Duplicate for ${duplicate.id}`,
-        };
-      }
-    }
 
     if (!dayjs(task.startAt).isAfter(new Date())) {
       await this.queueTable().insert({
@@ -141,8 +124,11 @@ export class QueueService {
   async handle(task: Task) {
     const process = new Process(task);
     try {
+      const executionStart = Date.now();
       const { task: result } = await Handlers[task.handler].default(process);
-      return await this.queueTable().update(result).where('id', task.id);
+      return await this.queueTable()
+        .update({ ...result, executionTime: Date.now() - executionStart })
+        .where('id', task.id);
     } catch (e) {
       const error = e instanceof Error ? e : new Error(`${e}`);
 

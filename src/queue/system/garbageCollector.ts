@@ -12,7 +12,7 @@ export default async (process: Process) => {
     container.model
       .queueTable()
       .delete()
-      .whereIn('status', [TaskStatus.Error, TaskStatus.Collision])
+      .whereIn('status', [TaskStatus.Error])
       .andWhere('updatedAt', '<', dayjs().add(-30, 'days').toDate()),
     container.model
       .queueTable()
