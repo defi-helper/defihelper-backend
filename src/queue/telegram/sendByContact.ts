@@ -39,6 +39,7 @@ export default async (process: Process) => {
     );
   } catch (error: any) {
     if (error?.response?.statusCode === 403) {
+      delete contact.locale;
       await container.model.userContactService().deactivate(contact);
       return process.done().info('Target contact deactivated due to dialog blocking');
     }
