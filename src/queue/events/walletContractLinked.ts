@@ -71,7 +71,7 @@ export default async (process: Process) => {
       .push(
         'metricsWalletHistory',
         { contract: contract.id, wallet: walletBlockchain.id },
-        { topic: 'metricCurrent', priority: 9 },
+        { topic: 'metricHistory' },
       );
   }
   return process.done();
