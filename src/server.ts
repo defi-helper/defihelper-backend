@@ -3,7 +3,7 @@ import 'module-alias/register';
 import { createServer } from 'http';
 import Express from 'express';
 import { route } from '@api/router';
-import container from './container';
+import container from '@container';
 
 const express = Express();
 const server = createServer(express);
