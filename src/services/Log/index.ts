@@ -14,11 +14,14 @@ export interface Log {
 export class ConsoleLogger implements Log {
   protected dateFormat: string = ``;
 
+  constructor(public readonly mode: string) {}
+
   format(type: string, msg: string) {
     return `${type} [${dayjs().format(this.dateFormat)}]: ${msg}`;
   }
 
   debug(msg: string) {
+    if (this.mode !== 'development') return;
     console.debug(this.format('DEBUG', msg));
   }
 
@@ -33,8 +36,4 @@ export class ConsoleLogger implements Log {
   error(msg: string) {
     console.error(this.format('ERROR', msg));
   }
-}
-
-export function consoleFactory() {
-  return () => new ConsoleLogger();
 }
