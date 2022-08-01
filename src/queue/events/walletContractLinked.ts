@@ -55,15 +55,24 @@ export default async (process: Process) => {
   const { hasProvider, hasProviderHistorical } = container.blockchain.ethereum.byNetwork(
     walletBlockchain.network,
   );
+
   if (hasProvider) {
     container.model
       .queueService()
-      .push('metricsWalletCurrent', { contract: contract.id, wallet: walletBlockchain.id });
+      .push(
+        'metricsWalletCurrent',
+        { contract: contract.id, wallet: walletBlockchain.id },
+        { topic: 'metricCurrent', priority: 9 },
+      );
   }
   if (hasProviderHistorical) {
     container.model
       .queueService()
-      .push('metricsWalletHistory', { contract: contract.id, wallet: walletBlockchain.id });
+      .push(
+        'metricsWalletHistory',
+        { contract: contract.id, wallet: walletBlockchain.id },
+        { topic: 'metricCurrent', priority: 9 },
+      );
   }
   return process.done();
 };
