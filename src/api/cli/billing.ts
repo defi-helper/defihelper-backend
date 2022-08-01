@@ -17,10 +17,7 @@ export default async ([network = '1']: string[]) => {
         step: 5000,
         from: balanceFrom,
       },
-      {
-        collisionSign: `billingTransferScan:ethereum:${network}`,
-        scanner: true,
-      },
+      { scanner: true },
     ),
     container.model.queueService().push(
       'billingClaimScan',
@@ -30,10 +27,7 @@ export default async ([network = '1']: string[]) => {
         step: 5000,
         from: balanceFrom,
       },
-      {
-        collisionSign: `billingClaimScan:ethereum:${network}`,
-        scanner: true,
-      },
+      { scanner: true },
     ),
     container.model.queueService().push(
       'billingFeeOracle',
@@ -41,10 +35,7 @@ export default async ([network = '1']: string[]) => {
         blockchain: 'ethereum',
         network,
       },
-      {
-        collisionSign: `billingFeeOracle:ethereum:${network}`,
-        scanner: true,
-      },
+      { scanner: true },
     ),
     container.model.queueService().push(
       'billingStoreScan',
@@ -54,10 +45,7 @@ export default async ([network = '1']: string[]) => {
         step: 5000,
         from: storeFrom,
       },
-      {
-        collisionSign: `billingStoreScan:ethereum:${network}`,
-        scanner: true,
-      },
+      { scanner: true },
     ),
   ]);
 };
