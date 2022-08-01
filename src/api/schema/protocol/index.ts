@@ -615,6 +615,9 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
           hidden: {
             type: GraphQLBoolean,
           },
+          deprecated: {
+            type: GraphQLBoolean,
+          },
           userLink: {
             type: ContractUserLinkTypeEnum,
           },
@@ -673,7 +676,7 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
       .column(`${contractTableName}.*`)
       .column(`${contractBlockchainTableName}.*`)
       .where(function () {
-        const { id, protocol, hidden, userLink, search } = filter;
+        const { id, protocol, hidden, deprecated, userLink, search } = filter;
         if (id) {
           this.where(`${contractTableName}.id`, id);
         } else {
@@ -691,6 +694,9 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
           }
           if (typeof hidden === 'boolean') {
             this.andWhere('hidden', hidden);
+          }
+          if (typeof deprecated === 'boolean') {
+            this.where('deprecated', deprecated);
           }
           if (filter.automate !== undefined) {
             const { lpTokensManager, autorestake, autorestakeCandidate } = filter.automate;
@@ -872,6 +878,9 @@ export const ContractDebankListQuery: GraphQLFieldConfig<any, Request> = {
           hidden: {
             type: GraphQLBoolean,
           },
+          deprecated: {
+            type: GraphQLBoolean,
+          },
           search: {
             type: GraphQLString,
           },
@@ -938,7 +947,7 @@ export const ContractDebankListQuery: GraphQLFieldConfig<any, Request> = {
         'metric.contract',
       )
       .where(function () {
-        const { id, protocol, hidden, search } = filter;
+        const { id, protocol, hidden, deprecated, search } = filter;
         if (id) {
           this.where(`${contractTableName}.id`, id);
         } else {
@@ -950,6 +959,9 @@ export const ContractDebankListQuery: GraphQLFieldConfig<any, Request> = {
           }
           if (typeof hidden === 'boolean') {
             this.andWhere('hidden', hidden);
+          }
+          if (typeof deprecated === 'boolean') {
+            this.where('deprecated', deprecated);
           }
           if (search !== undefined && search !== '') {
             this.andWhere(function () {
