@@ -1,7 +1,7 @@
 import { Container, singleton, singletonParametric } from '@services/Container';
 import { SocialStatsGateway } from '@services/SocialStats';
 import { pgConnectFactory } from '@services/Database';
-import { consoleFactory } from '@services/Log';
+import { ConsoleLogger } from '@services/Log';
 import * as Blockchain from '@services/Blockchain';
 import { I18nContainer } from '@services/I18n/container';
 import { ModelContainer } from '@models/container';
@@ -20,7 +20,7 @@ import { WhatToFarmGateway } from '@services/WhatToFarm';
 import config from './config';
 
 class AppContainer extends Container<typeof config> {
-  readonly logger = singleton(consoleFactory());
+  readonly logger = singleton(() => new ConsoleLogger(this.parent.mode));
 
   readonly database = singleton(pgConnectFactory(this.parent.database));
 
