@@ -5,7 +5,7 @@ import { tableName as userTableName } from '@models/User/Entity';
 import { userContactTableName } from '@models/Notification/Entity';
 
 export interface TelegramNotification {
-  contactId: number;
+  contactId: string;
   template: TelegramTemplate;
   params: Object;
 }
@@ -42,6 +42,8 @@ export default async (process: Process) => {
       await container.model.userContactService().deactivate(contact);
       return process.done().info('Target contact deactivated due to dialog blocking');
     }
+
+    throw error;
   }
 
   return process.done();

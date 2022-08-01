@@ -129,22 +129,14 @@ export class UserContactService {
       return contact;
     }
 
-    const activated: UserContact = {
+    return this.update({
       ...contact,
       params: params || contact.params,
       confirmationCode: '',
       address: address || contact.address,
       status: ContactStatus.Active,
       activatedAt: new Date(),
-    };
-
-    await this.table()
-      .where({
-        id: activated.id,
-      })
-      .update(activated);
-
-    return activated;
+    });
   }
 
   async deactivate(contact: UserContact): Promise<UserContact> {
@@ -152,18 +144,10 @@ export class UserContactService {
       return contact;
     }
 
-    const deactivated: UserContact = {
+    return this.update({
       ...contact,
       status: ContactStatus.Inactive,
-    };
-
-    await this.table()
-      .where({
-        id: deactivated.id,
-      })
-      .update(deactivated);
-
-    return deactivated;
+    });
   }
 
   async delete(contact: UserContact): Promise<void> {

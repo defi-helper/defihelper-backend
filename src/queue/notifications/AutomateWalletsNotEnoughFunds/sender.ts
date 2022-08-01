@@ -96,10 +96,6 @@ export default async (process: Process) => {
           });
 
         case ContactBroker.Telegram:
-          if (!contact.params?.chatId) {
-            return null;
-          }
-
           return container.model.queueService().push('sendTelegramByContact', {
             contactId: contact.id,
             template: 'automateNotEnoughFunds',
