@@ -129,22 +129,25 @@ export class UserContactService {
       return contact;
     }
 
-    const activated: UserContact = {
+    return this.update({
       ...contact,
       params: params || contact.params,
       confirmationCode: '',
       address: address || contact.address,
       status: ContactStatus.Active,
       activatedAt: new Date(),
-    };
+    });
+  }
 
-    await this.table()
-      .where({
-        id: activated.id,
-      })
-      .update(activated);
+  async deactivate(contact: UserContact): Promise<UserContact> {
+    if (contact.status === ContactStatus.Inactive) {
+      return contact;
+    }
 
-    return activated;
+    return this.update({
+      ...contact,
+      status: ContactStatus.Inactive,
+    });
   }
 
   async delete(contact: UserContact): Promise<void> {
