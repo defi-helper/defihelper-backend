@@ -10,11 +10,6 @@ export interface Params {
 
 export default async (process: Process) => {
   const { contractId, walletId } = process.task.params as Params;
-  const contract = await container.model.contractTable().where('id', contractId).first();
-
-  if (!contract) {
-    throw new Error('Parent contract not found');
-  }
 
   const contractBlockchain = await container.model
     .contractTable()
@@ -25,7 +20,6 @@ export default async (process: Process) => {
     )
     .where(`${contractTableName}.id`, contractId)
     .first();
-
   if (!contractBlockchain) {
     return process.done().info('Not blockchain contract');
   }
@@ -39,7 +33,6 @@ export default async (process: Process) => {
     )
     .where(`${walletTableName}.id`, walletId)
     .first();
-
   if (!walletBlockchain) {
     throw new Error('Wallet not found');
   }
@@ -61,7 +54,7 @@ export default async (process: Process) => {
       .queueService()
       .push(
         'metricsWalletCurrent',
-        { contract: contract.id, wallet: walletBlockchain.id },
+        { contract: contractBlockchain.id, wallet: walletBlockchain.id },
         { topic: 'metricCurrent', priority: 9 },
       );
   }
@@ -70,7 +63,7 @@ export default async (process: Process) => {
       .queueService()
       .push(
         'metricsWalletHistory',
-        { contract: contract.id, wallet: walletBlockchain.id },
+        { contract: contractBlockchain.id, wallet: walletBlockchain.id },
         { topic: 'metricHistory' },
       );
   }
