@@ -19,7 +19,9 @@ export class NotificationService {
   constructor(readonly table: Factory<NotificationTable>) {}
 
   public readonly onCreated = new Emitter<Notification>(async (notification) => {
-    return container.model.queueService().push('notificationSend', { id: notification.id });
+    return container.model
+      .queueService()
+      .push('notificationSend', { id: notification.id }, { priority: 9 });
   });
 
   async create(contact: UserContact, payload: NotificationPayloadType): Promise<Notification> {
