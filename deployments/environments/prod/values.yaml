@@ -67,7 +67,7 @@ broker:
             cpu: 500m
         nodeSelector:
           group_name: "apps-jobs"
-        graceperiod: 172800
+        graceperiod: 3600
         tolerations:
           - key: node-role.kubernetes.io/apps-jobs
             operator: "Equal"
@@ -88,7 +88,7 @@ broker:
             cpu: 500m
         nodeSelector:
           group_name: "apps-jobs"
-        graceperiod: 172800
+        graceperiod: 3600
         tolerations:
           - key: node-role.kubernetes.io/apps-jobs
             operator: "Equal"
@@ -109,7 +109,7 @@ broker:
             cpu: 500m
         nodeSelector:
           group_name: "apps-jobs"
-        graceperiod: 172800
+        graceperiod: 3600
         tolerations:
           - key: node-role.kubernetes.io/apps-jobs
             operator: "Equal"
@@ -130,7 +130,7 @@ broker:
             cpu: 500m
         nodeSelector:
           group_name: "apps-jobs"
-        graceperiod: 172800
+        graceperiod: 3600
         tolerations:
           - key: node-role.kubernetes.io/apps-jobs
             operator: "Equal"
@@ -151,7 +151,7 @@ broker:
             cpu: 500m
         nodeSelector:
           group_name: "apps-jobs"
-        graceperiod: 172800
+        graceperiod: 3600
         tolerations:
           - key: node-role.kubernetes.io/apps-jobs
             operator: "Equal"

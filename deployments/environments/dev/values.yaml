@@ -58,7 +58,7 @@ broker:
         replicas: 1
         maxReplicas: 10
         maxReadyMessagesForHpa: 25
-        graceperiod: 172800
+        graceperiod: 3600
         resources:
           requests:
             memory: 256Mi
@@ -72,7 +72,7 @@ broker:
         replicas: 1
         maxReplicas: 20
         maxReadyMessagesForHpa: 100
-        graceperiod: 172800
+        graceperiod: 3600
         resources:
           requests:
             memory: 128Mi
@@ -86,7 +86,7 @@ broker:
         replicas: 1
         maxReplicas: 20
         maxReadyMessagesForHpa: 100
-        graceperiod: 172800
+        graceperiod: 3600
         resources:
           requests:
             memory: 128Mi
@@ -100,7 +100,7 @@ broker:
         replicas: 1
         maxReplicas: 20
         maxReadyMessagesForHpa: 100
-        graceperiod: 172800
+        graceperiod: 3600
         resources:
           requests:
             memory: 128Mi
@@ -114,7 +114,7 @@ broker:
         replicas: 1
         maxReplicas: 20
         maxReadyMessagesForHpa: 100
-        graceperiod: 172800
+        graceperiod: 3600
         resources:
           requests:
             memory: 128Mi
