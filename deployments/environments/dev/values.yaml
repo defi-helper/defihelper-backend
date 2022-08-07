@@ -10,7 +10,7 @@ images:
     resources:
       requests:
         memory: 64Mi
-        cpu: 10m
+        cpu: 50m
       limits:
         memory: 64Mi
         cpu: 100m
@@ -19,7 +19,7 @@ images:
     resources:
       requests:
         memory: 128Mi
-        cpu: 10m
+        cpu: 50m
       limits:
         memory: 256Mi
         cpu: 100m
