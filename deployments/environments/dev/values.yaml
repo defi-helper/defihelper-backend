@@ -61,11 +61,11 @@ broker:
         graceperiod: 3600
         resources:
           requests:
-            memory: 256Mi
-            cpu: 100m
+            memory: 128Mi
+            cpu: 50m
           limits:
             memory: 512Mi
-            cpu: 500m
+            cpu: 100m
       events-trigger:
         name: events-trigger
         command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run trigger:event"'
@@ -76,10 +76,10 @@ broker:
         resources:
           requests:
             memory: 128Mi
-            cpu: 100m
+            cpu: 50m
           limits:
-            memory: 256Mi
-            cpu: 500m
+            memory: 128Mi
+            cpu: 100m
       trigger:
         name: trigger
         command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue:consume -- -q tasks_trigger"'
@@ -90,10 +90,10 @@ broker:
         resources:
           requests:
             memory: 128Mi
-            cpu: 100m
+            cpu: 50m
           limits:
-            memory: 256Mi
-            cpu: 500m
+            memory: 128Mi
+            cpu: 100m
       metrics:
         name: metrics
         command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue:consume -- -q tasks_metricCurrent"'
@@ -104,10 +104,10 @@ broker:
         resources:
           requests:
             memory: 128Mi
-            cpu: 100m
+            cpu: 50m
           limits:
-            memory: 256Mi
-            cpu: 500m
+            memory: 128Mi
+            cpu: 100m
       history:
         name: history
         command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue:consume -- -q tasks_metricHistory"'
@@ -118,10 +118,10 @@ broker:
         resources:
           requests:
             memory: 128Mi
-            cpu: 100m
+            cpu: 50m
           limits:
-            memory: 256Mi
-            cpu: 500m
+            memory: 128Mi
+            cpu: 100m
 
 handlers:
   labels:
