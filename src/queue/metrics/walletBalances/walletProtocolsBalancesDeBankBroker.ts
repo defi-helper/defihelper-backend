@@ -27,7 +27,11 @@ export default async (process: Process) => {
 
     await container.model
       .queueService()
-      .push('metricsWalletProtocolsBalancesDeBankFiller', { id }, { startAt: startAt.toDate() });
+      .push(
+        'metricsWalletProtocolsBalancesDeBankFiller',
+        { id },
+        { topic: 'metricCurrent', startAt: startAt.toDate() },
+      );
 
     return startAt.clone().add(lag, 'seconds');
   }, Promise.resolve(dayjs()));
