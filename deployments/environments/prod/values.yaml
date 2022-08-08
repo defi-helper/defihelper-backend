@@ -123,10 +123,10 @@ broker:
         maxReadyMessagesForHpa: 100
         resources:
           requests:
-            memory: 128Mi
+            memory: 192Mi
             cpu: 50m
           limits:
-            memory: 128Mi
+            memory: 256Mi
             cpu: 100m
         nodeSelector:
           group_name: "apps-jobs"
