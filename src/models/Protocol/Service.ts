@@ -29,6 +29,8 @@ import {
   UserContractLinkTable,
   UserContractLink,
   UserContractLinkType,
+  ContractMigratableRemindersBulkTable,
+  ContractMigratableRemindersBulk,
 } from './Entity';
 
 export class ProtocolService {
@@ -151,12 +153,54 @@ export class ContractService {
   constructor(
     readonly database: Knex,
     readonly contractTable: Factory<ContractTable>,
+    readonly contractMigratableRemindersBulkTable: Factory<ContractMigratableRemindersBulkTable>,
     readonly contractBlockchainTable: Factory<ContractBlockchainTable>,
     readonly contractDebankTable: Factory<ContractDebankTable>,
     readonly walletLinkTable: Factory<WalletContractLinkTable>,
     readonly tokenLinkTable: Factory<TokenContractLinkTable>,
     readonly userLinkTable: Factory<UserContractLinkTable>,
   ) {}
+
+  async scheduleMigrationReminder(
+    contract: Contract,
+    wallet: WalletBlockchain,
+  ): Promise<ContractMigratableRemindersBulk> {
+    const existing = await this.contractMigratableRemindersBulkTable()
+      .where({
+        contract: contract.id,
+        wallet: wallet.id,
+      })
+      .first();
+
+    if (existing?.processed === true) {
+      const updatedInstance = {
+        ...existing,
+        processed: false,
+        updatedAt: new Date(),
+      };
+      await this.contractMigratableRemindersBulkTable()
+        .where('id', existing.id)
+        .update(updatedInstance);
+
+      return updatedInstance;
+    }
+
+    if (existing) {
+      return existing;
+    }
+
+    const insertedInstance = {
+      id: uuid(),
+      wallet: wallet.id,
+      contract: contract.id,
+      processed: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    await this.contractMigratableRemindersBulkTable().insert(insertedInstance);
+
+    return insertedInstance;
+  }
 
   async createDebank(
     { id: protocol }: Protocol,

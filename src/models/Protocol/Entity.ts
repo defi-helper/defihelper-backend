@@ -101,6 +101,24 @@ export interface ContractBlockchainType {
   metric: ContractMetric;
 }
 
+export interface ContractMigratableRemindersBulk {
+  id: string;
+  wallet: string;
+  contract: string;
+  processed: boolean;
+  updatedAt: Date;
+  createdAt: Date;
+}
+
+export const contractMigratableRemindersBulkTableName =
+  'protocol_contract_migratable_reminders_bulk';
+export const contractMigratableRemindersBulkTableFactory = typedTableFactory(
+  contractMigratableRemindersBulkTableName,
+);
+export type ContractMigratableRemindersBulkTable = ReturnType<
+  ReturnType<typeof contractMigratableRemindersBulkTableFactory>
+>;
+
 export const contractTableName = 'protocol_contract';
 export const contractTableFactory = typedTableFactory(contractTableName);
 export type ContractTable = ReturnType<ReturnType<typeof contractTableFactory>>;
@@ -192,5 +210,6 @@ declare module 'knex/types/tables' {
     [contractBlockchainTableName]: ContractBlockchainType;
     [tokenContractLinkTableName]: TokenContractLink;
     [userContractLinkTableName]: UserContractLink;
+    [contractMigratableRemindersBulkTableName]: ContractMigratableRemindersBulk;
   }
 }
