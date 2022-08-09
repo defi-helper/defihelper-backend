@@ -49,8 +49,9 @@ export default async (process: Process) => {
     .toFixed(0); // ~2 metrics by day
 
   const queue = container.model.queueService();
-  let blockNumber = new BN(startBlockNumber);
-  while (blockNumber.lt(currentBlockNumber)) {
+
+  let blockNumber = new BN(currentBlockNumber);
+  while (blockNumber.gt(blockNumberMonthAgo)) {
     queue.push(
       'metricsContractBlock',
       {
@@ -60,7 +61,7 @@ export default async (process: Process) => {
       { topic: 'metricHistory' },
     );
 
-    blockNumber = new BN(blockNumber).plus(step);
+    blockNumber = new BN(blockNumber).minus(step);
   }
 
   return process.done();
