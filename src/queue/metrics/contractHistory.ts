@@ -26,8 +26,7 @@ export default async (process: Process) => {
   const { provider: providerFactory, avgBlockTime } = blockchain.byNetwork(contract.network);
   const provider = providerFactory();
 
-  let startBlockNumber = contract.deployBlockNumber;
-  if (startBlockNumber === '0' || startBlockNumber === null) {
+  if (!contract.deployBlockNumber) {
     return process.info('No deploy block number').done();
   }
 
@@ -37,10 +36,6 @@ export default async (process: Process) => {
     .multipliedBy(60 * 24 * 30)
     .toFixed(0);
   const blockNumberMonthAgo = new BN(currentBlockNumber).minus(blocksCountInMonth);
-
-  if (blockNumberMonthAgo.gte(startBlockNumber)) {
-    startBlockNumber = blockNumberMonthAgo.toFixed(0);
-  }
 
   const step = new BN(60)
     .div(avgBlockTime)
