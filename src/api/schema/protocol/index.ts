@@ -1208,6 +1208,12 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
       deprecated,
     } = input;
 
+    if (deprecated === true) {
+      container.model.queueService().push('watcherDeleteContract', {
+        contractId: contractBlockchain.id,
+      });
+    }
+
     const updated = await contractService.updateBlockchain({
       ...contractBlockchain,
 

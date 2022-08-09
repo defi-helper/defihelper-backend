@@ -108,3 +108,6 @@ export * as treasuryStatsCache from './treasury/cache';
 
 export * as sendTelegramNews from './sendTelegramNews';
 export * as migrateTrashAlias from './migrateTrashAlias';
+
+/* scanner */
+export * as watcherDeleteContract from './scanner/deleteContract';

@@ -127,6 +127,16 @@ export class ScannerService {
       });
   }
 
+  deleteContract(id: string) {
+    return this.client
+      .delete<Contract>(`/api/contract/${id}`)
+      .then(({ data }) => data)
+      .catch((e) => {
+        if (e.response?.code !== 200) throw new TemporaryOutOfService(`${e}`);
+        throw new Error(`Undefined error in scanner: ${e.message}`);
+      });
+  }
+
   findListener(contractId: string, event: string): Promise<EventListener | undefined> {
     return this.client
       .get<EventListener[]>(`/api/contract/${contractId}/event-listener?name=${event}`)
