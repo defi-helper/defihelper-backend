@@ -107,7 +107,13 @@ export default async (process: Process) => {
 
   const later = dayjs().add(1, 'minute').toDate();
   const provider = container.blockchain[blockchain].byNetwork(network).provider();
-  const currentBlockNumber = parseInt((await provider.getBlockNumber()).toString(), 10) - lag;
+  let currentBlockNumber;
+  try {
+    currentBlockNumber = parseInt((await provider.getBlockNumber()).toString(), 10) - lag;
+  } catch {
+    return process.later(later);
+  }
+
   if (currentBlockNumber < from) {
     return process.later(later);
   }
@@ -115,18 +121,43 @@ export default async (process: Process) => {
 
   const networkContracts = contracts[network] as { [name: string]: { address: string } };
   const balanceAddress = networkContracts.Balance.address;
-  const balance = container.blockchain[blockchain].contract(balanceAddress, balanceAbi, provider);
+  let balance;
+  try {
+    balance = container.blockchain[blockchain].contract(balanceAddress, balanceAbi, provider);
+  } catch (e) {
+    if (currentBlockNumber - from > 100) {
+      throw new Error(`Task ${process.task.id}, lag: ${currentBlockNumber - from}`);
+    }
+    return process.later(later);
+  }
+  try {
+    await registerClaims(
+      blockchain,
+      network,
+      balance,
+      await balance.queryFilter(balance.filters.Claim(), from, to),
+    );
+  } catch (e) {
+    if (currentBlockNumber - from > 100) {
+      throw new Error(`Task ${process.task.id}, lag: ${currentBlockNumber - from}`);
+    }
+    return process.later(later);
+  }
 
-  await registerClaims(
-    blockchain,
-    network,
-    balance,
-    await balance.queryFilter(balance.filters.Claim(), from, to),
-  );
-  await Promise.all([
-    registerAcceptBill(balance, await balance.queryFilter(balance.filters.AcceptClaim(), from, to)),
-    registerRejectBill(await balance.queryFilter(balance.filters.RejectClaim(), from, to)),
-  ]);
+  try {
+    await Promise.all([
+      registerAcceptBill(
+        balance,
+        await balance.queryFilter(balance.filters.AcceptClaim(), from, to),
+      ),
+      registerRejectBill(await balance.queryFilter(balance.filters.RejectClaim(), from, to)),
+    ]);
+  } catch (e) {
+    if (currentBlockNumber - from > 100) {
+      throw new Error(`Task ${process.task.id}, lag: ${currentBlockNumber - from}`);
+    }
+    return process.later(later);
+  }
 
   return process.param({ ...process.task.params, from: to + 1 }).later(later);
 };
