@@ -17,6 +17,7 @@ import { cexServicesProviderFactory } from '@services/Cex';
 import { debankServiceFactory } from '@services/Debank';
 import { wavesNodeGatewayFactory } from '@services/WavesNodeGateway';
 import { WhatToFarmGateway } from '@services/WhatToFarm';
+import { amplitudeFactory } from '@services/Amplitude';
 import config from './config';
 
 class AppContainer extends Container<typeof config> {
@@ -51,6 +52,8 @@ class AppContainer extends Container<typeof config> {
   readonly whattofarm = singleton(() => new WhatToFarmGateway());
 
   readonly socialStats = singleton(() => new SocialStatsGateway(this.parent.socialStats));
+
+  readonly amplitude = singleton(amplitudeFactory(this.parent.amplitudeApiKey));
 
   readonly blockchain = {
     ethereum: new Blockchain.Ethereum.BlockchainContainer(this.parent.blockchain.ethereum),

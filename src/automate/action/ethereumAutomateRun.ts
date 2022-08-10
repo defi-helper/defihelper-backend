@@ -122,20 +122,29 @@ export default async function (this: Action, params: Params) {
     const tx = await run();
     if (tx instanceof Error) throw tx;
 
-    await container.model
-      .automateService()
-      .createTransaction<EthereumAutomateTransaction>(contract, consumer.address, {
+    await Promise.all([
+      container.model
+        .automateService()
+        .createTransaction<EthereumAutomateTransaction>(contract, consumer.address, {
+          hash: tx.hash,
+          from: tx.from,
+          to: tx.to,
+          nonce: tx.nonce,
+        }),
+      container.amplitude().log('automation_fee_charged_successful', wallet.user, {
         hash: tx.hash,
-        from: tx.from,
-        to: tx.to,
-        nonce: tx.nonce,
-      });
+      }),
+    ]);
   } catch (e) {
     await container
       .semafor()
       .unlock(
         `defihelper:automate:consumer:${wallet.blockchain}:${wallet.network}:${consumer.address}`,
       );
+    container.amplitude().log('automation_fee_charged_unsuccessfull', wallet.user, {
+      network: wallet.network,
+      address: consumer.address,
+    });
     throw e;
   }
 }

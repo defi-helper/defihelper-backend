@@ -80,7 +80,7 @@ export default async (process: Process) => {
     async (prev, tokenAsset) => {
       const prevMetrics = await prev;
 
-      if (tokenAsset.amount.multipliedBy(tokenAsset.price ?? 0).lt(1)) {
+      if (tokenAsset.amount.multipliedBy(tokenAsset.price ?? 0).isZero()) {
         return prev;
       }
 
