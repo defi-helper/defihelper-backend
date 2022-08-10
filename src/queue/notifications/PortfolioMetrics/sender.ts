@@ -47,16 +47,23 @@ export default async (process: Process) => {
   const chatId = contact.params?.chatId;
   if (!chatId) return process.error(new Error('Chat id not found'));
 
-  const [{ stakingUSD: totalStackedUSD, earnedUSD: totalEarnedUSD }, { usd: totalTokensUSD }] =
-    await Promise.all([
-      dataLoader.userMetric().load(contact.user),
-      dataLoader
-        .userTokenMetric({
-          contract: null,
-          tokenAlias: { liquidity: [TokenAliasLiquidity.Stable, TokenAliasLiquidity.Unstable] },
-        })
-        .load(contact.user),
-    ]);
+  const [
+    {
+      stakingUSD: totalStackedUSD,
+      earnedUSD: totalEarnedUSD,
+      earnedUSDDayBefore,
+      stakingUSDDayBefore,
+    },
+    { usd: totalTokensUSD },
+  ] = await Promise.all([
+    dataLoader.userMetric().load(contact.user),
+    dataLoader
+      .userTokenMetric({
+        contract: null,
+        tokenAlias: { liquidity: [TokenAliasLiquidity.Stable, TokenAliasLiquidity.Unstable] },
+      })
+      .load(contact.user),
+  ]);
 
   if (!totalStackedUSD) return process.done().info('no totalStackedUSD');
   const totalEarnedUSDFixedFloating = new BN(totalEarnedUSD).toFixed(2);
@@ -65,6 +72,16 @@ export default async (process: Process) => {
     .plus(totalTokensUSD)
     .toFixed(2);
 
+  const totalEarnedChange =
+    Number(earnedUSDDayBefore) !== 0
+      ? new BN(totalEarnedUSD).div(earnedUSDDayBefore).toString(10)
+      : '0';
+
+  const totalNetWorthChange =
+    Number(stakingUSDDayBefore) !== 0
+      ? new BN(totalStackedUSD).div(stakingUSDDayBefore).toString(10)
+      : '0';
+
   switch (contact.broker) {
     case ContactBroker.Telegram:
       await container.model.queueService().push('sendTelegramByContact', {
@@ -72,6 +89,8 @@ export default async (process: Process) => {
         params: {
           totalNetWorth,
           totalEarnedUSD: totalEarnedUSDFixedFloating,
+          percentageEarned: new BN(totalEarnedChange).toFixed(2),
+          percentageTracked: new BN(totalNetWorthChange).toFixed(2),
         },
         template: 'portfolioMetrics',
       });
@@ -83,6 +102,8 @@ export default async (process: Process) => {
           ...container.template.i18n(container.i18n.byLocale(user.locale)),
           totalNetWorth,
           totalEarnedUSD: totalEarnedUSDFixedFloating,
+          percentageEarned: new BN(totalEarnedChange).toFixed(2),
+          percentageTracked: new BN(totalNetWorthChange).toFixed(2),
         },
         'Portfolio statistics',
         contact.address,
