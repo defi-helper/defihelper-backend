@@ -76,8 +76,8 @@ export default async (process: Process) => {
   let currentBlockNumber;
   try {
     currentBlockNumber = parseInt((await provider.getBlockNumber()).toString(), 10) - lag;
-  } catch {
-    return process.later(later);
+  } catch (e) {
+    return process.later(later).info(`${e}`);
   }
 
   if (currentBlockNumber < from) {
@@ -88,15 +88,8 @@ export default async (process: Process) => {
   const networkContracts = contracts[network] as { [name: string]: { address: string } };
   const balanceAddress = networkContracts.Balance.address;
 
-  let balance;
-  try {
-    balance = container.blockchain[blockchain].contract(balanceAddress, balanceAbi, provider);
-  } catch (e) {
-    if (currentBlockNumber - from > 100) {
-      throw new Error(`Task ${process.task.id}, lag: ${currentBlockNumber - from}`);
-    }
-    return process.later(later);
-  }
+  const balance = container.blockchain[blockchain].contract(balanceAddress, balanceAbi, provider);
+
   try {
     await Promise.all([
       registerTransfer(
@@ -114,9 +107,9 @@ export default async (process: Process) => {
     ]);
   } catch (e) {
     if (currentBlockNumber - from > 100) {
-      throw new Error(`Task ${process.task.id}, lag: ${currentBlockNumber - from}`);
+      throw new Error(`Task ${process.task.id}, lag: ${currentBlockNumber - from}, message: ${e}`);
     }
-    return process.later(later);
+    return process.later(later).info(`${e}`);
   }
 
   return process.param({ ...process.task.params, from: to + 1 }).later(later);

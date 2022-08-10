@@ -63,8 +63,8 @@ export default async (process: Process) => {
   let currentBlockNumber;
   try {
     currentBlockNumber = parseInt((await provider.getBlockNumber()).toString(), 10) - lag;
-  } catch {
-    return process.later(later);
+  } catch (e) {
+    return process.later(later).info(`${e}`);
   }
 
   if (currentBlockNumber < from) {
@@ -79,9 +79,9 @@ export default async (process: Process) => {
     await registerBuy(blockchain, network, await store.queryFilter(store.filters.Buy(), from, to));
   } catch (e) {
     if (currentBlockNumber - from > 100) {
-      throw new Error(`Task ${process.task.id}, lag: ${currentBlockNumber - from}`);
+      throw new Error(`Task ${process.task.id}, lag: ${currentBlockNumber - from}, message: ${e}`);
     }
-    return process.later(later);
+    return process.later(later).info(`${e}`);
   }
 
   return process.param({ ...process.task.params, from: to + 1 }).later(later);
