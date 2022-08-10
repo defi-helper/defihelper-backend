@@ -73,9 +73,9 @@ export default async (process: Process) => {
   const to = from + step > currentBlockNumber ? currentBlockNumber : from + step;
 
   const storeAddress = contracts[network].StoreUpgradable.address;
-  try {
-    const store = container.blockchain[blockchain].contract(storeAddress, storeAbi, provider);
+  const store = container.blockchain[blockchain].contract(storeAddress, storeAbi, provider);
 
+  try {
     await registerBuy(blockchain, network, await store.queryFilter(store.filters.Buy(), from, to));
   } catch (e) {
     if (currentBlockNumber - from > 100) {
