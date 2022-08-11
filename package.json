@@ -17,6 +17,7 @@
     "queue:deferred": "node ./dist/queueDeferred.js",
     "queue:broker": "node ./dist/queueBroker.js",
     "trigger:event": "node ./dist/triggerEvent.js",
+    "smartTrade:event": "node ./dist/smartTradeEvent.js",
     "make:migration": "node ./dist/makeMigration.js",
     "schedule": "node ./dist/queueSchedule.js",
     "seed": "node ./dist/cli.js seed",

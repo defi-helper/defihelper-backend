@@ -23,6 +23,7 @@ import * as treasurySchemas from '@api/schema/treasury';
 import * as monitoringSchemas from '@api/schema/monitoring';
 import * as landingSchemas from '@api/schema/landing';
 import * as tradingSchemas from '@api/schema/trading';
+import * as smartTradeSchemas from '@api/schema/smartTrade';
 import Jimp from 'jimp';
 import { metricContractTableName } from '@models/Metric/Entity';
 import {
@@ -98,6 +99,7 @@ export function route({ express, server }: { express: Express; server: Server })
             monitoringSchemas.MonitoringAutoRestakeAutomatesCreationHistoryQuery,
           monitoringProtocolEarningsHistory:
             monitoringSchemas.MonitoringProtocolEarningsHistoryQuery,
+          smartTradeOrders: smartTradeSchemas.OrderListQuery,
         },
       }),
       mutation: new GraphQLObjectType({
@@ -162,6 +164,7 @@ export function route({ express, server }: { express: Express; server: Server })
           automateContractUpdate: automateSchemas.ContractUpdateMutation,
           automateContractDelete: automateSchemas.ContractDeleteMutation,
           tradingAuth: tradingSchemas.TradingAuthMutation,
+          smartTradeSwapOrderCreate: smartTradeSchemas.SwapOrderCreateMutation,
         },
       }),
       subscription: new GraphQLObjectType<any, Request>({

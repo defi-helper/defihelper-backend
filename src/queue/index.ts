@@ -109,3 +109,10 @@ export * as treasuryStatsCache from './treasury/cache';
 
 export * as sendTelegramNews from './sendTelegramNews';
 export * as migrateTrashAlias from './migrateTrashAlias';
+
+/* smart trade */
+export * as smartTradeOrderStatusBroker from './smartTrade/orderStatusBroker';
+export * as smartTradeOrderStatusResolve from './smartTrade/orderStatusResolve';
+export * as smartTradeOrderConfirm from './smartTrade/orderConfirm';
+export * as eventsSmartTradeOrderConfirmed from './events/smartTrade/orderConfirmed';
+export * as eventsSmartTradeOrderCallTxCreated from './events/smartTrade/orderCallTxCreated';

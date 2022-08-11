@@ -9,6 +9,7 @@ export default async (process: Process) => {
     queue.push('logBilling'),
     queue.push('regularContractsWalletLink'),
     queue.push('metricsEthereumBroker'),
+    queue.push('smartTradeOrderStatusBroker'),
   ]);
 
   return process.done();

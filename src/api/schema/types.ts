@@ -1,5 +1,6 @@
 import dayjs from 'dayjs';
 import { validate as isUuid } from 'uuid';
+import { BigNumber as BN } from 'bignumber.js';
 import * as Wallet from '@models/Wallet/Entity';
 import {
   GraphQLError,
@@ -20,6 +21,7 @@ import container from '@container';
 import { Request } from 'express';
 import { ForbiddenError } from 'apollo-server-express';
 import { WalletExchangeType } from '@models/Wallet/Entity';
+import { ethers } from 'ethers';
 
 export class GraphQLParseError extends GraphQLError {
   constructor(type: string, value: any) {
@@ -132,6 +134,20 @@ export const DateTimeType = new GraphQLScalarType({
     if (dayjs.isDayjs(value)) return value.toDate().toISOString();
 
     return value.toISOString();
+  },
+});
+
+export const BigNumberType = new GraphQLScalarType({
+  name: 'BigNumberType',
+  description: 'Big number',
+  parseValue: (value: string) => {
+    const number = new BN(value);
+    if (number.isNaN()) throw new GraphQLParseError('BigNumber', value);
+
+    return number;
+  },
+  serialize: (value: BN | string | number) => {
+    return value.toString();
   },
 });
 
@@ -263,4 +279,34 @@ export const WalletBlockchainTypeEnum = new GraphQLEnumType({
     (res, type) => ({ ...res, [type]: { value: type } }),
     {},
   ),
+});
+
+export const EthereumAddressType = new GraphQLScalarType({
+  name: 'EthereumAddressType',
+  description: 'Address of ethereum blockchain',
+  parseValue: (value: string) => {
+    if (!ethers.utils.isAddress(value)) {
+      throw new GraphQLParseError('EthereumAddressType', value);
+    }
+
+    return value;
+  },
+  serialize: (value: string) => {
+    return value;
+  },
+});
+
+export const EthereumTransactionHashType = new GraphQLScalarType({
+  name: 'EthereumTransactionHashType',
+  description: 'Address of ethereum transaction hash',
+  parseValue: (value: string) => {
+    if (!ethers.utils.isHexString(value, 32)) {
+      throw new GraphQLParseError('EthereumTransactionHashType', value);
+    }
+
+    return value;
+  },
+  serialize: (value: string) => {
+    return value;
+  },
 });
