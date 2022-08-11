@@ -24,8 +24,8 @@ export default {
       "This should say 'your automation in wallet {{visualizedWalletAddress}} may/will be paused soon, due to insufficient funds",
     "DeFiHelper's public beta now available. Get your APY boost right now on https://app.defihelper.io!":
       "DeFiHelper's public beta now available. Get your APY boost right now on https://app.defihelper.io!",
-    '[{{name}}]: Tracked Balance ${{totalNetWorth}} ({{percentageTracked}}), Total unclaimed ${{totalEarnedUSD}} ({{percentageTracked}})':
-      '[{{name}}]: Tracked Balance ${{totalNetWorth}} ({{percentageTracked}}), Total unclaimed ${{totalEarnedUSD}} ({{percentageEarned}})',
+    '[{{name}}]: Tracked Balance ${{totalNetWorth}} ({{percentageTracked}}%), Total unclaimed ${{totalEarnedUSD}} ({{percentageTracked}}%)':
+      '[{{name}}]: Tracked Balance ${{totalNetWorth}} ({{percentageTracked}}%), Total unclaimed ${{totalEarnedUSD}} ({{percentageEarned}}%)',
     'automate:trigger:contractEvent:name': 'Contract event',
     'automate:trigger:contractEvent:description': 'Call trigger for contract event',
     'automate:trigger:everyMonth:name': 'Periodic',

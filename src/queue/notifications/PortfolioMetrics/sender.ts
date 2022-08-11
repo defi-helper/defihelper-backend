@@ -87,10 +87,15 @@ export default async (process: Process) => {
       await container.model.queueService().push('sendTelegramByContact', {
         contactId: contact.id,
         params: {
+          name: user.name,
           totalNetWorth,
           totalEarnedUSD: totalEarnedUSDFixedFloating,
-          percentageEarned: new BN(totalEarnedChange).toFixed(2),
-          percentageTracked: new BN(totalNetWorthChange).toFixed(2),
+          percentageEarned: `${new BN(totalEarnedChange).isPositive() ? '+' : ''}${new BN(
+            totalEarnedChange,
+          ).toFixed(2)}`,
+          percentageTracked: `${new BN(totalNetWorthChange).isPositive() ? '+' : ''}${new BN(
+            totalNetWorthChange,
+          ).toFixed(2)}`,
         },
         template: 'portfolioMetrics',
       });
@@ -100,10 +105,15 @@ export default async (process: Process) => {
         'portfolioMetrics',
         {
           ...container.template.i18n(container.i18n.byLocale(user.locale)),
+          name: user.name,
           totalNetWorth,
           totalEarnedUSD: totalEarnedUSDFixedFloating,
-          percentageEarned: new BN(totalEarnedChange).toFixed(2),
-          percentageTracked: new BN(totalNetWorthChange).toFixed(2),
+          percentageEarned: `${new BN(totalEarnedChange).isPositive() ? '+' : ''} ${new BN(
+            totalEarnedChange,
+          ).toFixed(2)}`,
+          percentageTracked: `${new BN(totalNetWorthChange).isPositive() ? '+' : ''} ${new BN(
+            totalNetWorthChange,
+          ).toFixed(2)}`,
         },
         'Portfolio statistics',
         contact.address,
