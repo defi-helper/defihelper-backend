@@ -11,10 +11,15 @@ import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entit
 export default async (process: Process) => {
   const notifications = await container.model
     .contractMigratableRemindersBulkTable()
-    .column(`${walletTableName}.id as walletId`)
-    .column(`${walletTableName}.address as walletAddress`)
+    .column(`${walletBlockchainTableName}.id as walletId`)
+    .column(`${walletBlockchainTableName}.address as walletAddress`)
     .column(`${walletTableName}.user as userId`)
     .column(`${contractTableName}.*`)
+    .innerJoin(
+      walletTableName,
+      `${walletTableName}.id`,
+      `${contractMigratableRemindersBulkTableName}.wallet`,
+    )
     .innerJoin(
       walletBlockchainTableName,
       `${walletBlockchainTableName}.id`,

@@ -172,24 +172,24 @@ export class ContractService {
       })
       .first();
 
-    if (existing?.processed === true) {
-      const updatedInstance = {
-        ...existing,
-        processed: false,
-        updatedAt: new Date(),
-      };
-      await this.contractMigratableRemindersBulkTable()
-        .where('id', existing.id)
-        .update(updatedInstance);
-
-      return updatedInstance;
-    }
-
     if (existing) {
+      if (existing.processed === true) {
+        const updatedInstance = {
+          ...existing,
+          processed: false,
+          updatedAt: new Date(),
+        };
+        await this.contractMigratableRemindersBulkTable()
+          .where('id', existing.id)
+          .update(updatedInstance);
+
+        return updatedInstance;
+      }
+
       return existing;
     }
 
-    const insertedInstance = {
+    const created: ContractMigratableRemindersBulk = {
       id: uuid(),
       wallet: wallet.id,
       contract: contract.id,
@@ -197,15 +197,12 @@ export class ContractService {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    await this.contractMigratableRemindersBulkTable().insert(insertedInstance);
+    await this.contractMigratableRemindersBulkTable().insert(created);
 
-    return insertedInstance;
+    return created;
   }
 
-  async doneMigrationReminder(
-    contract: Contract,
-    wallet: WalletBlockchain,
-  ): Promise<ContractMigratableRemindersBulk> {
+  async doneMigrationReminder(contract: Contract, wallet: WalletBlockchain): Promise<void> {
     const existing = await this.contractMigratableRemindersBulkTable()
       .where({
         contract: contract.id,
@@ -213,34 +210,22 @@ export class ContractService {
       })
       .first();
 
-    if (existing?.processed === false) {
-      const updatedInstance = {
-        ...existing,
-        processed: true,
-        updatedAt: new Date(),
-      };
-      await this.contractMigratableRemindersBulkTable()
-        .where('id', existing.id)
-        .update(updatedInstance);
-
-      return updatedInstance;
+    if (!existing) {
+      throw new Error(`No reminders found`);
     }
 
-    if (existing) {
-      return existing;
+    if (existing.processed === true) {
+      return;
     }
 
-    const insertedInstance = {
-      id: uuid(),
-      wallet: wallet.id,
-      contract: contract.id,
+    const updatedInstance = {
+      ...existing,
       processed: true,
-      createdAt: new Date(),
       updatedAt: new Date(),
     };
-    await this.contractMigratableRemindersBulkTable().insert(insertedInstance);
-
-    return insertedInstance;
+    await this.contractMigratableRemindersBulkTable()
+      .where('id', existing.id)
+      .update(updatedInstance);
   }
 
   async createDebank(

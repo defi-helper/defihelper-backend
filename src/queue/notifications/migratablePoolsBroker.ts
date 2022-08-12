@@ -63,11 +63,10 @@ export default async (process: Process) => {
               container.model
                 .metricWalletRegistryTable()
                 .column(`${metricWalletRegistryTableName}.contract`)
-                .column(
-                  database.raw(
-                    `SUM((COALESCE(${metricWalletRegistryTableName}.data->>'stakingUSD', '0'))::numeric) AS staked`,
-                  ),
-                )
+                .modify(QueryModify.sumMetric, [
+                  'staked',
+                  `${metricWalletRegistryTableName}.data->>'stakingUSD'`,
+                ])
                 .innerJoin(
                   walletTableName,
                   `${metricWalletRegistryTableName}.wallet`,
