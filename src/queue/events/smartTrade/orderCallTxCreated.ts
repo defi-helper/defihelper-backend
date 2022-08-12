@@ -1,6 +1,7 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import { OrderCallStatus } from '@models/SmartTrade/Entity';
+import dayjs from 'dayjs';
 
 interface Params {
   id: string;
@@ -27,7 +28,7 @@ export default async (process: Process) => {
   const smartTradeService = container.model.smartTradeService();
   const provider = container.blockchain.ethereum.byNetwork(order.network).provider();
   try {
-    const receipt = await provider.waitForTransaction(call.tx, 1, 30);
+    const receipt = await provider.waitForTransaction(call.tx, 1, 10000);
     if (receipt.status === 1) {
       await smartTradeService.updateCall({
         ...call,
@@ -41,6 +42,9 @@ export default async (process: Process) => {
       });
     }
   } catch (e) {
+    if (e instanceof Error && e.message.includes('timeout exceeded')) {
+      return process.later(dayjs().add(10, 'seconds').toDate());
+    }
     await smartTradeService.updateCall({
       ...call,
       status: OrderCallStatus.Error,

@@ -41,6 +41,7 @@ export type CallData = SwapCallData | MockCallData;
 
 export enum OrderStatus {
   Pending = 'pending',
+  Processed = 'processed',
   Succeeded = 'succeeded',
   Canceled = 'canceled',
 }

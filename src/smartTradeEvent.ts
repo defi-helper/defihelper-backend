@@ -30,14 +30,10 @@ rabbit.createQueue(
     const smartTradeService = container.model.smartTradeService();
     const orders = await container.model
       .smartTradeOrderTable()
+      .where('confirmed', true)
+      .where('status', OrderStatus.Pending)
       .where('watcherListenerId', listener.id);
-    orders.forEach((order) => {
-      if (!order.confirmed || order.status !== OrderStatus.Pending) {
-        return null;
-      }
-
-      return smartTradeService.handle(order).catch((e) => logger.error(e));
-    });
+    orders.forEach((order) => smartTradeService.handle(order).catch((e) => logger.error(e)));
     ack();
   }),
 );

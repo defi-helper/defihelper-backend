@@ -24,7 +24,7 @@ export default async (process: Process) => {
   if (!isKey(contracts, order.network)) {
     throw new Error('Contracts not deployed to target network');
   }
-  if (order.status !== OrderStatus.Pending) {
+  if ([OrderStatus.Succeeded, OrderStatus.Canceled].includes(order.status)) {
     return process.done();
   }
 
@@ -40,7 +40,7 @@ export default async (process: Process) => {
       .order(order.number)
       .then(({ status }: { status: ethers.BigNumber }) => status.toString()),
   );
-  if (order.status === currentStatus) {
+  if (currentStatus === OrderStatus.Pending) {
     return process.later(dayjs().add(5, 'minutes').toDate());
   }
 

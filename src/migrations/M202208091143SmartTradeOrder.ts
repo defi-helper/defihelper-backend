@@ -26,6 +26,6 @@ export default async (schema: SchemaBuilder) => {
       .foreign('statusTask')
       .references(`${queueTableName}.id`)
       .onUpdate('CASCADE')
-      .onDelete('CASCADE');
+      .onDelete('SET NULL');
   });
 };

@@ -21,7 +21,6 @@ export default async function (
   const actualAmountOut = await uniswapRouter
     .getAmountsOut(order.callData.amountIn, order.callData.path)
     .then((amountsOut: ethers.BigNumber[]) => new BN(amountsOut[amountsOut.length - 1].toString()));
-  console.log(actualAmountOut.toString(), order.callData.amountOut, order.callData.amountOutMin);
   if (
     (order.callData.direction === 'gt' && actualAmountOut.lt(order.callData.amountOut)) ||
     (order.callData.direction === 'lt' && actualAmountOut.gt(order.callData.amountOut))
@@ -49,7 +48,6 @@ export default async function (
     const gasLimit = new BN(estimateGas).multipliedBy(1.1).toFixed(0);
     const gasPrice = await provider.getGasPrice().then((v) => v.toString());
     const gasFee = new BN(gasLimit).multipliedBy(gasPrice).toFixed(0);
-    console.log({ estimateGas, gasLimit, gasPrice, gasFee });
     return smartTradeRouter.handleOrder(order.number, gasFee, {
       gasLimit,
       gasPrice,

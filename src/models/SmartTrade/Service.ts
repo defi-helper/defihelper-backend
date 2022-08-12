@@ -132,7 +132,13 @@ export class SmartTradeService {
       updatedAt: new Date(),
       createdAt: new Date(),
     };
-    await this.orderCallHistoryTable().insert(created);
+    await Promise.all([
+      this.updateOrder({
+        ...order,
+        status: OrderStatus.Processed,
+      }),
+      this.orderCallHistoryTable().insert(created),
+    ]);
     this.onOrderCallTxCreated.emit({ order, call: created });
 
     return created;
