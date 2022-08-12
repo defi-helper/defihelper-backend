@@ -68,4 +68,5 @@ deploy:
         ENVIRONMENT: prod
         CONFIG: $PROD_CONFIG
     - if: '$CI_COMMIT_REF_NAME == "master"'
+      when: always
 
