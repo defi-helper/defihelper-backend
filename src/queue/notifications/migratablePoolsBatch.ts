@@ -74,7 +74,7 @@ export default async (process: Process) => {
         }
         return {
           ...prev,
-          [w.address]: contractsList,
+          [w.id]: contractsList,
         };
       }, {});
 

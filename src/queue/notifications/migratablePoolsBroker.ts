@@ -1,6 +1,6 @@
 import { Process } from '@models/Queue/Entity';
 import container from '@container';
-import { metricWalletRegistryTableName } from '@models/Metric/Entity';
+import { metricWalletRegistryTableName, QueryModify } from '@models/Metric/Entity';
 import {
   walletTableName,
   walletBlockchainTableName,
@@ -17,14 +17,13 @@ import { contractTableName } from '@models/Automate/Entity';
 export default async (process: Process) => {
   const database = container.database();
 
-  const candidateWallets = await container.model
+  const candidateWallets = (await container.model
     .metricWalletRegistryTable()
     .column(`${metricWalletRegistryTableName}.wallet`)
-    .column(
-      database.raw(
-        `SUM((COALESCE(${metricWalletRegistryTableName}.data->>'stakingUSD', '0'))::numeric) AS staked`,
-      ),
-    )
+    .modify(QueryModify.sumMetric, [
+      'staked',
+      `${metricWalletRegistryTableName}.data->>'stakingUSD'`,
+    ])
     .innerJoin(walletTableName, `${metricWalletRegistryTableName}.wallet`, `${walletTableName}.id`)
     .innerJoin(
       walletBlockchainTableName,
@@ -32,8 +31,9 @@ export default async (process: Process) => {
       `${walletTableName}.id`,
     )
     .where(`${walletBlockchainTableName}.type`, WalletBlockchainType.Wallet)
-    .andWhereRaw(`COALESCE(${metricWalletRegistryTableName}.data->>'stakingUSD', '0')::numeric > 1`) // assets usd > 1
-    .groupBy(`${metricWalletRegistryTableName}.wallet`);
+    .andWhereRaw(`COALESCE(${metricWalletRegistryTableName}.data->>'stakingUSD', '0')::numeric > 0`)
+    .andWhere(`${walletTableName}.deletedAt`, null)
+    .groupBy(`${metricWalletRegistryTableName}.wallet`)) as any[];
 
   await candidateWallets.reduce<Promise<ContractMigratableRemindersBulk[]>>(
     async (prev, { wallet }) => {
@@ -49,9 +49,11 @@ export default async (process: Process) => {
         .column(`${contractTableName}.*`)
         .column(`${contractBlockchainTableName}.*`)
         .where(function () {
-          this.andWhere('blockchain', 'ethereum');
-          this.andWhere('hidden', false);
-          this.where('deprecated', false);
+          this.andWhere({
+            blockchain: 'ethereum',
+            hidden: false,
+            deprecated: false,
+          });
 
           this.where(database.raw("automate->>'autorestakeAdapter' IS NOT NULL"));
 
