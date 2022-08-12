@@ -25,6 +25,8 @@
     "prepare": "husky install"
   },
   "dependencies": {
+    "@amplitude/node": "^1.10.0",
+    "@amplitude/types": "^1.10.0",
     "@defihelper/ethers-multicall": "^0.3.3",
     "@defihelper/networks": "^1.0.28-smarttrade",
     "@types/amqplib": "^0.8.2",

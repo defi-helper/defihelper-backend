@@ -18,6 +18,7 @@ function array(value: string): string[] {
 
 export default {
   mode: process.env.NODE_ENV ?? 'development',
+  amplitudeApiKey: process.env.AMPLITUDE_API_KEY ?? '',
   api: {
     port: int(process.env.API_PORT ?? '8080'),
     internalUrl: process.env.API_INTERNAL_URL ?? 'https://backend-local.defihelper.io',
