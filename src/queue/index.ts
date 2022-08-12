@@ -111,3 +111,5 @@ export * as sendTelegramNews from './sendTelegramNews';
 export * as migrateTrashAlias from './migrateTrashAlias';
 
 export * as migratablePoolsBroker from './notifications/migratablePoolsBroker';
+export * as migratablePoolsNotifyUser from './notifications/migratablePoolsNotifyUser';
+export * as migratablePoolsBatch from './notifications/migratablePoolsBatch';

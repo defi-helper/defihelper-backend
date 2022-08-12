@@ -202,6 +202,47 @@ export class ContractService {
     return insertedInstance;
   }
 
+  async doneMigrationReminder(
+    contract: Contract,
+    wallet: WalletBlockchain,
+  ): Promise<ContractMigratableRemindersBulk> {
+    const existing = await this.contractMigratableRemindersBulkTable()
+      .where({
+        contract: contract.id,
+        wallet: wallet.id,
+      })
+      .first();
+
+    if (existing?.processed === false) {
+      const updatedInstance = {
+        ...existing,
+        processed: true,
+        updatedAt: new Date(),
+      };
+      await this.contractMigratableRemindersBulkTable()
+        .where('id', existing.id)
+        .update(updatedInstance);
+
+      return updatedInstance;
+    }
+
+    if (existing) {
+      return existing;
+    }
+
+    const insertedInstance = {
+      id: uuid(),
+      wallet: wallet.id,
+      contract: contract.id,
+      processed: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    await this.contractMigratableRemindersBulkTable().insert(insertedInstance);
+
+    return insertedInstance;
+  }
+
   async createDebank(
     { id: protocol }: Protocol,
     hashAddress: string,

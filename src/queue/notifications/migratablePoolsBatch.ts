@@ -1,14 +1,11 @@
 import { Process } from '@models/Queue/Entity';
 import container from '@container';
-import { ContactBroker, ContactStatus, userContactTableName } from '@models/Notification/Entity';
 import { tableName as userTableName } from '@models/User/Entity';
-import { userNotificationTableName, UserNotificationType } from '@models/UserNotification/Entity';
 import {
   ContractBlockchainType,
   contractMigratableRemindersBulkTableName,
   contractTableName,
 } from '@models/Protocol/Entity';
-import { metricWalletRegistryTableName } from '@models/Metric/Entity';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 
 export default async (process: Process) => {
@@ -34,7 +31,7 @@ export default async (process: Process) => {
   let usersIds: string[] = [];
   const candidates: {
     [userId: string]: {
-      [walletId: string]: (ContractBlockchainType & { userId: string })[];
+      [walletId: string]: ContractBlockchainType[];
     };
   } = {};
 
@@ -48,46 +45,43 @@ export default async (process: Process) => {
       candidates[notification.userId] = {};
     }
 
-    if (!candidates[notification.userId]) {
-      candidates[notification.walletId] = [];
+    if (!candidates[notification.userId][notification.walletId]) {
+      candidates[notification.userId][notification.walletId] = [];
     }
 
     const target = contracts.find((v) => v.id === notification.id);
     if (!target) {
       throw new Error(`No contract found`);
     }
-    candidates[notification.walletId] = [...candidates[notification.walletId], target];
+    candidates[notification.userId][notification.walletId] = [
+      ...candidates[notification.userId][notification.walletId],
+      target,
+    ];
     usersIds = [...usersIds, notification.userId];
   });
 
-  const contacts = await container.model
-    .userContactTable()
-    .whereIn('user', usersIds)
-    .andWhere('broker', ContactBroker.Telegram);
-  const users = await Promise.all(
-    Object.entries(candidates).map(async ([walletId, contracts]) => {
-      if (!contracts.length) {
-        return null;
-      }
-      const { userId } = contracts[0];
-      const targetContacts = contacts.find((v) => v.id === userId);
+  await Promise.all(
+    Object.entries(candidates).map(async ([userId, wallets]) => {
+      const walletsEntities = await container.model
+        .walletBlockchainTable()
+        .whereIn('id', Object.keys(wallets))
+        .then((rows) => new Map(rows.map((row) => [row.id, row])));
 
-      Promise.all(
-        contacts.map((contact) => {
-          return container.model.queueService().push('sendTelegramByContact', {
-            contactId: contact.id,
-            template: 'automateNotEnoughFunds',
-            params: {
-              visualizedWalletAddress: `${notifyBy.walletAddress.slice(
-                0,
-                6,
-              )}...${notifyBy.walletAddress.slice(-4)}(${
-                container.blockchain.ethereum.byNetwork(notifyBy.walletNetwork).name
-              })`,
-            },
-          });
-        }),
-      );
+      const items = Object.entries(wallets).reduce((prev, [walletId, contractsList]) => {
+        const w = walletsEntities.get(walletId);
+        if (!w) {
+          throw new Error(`Wallets ${walletId} not found`);
+        }
+        return {
+          ...prev,
+          [w.address]: contractsList,
+        };
+      }, {});
+
+      return container.model.queueService().push('migratablePoolsNotifyUser', {
+        userId,
+        payload: items,
+      });
     }),
   );
 
