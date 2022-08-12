@@ -86,12 +86,19 @@ export class WavesNodeGateway {
     }
 
     // asset price in usdn
-    const { bids } = await this.nodeRequest<{ bids: [price: number, amount: number][] }>(
-      this.matcherUrl,
-      `/api/v1/orderbook/${
-        address === 'waves' ? address.toUpperCase() : address
-      }/DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p?depth=1`,
-    );
+    let bids: [price: number, amount: number][];
+    try {
+      bids = (
+        await this.nodeRequest<{ bids: [price: number, amount: number][] }>(
+          this.matcherUrl,
+          `/api/v1/orderbook/${
+            address === 'waves' ? address.toUpperCase() : address
+          }/DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p?depth=1`,
+        )
+      ).bids;
+    } catch {
+      return null;
+    }
 
     if (!bids.length) {
       return null;
