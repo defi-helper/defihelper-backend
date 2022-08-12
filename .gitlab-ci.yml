@@ -26,8 +26,8 @@ build:app:
   variables:
     KUBERNETES_CPU_REQUEST: 500m
     KUBERNETES_CPU_LIMIT: 2
-    KUBERNETES_MEMORY_REQUEST: 2048Mi
-    KUBERNETES_MEMORY_LIMIT: 2048Mi
+    KUBERNETES_MEMORY_REQUEST: 2048M
+    KUBERNETES_MEMORY_LIMIT: 2048M
     APP_NAME: "app"
   extends: .build_image
   rules:
@@ -59,9 +59,10 @@ deploy:
   extends: .helm_upgrade
   stage: deploy
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_PIPELINE_SOURCE == "push"'
       when: manual
     - if: '$CI_COMMIT_REF_NAME == "release"'
+      when: on_success
       variables:
         KUBECONFIG_B64: $PROD_KUBECONFIG_B64
         ENVIRONMENT: prod
