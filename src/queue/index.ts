@@ -50,6 +50,7 @@ export * as logBilling from './log/billingLogger';
 
 /* billing */
 export * as emptyWalletsBroker from './billing/emptyWalletsBroker';
+export * as eventsBillingTransferTxCreated from './events/billing/transferTxCreated';
 
 /* metrics */
 export * as metricsUserPortfolioFiller from './metrics/userPortfolioFiller';

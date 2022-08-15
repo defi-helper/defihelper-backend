@@ -4,7 +4,7 @@ import { Factory } from '@services/Container';
 import { Emitter } from '@services/Event';
 import container from '@container';
 import { WalletBlockchain } from '@models/Wallet/Entity';
-import { Bill, BillStatus, BillTable, Transfer, TransferTable } from './Entity';
+import { Bill, BillStatus, BillTable, Transfer, TransferStatus, TransferTable } from './Entity';
 
 export class BillingService {
   public readonly onTransferCreated = new Emitter<Transfer>(async (transfer) => {
@@ -14,6 +14,9 @@ export class BillingService {
         id: transfer.id,
       }),
     );
+    if (transfer.blockchain === 'ethereum' && transfer.status === TransferStatus.Pending) {
+      container.model.queueService().push('eventsBillingTransferTxCreated', { id: transfer.id });
+    }
   });
 
   public readonly onTransferUpdated = new Emitter<Transfer>(async (transfer) => {
@@ -47,7 +50,8 @@ export class BillingService {
       account,
       amount,
       tx,
-      confirmed,
+      status: confirmed ? TransferStatus.Confirmed : TransferStatus.Pending,
+      rejectReason: '',
       bill: bill?.id || null,
       createdAt,
       updatedAt: createdAt,
@@ -62,8 +66,21 @@ export class BillingService {
     const updated: Transfer = {
       ...transfer,
       amount,
-      confirmed: true,
+      status: TransferStatus.Confirmed,
       createdAt,
+      updatedAt: new Date(),
+    };
+    await this.transferTable().update(updated).where('id', updated.id);
+    this.onTransferUpdated.emit(updated);
+
+    return updated;
+  }
+
+  async transferReject(transfer: Transfer, reason: string) {
+    const updated: Transfer = {
+      ...transfer,
+      status: TransferStatus.Rejected,
+      rejectReason: reason,
       updatedAt: new Date(),
     };
     await this.transferTable().update(updated).where('id', updated.id);
