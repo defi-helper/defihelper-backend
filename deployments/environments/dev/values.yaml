@@ -66,6 +66,20 @@ broker:
           limits:
             memory: 512Mi
             cpu: 100m
+      events-smarttrade:
+        name: events-smarttrade
+        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run smartTrade:event"'
+        replicas: 1
+        maxReplicas: 20
+        maxReadyMessagesForHpa: 100
+        graceperiod: 3600
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 50m
+          limits:
+            memory: 128Mi
+            cpu: 100m
       events-trigger:
         name: events-trigger
         command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run trigger:event"'
