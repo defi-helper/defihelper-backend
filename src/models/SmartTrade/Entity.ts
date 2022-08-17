@@ -28,12 +28,14 @@ export interface SwapCallData {
     pair: string;
     path: string[];
     tokenInDecimals: number;
-    amountIn: string;
     tokenOutDecimals: number;
-    amountOut: string;
-    amountOutMin: string;
-    slippage: string;
-    direction: 'gt' | 'lt';
+    amountIn: string;
+    routes: Array<{
+      amountOut: string;
+      amountOutMin: string;
+      slippage: string;
+      direction: 'gt' | 'lt';
+    } | null>;
   };
 }
 

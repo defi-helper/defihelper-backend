@@ -53,8 +53,10 @@ export class ConsoleLogger implements Log {
   }
 }
 
+export type LogPayloadValue = string | number | boolean | null | undefined;
+
 export interface LogPayload {
-  [key: string]: string | number | boolean | null | undefined | LogPayload;
+  [key: string]: LogPayloadValue | LogPayload | Array<LogPayloadValue | LogPayload>;
 }
 
 export class LogJsonMessage {

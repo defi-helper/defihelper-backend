@@ -75,11 +75,20 @@ export const MockHandlerCallDataType = new GraphQLObjectType<MockCallData>({
   },
 });
 
-export const SwapHandlerCallDataDirectionEnum = new GraphQLEnumType({
-  name: 'SwapHandlerCallDataDirectionEnum',
-  values: {
-    gt: { value: 'gt', description: 'Take profit' },
-    lt: { value: 'lt', description: 'Stop loss' },
+export const SwapHandlerCallDataRouteType = new GraphQLObjectType({
+  name: 'SwapHandlerCallDataRouteType',
+  fields: {
+    amountOut: {
+      type: GraphQLNonNull(BigNumberType),
+      resolve: ({ amountOut, decimals }) => new BN(amountOut).div(`1e${decimals}`),
+    },
+    amountOutMin: {
+      type: GraphQLNonNull(BigNumberType),
+      resolve: ({ amountOutMin, decimals }) => new BN(amountOutMin).div(`1e${decimals}`),
+    },
+    slippage: {
+      type: GraphQLNonNull(GraphQLFloat),
+    },
   },
 });
 
@@ -94,28 +103,36 @@ export const SwapHandlerCallDataType = new GraphQLObjectType<SwapCallData>({
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(EthereumAddressType))),
       resolve: ({ callData: { path } }) => path,
     },
-    direction: {
-      type: GraphQLNonNull(SwapHandlerCallDataDirectionEnum),
-      resolve: ({ callData: { direction } }) => direction,
-    },
     amountIn: {
       type: GraphQLNonNull(BigNumberType),
       resolve: ({ callData: { amountIn, tokenInDecimals } }) =>
         new BN(amountIn).div(`1e${tokenInDecimals}`),
     },
-    amountOut: {
-      type: GraphQLNonNull(BigNumberType),
-      resolve: ({ callData: { amountOut, tokenOutDecimals } }) =>
-        new BN(amountOut).div(`1e${tokenOutDecimals}`),
+    stopLoss: {
+      type: SwapHandlerCallDataRouteType,
+      resolve: ({ callData: { routes, tokenOutDecimals } }) => {
+        if (routes[0] === null) return null;
+
+        return {
+          amountOut: routes[0].amountOut,
+          amountOutMin: routes[0].amountOutMin,
+          slippage: routes[0].slippage,
+          decimals: tokenOutDecimals,
+        };
+      },
     },
-    amountOutMin: {
-      type: GraphQLNonNull(BigNumberType),
-      resolve: ({ callData: { amountOutMin, tokenOutDecimals } }) =>
-        new BN(amountOutMin).div(`1e${tokenOutDecimals}`),
-    },
-    slippage: {
-      type: GraphQLFloat,
-      resolve: ({ callData: { slippage } }) => slippage,
+    takeProfit: {
+      type: SwapHandlerCallDataRouteType,
+      resolve: ({ callData: { routes, tokenOutDecimals } }) => {
+        if (routes[1] === null) return null;
+
+        return {
+          amountOut: routes[1].amountOut,
+          amountOutMin: routes[1].amountOutMin,
+          slippage: routes[1].slippage,
+          decimals: tokenOutDecimals,
+        };
+      },
     },
   },
 });
@@ -269,6 +286,21 @@ export const OrderListQuery: GraphQLFieldConfig<any, Request> = {
   ),
 };
 
+export const SwapOrderCallDataRouteInputType = new GraphQLInputObjectType({
+  name: 'SwapOrderCallDataRouteInputType',
+  fields: {
+    amountOut: {
+      type: GraphQLNonNull(BigNumberType),
+    },
+    amountOutMin: {
+      type: GraphQLNonNull(BigNumberType),
+    },
+    slippage: {
+      type: GraphQLNonNull(GraphQLFloat),
+    },
+  },
+});
+
 export const SwapOrderCreateInputType = new GraphQLInputObjectType({
   name: 'SmartTradeSwapOrderCreateInputType',
   fields: {
@@ -308,23 +340,17 @@ export const SwapOrderCreateInputType = new GraphQLInputObjectType({
             tokenInDecimals: {
               type: GraphQLNonNull(GraphQLInt),
             },
-            amountIn: {
-              type: GraphQLNonNull(BigNumberType),
-            },
             tokenOutDecimals: {
               type: GraphQLNonNull(GraphQLInt),
             },
-            amountOut: {
+            amountIn: {
               type: GraphQLNonNull(BigNumberType),
             },
-            amountOutMin: {
-              type: GraphQLNonNull(BigNumberType),
+            stopLoss: {
+              type: SwapOrderCallDataRouteInputType,
             },
-            slippage: {
-              type: GraphQLNonNull(GraphQLFloat),
-            },
-            direction: {
-              type: GraphQLNonNull(SwapHandlerCallDataDirectionEnum),
+            takeProfit: {
+              type: SwapOrderCallDataRouteInputType,
             },
           },
         }),
@@ -366,10 +392,30 @@ export const SwapOrderCreateMutation: GraphQLFieldConfig<any, Request> = {
       {
         type: HandlerType.SwapHandler,
         callData: {
-          ...callData,
+          exchange: callData.exchange,
+          pair: callData.pair,
+          path: callData.path,
+          tokenInDecimals: callData.tokenInDecimals,
+          tokenOutDecimals: callData.tokenOutDecimals,
           amountIn: callData.amountIn.toString(10),
-          amountOut: callData.amountOut.toString(10),
-          amountOutMin: callData.amountOutMin.toString(10),
+          routes: [
+            callData.stopLoss
+              ? {
+                  amountOut: callData.stopLoss.amountOut.toFixed(0),
+                  amountOutMin: callData.stopLoss.amountOutMin.toFixed(0),
+                  slippage: callData.stopLoss.slippage.toString(),
+                  direction: 'lt',
+                }
+              : null,
+            callData.takeProfit
+              ? {
+                  amountOut: callData.takeProfit.amountOut.toFixed(0),
+                  amountOutMin: callData.takeProfit.amountOutMin.toFixed(0),
+                  slippage: callData.takeProfit.slippage.toString(),
+                  direction: 'gt',
+                }
+              : null,
+          ],
         },
       },
       OrderStatus.Pending,

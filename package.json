@@ -28,7 +28,7 @@
     "@amplitude/node": "^1.10.0",
     "@amplitude/types": "^1.10.0",
     "@defihelper/ethers-multicall": "^0.3.3",
-    "@defihelper/networks": "^1.0.28-smarttrade",
+    "@defihelper/networks": "^1.0.29-smarttrade",
     "@types/amqplib": "^0.8.2",
     "@types/callback-to-async-iterator": "^1.1.4",
     "@types/command-line-args": "^5.0.0",
