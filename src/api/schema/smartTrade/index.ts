@@ -19,6 +19,8 @@ import {
   CallData,
   HandlerType,
   MockCallData,
+  OrderCallHistory,
+  OrderCallStatus,
   Order,
   OrderStatus,
   smartTradeOrderTableName,
@@ -36,6 +38,30 @@ import {
   EthereumTransactionHashType,
   BigNumberType,
 } from '../types';
+
+export const OrderCallHistoryStatusEnum = new GraphQLEnumType({
+  name: 'SmartTradeOrderCallHistoryStatusEnum',
+  values: Object.values(OrderCallStatus).reduce(
+    (res, type) => ({ ...res, [type]: { value: type } }),
+    {},
+  ),
+});
+
+export const OrderCallHistoryType = new GraphQLObjectType<OrderCallHistory>({
+  name: 'SmartTradeOrderCallHistoryType',
+  fields: {
+    transaction: {
+      type: EthereumTransactionHashType,
+    },
+    status: {
+      type: GraphQLNonNull(OrderCallHistoryStatusEnum),
+    },
+    errorReason: {
+      type: GraphQLNonNull(GraphQLString),
+      resolve: ({ error }) => error,
+    },
+  },
+});
 
 export const OrderStatusEnum = new GraphQLEnumType({
   name: 'SmartTradeOrderStatusEnum',
@@ -186,6 +212,16 @@ export const OrderType = new GraphQLObjectType<Order>({
     tx: {
       type: GraphQLNonNull(EthereumTransactionHashType),
       description: 'Transaction hash',
+    },
+    lastCall: {
+      type: OrderCallHistoryType,
+      resolve: ({ id }) => {
+        return container.model
+          .smartTradeOrderCallHistoryTable()
+          .where('order', id)
+          .orderBy('createdAt', 'desc')
+          .first();
+      },
     },
     confirmed: {
       type: GraphQLNonNull(GraphQLBoolean),

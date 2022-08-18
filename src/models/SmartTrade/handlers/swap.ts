@@ -3,6 +3,7 @@ import { isKey } from '@services/types';
 import contracts from '@defihelper/networks/contracts.json';
 import { useEthereumFreeConsumer } from '@services/Blockchain/Consumer';
 import { LogJsonMessage } from '@services/Log';
+import { abi as BalanceABI } from '@defihelper/networks/abi/Balance.json';
 import { abi as SmartTradeRouterABI } from '@defihelper/networks/abi/SmartTradeRouter.json';
 import { abi as SmartTradeSwapHandlerABI } from '@defihelper/networks/abi/SmartTradeSwapHandler.json';
 import { ethers } from 'ethers';
@@ -61,6 +62,14 @@ export default async function (
     string,
     { address: string } | undefined
   >;
+  if (networkContracts.Balance === undefined) {
+    return new Error('Balance contract not deployed to target network');
+  }
+  const balance = container.blockchain.ethereum.contract(
+    networkContracts.Balance.address,
+    BalanceABI,
+    freeConsumer.consumer,
+  );
   if (networkContracts.SmartTradeRouter === undefined) {
     return new Error('Smart trade router not deployed to target network');
   }
@@ -78,19 +87,35 @@ export default async function (
     freeConsumer.consumer,
   );
 
+  const routerBalance = await smartTradeRouter
+    .balanceOf(order.owner, order.callData.pair[0])
+    .then((v: ethers.BigNumber) => v.toString());
+  log.ex({ routerBalance }).send();
+  if (new BN(order.callData.amountIn).gt(routerBalance)) {
+    return new Error('Insufficient funds to swap');
+  }
+
   const callOptions = await smartTradeHandler.callOptionsEncode({
     route: routeIndex,
     deadline: dayjs().add(5, 'minutes').unix(),
   });
   log.ex({ callOptions }).send();
+  const estimateGas = await smartTradeRouter.estimateGas
+    .handleOrder(order.number, callOptions, 1)
+    .then((v) => v.toString());
+  const gasLimit = new BN(estimateGas).multipliedBy(1.1).toFixed(0);
+  const gasPrice = await provider.getGasPrice().then((v) => v.toString());
+  const gasFee = new BN(gasLimit).multipliedBy(gasPrice).toFixed(0);
+  const protocolFee = await smartTradeRouter.fee();
+  const feeBalance = await balance
+    .netBalanceOf(order.owner)
+    .then((v: ethers.BigNumber) => v.toString());
+  log.ex({ estimateGas, gasLimit, gasPrice, gasFee, protocolFee, feeBalance }).send();
+  if (new BN(gasFee).plus(protocolFee).gt(feeBalance)) {
+    return new Error('Insufficient funds to pay commission');
+  }
+
   try {
-    const estimateGas = await smartTradeRouter.estimateGas
-      .handleOrder(order.number, callOptions, 1)
-      .then((v) => v.toString());
-    const gasLimit = new BN(estimateGas).multipliedBy(1.1).toFixed(0);
-    const gasPrice = await provider.getGasPrice().then((v) => v.toString());
-    const gasFee = new BN(gasLimit).multipliedBy(gasPrice).toFixed(0);
-    log.ex({ estimateGas, gasLimit, gasPrice, gasFee }).send();
     return smartTradeRouter.handleOrder(order.number, callOptions, gasFee, {
       gasLimit,
       gasPrice,
