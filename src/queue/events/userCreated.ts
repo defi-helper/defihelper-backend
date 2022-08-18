@@ -18,7 +18,7 @@ export default async (process: Process) => {
     .storeProductTable()
     .where({
       code: ProductCode.Notification,
-      amount: 1000,
+      number: 0,
     })
     .first();
   if (notificationProduct) {

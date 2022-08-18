@@ -318,11 +318,13 @@ export function route({ express, server }: { express: Express; server: Server })
     );
 
     const isDebank = protocol.adapter === 'debankByApiReadonly';
-    const maxBoostedApy = Math.round(Math.max(...calculatedApyList.map((v) => v.boosted)));
     const avgInitialApy = Math.round(
       (calculatedApyList.reduce((prev, curr) => new BN(prev).plus(curr.initial).toNumber(), 0) /
         calculatedApyList.length) *
         100,
+    );
+    const maxBoostedApy = Math.round(
+      Math.max(...calculatedApyList.map((v) => v.boosted)) + avgInitialApy,
     );
 
     try {

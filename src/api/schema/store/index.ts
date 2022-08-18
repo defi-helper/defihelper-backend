@@ -369,6 +369,7 @@ export const ProductListQuery: GraphQLFieldConfig<any, Request> = {
   },
   resolve: async (root, { filter, sort, pagination }) => {
     const select = container.model.storeProductTable().where(function () {
+      this.where('number', '>', 0);
       if (Array.isArray(filter.code) && filter.code.length > 0) {
         this.whereIn('code', filter.code);
       }
