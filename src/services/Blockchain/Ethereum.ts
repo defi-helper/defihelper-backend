@@ -517,7 +517,6 @@ export class BlockchainContainer extends Container<Config> {
         '0xB44a9B6905aF7c801311e8F4E76932ee959c663C',
         '0x80A16016cC4A2E6a2CACA8a4a498b1699fF0f844',
         '0xE3F5a90F9cb311505cd691a46596599aA1A0AD7D',
-        '0xE3F5a90F9cb311505cd691a46596599aA1A0AD7D',
       ],
     }),
     '31337': networkFactory({
@@ -539,6 +538,7 @@ export class BlockchainContainer extends Container<Config> {
       },
       tokenPriceResolver: debankPriceFeed('1'),
       network: this.parent.local,
+      stablecoins: [],
     }),
     '42161': networkFactory({
       id: '42161',
@@ -560,6 +560,12 @@ export class BlockchainContainer extends Container<Config> {
       tokenPriceResolver: debankPriceFeed('42161'),
       rpcUrls: ['https://arb1.arbitrum.io/rpc'],
       network: this.parent.arbitrum,
+      stablecoins: [
+        '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9',
+        '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8',
+        '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1',
+        '0x4D15a3A2286D883AF0AA1B3f21367843FAc63E07',
+      ],
     }),
     '43113': networkFactory({
       id: '43113',
@@ -580,6 +586,7 @@ export class BlockchainContainer extends Container<Config> {
       },
       tokenPriceResolver: debankPriceFeed('43113'),
       network: this.parent.avalancheTestnet,
+      stablecoins: [],
     }),
     '43114': networkFactory({
       id: '43114',
@@ -601,6 +608,12 @@ export class BlockchainContainer extends Container<Config> {
       tokenPriceResolver: debankPriceFeed('43114'),
       rpcUrls: ['https://api.avax.network/ext/bc/C/rpc', 'https://api.avax.network/ext/bc/C/rpc'],
       network: this.parent.avalanche,
+      stablecoins: [
+        '0xc7198437980c041c805A1EDcbA50c1Ce5db95118',
+        '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E',
+        '0xd586E7F844cEa2F87f50152665BCbc2C279D8d70',
+        '0x1C20E891Bab6b1727d14Da358FAe2984Ed9B59EB',
+      ],
     }),
     '1313161554': networkFactory({
       id: '1313161554',
@@ -621,6 +634,11 @@ export class BlockchainContainer extends Container<Config> {
       },
       tokenPriceResolver: debankPriceFeed('1313161554'),
       network: this.parent.aurora,
+      stablecoins: [
+        '0x4988a896b1227218e4A686fdE5EabdcAbd91571f',
+        '0xB12BFcA5A55806AaF64E99521918A4bf0fC40802',
+        '0xe3520349F477A5F6EB06107066048508498A291b',
+      ],
     }),
     '1666600000': networkFactory({
       id: '1666600000',
@@ -649,6 +667,12 @@ export class BlockchainContainer extends Container<Config> {
         'https://s3.api.harmony.one',
       ],
       network: this.parent.harmony,
+
+      stablecoins: [
+        '0x4988a896b1227218e4A686fdE5EabdcAbd91571f',
+        '0xB12BFcA5A55806AaF64E99521918A4bf0fC40802',
+        '0xe3520349F477A5F6EB06107066048508498A291b',
+      ],
     }),
   } as const;
 
