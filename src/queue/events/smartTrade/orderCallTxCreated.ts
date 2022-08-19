@@ -1,6 +1,7 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import { OrderCallStatus } from '@models/SmartTrade/Entity';
+import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 import dayjs from 'dayjs';
 
 interface Params {
@@ -24,9 +25,21 @@ export default async (process: Process) => {
   if (!order) {
     throw new Error(`Order "${call.order}" not found`);
   }
+  const ownerWallet = await container.model
+    .walletTable()
+    .innerJoin(
+      walletBlockchainTableName,
+      `${walletTableName}.id`,
+      `${walletBlockchainTableName}.id`,
+    )
+    .where(`${walletTableName}.id`, order.owner)
+    .first();
+  if (!ownerWallet) {
+    throw new Error('Owner wallet not found');
+  }
 
   const smartTradeService = container.model.smartTradeService();
-  const provider = container.blockchain.ethereum.byNetwork(order.network).provider();
+  const provider = container.blockchain.ethereum.byNetwork(ownerWallet.network).provider();
   try {
     const receipt = await provider.waitForTransaction(call.tx, 1, 10000);
     if (receipt.status === 1) {

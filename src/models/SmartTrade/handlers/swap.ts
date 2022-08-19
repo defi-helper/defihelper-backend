@@ -2,6 +2,7 @@ import container from '@container';
 import { isKey } from '@services/types';
 import contracts from '@defihelper/networks/contracts.json';
 import { useEthereumFreeConsumer } from '@services/Blockchain/Consumer';
+import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 import { LogJsonMessage } from '@services/Log';
 import { abi as BalanceABI } from '@defihelper/networks/abi/Balance.json';
 import { abi as SmartTradeRouterABI } from '@defihelper/networks/abi/SmartTradeRouter.json';
@@ -17,10 +18,22 @@ export default async function (
 ): Promise<ethers.ContractTransaction | Error | null> {
   const log = LogJsonMessage.debug({ source: 'smartTradeSwapHandler' });
   log.ex({ orderId: order.id }).send();
-  if (!isKey(contracts, order.network)) {
+  const ownerWallet = await container.model
+    .walletTable()
+    .innerJoin(
+      walletBlockchainTableName,
+      `${walletTableName}.id`,
+      `${walletBlockchainTableName}.id`,
+    )
+    .where(`${walletTableName}.id`, order.owner)
+    .first();
+  if (!ownerWallet) {
+    return new Error('Owner wallet not found');
+  }
+  if (!isKey(contracts, ownerWallet.network)) {
     return new Error('Contracts not deployed to target network');
   }
-  const network = container.blockchain.ethereum.byNetwork(order.network);
+  const network = container.blockchain.ethereum.byNetwork(ownerWallet.network);
   const provider = network.provider();
   const uniswapRouter = new ethers.Contract(order.callData.exchange, UniswapRouterABI, provider);
   const actualAmountOut = await uniswapRouter
@@ -54,11 +67,11 @@ export default async function (
   log.ex({ routeIndex }).send();
   if (routeIndex === null) return null;
 
-  const freeConsumer = await useEthereumFreeConsumer(order.network);
+  const freeConsumer = await useEthereumFreeConsumer(ownerWallet.network);
   log.ex({ consumer: freeConsumer?.consumer.address }).send();
   if (freeConsumer === null) return new Error('Not free consumer');
 
-  const networkContracts = contracts[order.network] as Record<
+  const networkContracts = contracts[ownerWallet.network] as Record<
     string,
     { address: string } | undefined
   >;
@@ -88,7 +101,7 @@ export default async function (
   );
 
   const routerBalance = await smartTradeRouter
-    .balanceOf(order.owner, order.callData.pair[0])
+    .balanceOf(ownerWallet.address, order.callData.pair[0])
     .then((v: ethers.BigNumber) => v.toString());
   log.ex({ routerBalance }).send();
   if (new BN(order.callData.amountIn).gt(routerBalance)) {
@@ -97,7 +110,7 @@ export default async function (
 
   const callOptions = await smartTradeHandler.callOptionsEncode({
     route: routeIndex,
-    deadline: dayjs().add(5, 'minutes').unix(),
+    deadline: dayjs().add(order.callData.deadline, 'seconds').unix(),
   });
   log.ex({ callOptions }).send();
   const estimateGas = await smartTradeRouter.estimateGas
@@ -108,7 +121,7 @@ export default async function (
   const gasFee = new BN(gasLimit).multipliedBy(gasPrice).toFixed(0);
   const protocolFee = await smartTradeRouter.fee();
   const feeBalance = await balance
-    .netBalanceOf(order.owner)
+    .netBalanceOf(ownerWallet.address)
     .then((v: ethers.BigNumber) => v.toString());
   log.ex({ estimateGas, gasLimit, gasPrice, gasFee, protocolFee, feeBalance }).send();
   if (new BN(gasFee).plus(protocolFee).gt(feeBalance)) {

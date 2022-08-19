@@ -1,8 +1,9 @@
 import { Factory } from '@services/Container';
 import { v4 as uuid } from 'uuid';
-import { Blockchain } from '@models/types';
 import { Emitter } from '@services/Event';
 import container from '@container';
+import { Wallet, WalletBlockchain } from '@models/Wallet/Entity';
+import { Token } from '@models/Token/Entity';
 import {
   CallData,
   HandlerType,
@@ -10,8 +11,11 @@ import {
   OrderCallHistory,
   OrderCallStatus,
   OrderStatus,
+  OrderTokenLink,
+  OrderTokenLinkType,
   SmartTradeOrderCallHistoryTable,
   SmartTradeOrderTable,
+  SmartTradeOrderTokenLinkTable,
 } from './Entity';
 import * as handlers from './handlers';
 
@@ -34,14 +38,13 @@ export class SmartTradeService {
 
   constructor(
     public readonly orderTable: Factory<SmartTradeOrderTable>,
+    public readonly orderTokenLinkTable: Factory<SmartTradeOrderTokenLinkTable>,
     public readonly orderCallHistoryTable: Factory<SmartTradeOrderCallHistoryTable>,
   ) {}
 
   async createOrder(
-    blockchain: Blockchain,
-    network: string,
     number: string,
-    owner: string,
+    owner: Wallet & WalletBlockchain,
     handler: string,
     callDataRaw: string,
     callData: CallData,
@@ -51,10 +54,8 @@ export class SmartTradeService {
   ) {
     const created: Order = {
       id: uuid(),
-      blockchain,
-      network,
       number,
-      owner,
+      owner: owner.id,
       handler,
       callDataRaw,
       ...callData,
@@ -152,5 +153,24 @@ export class SmartTradeService {
     await this.orderCallHistoryTable().where('id', call.id).update(updated);
 
     return updated;
+  }
+
+  async tokenLink(order: Order, links: Array<{ token: Token; type: OrderTokenLinkType }>) {
+    const created = links.map(
+      ({ token, type }): OrderTokenLink => ({
+        id: uuid(),
+        order: order.id,
+        token: token.id,
+        type,
+        createdAt: new Date(),
+      }),
+    );
+
+    await Promise.all(
+      created.map((link) =>
+        this.orderTokenLinkTable().insert(link).onConflict(['order', 'token', 'type']).ignore(),
+      ),
+    );
+    return created;
   }
 }

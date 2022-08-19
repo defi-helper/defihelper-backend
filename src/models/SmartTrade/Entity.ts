@@ -1,5 +1,4 @@
 import { typedTableFactory } from '@services/Database';
-import { Blockchain } from '@models/types';
 
 export enum HandlerType {
   MockHandler = 'SmartTradeMockHandler',
@@ -30,12 +29,14 @@ export interface SwapCallData {
     tokenInDecimals: number;
     tokenOutDecimals: number;
     amountIn: string;
+    boughtPrice: string;
     routes: Array<{
       amountOut: string;
       amountOutMin: string;
       slippage: string;
       direction: 'gt' | 'lt';
     } | null>;
+    deadline: number;
   };
 }
 
@@ -60,8 +61,6 @@ export function orderStatusResolve(statusRaw: OrderStatusRaw) {
 
 export type Order<T extends CallData = CallData> = {
   id: string;
-  blockchain: Blockchain;
-  network: string;
   number: string;
   owner: string;
   handler: string;
@@ -80,6 +79,29 @@ export const smartTradeOrderTableName = 'smart_trade_order';
 export const smartTradeOrderTableFactory = typedTableFactory(smartTradeOrderTableName);
 
 export type SmartTradeOrderTable = ReturnType<ReturnType<typeof smartTradeOrderTableFactory>>;
+
+export enum OrderTokenLinkType {
+  In = 'in',
+  Out = 'out',
+}
+
+export interface OrderTokenLink {
+  id: string;
+  order: string;
+  token: string;
+  type: OrderTokenLinkType;
+  createdAt: Date;
+}
+
+export const smartTradeOrderTokenLinkTableName = 'smart_trade_order_token_link';
+
+export const smartTradeOrderTokenLinkTableFactory = typedTableFactory(
+  smartTradeOrderTokenLinkTableName,
+);
+
+export type SmartTradeOrderTokenLinkTable = ReturnType<
+  ReturnType<typeof smartTradeOrderTokenLinkTableFactory>
+>;
 
 export enum OrderCallStatus {
   Pending = 'pending',
@@ -110,6 +132,7 @@ export type SmartTradeOrderCallHistoryTable = ReturnType<
 declare module 'knex/types/tables' {
   interface Tables {
     [smartTradeOrderTableName]: Order;
+    [smartTradeOrderTokenLinkTableName]: OrderTokenLink;
     [smartTradeOrderCallHistoryTableName]: OrderCallHistory;
   }
 }

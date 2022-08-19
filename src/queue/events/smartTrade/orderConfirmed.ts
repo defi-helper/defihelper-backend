@@ -2,14 +2,20 @@ import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import { HandlerType, Order, OrderStatus } from '@models/SmartTrade/Entity';
 import UniswapPairABI from '@models/SmartTrade/data/uniswapPairABI.json';
+import {
+  Wallet,
+  WalletBlockchain,
+  walletBlockchainTableName,
+  walletTableName,
+} from '@models/Wallet/Entity';
 
-async function registerWatcher(order: Order) {
+async function registerWatcher(order: Order, ownerWallet: Wallet & WalletBlockchain) {
   if (order.status !== OrderStatus.Pending) return order;
 
   if (order.type === HandlerType.SwapHandler) {
     const scanner = container.scanner();
     const listener = await scanner.registerListener(
-      await scanner.registerContract(order.network, order.callData.pair, UniswapPairABI),
+      await scanner.registerContract(ownerWallet.network, order.callData.pair, UniswapPairABI),
       'Sync',
       { promptly: {} },
     );
@@ -34,6 +40,18 @@ export default async (process: Process) => {
   if (!order) {
     throw new Error(`Order "${id}" not found`);
   }
+  const ownerWallet = await container.model
+    .walletTable()
+    .innerJoin(
+      walletBlockchainTableName,
+      `${walletTableName}.id`,
+      `${walletBlockchainTableName}.id`,
+    )
+    .where(`${walletTableName}.id`, order.owner)
+    .first();
+  if (!ownerWallet) {
+    throw new Error('Owner wallet not found');
+  }
 
   if (order.statusTask === null) {
     order = await container.model.smartTradeService().updateOrder({
@@ -44,7 +62,7 @@ export default async (process: Process) => {
     });
   }
   if (order.watcherListenerId === null) {
-    order = await registerWatcher(order);
+    order = await registerWatcher(order, ownerWallet);
   }
 
   return process.done();

@@ -12,7 +12,7 @@ import {
   GraphQLUnionType,
 } from 'graphql';
 import { Request } from 'express';
-import { AuthenticationError, ForbiddenError } from 'apollo-server-errors';
+import { AuthenticationError, ForbiddenError, UserInputError } from 'apollo-server-errors';
 import { BigNumber as BN } from 'bignumber.js';
 import container from '@container';
 import {
@@ -25,8 +25,11 @@ import {
   OrderStatus,
   smartTradeOrderTableName,
   SwapCallData,
+  OrderTokenLinkType as OrderTokenLinkTypeNative,
+  OrderTokenLink,
 } from '@models/SmartTrade/Entity';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
+import { TokenCreatedBy } from '@models/Token/Entity';
 import {
   UuidType,
   DateTimeType,
@@ -38,6 +41,8 @@ import {
   EthereumTransactionHashType,
   BigNumberType,
 } from '../types';
+import { WalletBlockchainType } from '../user';
+import { TokenType } from '../token';
 
 export const OrderCallHistoryStatusEnum = new GraphQLEnumType({
   name: 'SmartTradeOrderCallHistoryStatusEnum',
@@ -59,6 +64,29 @@ export const OrderCallHistoryType = new GraphQLObjectType<OrderCallHistory>({
     errorReason: {
       type: GraphQLNonNull(GraphQLString),
       resolve: ({ error }) => error,
+    },
+  },
+});
+
+export const OrderTokenLinkTypeEnum = new GraphQLEnumType({
+  name: 'SmartTradeOrderTokenLinkTypeEnum',
+  values: Object.values(OrderTokenLinkTypeNative).reduce(
+    (res, type) => ({ ...res, [type]: { value: type } }),
+    {},
+  ),
+});
+
+export const OrderTokenLinkType = new GraphQLObjectType<OrderTokenLink, Request>({
+  name: 'SmartTradeOrderTokenLinkType',
+  fields: {
+    token: {
+      type: GraphQLNonNull(TokenType),
+      resolve: ({ token }, args, { dataLoader }) => {
+        return dataLoader.token().load(token);
+      },
+    },
+    type: {
+      type: GraphQLNonNull(OrderTokenLinkTypeEnum),
     },
   },
 });
@@ -134,6 +162,10 @@ export const SwapHandlerCallDataType = new GraphQLObjectType<SwapCallData>({
       resolve: ({ callData: { amountIn, tokenInDecimals } }) =>
         new BN(amountIn).div(`1e${tokenInDecimals}`),
     },
+    boughtPrice: {
+      type: GraphQLNonNull(BigNumberType),
+      resolve: ({ callData: { boughtPrice } }) => boughtPrice,
+    },
     stopLoss: {
       type: SwapHandlerCallDataRouteType,
       resolve: ({ callData: { routes, tokenOutDecimals } }) => {
@@ -160,6 +192,10 @@ export const SwapHandlerCallDataType = new GraphQLObjectType<SwapCallData>({
         };
       },
     },
+    deadline: {
+      type: GraphQLNonNull(GraphQLInt),
+      resolve: ({ callData: { deadline } }) => deadline,
+    },
   },
 });
 
@@ -177,24 +213,23 @@ export const CallDataType = new GraphQLUnionType({
   },
 });
 
-export const OrderType = new GraphQLObjectType<Order>({
+export const OrderType = new GraphQLObjectType<Order, Request>({
   name: 'SmartTradeOrderType',
   fields: {
     id: {
       type: GraphQLNonNull(UuidType),
       description: 'Identificator',
     },
-    network: {
-      type: GraphQLNonNull(GraphQLString),
-      description: 'Blockchain network id',
-    },
     number: {
       type: GraphQLNonNull(GraphQLString),
       description: 'Order number',
     },
     owner: {
-      type: GraphQLNonNull(EthereumAddressType),
-      description: 'Owner address',
+      type: GraphQLNonNull(WalletBlockchainType),
+      description: 'Owner wallet',
+      resolve: ({ owner }, args, { dataLoader }) => {
+        return dataLoader.wallet().load(owner);
+      },
     },
     handler: {
       type: GraphQLNonNull(EthereumAddressType),
@@ -221,6 +256,12 @@ export const OrderType = new GraphQLObjectType<Order>({
           .where('order', id)
           .orderBy('createdAt', 'desc')
           .first();
+      },
+    },
+    tokens: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(OrderTokenLinkType))),
+      resolve: (order) => {
+        return container.model.smartTradeOrderTokenLinkTable().where('order', order.id);
       },
     },
     confirmed: {
@@ -277,11 +318,12 @@ export const OrderListQuery: GraphQLFieldConfig<any, Request> = {
 
       const select = container.model
         .smartTradeOrderTable()
-        .innerJoin(walletBlockchainTableName, function () {
-          this.on(`${walletBlockchainTableName}.network`, `${smartTradeOrderTableName}.network`);
-          this.on(`${walletBlockchainTableName}.address`, `${smartTradeOrderTableName}.owner`);
-        })
-        .innerJoin(walletTableName, `${walletBlockchainTableName}.id`, `${walletTableName}.id`)
+        .innerJoin(walletTableName, `${smartTradeOrderTableName}.owner`, `${walletTableName}.id`)
+        .innerJoin(
+          walletBlockchainTableName,
+          `${walletBlockchainTableName}.id`,
+          `${walletTableName}.id`,
+        )
         .where(function () {
           const { my, owner, network, status, type, confirmed } = filter;
           if (typeof my === 'boolean' && my === true) {
@@ -294,7 +336,7 @@ export const OrderListQuery: GraphQLFieldConfig<any, Request> = {
             this.where(`${walletTableName}.user`, owner);
           }
           if (network !== undefined) {
-            this.where(`${smartTradeOrderTableName}.network`, network);
+            this.where(`${walletBlockchainTableName}.network`, network);
           }
           if (typeof confirmed === 'boolean') {
             this.where(`${smartTradeOrderTableName}.confirmed`, confirmed);
@@ -340,16 +382,13 @@ export const SwapOrderCallDataRouteInputType = new GraphQLInputObjectType({
 export const SwapOrderCreateInputType = new GraphQLInputObjectType({
   name: 'SmartTradeSwapOrderCreateInputType',
   fields: {
-    network: {
-      type: GraphQLNonNull(GraphQLString),
-    },
     number: {
       type: GraphQLNonNull(GraphQLString),
       description: 'Order identificator',
     },
     owner: {
-      type: GraphQLNonNull(EthereumAddressType),
-      description: 'Owner wallet address',
+      type: GraphQLNonNull(UuidType),
+      description: 'Owner wallet',
     },
     handler: {
       type: GraphQLNonNull(EthereumAddressType),
@@ -382,11 +421,18 @@ export const SwapOrderCreateInputType = new GraphQLInputObjectType({
             amountIn: {
               type: GraphQLNonNull(BigNumberType),
             },
+            boughtPrice: {
+              type: GraphQLNonNull(BigNumberType),
+            },
             stopLoss: {
               type: SwapOrderCallDataRouteInputType,
             },
             takeProfit: {
               type: SwapOrderCallDataRouteInputType,
+            },
+            deadline: {
+              type: GraphQLNonNull(GraphQLInt),
+              description: 'Deadline seconds',
             },
           },
         }),
@@ -399,6 +445,31 @@ export const SwapOrderCreateInputType = new GraphQLInputObjectType({
   },
 });
 
+async function orderTokenLink(network: string, tokenAddress: string) {
+  let token = await container.model
+    .tokenTable()
+    .where('blockchain', 'ethereum')
+    .where('network', network)
+    .where('address', tokenAddress.toLowerCase())
+    .first();
+  if (!token) {
+    token = await container.model
+      .tokenService()
+      .create(
+        null,
+        'ethereum',
+        network,
+        tokenAddress.toLowerCase(),
+        '',
+        '',
+        0,
+        TokenCreatedBy.SmartTrade,
+        null,
+      );
+  }
+  return token;
+}
+
 export const SwapOrderCreateMutation: GraphQLFieldConfig<any, Request> = {
   type: GraphQLNonNull(OrderType),
   args: {
@@ -409,20 +480,28 @@ export const SwapOrderCreateMutation: GraphQLFieldConfig<any, Request> = {
   resolve: onlyAllowed('smartTradeOrder.create', async (root, { input }, { currentUser }) => {
     if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
 
-    const { network, number, owner, handler, callDataRaw, callData, tx } = input;
-    const duplicate = await container.model
-      .smartTradeOrderTable()
-      .where({ blockchain: 'ethereum', network, number })
-      .first();
+    const { number, owner, handler, callDataRaw, callData, tx } = input;
+    const duplicate = await container.model.smartTradeOrderTable().where({ owner, number }).first();
     if (duplicate) {
       return duplicate;
     }
+    const ownerWallet = await container.model
+      .walletTable()
+      .innerJoin(
+        walletBlockchainTableName,
+        `${walletTableName}.id`,
+        `${walletBlockchainTableName}.id`,
+      )
+      .where(`${walletTableName}.id`, owner)
+      .first();
+    if (!ownerWallet) {
+      throw new UserInputError('Owner wallet not found');
+    }
 
-    return container.model.smartTradeService().createOrder(
-      'ethereum',
-      network,
+    const smartTradeService = container.model.smartTradeService();
+    const order = await smartTradeService.createOrder(
       number,
-      owner.toLowerCase(),
+      ownerWallet,
       handler.toLowerCase(),
       callDataRaw,
       {
@@ -434,6 +513,7 @@ export const SwapOrderCreateMutation: GraphQLFieldConfig<any, Request> = {
           tokenInDecimals: callData.tokenInDecimals,
           tokenOutDecimals: callData.tokenOutDecimals,
           amountIn: callData.amountIn.toString(10),
+          boughtPrice: callData.boughtPrice.toString(10),
           routes: [
             callData.stopLoss
               ? {
@@ -452,11 +532,27 @@ export const SwapOrderCreateMutation: GraphQLFieldConfig<any, Request> = {
                 }
               : null,
           ],
+          deadline: callData.deadline,
         },
       },
       OrderStatus.Pending,
       tx,
       false,
     );
+    await smartTradeService.tokenLink(
+      order,
+      await Promise.all([
+        orderTokenLink(ownerWallet.network, callData.path[0]).then((token) => ({
+          token,
+          type: OrderTokenLinkTypeNative.In,
+        })),
+        orderTokenLink(ownerWallet.network, callData.path[1]).then((token) => ({
+          token,
+          type: OrderTokenLinkTypeNative.Out,
+        })),
+      ]),
+    );
+
+    return order;
   }),
 };
