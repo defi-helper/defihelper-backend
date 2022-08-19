@@ -71,6 +71,8 @@ function networkFactory({
   nativeTokenPrice,
   nativeTokenDetails,
   tokenPriceResolver,
+  stablecoins,
+  wrappedNativeTokenAddress,
   rpcUrls,
   network: { node, historicalNode, avgBlockTime, inspectors, consumers },
 }: {
@@ -90,6 +92,7 @@ function networkFactory({
   rpcUrls?: string[];
   network: NetworkConfig;
   stablecoins: string[];
+  wrappedNativeTokenAddress: string;
 }) {
   const provider = providerRandomizerFactory(
     node.map((host) => singleton(providerFactory(new URL(host)))),
@@ -117,6 +120,8 @@ function networkFactory({
     nativeTokenPrice,
     rpcUrls,
     tokenPriceResolver,
+    stablecoins,
+    wrappedNativeTokenAddress,
     nativeTokenDetails,
     inspector: () => (inspectors.length > 0 ? new ethers.Wallet(inspectors[0], provider()) : null),
     consumers: () => signersFactory(consumers, provider()),
@@ -265,6 +270,7 @@ export class BlockchainContainer extends Container<Config> {
         '0x6B175474E89094C44Da98b954EedeAC495271d0F',
         '0x0000000000085d4780B73119b644AE5ecd22b376',
       ],
+      wrappedNativeTokenAddress: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
     }),
     '3': networkFactory({
       id: '3',
@@ -286,6 +292,7 @@ export class BlockchainContainer extends Container<Config> {
       tokenPriceResolver: debankPriceFeed('1'),
       network: this.parent.ethRopsten,
       stablecoins: [],
+      wrappedNativeTokenAddress: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
     }),
     '4': networkFactory({
       id: '4',
@@ -307,6 +314,7 @@ export class BlockchainContainer extends Container<Config> {
       tokenPriceResolver: debankPriceFeed('1'),
       network: this.parent.ethRinkeby,
       stablecoins: [],
+      wrappedNativeTokenAddress: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
     }),
     '5': networkFactory({
       id: '5',
@@ -328,6 +336,7 @@ export class BlockchainContainer extends Container<Config> {
       tokenPriceResolver: debankPriceFeed('1'),
       network: this.parent.ethGoerli,
       stablecoins: [],
+      wrappedNativeTokenAddress: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
     }),
     '10': networkFactory({
       id: '10',
@@ -356,6 +365,7 @@ export class BlockchainContainer extends Container<Config> {
         '0x6B175474E89094C44Da98b954EedeAC495271d0F',
         '0x0000000000085d4780B73119b644AE5ecd22b376',
       ],
+      wrappedNativeTokenAddress: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // todo check me
     }),
     '25': networkFactory({
       id: '25',
@@ -382,6 +392,7 @@ export class BlockchainContainer extends Container<Config> {
         '0xF2001B145b43032AAF5Ee2884e456CCd805F677D',
         '0x87EFB3ec1576Dec8ED47e58B832bEdCd86eE186e',
       ],
+      wrappedNativeTokenAddress: '0x5C7F8A570d578ED84E63fdFA7b1eE72dEae1AE23',
     }),
     '56': networkFactory({
       id: '56',
@@ -413,6 +424,7 @@ export class BlockchainContainer extends Container<Config> {
         '0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3',
         '0x14016E85a25aeb13065688cAFB43044C2ef86784',
       ],
+      wrappedNativeTokenAddress: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
     }),
     '137': networkFactory({
       id: '137',
@@ -440,6 +452,7 @@ export class BlockchainContainer extends Container<Config> {
         '0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3',
         '0x14016E85a25aeb13065688cAFB43044C2ef86784',
       ],
+      wrappedNativeTokenAddress: '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270',
     }),
     '250': networkFactory({
       id: '250',
@@ -466,6 +479,7 @@ export class BlockchainContainer extends Container<Config> {
         '0x8D11eC38a3EB5E956B052f67Da8Bdc9bef8Abf3E',
         '0x9879aBDea01a879644185341F7aF7d8343556B7a',
       ],
+      wrappedNativeTokenAddress: '0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83',
     }),
     '1284': networkFactory({
       id: '1284',
@@ -492,6 +506,7 @@ export class BlockchainContainer extends Container<Config> {
         '0x818ec0A7Fe18Ff94269904fCED6AE3DaE6d6dC0b',
         '0x765277EebeCA2e31912C9946eAe1021199B39C61',
       ],
+      wrappedNativeTokenAddress: '0xAcc15dC74880C9944775448304B263D191c6077F',
     }),
     '1285': networkFactory({
       id: '1285',
@@ -518,6 +533,7 @@ export class BlockchainContainer extends Container<Config> {
         '0x80A16016cC4A2E6a2CACA8a4a498b1699fF0f844',
         '0xE3F5a90F9cb311505cd691a46596599aA1A0AD7D',
       ],
+      wrappedNativeTokenAddress: '0x98878B06940aE243284CA214f92Bb71a2b032B8A',
     }),
     '31337': networkFactory({
       id: '31337',
@@ -539,6 +555,7 @@ export class BlockchainContainer extends Container<Config> {
       tokenPriceResolver: debankPriceFeed('1'),
       network: this.parent.local,
       stablecoins: [],
+      wrappedNativeTokenAddress: '',
     }),
     '42161': networkFactory({
       id: '42161',
@@ -566,6 +583,7 @@ export class BlockchainContainer extends Container<Config> {
         '0xDA10009cBd5D07dd0CeCc66161FC93D7c9000da1',
         '0x4D15a3A2286D883AF0AA1B3f21367843FAc63E07',
       ],
+      wrappedNativeTokenAddress: '',
     }),
     '43113': networkFactory({
       id: '43113',
@@ -587,6 +605,7 @@ export class BlockchainContainer extends Container<Config> {
       tokenPriceResolver: debankPriceFeed('43113'),
       network: this.parent.avalancheTestnet,
       stablecoins: [],
+      wrappedNativeTokenAddress: '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7',
     }),
     '43114': networkFactory({
       id: '43114',
@@ -614,6 +633,7 @@ export class BlockchainContainer extends Container<Config> {
         '0xd586E7F844cEa2F87f50152665BCbc2C279D8d70',
         '0x1C20E891Bab6b1727d14Da358FAe2984Ed9B59EB',
       ],
+      wrappedNativeTokenAddress: '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7',
     }),
     '1313161554': networkFactory({
       id: '1313161554',
@@ -639,6 +659,7 @@ export class BlockchainContainer extends Container<Config> {
         '0xB12BFcA5A55806AaF64E99521918A4bf0fC40802',
         '0xe3520349F477A5F6EB06107066048508498A291b',
       ],
+      wrappedNativeTokenAddress: '0xC9BdeEd33CD01541e1eeD10f90519d2C06Fe3feB',
     }),
     '1666600000': networkFactory({
       id: '1666600000',
@@ -667,12 +688,8 @@ export class BlockchainContainer extends Container<Config> {
         'https://s3.api.harmony.one',
       ],
       network: this.parent.harmony,
-
-      stablecoins: [
-        '0x4988a896b1227218e4A686fdE5EabdcAbd91571f',
-        '0xB12BFcA5A55806AaF64E99521918A4bf0fC40802',
-        '0xe3520349F477A5F6EB06107066048508498A291b',
-      ],
+      stablecoins: [],
+      wrappedNativeTokenAddress: '0xcf664087a5bb0237a0bad6742852ec6c8d69a27a',
     }),
   } as const;
 
