@@ -87,7 +87,7 @@ export default async (process: Process) => {
       await container.model.queueService().push('sendTelegramByContact', {
         contactId: contact.id,
         params: {
-          name: user.name,
+          name: user.name ?? 'My Portfolio',
           totalNetWorth,
           totalEarnedUSD: totalEarnedUSDFixedFloating,
           percentageEarned: `${new BN(totalEarnedChange).isPositive() ? '+' : ''}${new BN(
@@ -105,7 +105,7 @@ export default async (process: Process) => {
         'portfolioMetrics',
         {
           ...container.template.i18n(container.i18n.byLocale(user.locale)),
-          name: user.name,
+          name: user.name ?? 'My Portfolio',
           totalNetWorth,
           totalEarnedUSD: totalEarnedUSDFixedFloating,
           percentageEarned: `${new BN(totalEarnedChange).isPositive() ? '+' : ''} ${new BN(
