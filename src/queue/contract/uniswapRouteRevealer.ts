@@ -1,4 +1,5 @@
 import { Process } from '@models/Queue/Entity';
+import Token from '@models/Token/Entity';
 import container from '@container';
 import BigNumber from 'bignumber.js';
 
@@ -417,29 +418,40 @@ export default async (process: Process) => {
     ...nativeToStableCoinLiquidityPass,
   ];
 
-  possibleRoutes.reduce<Promise<BigNumber | null>>(async (prev, route) => {
-    const aPrev = await prev;
-    if (aPrev !== null) {
-      return aPrev;
-    }
+  const route = await possibleRoutes.reduce<Promise<string[] | null>>(
+    async (prev, possibleRoute) => {
+      const aPrev = await prev;
+      if (aPrev !== null) {
+        return aPrev;
+      }
 
-    try {
-      const [, usdRepresentation] = await uniV2RouterContract.getAmountsOut(
-        new BigNumber(`1e${token.decimals}`).toString(10),
-        route,
-      );
+      try {
+        const [, usdRepresentation] = await uniV2RouterContract.getAmountsOut(
+          new BigNumber(`1e${token.decimals}`).toString(10),
+          possibleRoute,
+        );
 
-      return usdRepresentation;
-    } catch {
-      return null;
-    }
-  }, Promise.resolve(null));
+        console.info(usdRepresentation);
 
-  possibleRoutes.forEach(async (route) => {
-    const [, usdRepresentation] = await uniV2RouterContract.getAmountsOut(
-      new BigNumber(`1e${token.decimals}`).toString(10),
+        return possibleRoute;
+      } catch {
+        return null;
+      }
+    },
+    Promise.resolve(null),
+  );
+
+  if (!route) {
+    throw new Error(`Could not find a route`);
+  }
+
+  await container.model.tokenService().update({
+    ...token,
+    priceFeedNeeded: false,
+    priceFeed: {
+      type: Token.CoingeckoUniswapRouterV2,
       route,
-    );
+    },
   });
 
   return process.done();

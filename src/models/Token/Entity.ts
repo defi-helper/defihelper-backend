@@ -68,6 +68,11 @@ export namespace PriceFeed {
     address: string;
   }
 
+  export interface CoingeckoUniswapRouterV2 {
+    type: 'uniswapRouterV2';
+    route: string[];
+  }
+
   export function isCoingeckoAddress(v: any): v is CoingeckoAddress {
     if (typeof v !== 'object' || v === null) return false;
     if (
@@ -83,7 +88,7 @@ export namespace PriceFeed {
     return true;
   }
 
-  export type PriceFeed = CoingeckoId | CoingeckoAddress;
+  export type PriceFeed = CoingeckoId | CoingeckoAddress | CoingeckoUniswapRouterV2;
 }
 
 export interface Token {
