@@ -95,6 +95,14 @@ export const PriceFeedInputType = new GraphQLInputObjectType({
         },
       }),
     },
+    uniswapRouterV2: {
+      type: new GraphQLInputObjectType({
+        name: 'TokenPriceFeedUniswapRouterV2InputType',
+        fields: {
+          route: { type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString))) },
+        },
+      }),
+    },
   },
 });
 

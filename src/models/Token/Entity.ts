@@ -68,7 +68,7 @@ export namespace PriceFeed {
     address: string;
   }
 
-  export interface CoingeckoUniswapRouterV2 {
+  export interface UniswapRouterV2 {
     type: 'uniswapRouterV2';
     route: string[];
   }
@@ -88,7 +88,7 @@ export namespace PriceFeed {
     return true;
   }
 
-  export type PriceFeed = CoingeckoId | CoingeckoAddress | CoingeckoUniswapRouterV2;
+  export type PriceFeed = CoingeckoId | CoingeckoAddress | UniswapRouterV2;
 }
 
 export interface Token {
