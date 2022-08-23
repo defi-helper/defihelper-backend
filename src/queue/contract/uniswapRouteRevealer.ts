@@ -426,12 +426,10 @@ export default async (process: Process) => {
       }
 
       try {
-        const [, usdRepresentation] = await uniV2RouterContract.getAmountsOut(
+        await uniV2RouterContract.getAmountsOut(
           new BigNumber(`1e${token.decimals}`).toString(10),
           possibleRoute,
         );
-
-        console.info(usdRepresentation);
 
         return possibleRoute;
       } catch {
