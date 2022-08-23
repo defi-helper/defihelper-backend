@@ -1,5 +1,5 @@
 import { Process } from '@models/Queue/Entity';
-import Token from '@models/Token/Entity';
+import { CoingeckoUniswapRouterV2 } from '@models/Token/Entity';
 import container from '@container';
 import BigNumber from 'bignumber.js';
 
@@ -447,7 +447,7 @@ export default async (process: Process) => {
     ...token,
     priceFeedNeeded: false,
     priceFeed: {
-      type: Token.CoingeckoUniswapRouterV2,
+      type: CoingeckoUniswapRouterV2,
       route,
     },
   });
