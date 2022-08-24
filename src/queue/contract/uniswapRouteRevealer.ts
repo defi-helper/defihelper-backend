@@ -9,53 +9,28 @@ export interface Params {
 export default async (process: Process) => {
   const { id } = process.task.params as Params;
 
-  const token = await container.model.tokenTable().where('id', id).first();
+  const token = await container.model.tokenTable().where('id', id)
+  .andWhere('blockchain', 'ethereum').first();
 
   if (!token) {
     throw new Error(`Could not find contract with id ${id}`);
   }
 
-  let routerAddress: string;
-  switch (token.network) {
-    case '1':
-      routerAddress = '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D';
-      break;
+  const routerByNetwork = {
+    '1': '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'
+    '10': '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
+    '25': '0xcd7d16fB918511BF7269eC4f48d61D79Fb26f918',
+    '56': '0x10ED43C718714eb63d5aA57B78B54704E256024E',
+    '137': '0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32',
+    '250': '0xF491e7B69E4244ad4002BC14e878a34207E38c29',
+    '42161': '0xc35DADB65012eC5796536bD9864eD8773aBc74C4',
+    '43114': '0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106',
+    '1313161554': '0xA1B1742e9c32C7cAa9726d8204bD5715e3419861',
+  };
 
-    case '10':
-      // todo check me, it should be the same with ethereum, but im not sure
-      routerAddress = '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D';
-      break;
-
-    case '25':
-      routerAddress = '0xcd7d16fB918511BF7269eC4f48d61D79Fb26f918';
-      break;
-
-    case '56':
-      routerAddress = '0x10ED43C718714eb63d5aA57B78B54704E256024E';
-      break;
-
-    case '137':
-      routerAddress = '0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32';
-      break;
-
-    case '250':
-      routerAddress = '0xF491e7B69E4244ad4002BC14e878a34207E38c29';
-      break;
-
-    case '42161':
-      routerAddress = '0xc35DADB65012eC5796536bD9864eD8773aBc74C4';
-      break;
-
-    case '43114':
-      routerAddress = '0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106';
-      break;
-
-    case '1313161554':
-      routerAddress = '0xA1B1742e9c32C7cAa9726d8204bD5715e3419861';
-      break;
-
-    default:
-      throw new Error(`Could not find router for network ${token.network}`);
+  const routerAddress = routerByNetwork[token.network as keyof typeof routerByNetwork];
+  if (!routerAddress) {
+    throw new Error(`No router found for ${token.network}`);
   }
 
   const abi = [
@@ -404,12 +379,16 @@ export default async (process: Process) => {
   const provider = networkContainer.provider();
   const uniV2RouterContract = blockchainContainer.contract(routerAddress, abi, provider);
 
+  if (!networkContainer.nativeTokenDetails.wrapped) {
+    throw new Error('Wrapped token does not exist');
+  }
+
   const straightThroughStablecoin = networkContainer.stablecoins.map((stablecoin) => {
     return [token.address, stablecoin];
   });
 
   const nativeToStableCoinLiquidityPass = networkContainer.stablecoins.map((stablecoin) => {
-    return [token.address, networkContainer.wrappedNativeTokenAddress, stablecoin];
+    return [token.address, networkContainer.nativeTokenDetails.wrapped as string, stablecoin];
   });
 
   const possibleRoutes: string[][] = [
@@ -442,12 +421,22 @@ export default async (process: Process) => {
     throw new Error(`Could not find a route`);
   }
 
+  const representativeTokenErc20Contract = blockchainContainer.contract(
+    route[route.length - 1],
+    blockchainContainer.abi.erc20ABI,
+    provider,
+  );
+
+  const outputDecimals = await representativeTokenErc20Contract.decimals();
+
   await container.model.tokenService().update({
     ...token,
     priceFeedNeeded: false,
     priceFeed: {
       type: 'uniswapRouterV2',
       route,
+      routerAddress,
+      outputDecimals,
     },
   });
 

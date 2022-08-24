@@ -71,6 +71,8 @@ export namespace PriceFeed {
   export interface UniswapRouterV2 {
     type: 'uniswapRouterV2';
     route: string[];
+    routerAddress: string;
+    outputDecimals: number;
   }
 
   export function isCoingeckoAddress(v: any): v is CoingeckoAddress {

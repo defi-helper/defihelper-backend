@@ -1,6 +1,7 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
 
+// todo replace it to import from networks
 const erc20Abi = [
   {
     constant: true,
