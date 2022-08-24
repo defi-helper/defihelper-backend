@@ -9,7 +9,7 @@ import { abi as erc1167ABI } from '@defihelper/networks/abi/ERC1167.json';
 import { abi as governorBravoABI } from '@defihelper/networks/abi/GovernorBravo.json';
 import { abi as governanceTokenABI } from '@defihelper/networks/abi/GovernanceToken.json';
 import { abi as treasuryABI } from '@defihelper/networks/abi/Treasury.json';
-import { abi as uniswapRouterABI } from '@defihelper/networks/abi/Budget.json'; // todo fixme
+import { abi as uniswapRouterABI } from '@defihelper/networks/abi/UniswapV2Router.json';
 import container from '@container';
 import automateABI from './abi/ethereum/automate.json';
 import masterChefV1ABI from './abi/ethereum/masterChefV1ABI.json';

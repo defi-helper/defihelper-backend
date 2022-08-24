@@ -100,6 +100,8 @@ export const PriceFeedInputType = new GraphQLInputObjectType({
         name: 'TokenPriceFeedUniswapRouterV2InputType',
         fields: {
           route: { type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString))) },
+          routerAddress: { type: GraphQLNonNull(GraphQLString) },
+          outputDecimals: { type: GraphQLNonNull(GraphQLInt) },
         },
       }),
     },
