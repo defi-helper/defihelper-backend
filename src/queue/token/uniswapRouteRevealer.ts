@@ -9,11 +9,7 @@ export interface Params {
 export default async (process: Process) => {
   const { id } = process.task.params as Params;
 
-  const token = await container.model
-    .tokenTable()
-    .where('id', id)
-    .andWhere('blockchain', 'ethereum')
-    .first();
+  const token = await container.model.tokenTable().where('id', id).first();
 
   if (!token) {
     throw new Error(`Could not find token with id ${id}`);

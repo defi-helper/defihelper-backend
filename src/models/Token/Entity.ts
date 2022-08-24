@@ -50,6 +50,21 @@ export namespace PriceFeed {
     return true;
   }
 
+  export function isUniswapRouterV2(v: any): v is CoingeckoId {
+    if (typeof v !== 'object' || v === null) return false;
+    if (
+      !Object.prototype.hasOwnProperty.call(v, 'type') ||
+      !Object.prototype.hasOwnProperty.call(v, 'route') ||
+      !Object.prototype.hasOwnProperty.call(v, 'routerAddress') ||
+      !Object.prototype.hasOwnProperty.call(v, 'outputDecimals')
+    ) {
+      return false;
+    }
+    if (v.type !== 'uniswapRouterV2') return false;
+
+    return true;
+  }
+
   export enum CoingeckoPlatform {
     Ethereum = 'ethereum',
     BSC = 'binance-smart-chain',
