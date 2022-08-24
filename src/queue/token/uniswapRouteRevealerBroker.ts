@@ -7,7 +7,15 @@ export interface Params {
 }
 
 export default async (process: Process) => {
-  const uniswapRoutableTokens = await container.model.tokenTable().where('priceFeedNeeded', true);
+  const candidatedNetworks = Object.values(container.blockchain.ethereum.networks)
+    .filter((v) => v.nativeTokenDetails.wrapped && v.stablecoins.length)
+    .map((v) => v.id);
+
+  const uniswapRoutableTokens = await container.model
+    .tokenTable()
+    .whereIn('network', candidatedNetworks)
+    .andWhere('priceFeedNeeded', true)
+    .andWhere('blockchain', 'ethereum');
 
   const lag = 86400 / uniswapRoutableTokens.length;
   await uniswapRoutableTokens.reduce<Promise<dayjs.Dayjs>>(async (prev, token) => {

@@ -9,15 +9,26 @@ export interface Params {
 export default async (process: Process) => {
   const { id } = process.task.params as Params;
 
-  const token = await container.model.tokenTable().where('id', id)
-  .andWhere('blockchain', 'ethereum').first();
+  const token = await container.model
+    .tokenTable()
+    .where('id', id)
+    .andWhere('blockchain', 'ethereum')
+    .first();
 
   if (!token) {
     throw new Error(`Could not find contract with id ${id}`);
   }
 
+  if (token.priceFeed !== null) {
+    throw new Error('Price feed already exists');
+  }
+
+  if (token.blockchain !== 'ethereum') {
+    throw new Error('Blockchain not supported');
+  }
+
   const routerByNetwork = {
-    '1': '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'
+    '1': '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
     '10': '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
     '25': '0xcd7d16fB918511BF7269eC4f48d61D79Fb26f918',
     '56': '0x10ED43C718714eb63d5aA57B78B54704E256024E',
@@ -383,19 +394,12 @@ export default async (process: Process) => {
     throw new Error('Wrapped token does not exist');
   }
 
-  const straightThroughStablecoin = networkContainer.stablecoins.map((stablecoin) => {
-    return [token.address, stablecoin];
+  const possibleRoutes = networkContainer.stablecoins.flatMap((stablecoin) => {
+    return [
+      [token.address, stablecoin],
+      [token.address, networkContainer.nativeTokenDetails.wrapped as string, stablecoin],
+    ];
   });
-
-  const nativeToStableCoinLiquidityPass = networkContainer.stablecoins.map((stablecoin) => {
-    return [token.address, networkContainer.nativeTokenDetails.wrapped as string, stablecoin];
-  });
-
-  const possibleRoutes: string[][] = [
-    ...straightThroughStablecoin,
-    ...nativeToStableCoinLiquidityPass,
-  ];
-
   const route = await possibleRoutes.reduce<Promise<string[] | null>>(
     async (prev, possibleRoute) => {
       const aPrev = await prev;
@@ -403,16 +407,10 @@ export default async (process: Process) => {
         return aPrev;
       }
 
-      try {
-        await uniV2RouterContract.getAmountsOut(
-          new BigNumber(`1e${token.decimals}`).toString(10),
-          possibleRoute,
-        );
-
-        return possibleRoute;
-      } catch {
-        return null;
-      }
+      return uniV2RouterContract
+        .getAmountsOut(new BigNumber(`1e${token.decimals}`).toFixed(0), possibleRoute)
+        .then(() => possibleRoute)
+        .catch(() => null);
     },
     Promise.resolve(null),
   );
