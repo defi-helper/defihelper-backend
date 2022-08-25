@@ -33,6 +33,7 @@ import {
 } from '@models/Protocol/Entity';
 import { apyBoost } from '@services/RestakeStrategy';
 import {
+  metricContractRegistryTableName,
   metricContractTableName,
   metricProtocolTableName,
   metricWalletRegistryTableName,
@@ -596,6 +597,17 @@ export const ContractUserLinkTypeEnum = new GraphQLEnumType({
   ),
 });
 
+export const ContractRiskEnum = new GraphQLEnumType({
+  name: 'ContractRiskEnum',
+  values: {
+    notCalculated: {},
+    low: {},
+    middle: {},
+    high: {},
+    all: {},
+  },
+});
+
 export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
   type: GraphQLNonNull(PaginateList('ContractListType', GraphQLNonNull(ContractType))),
   args: {
@@ -620,6 +632,9 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
           },
           userLink: {
             type: ContractUserLinkTypeEnum,
+          },
+          risk: {
+            type: ContractRiskEnum,
           },
           automate: {
             type: new GraphQLInputObjectType({
@@ -659,6 +674,7 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
         'aprWeekReal',
         'aprBoosted',
         'myStaked',
+        'risk',
       ],
       [{ column: 'name', order: 'asc' }],
     ),
@@ -820,6 +836,21 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
           .column(database.raw(`'0' AS "myStaked"`));
       }
     }
+
+    if (sortColumns.includes('risk')) {
+      listSelect = listSelect
+        .leftJoin(
+          metricContractRegistryTableName,
+          `${metricContractRegistryTableName}.contract`,
+          `${contractTableName}.id`,
+        )
+        .column(
+          database.raw(
+            `COALESCE((${metricContractRegistryTableName}.data->>'risk')::integer, 0) AS "risk"`,
+          ),
+        );
+    }
+
     if (sortColumns.includes('tvl')) {
       listSelect = listSelect.column(
         database.raw(

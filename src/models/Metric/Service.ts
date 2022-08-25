@@ -70,6 +70,7 @@ export class MetricContractService {
     readonly metricContractTaskTable: Factory<MetricContractTaskTable>,
     readonly metricWalletTable: Factory<MetricWalletTable>,
     readonly metricWalletRegistryTable: Factory<MetricWalletRegistryTable>,
+    readonly metricContractRegistryTable: Factory<MetricWalletRegistryTable>,
     readonly metricWalletTaskTable: Factory<MetricWalletTaskTable>,
     readonly metricWalletTokenTable: Factory<MetricWalletTokenTable>,
     readonly metricWalletTokenRegistryTable: Factory<MetricWalletTokenRegistryTable>,
@@ -111,7 +112,14 @@ export class MetricContractService {
       date,
       createdAt: new Date(),
     };
-    await this.metricContractTable().insert(created);
+
+    await this.database().transaction(async (trx) =>
+      Promise.all([
+        this.metricContractTable().insert(created).transacting(trx),
+        this.updateContractRegistry(created, trx),
+      ]),
+    );
+
     this.onContractCreated.emit(created);
 
     return created;
@@ -231,6 +239,38 @@ export class MetricContractService {
       const query = this.metricWalletRegistryTable()
         .update({
           data,
+          date: metric.date,
+        })
+        .where('id', duplicate.id);
+      if (trx) query.transacting(trx);
+      return query;
+    }
+    return null;
+  }
+
+  async updateContractRegistry(metric: MetricContract, trx?: Knex.Transaction<any, any>) {
+    const duplicate = await this.metricWalletRegistryTable()
+      .where({
+        contract: metric.contract,
+      })
+      .first();
+    if (!duplicate) {
+      const query = this.metricContractRegistryTable()
+        .insert({
+          id: uuid(),
+          contract: metric.contract,
+          data: metric.data,
+          date: metric.date,
+        })
+        .onConflict(['contract'])
+        .ignore();
+      if (trx) query.transacting(trx);
+      return query;
+    }
+    if (duplicate.date < metric.date) {
+      const query = this.metricContractRegistryTable()
+        .update({
+          data: metric.data,
           date: metric.date,
         })
         .where('id', duplicate.id);
