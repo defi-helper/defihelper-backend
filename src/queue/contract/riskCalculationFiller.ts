@@ -36,7 +36,7 @@ export default async (process: Process) => {
   }
 
   let riskLevel = ContractRiskFactor.notCalculated;
-  const currentApy = new BigNumber(lastMetric.data.aprYear ?? '-1');
+  const currentApy = new BigNumber(lastMetric.data.aprYear ?? '-1').multipliedBy(100);
 
   if (currentApy.gte(0) && currentApy.lte(20)) {
     riskLevel = ContractRiskFactor.low;
