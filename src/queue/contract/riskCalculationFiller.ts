@@ -49,14 +49,24 @@ export default async (process: Process) => {
     riskLevel = ContractRiskFactor.high;
   }
 
-  await container.model.metricService().createContract(
-    contract,
-    {
-      ...lastMetric.data,
-      risk: riskLevel,
-    },
-    new Date(),
-  );
+  await Promise.all([
+    container.model.metricService().createContract(
+      contract,
+      {
+        ...lastMetric.data,
+        risk: riskLevel,
+      },
+      new Date(),
+    ),
+
+    container.model.contractService().updateBlockchain({
+      ...contract,
+      metric: {
+        ...lastMetric.data,
+        risk: riskLevel,
+      },
+    }),
+  ]);
 
   return process.done();
 };

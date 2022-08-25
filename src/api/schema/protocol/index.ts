@@ -68,6 +68,14 @@ import {
 } from '../types';
 import { TokenType } from '../token';
 
+export const ContractRiskFactorEnum = new GraphQLEnumType({
+  name: 'ContractRiskFactorEnum',
+  values: Object.values(ContractRiskFactor).reduce(
+    (prev, name) => ({ ...prev, [name]: { value: name } }),
+    {},
+  ),
+});
+
 export const ContractMetricType = new GraphQLObjectType({
   name: 'ContractMetricType',
   fields: {
@@ -85,6 +93,9 @@ export const ContractMetricType = new GraphQLObjectType({
     },
     aprYear: {
       type: GraphQLNonNull(GraphQLString),
+    },
+    risk: {
+      type: GraphQLNonNull(ContractRiskFactorEnum),
     },
     aprWeekReal: {
       type: GraphQLString,
@@ -241,10 +252,6 @@ export const ContractType: GraphQLObjectType = new GraphQLObjectType<
       type: GraphQLNonNull(BlockchainEnum),
       description: 'Blockchain type',
     },
-    risk: {
-      type: GraphQLNonNull(ContractRiskFactorEnum),
-      description: 'Risk level',
-    },
     network: {
       type: GraphQLNonNull(GraphQLString),
       description: 'Blockchain network id',
@@ -350,6 +357,7 @@ export const ContractType: GraphQLObjectType = new GraphQLObjectType<
           aprWeek: contract.metric.aprWeek ?? '0',
           aprMonth: contract.metric.aprMonth ?? '0',
           aprYear: contract.metric.aprYear ?? '0',
+          risk: contract.metric.risk ?? ContractRiskFactor.notCalculated,
           aprWeekReal: contract.metric.aprWeekReal,
           myStaked: '0',
           myStakedChange: {
@@ -602,14 +610,6 @@ export const ContractUserLinkTypeEnum = new GraphQLEnumType({
   ),
 });
 
-export const ContractRiskFactorEnum = new GraphQLEnumType({
-  name: 'ContractRiskFactorEnum',
-  values: Object.values(ContractRiskFactor).reduce(
-    (prev, name) => ({ ...prev, [name]: { value: name } }),
-    {},
-  ),
-});
-
 export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
   type: GraphQLNonNull(PaginateList('ContractListType', GraphQLNonNull(ContractType))),
   args: {
@@ -693,11 +693,6 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
       )
       .column(`${contractTableName}.*`)
       .column(`${contractBlockchainTableName}.*`)
-      .column(
-        database.raw(
-          `COALESCE(${metricContractRegistryTableName}.data->>'risk', '${ContractRiskFactor.notCalculated}') as "risk"`,
-        ),
-      )
       .leftJoin(
         metricContractRegistryTableName,
         `${metricContractRegistryTableName}.contract`,
