@@ -604,7 +604,6 @@ export const ContractRiskEnum = new GraphQLEnumType({
     low: {},
     middle: {},
     high: {},
-    all: {},
   },
 });
 
@@ -691,8 +690,13 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
       )
       .column(`${contractTableName}.*`)
       .column(`${contractBlockchainTableName}.*`)
+      .leftJoin(
+        metricContractRegistryTableName,
+        `${metricContractRegistryTableName}.contract`,
+        `${contractTableName}.id`,
+      )
       .where(function () {
-        const { id, protocol, hidden, deprecated, userLink, search } = filter;
+        const { id, protocol, hidden, deprecated, risk, userLink, search } = filter;
         if (id) {
           this.where(`${contractTableName}.id`, id);
         } else {
@@ -713,6 +717,23 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
           }
           if (typeof deprecated === 'boolean') {
             this.where('deprecated', deprecated);
+          }
+
+          if (typeof risk === 'string') {
+            const riskMap = {
+              notCalculated: 0,
+              low: 1,
+              middle: 2,
+              high: 3,
+            };
+
+            this.where(
+              database.raw(
+                `COALESCE((${metricContractRegistryTableName}.data->>'risk')::integer, 0) = '${
+                  riskMap[risk as keyof typeof riskMap]
+                }'`,
+              ),
+            );
           }
           if (filter.automate !== undefined) {
             const { lpTokensManager, autorestake, autorestakeCandidate } = filter.automate;
@@ -838,17 +859,11 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
     }
 
     if (sortColumns.includes('risk')) {
-      listSelect = listSelect
-        .leftJoin(
-          metricContractRegistryTableName,
-          `${metricContractRegistryTableName}.contract`,
-          `${contractTableName}.id`,
-        )
-        .column(
-          database.raw(
-            `COALESCE((${metricContractRegistryTableName}.data->>'risk')::integer, 0) AS "risk"`,
-          ),
-        );
+      listSelect = listSelect.column(
+        database.raw(
+          `COALESCE((${metricContractRegistryTableName}.data->>'risk')::integer, 0) AS "risk"`,
+        ),
+      );
     }
 
     if (sortColumns.includes('tvl')) {

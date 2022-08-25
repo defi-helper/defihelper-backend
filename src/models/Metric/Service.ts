@@ -30,6 +30,7 @@ import {
   MetricWalletRegistryTable,
   MetricWalletTokenRegistryTable,
   QueryModify,
+  MetricContractRegistryTable,
 } from './Entity';
 
 export class MetricContractService {
@@ -70,7 +71,7 @@ export class MetricContractService {
     readonly metricContractTaskTable: Factory<MetricContractTaskTable>,
     readonly metricWalletTable: Factory<MetricWalletTable>,
     readonly metricWalletRegistryTable: Factory<MetricWalletRegistryTable>,
-    readonly metricContractRegistryTable: Factory<MetricWalletRegistryTable>,
+    readonly metricContractRegistryTable: Factory<MetricContractRegistryTable>,
     readonly metricWalletTaskTable: Factory<MetricWalletTaskTable>,
     readonly metricWalletTokenTable: Factory<MetricWalletTokenTable>,
     readonly metricWalletTokenRegistryTable: Factory<MetricWalletTokenRegistryTable>,

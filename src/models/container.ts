@@ -219,6 +219,7 @@ export class ModelContainer extends Container<typeof AppContainer> {
         this.metricContractTaskTable,
         this.metricWalletTable,
         this.metricWalletRegistryTable,
+        this.metricContractRegistryTable,
         this.metricWalletTaskTable,
         this.metricWalletTokenTable,
         this.metricWalletTokenRegistryTable,
