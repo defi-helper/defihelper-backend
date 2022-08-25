@@ -1,5 +1,9 @@
 import container from '@container';
-import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
+import {
+  contractBlockchainTableName,
+  ContractRiskFactor,
+  contractTableName,
+} from '@models/Protocol/Entity';
 import { Process } from '@models/Queue/Entity';
 import BigNumber from 'bignumber.js';
 
@@ -16,31 +20,40 @@ export default async (process: Process) => {
       `${contractBlockchainTableName}.id`,
       `${contractTableName}.id`,
     )
-    .where('id', id)
+    .where(`${contractTableName}.id`, id)
     .first();
   if (!contract) {
     throw new Error(`No contract found with id ${id}`);
   }
 
-  let riskLevel = 0;
-  const currentApy = new BigNumber(contract.metric.aprYear ?? '-1');
+  const lastMetric = await container.model
+    .metricContractRegistryTable()
+    .where('contract', contract.id)
+    .first();
+
+  if (!lastMetric) {
+    throw new Error(`No last metric found for contract`);
+  }
+
+  let riskLevel = ContractRiskFactor.notCalculated;
+  const currentApy = new BigNumber(lastMetric.data.aprYear ?? '-1');
 
   if (currentApy.gte(0) && currentApy.lte(20)) {
-    riskLevel = 1;
+    riskLevel = ContractRiskFactor.low;
   }
 
   if (currentApy.gte(21) && currentApy.lte(99)) {
-    riskLevel = 2;
+    riskLevel = ContractRiskFactor.moderate;
   }
   if (currentApy.gte(100)) {
-    riskLevel = 3;
+    riskLevel = ContractRiskFactor.high;
   }
 
   await container.model.metricService().createContract(
     contract,
     {
-      ...contract.metric,
-      risk: riskLevel.toString(10),
+      ...lastMetric.data,
+      risk: riskLevel,
     },
     new Date(),
   );

@@ -250,7 +250,7 @@ export class MetricContractService {
   }
 
   async updateContractRegistry(metric: MetricContract, trx?: Knex.Transaction<any, any>) {
-    const duplicate = await this.metricWalletRegistryTable()
+    const duplicate = await this.metricContractRegistryTable()
       .where({
         contract: metric.contract,
       })

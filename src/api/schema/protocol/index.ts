@@ -30,6 +30,7 @@ import {
   protocolTableName,
   ContractDebankType as EntityContractDebankType,
   contractDebankTableName,
+  ContractRiskFactor,
 } from '@models/Protocol/Entity';
 import { apyBoost } from '@services/RestakeStrategy';
 import {
@@ -239,6 +240,10 @@ export const ContractType: GraphQLObjectType = new GraphQLObjectType<
     blockchain: {
       type: GraphQLNonNull(BlockchainEnum),
       description: 'Blockchain type',
+    },
+    risk: {
+      type: GraphQLNonNull(ContractRiskFactorEnum),
+      description: 'Risk level',
     },
     network: {
       type: GraphQLNonNull(GraphQLString),
@@ -597,14 +602,12 @@ export const ContractUserLinkTypeEnum = new GraphQLEnumType({
   ),
 });
 
-export const ContractRiskEnum = new GraphQLEnumType({
-  name: 'ContractRiskEnum',
-  values: {
-    notCalculated: {},
-    low: {},
-    middle: {},
-    high: {},
-  },
+export const ContractRiskFactorEnum = new GraphQLEnumType({
+  name: 'ContractRiskFactorEnum',
+  values: Object.values(ContractRiskFactor).reduce(
+    (prev, name) => ({ ...prev, [name]: { value: name } }),
+    {},
+  ),
 });
 
 export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
@@ -633,7 +636,7 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
             type: ContractUserLinkTypeEnum,
           },
           risk: {
-            type: ContractRiskEnum,
+            type: ContractRiskFactorEnum,
           },
           automate: {
             type: new GraphQLInputObjectType({
@@ -673,7 +676,7 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
         'aprWeekReal',
         'aprBoosted',
         'myStaked',
-        'risk',
+        'riskFactor',
       ],
       [{ column: 'name', order: 'asc' }],
     ),
@@ -690,6 +693,11 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
       )
       .column(`${contractTableName}.*`)
       .column(`${contractBlockchainTableName}.*`)
+      .column(
+        database.raw(
+          `COALESCE(${metricContractRegistryTableName}.data->>'risk', '${ContractRiskFactor.notCalculated}') as "risk"`,
+        ),
+      )
       .leftJoin(
         metricContractRegistryTableName,
         `${metricContractRegistryTableName}.contract`,
@@ -720,18 +728,9 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
           }
 
           if (typeof risk === 'string') {
-            const riskMap = {
-              notCalculated: 0,
-              low: 1,
-              middle: 2,
-              high: 3,
-            };
-
             this.where(
               database.raw(
-                `COALESCE((${metricContractRegistryTableName}.data->>'risk')::integer, 0) = '${
-                  riskMap[risk as keyof typeof riskMap]
-                }'`,
+                `COALESCE(${metricContractRegistryTableName}.data->>'risk', '${ContractRiskFactor.notCalculated}') = '${risk}'`,
               ),
             );
           }
@@ -858,10 +857,15 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
       }
     }
 
-    if (sortColumns.includes('risk')) {
+    if (sortColumns.includes('riskFactor')) {
       listSelect = listSelect.column(
         database.raw(
-          `COALESCE((${metricContractRegistryTableName}.data->>'risk')::integer, 0) AS "risk"`,
+          `CASE COALESCE(${metricContractRegistryTableName}.data->>'risk', '${ContractRiskFactor.notCalculated}')
+              WHEN 'notCalculated' THEN 0
+              WHEN 'low' THEN 1
+              WHEN 'moderate' THEN 2
+              WHEN 'high' THEN 3
+          END AS "riskFactor"`,
         ),
       );
     }
