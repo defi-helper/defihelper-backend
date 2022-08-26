@@ -8,11 +8,19 @@ export interface TelegramNotification {
   params: Object;
 }
 
+const debugTelegramContact = 'f7ed7a72-81e7-4a56-b0d6-9195821ae656';
 export default async (process: Process) => {
   const { template, params, contactId } = process.task.params as TelegramNotification;
-  const contact = await container.model.userContactTable().where('id', contactId).first();
+
+  const debugCondition = template === 'automationsMigrableContracts';
+
+  let contact;
+  if (debugCondition) {
+    contact = await container.model.userContactTable().where('id', debugTelegramContact).first();
+  } else contact = await container.model.userContactTable().where('id', contactId).first();
+
   if (!contact) {
-    throw new Error('Contact not found');
+    throw new Error(`Contact not found, condition is ${debugCondition ? 'debug' : 'regular'}`);
   }
 
   if (!contact.params?.chatId) {

@@ -2,7 +2,6 @@ import { Process } from '@models/Queue/Entity';
 import container from '@container';
 import { tableName as userTableName } from '@models/User/Entity';
 import {
-  ContractBlockchainType,
   contractMigratableRemindersBulkTableName,
   contractTableName,
 } from '@models/Protocol/Entity';
@@ -11,6 +10,7 @@ import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entit
 export default async (process: Process) => {
   const notifications = await container.model
     .contractMigratableRemindersBulkTable()
+    .distinctOn(`${userTableName}.id`)
     .column(`${walletBlockchainTableName}.id as walletId`)
     .column(`${walletBlockchainTableName}.address as walletAddress`)
     .column(`${walletTableName}.user as userId`)
@@ -31,12 +31,12 @@ export default async (process: Process) => {
       `${contractTableName}.id`,
       `${contractMigratableRemindersBulkTableName}.contract`,
     )
-    .where(`${contractMigratableRemindersBulkTableName}.processed`, false)
-    .groupBy(`${userTableName}.id`);
+    .where(`${contractMigratableRemindersBulkTableName}.processed`, false);
+
   let usersIds: string[] = [];
   const candidates: {
     [userId: string]: {
-      [walletId: string]: ContractBlockchainType[];
+      [walletId: string]: string[];
     };
   } = {};
 
@@ -60,7 +60,7 @@ export default async (process: Process) => {
     }
     candidates[notification.userId][notification.walletId] = [
       ...candidates[notification.userId][notification.walletId],
-      target,
+      target.id,
     ];
     usersIds = [...usersIds, notification.userId];
   });

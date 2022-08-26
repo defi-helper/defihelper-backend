@@ -20,7 +20,7 @@ export default async (process: Process) => {
       `${walletBlockchainTableName}.id`,
       `${walletTableName}.id`,
     )
-    .whereIn('id', Object.keys(payload))
+    .whereIn(`${walletTableName}.id`, Object.keys(payload))
     .then((rows) => new Map(rows.map((row) => [row.id, row])));
   const contracts = await container.model
     .contractTable()
@@ -29,7 +29,7 @@ export default async (process: Process) => {
       `${contractTableName}.id`,
       `${contractBlockchainTableName}.id`,
     )
-    .whereIn('id', Object.values(payload).flat())
+    .whereIn(`${contractTableName}.id`, Object.values(payload).flat())
     .then((rows) => new Map(rows.map((row) => [row.id, row])));
   const telegramContacts = await container.model.userContactTable().where('user', userId);
 
