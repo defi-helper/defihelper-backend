@@ -60,6 +60,12 @@ export interface ContractAutomate {
   };
 }
 
+export enum ContractRiskFactor {
+  notCalculated = 'notCalculated',
+  low = 'low',
+  moderate = 'moderate',
+  high = 'high',
+}
 export interface ContractMetric {
   tvl?: string;
   aprDay?: string;
@@ -68,6 +74,7 @@ export interface ContractMetric {
   aprYear?: string;
   aprBoosted?: string;
   aprWeekReal?: string;
+  risk?: ContractRiskFactor;
 }
 
 export interface Contract {

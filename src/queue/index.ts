@@ -47,6 +47,8 @@ export * as automateTransactionWavesConfirm from './automate/transactionWavesCon
 export * as automateTriggerRun from './automate/run';
 export * as automateTriggerByTime from './automate/trigger/byTime';
 export * as logBilling from './log/billingLogger';
+export * as riskCalculationBroker from './contract/riskCalculationBroker';
+export * as riskCalculationFiller from './contract/riskCalculationFiller';
 
 /* billing */
 export * as emptyWalletsBroker from './billing/emptyWalletsBroker';
@@ -108,7 +110,6 @@ export * as tokensDeleteDuplicates from './token/deleteTokenDuplicates';
 export * as treasuryStatsCache from './treasury/cache';
 
 export * as sendTelegramNews from './sendTelegramNews';
-export * as migrateTrashAlias from './migrateTrashAlias';
 
 /* smart trade */
 export * as smartTradeOrderStatusResolve from './smartTrade/orderStatusResolve';

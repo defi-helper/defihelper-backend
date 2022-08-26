@@ -69,9 +69,13 @@ export type MetricContractField =
   | 'aprWeek'
   | 'aprMonth'
   | 'aprYear'
-  | 'uniqueWalletsCount';
+  | 'uniqueWalletsCount'
+  | 'risk';
 
-export type MetricContractAPRField = Exclude<MetricContractField, 'tvl' | 'uniqueWalletsCount'>;
+export type MetricContractAPRField = Exclude<
+  MetricContractField,
+  'tvl' | 'uniqueWalletsCount' | 'risk'
+>;
 
 export interface MetricContract extends Metric {
   contract: string;
@@ -170,6 +174,20 @@ export const metricWalletTokenRegistryTableFactory = tableFactoryLegacy<MetricWa
 
 export type MetricWalletTokenRegistryTable = ReturnType<
   ReturnType<typeof metricWalletTokenRegistryTableFactory>
+>;
+
+export interface MetricContractRegistry extends Registry {
+  contract: string;
+}
+
+export const metricContractRegistryTableName = 'metric_contract_registry';
+
+export const metricContractRegistryTableFactory = tableFactoryLegacy<MetricContractRegistry>(
+  metricContractRegistryTableName,
+);
+
+export type MetricContractRegistryTable = ReturnType<
+  ReturnType<typeof metricContractRegistryTableFactory>
 >;
 
 export interface MetricToken extends Metric {

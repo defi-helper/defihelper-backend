@@ -30,9 +30,11 @@ import {
   protocolTableName,
   ContractDebankType as EntityContractDebankType,
   contractDebankTableName,
+  ContractRiskFactor,
 } from '@models/Protocol/Entity';
 import { apyBoost } from '@services/RestakeStrategy';
 import {
+  metricContractRegistryTableName,
   metricContractTableName,
   metricProtocolTableName,
   metricWalletRegistryTableName,
@@ -66,6 +68,14 @@ import {
 } from '../types';
 import { TokenType } from '../token';
 
+export const ContractRiskFactorEnum = new GraphQLEnumType({
+  name: 'ContractRiskFactorEnum',
+  values: Object.values(ContractRiskFactor).reduce(
+    (prev, name) => ({ ...prev, [name]: { value: name } }),
+    {},
+  ),
+});
+
 export const ContractMetricType = new GraphQLObjectType({
   name: 'ContractMetricType',
   fields: {
@@ -83,6 +93,9 @@ export const ContractMetricType = new GraphQLObjectType({
     },
     aprYear: {
       type: GraphQLNonNull(GraphQLString),
+    },
+    risk: {
+      type: GraphQLNonNull(ContractRiskFactorEnum),
     },
     aprWeekReal: {
       type: GraphQLString,
@@ -344,6 +357,7 @@ export const ContractType: GraphQLObjectType = new GraphQLObjectType<
           aprWeek: contract.metric.aprWeek ?? '0',
           aprMonth: contract.metric.aprMonth ?? '0',
           aprYear: contract.metric.aprYear ?? '0',
+          risk: contract.metric.risk ?? ContractRiskFactor.notCalculated,
           aprWeekReal: contract.metric.aprWeekReal,
           myStaked: '0',
           myStakedChange: {
@@ -621,6 +635,9 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
           userLink: {
             type: ContractUserLinkTypeEnum,
           },
+          risk: {
+            type: ContractRiskFactorEnum,
+          },
           automate: {
             type: new GraphQLInputObjectType({
               name: 'ContractListAutomateFilterInputType',
@@ -659,6 +676,7 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
         'aprWeekReal',
         'aprBoosted',
         'myStaked',
+        'riskFactor',
       ],
       [{ column: 'name', order: 'asc' }],
     ),
@@ -675,8 +693,13 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
       )
       .column(`${contractTableName}.*`)
       .column(`${contractBlockchainTableName}.*`)
+      .leftJoin(
+        metricContractRegistryTableName,
+        `${metricContractRegistryTableName}.contract`,
+        `${contractTableName}.id`,
+      )
       .where(function () {
-        const { id, protocol, hidden, deprecated, userLink, search } = filter;
+        const { id, protocol, hidden, deprecated, risk, userLink, search } = filter;
         if (id) {
           this.where(`${contractTableName}.id`, id);
         } else {
@@ -697,6 +720,14 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
           }
           if (typeof deprecated === 'boolean') {
             this.where('deprecated', deprecated);
+          }
+
+          if (typeof risk === 'string') {
+            this.where(
+              database.raw(
+                `COALESCE(${metricContractRegistryTableName}.data->>'risk', '${ContractRiskFactor.notCalculated}') = '${risk}'`,
+              ),
+            );
           }
           if (filter.automate !== undefined) {
             const { lpTokensManager, autorestake, autorestakeCandidate } = filter.automate;
@@ -820,6 +851,20 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
           .column(database.raw(`'0' AS "myStaked"`));
       }
     }
+
+    if (sortColumns.includes('riskFactor')) {
+      listSelect = listSelect.column(
+        database.raw(
+          `CASE COALESCE(${metricContractRegistryTableName}.data->>'risk', '${ContractRiskFactor.notCalculated}')
+              WHEN 'notCalculated' THEN 0
+              WHEN 'low' THEN 1
+              WHEN 'moderate' THEN 2
+              WHEN 'high' THEN 3
+          END AS "riskFactor"`,
+        ),
+      );
+    }
+
     if (sortColumns.includes('tvl')) {
       listSelect = listSelect.column(
         database.raw(
