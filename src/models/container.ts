@@ -192,6 +192,10 @@ export class ModelContainer extends Container<typeof AppContainer> {
     this.parent.database,
   );
 
+  readonly metricContractRegistryTable = Models.Metric.Entity.metricContractRegistryTableFactory(
+    this.parent.database,
+  );
+
   readonly metricWalletTaskTable = Models.Metric.Entity.metricWalletTaskTableFactory(
     this.parent.database,
   );
@@ -215,6 +219,7 @@ export class ModelContainer extends Container<typeof AppContainer> {
         this.metricContractTaskTable,
         this.metricWalletTable,
         this.metricWalletRegistryTable,
+        this.metricContractRegistryTable,
         this.metricWalletTaskTable,
         this.metricWalletTokenTable,
         this.metricWalletTokenRegistryTable,
