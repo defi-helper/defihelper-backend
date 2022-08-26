@@ -43,14 +43,14 @@ spec:
             httpGet:
               path: /
               port: http
-            initialDelaySeconds: 15
-            timeoutSeconds: 1
+            initialDelaySeconds: 60
+            timeoutSeconds: 5
           readinessProbe:
             httpGet:
               path: /
               port: http
-            initialDelaySeconds: 15
-            timeoutSeconds: 1
+            initialDelaySeconds: 60
+            timeoutSeconds: 5
           resources:
             {{- toYaml .Values.images.nginx.resources | nindent 12 }}
         - name: app
@@ -66,14 +66,14 @@ spec:
             httpGet:
               path: /
               port: 8080
-            initialDelaySeconds: 15
-            timeoutSeconds: 1
+            initialDelaySeconds: 60
+            timeoutSeconds: 5
           readinessProbe:
             httpGet:
               path: /
               port: 8080
-            initialDelaySeconds: 15
-            timeoutSeconds: 1
+            initialDelaySeconds: 60
+            timeoutSeconds: 5
           volumeMounts:
             - mountPath: /app/configuration
               name: configuration

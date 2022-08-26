@@ -21,30 +21,39 @@ export default async (process: Process) => {
     )
     .where(`${walletTableName}.id`, id)
     .first();
+
   if (!blockchainWallet) throw new Error('Wallet not found');
-  if (blockchainWallet.blockchain !== 'ethereum') {
-    return process.done();
+  if (blockchainWallet.blockchain === 'ethereum') {
+    await Promise.all([
+      container.model
+        .queueService()
+        .push(
+          'findWalletAppliedNetworks',
+          { walletId: blockchainWallet.id },
+          { topic: 'metricCurrent' },
+        ),
+      container.model.queueService().push('findWalletContracts', { walletId: blockchainWallet.id }),
+    ]);
+
+    if (
+      blockchainWallet.type === WalletBlockchainType.Wallet &&
+      !container.blockchain.ethereum.byNetwork(blockchainWallet.network).testnet
+    ) {
+      await container.model
+        .queueService()
+        .push(
+          'metricsWalletBalancesDeBankFiller',
+          { id: blockchainWallet.id },
+          { topic: 'metricCurrent' },
+        );
+    }
   }
 
-  await Promise.all([
-    container.model
+  if (blockchainWallet.blockchain === 'waves') {
+    await container.model
       .queueService()
       .push(
-        'findWalletAppliedNetworks',
-        { walletId: blockchainWallet.id },
-        { topic: 'metricCurrent' },
-      ),
-    container.model.queueService().push('findWalletContracts', { walletId: blockchainWallet.id }),
-  ]);
-
-  if (
-    blockchainWallet.type === WalletBlockchainType.Wallet &&
-    !container.blockchain.ethereum.byNetwork(blockchainWallet.network).testnet
-  ) {
-    container.model
-      .queueService()
-      .push(
-        'metricsWalletBalancesDeBankFiller',
+        'metricsWalletBalancesWavesFiller',
         { id: blockchainWallet.id },
         { topic: 'metricCurrent' },
       );

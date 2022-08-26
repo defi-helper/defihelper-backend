@@ -9,8 +9,8 @@ images:
     name: nginx
     resources:
       requests:
-        memory: 128Mi
-        cpu: 100m
+        memory: 64Mi
+        cpu: 50m
       limits:
         memory: 128Mi
         cpu: 300m
@@ -19,7 +19,7 @@ images:
     resources:
       requests:
         memory: 128Mi
-        cpu: 100m
+        cpu: 50m
       limits:
         memory: 256Mi
         cpu: 300m
@@ -60,14 +60,14 @@ broker:
         maxReadyMessagesForHpa: 25
         resources:
           requests:
-            memory: 256Mi
-            cpu: 100m
+            memory: 128Mi
+            cpu: 50m
           limits:
             memory: 512Mi
-            cpu: 500m
+            cpu: 100m
         nodeSelector:
           group_name: "apps-jobs"
-        graceperiod: 172800
+        graceperiod: 3600
         tolerations:
           - key: node-role.kubernetes.io/apps-jobs
             operator: "Equal"
@@ -82,13 +82,13 @@ broker:
         resources:
           requests:
             memory: 128Mi
-            cpu: 100m
+            cpu: 50m
           limits:
-            memory: 256Mi
-            cpu: 500m
+            memory: 128Mi
+            cpu: 100m
         nodeSelector:
           group_name: "apps-jobs"
-        graceperiod: 172800
+        graceperiod: 3600
         tolerations:
           - key: node-role.kubernetes.io/apps-jobs
             operator: "Equal"
@@ -103,13 +103,13 @@ broker:
         resources:
           requests:
             memory: 128Mi
-            cpu: 100m
+            cpu: 50m
           limits:
-            memory: 256Mi
-            cpu: 500m
+            memory: 128Mi
+            cpu: 100m
         nodeSelector:
           group_name: "apps-jobs"
-        graceperiod: 172800
+        graceperiod: 3600
         tolerations:
           - key: node-role.kubernetes.io/apps-jobs
             operator: "Equal"
@@ -124,13 +124,13 @@ broker:
         resources:
           requests:
             memory: 128Mi
-            cpu: 100m
+            cpu: 50m
           limits:
-            memory: 256Mi
-            cpu: 500m
+            memory: 128Mi
+            cpu: 100m
         nodeSelector:
           group_name: "apps-jobs"
-        graceperiod: 172800
+        graceperiod: 3600
         tolerations:
           - key: node-role.kubernetes.io/apps-jobs
             operator: "Equal"
@@ -145,13 +145,13 @@ broker:
         resources:
           requests:
             memory: 128Mi
-            cpu: 100m
+            cpu: 50m
           limits:
-            memory: 256Mi
-            cpu: 500m
+            memory: 128Mi
+            cpu: 100m
         nodeSelector:
           group_name: "apps-jobs"
-        graceperiod: 172800
+        graceperiod: 3600
         tolerations:
           - key: node-role.kubernetes.io/apps-jobs
             operator: "Equal"

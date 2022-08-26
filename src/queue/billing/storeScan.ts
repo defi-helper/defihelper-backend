@@ -59,7 +59,14 @@ export default async (process: Process) => {
 
   const later = dayjs().add(1, 'minute').toDate();
   const provider = container.blockchain[blockchain].byNetwork(network).provider();
-  const currentBlockNumber = parseInt((await provider.getBlockNumber()).toString(), 10) - lag;
+
+  let currentBlockNumber;
+  try {
+    currentBlockNumber = parseInt((await provider.getBlockNumber()).toString(), 10) - lag;
+  } catch (e) {
+    return process.later(later).info(`${e}`);
+  }
+
   if (currentBlockNumber < from) {
     return process.later(later);
   }
@@ -68,7 +75,14 @@ export default async (process: Process) => {
   const storeAddress = contracts[network].StoreUpgradable.address;
   const store = container.blockchain[blockchain].contract(storeAddress, storeAbi, provider);
 
-  await registerBuy(blockchain, network, await store.queryFilter(store.filters.Buy(), from, to));
+  try {
+    await registerBuy(blockchain, network, await store.queryFilter(store.filters.Buy(), from, to));
+  } catch (e) {
+    if (currentBlockNumber - from > 100) {
+      throw new Error(`Task ${process.task.id}, lag: ${currentBlockNumber - from}, message: ${e}`);
+    }
+    return process.later(later).info(`${e}`);
+  }
 
   return process.param({ ...process.task.params, from: to + 1 }).later(later);
 };
