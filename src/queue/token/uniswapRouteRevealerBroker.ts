@@ -1,19 +1,25 @@
 import { Process } from '@models/Queue/Entity';
 import container from '@container';
 import dayjs from 'dayjs';
+import { TokenAliasLiquidity, tokenAliasTableName, tokenTableName } from '@models/Token/Entity';
 
 export interface Params {
   id: string;
 }
 
 export default async (process: Process) => {
-  const candidatedNetworks = Object.values(container.blockchain.ethereum.networks)
-    .filter((v) => v.nativeTokenDetails.wrapped && v.stablecoins.length)
-    .map((v) => v.id);
-
   const uniswapRoutableTokens = await container.model
     .tokenTable()
-    .whereIn('network', candidatedNetworks)
+    .whereIn(
+      'network',
+      container.model
+        .tokenAliasTable()
+        .column(`${tokenTableName}.network`)
+        .distinctOn(`${tokenTableName}.network`)
+        .where('liquidity', TokenAliasLiquidity.Stable)
+        .andWhere(`${tokenTableName}.blockchain`, 'ethereum')
+        .innerJoin(tokenTableName, `${tokenAliasTableName}.id`, `${tokenTableName}.alias`),
+    )
     .andWhere('priceFeedNeeded', true)
     .andWhere('blockchain', 'ethereum');
 
