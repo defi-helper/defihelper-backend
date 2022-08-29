@@ -110,3 +110,7 @@ export * as tokensDeleteDuplicates from './token/deleteTokenDuplicates';
 export * as treasuryStatsCache from './treasury/cache';
 
 export * as sendTelegramNews from './sendTelegramNews';
+
+export * as migratablePoolsBroker from './notifications/migratablePoolsBroker';
+export * as migratablePoolsNotifyUser from './notifications/migratablePoolsNotifyUser';
+export * as migratablePoolsBatch from './notifications/migratablePoolsBatch';
