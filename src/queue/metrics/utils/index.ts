@@ -128,14 +128,7 @@ export async function contractMetrics(process: Process) {
     Object.keys(contractAdapterData.metrics).length > 0
   ) {
     await Promise.all([
-      metricService.createContract(
-        contract,
-        {
-          ...contract.metric,
-          ...contractAdapterData.metrics,
-        },
-        date,
-      ),
+      metricService.createContract(contract, contractAdapterData.metrics, date),
       container.model.contractService().updateBlockchain({
         ...contract,
         metric: {

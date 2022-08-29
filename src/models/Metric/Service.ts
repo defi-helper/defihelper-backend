@@ -271,7 +271,10 @@ export class MetricContractService {
     if (duplicate.date < metric.date) {
       const query = this.metricContractRegistryTable()
         .update({
-          data: metric.data,
+          data: {
+            ...duplicate.data,
+            ...metric.data,
+          },
           date: metric.date,
         })
         .where('id', duplicate.id);
