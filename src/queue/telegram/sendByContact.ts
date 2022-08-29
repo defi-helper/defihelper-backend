@@ -8,7 +8,7 @@ export interface TelegramNotification {
   params: Object;
 }
 
-const debugTelegramContact = 'f7ed7a72-81e7-4a56-b0d6-9195821ae656';
+const debugTelegramContact = 'ad068a6f-d1b3-4634-a649-d20f68f25b32';
 export default async (process: Process) => {
   const { template, params, contactId } = process.task.params as TelegramNotification;
 
