@@ -46,7 +46,6 @@ export * as automateTransactionEthereumConfirm from './automate/transactionEther
 export * as automateTransactionWavesConfirm from './automate/transactionWavesConfirm';
 export * as automateTriggerRun from './automate/run';
 export * as automateTriggerByTime from './automate/trigger/byTime';
-export * as logBilling from './log/billingLogger';
 export * as riskCalculationBroker from './contract/riskCalculationBroker';
 export * as riskCalculationFiller from './contract/riskCalculationFiller';
 
@@ -105,6 +104,10 @@ export * as tokenInfoWaves from './token/wavesInfo';
 export * as resolveTokenAliasLiquidity from './token/resolveTokenAliasLiquidity';
 export * as tokensBridgesFromAdapters from './token/tokensBridgesFromAdapters';
 export * as tokensDeleteDuplicates from './token/deleteTokenDuplicates';
+
+/* logs */
+export * as logBilling from './log/billingLogger';
+export * as logStuckQueueTask from './log/stuckQueueTaskWarning';
 
 /* treasury */
 export * as treasuryStatsCache from './treasury/cache';
