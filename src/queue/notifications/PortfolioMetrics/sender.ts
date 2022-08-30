@@ -73,18 +73,14 @@ export default async (process: Process) => {
     .toFixed(2);
 
   const totalEarnedChange =
-    Number(earnedUSDDayBefore) !== 0
-      ? new BN(totalEarnedUSD).div(earnedUSDDayBefore).toString(10)
-      : '0';
-
-  const totalEarnedChangePercentage = new BN(totalEarnedChange).minus(1).multipliedBy(100);
+    Number(earnedUSDDayBefore) !== 0 ? new BN(totalEarnedUSD).div(earnedUSDDayBefore) : new BN(0);
+  const totalEarnedChangePercentage = totalEarnedChange.minus(1).multipliedBy(100);
 
   const totalNetWorthChange =
     Number(stakingUSDDayBefore) !== 0
-      ? new BN(totalStackedUSD).div(stakingUSDDayBefore).toString(10)
-      : '0';
-
-  const totalNetWorthChangePercentage = new BN(totalNetWorthChange).minus(1).multipliedBy(100);
+      ? new BN(totalStackedUSD).div(stakingUSDDayBefore)
+      : new BN(0);
+  const totalNetWorthChangePercentage = totalNetWorthChange.minus(1).multipliedBy(100);
 
   switch (contact.broker) {
     case ContactBroker.Telegram:
