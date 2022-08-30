@@ -112,13 +112,9 @@ export default async (process: Process) => {
     throw new Error(`Could not find a route`);
   }
 
-  const representativeTokenErc20Contract = blockchainContainer.contract(
-    route.route[route.route.length - 1],
-    blockchainContainer.abi.erc20ABI,
-    provider,
-  );
-
-  const outputDecimals = await representativeTokenErc20Contract.decimals();
+  const outputDecimals = await blockchainContainer
+    .contract(route.route[route.route.length - 1], blockchainContainer.abi.erc20ABI, provider)
+    .decimals();
 
   await container.model.tokenService().update({
     ...token,
