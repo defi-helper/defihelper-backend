@@ -4,8 +4,10 @@ import { Factory } from '@services/Container';
 import { ContactStatus } from '@models/Notification/Entity';
 import { Telegraf } from 'telegraf';
 import { Locale } from '@services/I18n/container';
-import { utils } from 'ethers';
-import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
+import { utils, Wallet } from 'ethers';
+import { walletBlockchainTableName, WalletBlockchainType, walletTableName } from '@models/Wallet/Entity';
+import { currentUser } from '@api/middlewares';
+import { Role } from '@models/User/Entity';
 import { Templates } from './templates';
 
 export type TelegramTemplate = keyof typeof Templates;
@@ -13,7 +15,7 @@ export type TelegramTemplate = keyof typeof Templates;
 export interface ITelegramService {
   startHandler(): void;
 
-  send(template: TelegramTemplate, chatId: number, data: Object, locale: Locale): Promise<void>;
+  send(template: TelegramTemplate, data: Object, chatId: number, locale?: Locale): Promise<void>;
 }
 
 class NullService implements ITelegramService {
@@ -48,10 +50,10 @@ export class TelegramService implements ITelegramService {
             chatId: message.chat.id.toString(),
           });
         const user = await container.model.userTable().where('id', userContact.user).first();
-        return this.send('welcomeTemplate', message.chat.id, {}, user?.locale || 'enUS');
+        return this.send('welcomeTemplate', {}, message.chat.id, user?.locale || 'enUS');
       }
 
-      return this.send('walletConnectWelcome', message.chat.id, {}, 'enUS');
+      return this.send('welcomeNewWalletConnect', {}, message.chat.id, 'enUS');
     });
 
     this.bot.on('text', async (ctx) => {
@@ -78,14 +80,27 @@ export class TelegramService implements ITelegramService {
         );
       }
 
+      const user = await container.model.userService().create(Role.User, 'UTC');
+      await container.model
+        .walletService()
+        .createBlockchainWallet(
+          user,
+          'ethereum',
+          network,
+          WalletBlockchainType.Wallet,
+          recoveredAddress,
+          recoveredPubKey,
+          '',
+        );
+
       return ctx.reply('adsasdsd');
     });
   }
 
   async send(
     template: TelegramTemplate,
+    data: Object,
     chatId: number,
-    data: Object = {},
     locale: Locale = 'enUS',
   ): Promise<void> {
     const message = Mustache.render(await Templates[template], {
