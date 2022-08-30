@@ -85,7 +85,7 @@ export default async (process: Process) => {
             token.name,
             token.symbol,
             Number(token.decimals),
-            TokenCreatedBy.Scanner,
+            TokenCreatedBy.WhatToFarm,
           );
       }),
     );
