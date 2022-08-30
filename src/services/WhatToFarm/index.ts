@@ -33,7 +33,6 @@ export interface PoolsListResponse {
           address: string;
           symbol: string;
           name: string;
-          network: any;
         }[];
       };
     }[];
