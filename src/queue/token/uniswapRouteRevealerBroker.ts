@@ -15,7 +15,7 @@ export default async (process: Process) => {
       container.model
         .tokenAliasTable()
         .column(`${tokenTableName}.network`)
-        .distinctOn(`${tokenTableName}.network`)
+        .distinct(`${tokenTableName}.network`)
         .where('liquidity', TokenAliasLiquidity.Stable)
         .andWhere(`${tokenTableName}.blockchain`, 'ethereum')
         .innerJoin(tokenTableName, `${tokenAliasTableName}.id`, `${tokenTableName}.alias`),
