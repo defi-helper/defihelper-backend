@@ -46,12 +46,12 @@ export * as automateTransactionEthereumConfirm from './automate/transactionEther
 export * as automateTransactionWavesConfirm from './automate/transactionWavesConfirm';
 export * as automateTriggerRun from './automate/run';
 export * as automateTriggerByTime from './automate/trigger/byTime';
-export * as logBilling from './log/billingLogger';
 export * as riskCalculationBroker from './contract/riskCalculationBroker';
 export * as riskCalculationFiller from './contract/riskCalculationFiller';
 
 /* billing */
 export * as emptyWalletsBroker from './billing/emptyWalletsBroker';
+export * as eventsBillingTransferTxCreated from './events/billing/transferTxCreated';
 
 /* metrics */
 export * as metricsUserPortfolioFiller from './metrics/userPortfolioFiller';
@@ -79,6 +79,9 @@ export * as notificationPortfolioMetricsNotify from './notifications/PortfolioMe
 export * as notificationPortfolioMetricsNotifyHourly from './notifications/PortfolioMetrics/hourly';
 export * as notificationAutomateWalletsNotEnoughFundsNotify from './notifications/AutomateWalletsNotEnoughFunds/sender';
 export * as notificationAutomateWalletsNotEnoughFundsBroker from './notifications/AutomateWalletsNotEnoughFunds/broker';
+export * as migratablePoolsBroker from './notifications/migratablePoolsBroker';
+export * as migratablePoolsNotifyUser from './notifications/migratablePoolsNotifyUser';
+export * as migratablePoolsBatch from './notifications/migratablePoolsBatch';
 
 /* events */
 export * as eventsMetricContractCreated from './events/metricContractCreated';
@@ -105,6 +108,10 @@ export * as tokenInfoWaves from './token/wavesInfo';
 export * as resolveTokenAliasLiquidity from './token/resolveTokenAliasLiquidity';
 export * as tokensBridgesFromAdapters from './token/tokensBridgesFromAdapters';
 export * as tokensDeleteDuplicates from './token/deleteTokenDuplicates';
+
+/* logs */
+export * as logBilling from './log/billingLogger';
+export * as logStuckQueueTask from './log/stuckQueueTaskWarning';
 
 /* treasury */
 export * as treasuryStatsCache from './treasury/cache';

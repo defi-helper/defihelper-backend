@@ -239,7 +239,10 @@ export class MetricContractService {
     if (duplicate.date < metric.date) {
       const query = this.metricWalletRegistryTable()
         .update({
-          data,
+          data: {
+            ...duplicate.data,
+            ...metric.data,
+          },
           date: metric.date,
         })
         .where('id', duplicate.id);
@@ -271,7 +274,10 @@ export class MetricContractService {
     if (duplicate.date < metric.date) {
       const query = this.metricContractRegistryTable()
         .update({
-          data: metric.data,
+          data: {
+            ...duplicate.data,
+            ...metric.data,
+          },
           date: metric.date,
         })
         .where('id', duplicate.id);
@@ -406,7 +412,10 @@ export class MetricContractService {
     if (duplicate.date < metric.date) {
       const query = this.metricWalletTokenRegistryTable()
         .update({
-          data,
+          data: {
+            ...duplicate.data,
+            ...metric.data,
+          },
           date: metric.date,
         })
         .where('id', duplicate.id);

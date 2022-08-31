@@ -15,6 +15,7 @@ import {
   Transfer,
   transferTableName,
   billTableName,
+  TransferStatus,
 } from '@models/Billing/Entity';
 import {
   GraphQLBoolean,
@@ -115,6 +116,14 @@ export const BillType = new GraphQLObjectType<Bill>({
   },
 });
 
+export const TransferStatusEnum = new GraphQLEnumType({
+  name: 'BillingTransferStatusEnum',
+  values: Object.values(TransferStatus).reduce(
+    (res, type) => ({ ...res, [type]: { value: type } }),
+    {},
+  ),
+});
+
 export const TransferType = new GraphQLObjectType<Transfer>({
   name: 'BillingTransferType',
   fields: {
@@ -149,9 +158,11 @@ export const TransferType = new GraphQLObjectType<Transfer>({
         return bill ? container.model.billingBillTable().where('id', bill).first() : null;
       },
     },
-    confirmed: {
-      type: GraphQLNonNull(GraphQLBoolean),
-      description: 'Is transfer confirmed',
+    status: {
+      type: GraphQLNonNull(TransferStatusEnum),
+    },
+    rejectReason: {
+      type: GraphQLNonNull(GraphQLString),
     },
     createdAt: {
       type: GraphQLNonNull(DateTimeType),
@@ -199,8 +210,8 @@ export const WalletBillingType = new GraphQLObjectType<Wallet & WalletBlockchain
               claim: {
                 type: GraphQLBoolean,
               },
-              confirmed: {
-                type: GraphQLBoolean,
+              status: {
+                type: GraphQLList(GraphQLNonNull(TransferStatusEnum)),
               },
             },
           }),
@@ -230,8 +241,8 @@ export const WalletBillingType = new GraphQLObjectType<Wallet & WalletBlockchain
               this.whereNull('bill');
             }
           }
-          if (typeof filter.confirmed === 'boolean') {
-            this.where('confirmed', filter.confirmed);
+          if (Array.isArray(filter.status) && filter.status.length > 0) {
+            this.whereIn('status', filter.status);
           }
         });
 
@@ -304,7 +315,7 @@ export const WalletBillingType = new GraphQLObjectType<Wallet & WalletBlockchain
               network: wallet.network,
               account: wallet.address,
             })
-            .where('confirmed', true)
+            .where('status', TransferStatus.Confirmed)
             .first(),
           container.model
             .billingBillTable()
@@ -377,8 +388,8 @@ export const UserBillingType = new GraphQLObjectType<User>({
               wallet: {
                 type: GraphQLList(GraphQLNonNull(UuidType)),
               },
-              confirmed: {
-                type: GraphQLBoolean,
+              status: {
+                type: GraphQLList(GraphQLNonNull(TransferStatusEnum)),
               },
             },
           }),
@@ -426,8 +437,8 @@ export const UserBillingType = new GraphQLObjectType<User>({
             if (Array.isArray(filter.wallet) && filter.wallet.length > 0) {
               this.whereIn(`${walletTableName}.id`, filter.wallet);
             }
-            if (typeof filter.confirmed === 'boolean') {
-              this.where(`${transferTableName}.confirmed`, filter.confirmed);
+            if (Array.isArray(filter.status) && filter.status.length > 0) {
+              this.whereIn(`${transferTableName}.status`, filter.status);
             }
           });
 
@@ -520,7 +531,7 @@ export const UserBillingType = new GraphQLObjectType<User>({
                 .andOn(`${walletTableName}.address`, '=', `${transferTableName}.account`);
             })
             .where(`${walletTableName}.user`, user.id)
-            .where(`${transferTableName}.confirmed`, false)
+            .where(`${transferTableName}.status`, TransferStatus.Pending)
             .first(),
           container.model
             .billingTransferTable()
@@ -535,7 +546,7 @@ export const UserBillingType = new GraphQLObjectType<User>({
                 .andOn(`${walletTableName}.address`, '=', `${transferTableName}.account`);
             })
             .where(`${walletTableName}.user`, user.id)
-            .where(`${transferTableName}.confirmed`, true)
+            .where(`${transferTableName}.status`, TransferStatus.Confirmed)
             .first(),
           container.model
             .billingBillTable()
@@ -647,6 +658,7 @@ export const AddTransferMutation: GraphQLFieldConfig<any, Request> = {
         blockchain,
         network,
         account: blockchain === 'ethereum' ? account.toLowerCase() : account,
+        tx,
       })
       .first();
     if (duplicate) {
