@@ -38,8 +38,6 @@ export default async (process: Process) => {
   await candidateWallets.reduce<Promise<ContractMigratableRemindersBulk[]>>(async (prev, curr) => {
     await prev;
 
-    console.info(curr);
-
     const contracts = (await container.model
       .contractTable()
       .innerJoin(
