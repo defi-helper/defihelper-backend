@@ -11,7 +11,6 @@ import {
   walletTableName,
 } from '@models/Wallet/Entity';
 import { Role } from '@models/User/Entity';
-import { UserContactBrokerEnum } from '@api/schema/notification';
 import { Templates } from './templates';
 
 export type TelegramTemplate = keyof typeof Templates;
@@ -125,7 +124,9 @@ export class TelegramService implements ITelegramService {
         chatId: String(ctx.chat.id),
       });
 
-      return ctx.reply('adsasdsd');
+      return ctx.reply(
+        "Great work! Everything's done, now can use the app at https://app.defihelper.io",
+      );
     });
   }
 
