@@ -39,20 +39,21 @@ build:app:
         BUILD_ARGS: "--build-arg NODE_ENV=production"
         ENVIRONMENT: prod
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_COMMIT_BRANCH'
+      variables:
+        BUILD_ARGS: "--build-arg NODE_ENV=development"
 
 build:nginx:
   stage: build
   variables:
     APP_NAME: "nginx"
+    BUILD_ARGS: "--build-arg NODE_ENV=development"
   extends: .build_image
   rules:
-    - if: $CI_COMMIT_REF_NAME == "master"
-      variables:
-        BUILD_ARGS: "--build-arg NODE_ENV=development"
     - if: $CI_COMMIT_REF_NAME == "release"
       variables:
         BUILD_ARGS: "--build-arg NODE_ENV=production"
         ENVIRONMENT: prod
+    - if: $CI_COMMIT_REF_NAME == "master"
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_COMMIT_BRANCH'
 
 deploy:
