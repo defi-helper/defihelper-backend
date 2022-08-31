@@ -230,6 +230,21 @@ export const MetricChartType = new GraphQLObjectType({
   },
 });
 
+export const MetricChangeType = new GraphQLObjectType({
+  name: 'MetricChangeType',
+  fields: {
+    day: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    week: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    month: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+  },
+});
+
 export function onlyAllowed<TSource, TArgs = { [argName: string]: any }>(
   flag: string,
   wrapped: GraphQLFieldResolver<TSource, Request, TArgs>,

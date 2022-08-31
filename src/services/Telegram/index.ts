@@ -1,13 +1,17 @@
 import * as Mustache from 'mustache';
 import container from '@container';
 import { Factory } from '@services/Container';
-import { ContactStatus } from '@models/Notification/Entity';
+import { ContactBroker, ContactStatus } from '@models/Notification/Entity';
 import { Telegraf } from 'telegraf';
 import { Locale } from '@services/I18n/container';
-import { utils, Wallet } from 'ethers';
-import { walletBlockchainTableName, WalletBlockchainType, walletTableName } from '@models/Wallet/Entity';
-import { currentUser } from '@api/middlewares';
+import { utils } from 'ethers';
+import {
+  walletBlockchainTableName,
+  WalletBlockchainType,
+  walletTableName,
+} from '@models/Wallet/Entity';
 import { Role } from '@models/User/Entity';
+import { UserContactBrokerEnum } from '@api/schema/notification';
 import { Templates } from './templates';
 
 export type TelegramTemplate = keyof typeof Templates;
@@ -86,12 +90,40 @@ export class TelegramService implements ITelegramService {
         .createBlockchainWallet(
           user,
           'ethereum',
-          network,
+          '1',
           WalletBlockchainType.Wallet,
-          recoveredAddress,
-          recoveredPubKey,
+          inputAddress,
           '',
+          '',
+          false,
         );
+
+      const username = ctx.message.from?.username || '';
+
+      const existingContact = await container.model
+        .userContactTable()
+        .whereRaw(`params->>'chatId' = '${ctx.chat.id}'`)
+        .first();
+
+      if (existingContact) {
+        await Promise.all([
+          container.model.userContactService().activate(existingContact, username, {
+            chatId: String(ctx.chat.id),
+          }),
+          container.model.userContactService().update({
+            ...existingContact,
+            user: user.id,
+          }),
+        ]);
+      }
+
+      const contact = await container.model
+        .userContactService()
+        .create(ContactBroker.Telegram, username, user, 'Telegram account');
+
+      await container.model.userContactService().activate(contact, username, {
+        chatId: String(ctx.chat.id),
+      });
 
       return ctx.reply('adsasdsd');
     });
@@ -108,13 +140,9 @@ export class TelegramService implements ITelegramService {
       ...container.template.i18n(container.i18n.byLocale(locale)),
     });
 
-    try {
-      await this.bot.telegram.sendMessage(chatId, message, {
-        parse_mode: 'HTML',
-      });
-    } catch {
-      console.error('unable to reply');
-    }
+    await this.bot.telegram.sendMessage(chatId, message, {
+      parse_mode: 'HTML',
+    });
   }
 }
 

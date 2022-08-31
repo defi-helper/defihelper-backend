@@ -33,19 +33,6 @@ function providerRandomizerFactory(factories: Array<Factory<ethers.providers.Jso
   };
 }
 
-function cacheGet(tokenKey: string): Promise<string | null> {
-  return new Promise((resolve) =>
-    container.cache().get(`defihelper:token:${tokenKey}`, (err, result) => {
-      if (err || !result) return resolve(null);
-      return resolve(result);
-    }),
-  );
-}
-
-function cacheSet(tokenKey: string, value: string): void {
-  container.cache().setex(`defihelper:token:${tokenKey}`, 3600, value);
-}
-
 function signersFactory(
   consumersPrivateKeys: string[],
   provider: ethers.providers.JsonRpcProvider,
@@ -83,6 +70,7 @@ function networkFactory({
   nativeTokenPrice,
   nativeTokenDetails,
   tokenPriceResolver,
+  rpcUrls,
   network: { node, historicalNode, avgBlockTime, inspectors, consumers },
 }: {
   id: string;
@@ -98,6 +86,7 @@ function networkFactory({
   nativeTokenPrice: NativePriceFeedUSD;
   nativeTokenDetails: NativeTokenDetails;
   tokenPriceResolver: { usd: TokenPriceFeedUSD };
+  rpcUrls?: string[];
   network: NetworkConfig;
 }) {
   const provider = providerRandomizerFactory(
@@ -124,6 +113,7 @@ function networkFactory({
     getAvgGasPrice,
     etherscanApiURL,
     nativeTokenPrice,
+    rpcUrls,
     tokenPriceResolver,
     nativeTokenDetails,
     inspector: () => (inspectors.length > 0 ? new ethers.Wallet(inspectors[0], provider()) : null),
@@ -161,8 +151,9 @@ function useEtherscanContractAbi(host: string): ContractABIResolver {
  */
 function coingeckoPriceFeedUSD(coinApiId: string): NativePriceFeedUSD {
   return async () => {
-    const key = `ethereum:native:${coinApiId}:price`;
-    const chainNativeUSD = await cacheGet(key);
+    const cache = container.cache();
+    const key = `token:ethereum:native:${coinApiId}:price`;
+    const chainNativeUSD = await cache.promises.get(key).catch(() => null);
     if (!chainNativeUSD) {
       const {
         data: {
@@ -176,7 +167,7 @@ function coingeckoPriceFeedUSD(coinApiId: string): NativePriceFeedUSD {
           },
         },
       );
-      cacheSet(key, usd);
+      await cache.promises.setex(key, 3600, usd);
       return usd;
     }
 
@@ -189,13 +180,16 @@ function debankPriceFeed(network: string): { usd: TokenPriceFeedUSD } {
     usd: async (address: string) => {
       const key = `ethereum:${network}:${address}:price`;
 
-      const cachedPrice = await cacheGet(key);
+      const cachedPrice = await container
+        .cache()
+        .promises.get(key)
+        .catch(() => null);
       if (cachedPrice) {
         return cachedPrice;
       }
 
       const { price } = await container.debank().getToken(network, address);
-      cacheSet(key, price.toString());
+      await container.cache().promises.setex(key, 3600, price.toString());
 
       return price.toString();
     },
@@ -225,6 +219,7 @@ export interface Config {
   aurora: NetworkConfig;
   ethRopsten: NetworkConfig;
   ethRinkeby: NetworkConfig;
+  ethGoerli: NetworkConfig;
   bsc: NetworkConfig;
   polygon: NetworkConfig;
   cronos: NetworkConfig;
@@ -303,6 +298,26 @@ export class BlockchainContainer extends Container<Config> {
       tokenPriceResolver: debankPriceFeed('1'),
       network: this.parent.ethRinkeby,
     }),
+    '5': networkFactory({
+      id: '5',
+      testnet: true,
+      name: 'Ethereum Goerli',
+      icon: 'ethereumRegular',
+      explorerURL: new URL('https://goerli.etherscan.io'),
+      txExplorerURL: new URL('https://goerli.etherscan.io//tx'),
+      walletExplorerURL: new URL('https://goerli.etherscan.io//address'),
+      etherscanApiURL: null,
+      getContractAbi: useEtherscanContractAbi('https://api-goerli.etherscan.io/api'),
+      getAvgGasPrice: avgGasPriceFeedManual('2000000000'),
+      nativeTokenPrice: coingeckoPriceFeedUSD('ethereum'),
+      nativeTokenDetails: {
+        decimals: 18,
+        symbol: 'GoerliETH',
+        name: 'Goerli Ethereum',
+      },
+      tokenPriceResolver: debankPriceFeed('1'),
+      network: this.parent.ethGoerli,
+    }),
     '10': networkFactory({
       id: '10',
       testnet: false,
@@ -321,6 +336,7 @@ export class BlockchainContainer extends Container<Config> {
         name: 'Optimism Ethereum',
       },
       tokenPriceResolver: debankPriceFeed('10'),
+      rpcUrls: ['https://mainnet.optimism.io'],
       network: this.parent.optimistic,
     }),
     '25': networkFactory({
@@ -357,9 +373,14 @@ export class BlockchainContainer extends Container<Config> {
       nativeTokenPrice: coingeckoPriceFeedUSD('binancecoin'),
       nativeTokenDetails: {
         decimals: 18,
-        symbol: 'BSC',
-        name: 'Binance Smart Chain',
+        symbol: 'BNB',
+        name: 'BNB',
       },
+      rpcUrls: [
+        'https://bsc-dataseed.binance.org/',
+        'https://bsc-dataseed1.defibit.io/',
+        'https://bsc-dataseed1.ninicoin.io/',
+      ],
       tokenPriceResolver: debankPriceFeed('56'),
       network: this.parent.bsc,
     }),
@@ -381,6 +402,7 @@ export class BlockchainContainer extends Container<Config> {
         name: 'Polygon',
       },
       tokenPriceResolver: debankPriceFeed('137'),
+      rpcUrls: ['https://rpc-mainnet.maticvigil.com/', 'https://rpc-mainnet.maticvigil.com/'],
       network: this.parent.polygon,
     }),
     '250': networkFactory({
@@ -401,6 +423,7 @@ export class BlockchainContainer extends Container<Config> {
         name: 'Fantom',
       },
       tokenPriceResolver: debankPriceFeed('250'),
+      rpcUrls: ['https://rpc.ftm.tools'],
       network: this.parent.fantom,
     }),
     '1284': networkFactory({
@@ -421,6 +444,7 @@ export class BlockchainContainer extends Container<Config> {
         name: 'Moonbeam',
       },
       tokenPriceResolver: debankPriceFeed('1284'),
+      rpcUrls: ['https://rpc.api.moonbeam.network', 'https://rpc.api.moonbeam.network'],
       network: this.parent.moonriver,
     }),
     '1285': networkFactory({
@@ -441,6 +465,7 @@ export class BlockchainContainer extends Container<Config> {
         name: 'Moonriver',
       },
       tokenPriceResolver: debankPriceFeed('1285'),
+      rpcUrls: ['https://rpc.moonriver.moonbeam.network', 'https://rpc.moonriver.moonbeam.network'],
       network: this.parent.moonriver,
     }),
     '31337': networkFactory({
@@ -481,6 +506,7 @@ export class BlockchainContainer extends Container<Config> {
         name: 'Ethereum',
       },
       tokenPriceResolver: debankPriceFeed('42161'),
+      rpcUrls: ['https://arb1.arbitrum.io/rpc'],
       network: this.parent.arbitrum,
     }),
     '43113': networkFactory({
@@ -521,6 +547,7 @@ export class BlockchainContainer extends Container<Config> {
         name: 'Avalanche',
       },
       tokenPriceResolver: debankPriceFeed('43114'),
+      rpcUrls: ['https://api.avax.network/ext/bc/C/rpc', 'https://api.avax.network/ext/bc/C/rpc'],
       network: this.parent.avalanche,
     }),
     '1313161554': networkFactory({
@@ -563,6 +590,12 @@ export class BlockchainContainer extends Container<Config> {
         name: 'Harmony',
       },
       tokenPriceResolver: debankPriceFeed('1666600000'),
+      rpcUrls: [
+        'https://api.harmony.one',
+        'https://s1.api.harmony.one',
+        'https://s2.api.harmony.one',
+        'https://s3.api.harmony.one',
+      ],
       network: this.parent.harmony,
     }),
   } as const;

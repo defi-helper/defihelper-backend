@@ -22,8 +22,10 @@ import {
   GraphQLList,
   GraphQLFieldConfigMap,
 } from 'graphql';
-import { apyBoost } from '@services/RestakeStrategy';
+import { apyBoost, optimalRestakeNearesDate } from '@services/RestakeStrategy';
 import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
+import { metricContractTableName } from '@models/Metric/Entity';
+import dayjs from 'dayjs';
 import {
   DateTimeType,
   onlyAllowed,
@@ -236,20 +238,6 @@ export const TriggerType = new GraphQLObjectType<Automate.Trigger>({
     createdAt: {
       type: GraphQLNonNull(DateTimeType),
       description: 'Created at date',
-    },
-    restakeAt: {
-      type: DateTimeType,
-      description: 'Next restake date',
-      resolve: async (trigger) => {
-        const optimalRestakeCondition = await container.model
-          .automateConditionTable()
-          .where({
-            trigger: trigger.id,
-            type: 'ethereumOptimalAutomateRun',
-          })
-          .first();
-        return optimalRestakeCondition?.restakeAt ?? null;
-      },
     },
     conditions: {
       type: GraphQLNonNull(
@@ -974,6 +962,14 @@ export const ContractVerificationStatusEnum = new GraphQLEnumType({
   ),
 });
 
+export const ContractTypeEnum = new GraphQLEnumType({
+  name: 'AutomateContractTypeEnum',
+  values: Object.values(Automate.ContractType).reduce(
+    (res, value) => ({ ...res, [value]: { value } }),
+    {} as GraphQLEnumValueConfigMap,
+  ),
+});
+
 export const ContractMetricType = new GraphQLObjectType({
   name: 'AutomateContractMetricType',
   fields: {
@@ -995,6 +991,10 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
     id: {
       type: GraphQLNonNull(UuidType),
       description: 'Identificator',
+    },
+    type: {
+      type: GraphQLNonNull(ContractTypeEnum),
+      description: 'Contract type',
     },
     wallet: {
       type: GraphQLNonNull(WalletBlockchainType),
@@ -1066,6 +1066,72 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
     rejectReason: {
       type: GraphQLNonNull(GraphQLString),
     },
+    restakeAt: {
+      type: DateTimeType,
+      description: 'restake at',
+      resolve: async (contract, _, { dataLoader, currentUser }) => {
+        if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+        const cache = container.cache();
+
+        if (contract.type !== Automate.ContractType.Autorestake) {
+          return null;
+        }
+
+        if (
+          !contract.contract ||
+          contract.verification !== Automate.ContractVerificationStatus.Confirmed
+        ) {
+          return null;
+        }
+
+        const cachedState = await cache.promises
+          .get(`defihelper:automate:nextRestake:${contract.id}`)
+          .catch(() => null);
+        if (cachedState) {
+          return dayjs(cachedState);
+        }
+
+        const stakingContract = await dataLoader.contract().load(contract.contract);
+        if (!stakingContract) return null;
+
+        const { apr } = (await container.model
+          .metricContractTable()
+          .column(
+            container
+              .database()
+              .raw(`(${metricContractTableName}.data->>'aprYear')::numeric AS apr`),
+          )
+          .where('contract', stakingContract.id)
+          .orderBy(`${metricContractTableName}.date`, 'DESC')
+          .first()) as unknown as { apr?: number };
+
+        if (!apr) return null;
+
+        const walletMetric = await dataLoader
+          .contractUserMetric({
+            userId: currentUser.id,
+            walletType: [WalletBlockchainModelType.Contract, WalletBlockchainModelType.Wallet],
+          })
+          .load(contract.contract);
+
+        const nextRestakeDate = await optimalRestakeNearesDate(
+          stakingContract.blockchain,
+          stakingContract.network,
+          new BN(walletMetric.stakingUSD).toNumber(),
+          new BN(walletMetric.earnedUSD).toNumber(),
+          new BN(apr).toNumber(),
+        );
+        if (nextRestakeDate) {
+          await cache.promises.setex(
+            `defihelper:automate:nextRestake:${contract.id}`,
+            300,
+            nextRestakeDate.toISOString(),
+          );
+        }
+
+        return nextRestakeDate;
+      },
+    },
     metric: {
       type: GraphQLNonNull(ContractMetricType),
       resolve: async (contract, args, { dataLoader }) => {
@@ -1103,8 +1169,6 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
         if (!wallet) return def;
 
         const walletMetric = await dataLoader.walletMetric().load(wallet.id);
-        if (!walletMetric) return def;
-
         const totalBalance = new BN(walletMetric.stakingUSD)
           .plus(walletMetric.earnedUSD)
           .toNumber();
@@ -1147,6 +1211,9 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
           contract: {
             type: GraphQLList(GraphQLNonNull(UuidType)),
           },
+          type: {
+            type: GraphQLList(GraphQLNonNull(ContractTypeEnum)),
+          },
           address: {
             type: GraphQLList(GraphQLNonNull(GraphQLString)),
           },
@@ -1177,7 +1244,7 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
         `${Automate.contractTableName}.contract`,
       )
       .where(function () {
-        const { wallet, user, protocol, contract, address, archived, search } = filter;
+        const { wallet, user, protocol, contract, type, address, archived, search } = filter;
         if (typeof user === 'string') {
           this.andWhere(`${walletTableName}.user`, user);
         }
@@ -1186,6 +1253,9 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
         }
         if (typeof protocol === 'string') {
           this.andWhere(`${Automate.contractTableName}.protocol`, protocol);
+        }
+        if (Array.isArray(type)) {
+          this.whereIn(`${Automate.contractTableName}.type`, type);
         }
         if (Array.isArray(contract) && contract.length > 0) {
           this.whereIn(`${Automate.contractTableName}.contract`, contract);
@@ -1236,6 +1306,9 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
               type: UuidType,
               description: 'Protocol contract',
             },
+            type: {
+              type: GraphQLNonNull(ContractTypeEnum),
+            },
             address: {
               type: GraphQLNonNull(GraphQLString),
               description: 'Address',
@@ -1260,6 +1333,7 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
       wallet: walletId,
       protocol: protocolId,
       contract: contractId,
+      type,
       address,
       adapter,
       initParams,
@@ -1306,6 +1380,7 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
     const created = await container.model
       .automateService()
       .createContract(
+        type,
         blockchainWallet,
         protocol,
         contract,

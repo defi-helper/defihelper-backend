@@ -39,27 +39,6 @@ export class ModelContainer extends Container<typeof AppContainer> {
       ),
   );
 
-  readonly userTable = Models.User.Entity.tableFactory(this.parent.database);
-
-  readonly userService = singleton(() => new Models.User.Service.UserService(this.userTable));
-
-  readonly sessionService = singleton(
-    () =>
-      new Models.User.Service.SessionService(
-        this.parent.cache,
-        'defihelper:session',
-        this.parent.parent.session.ttl,
-      ),
-  );
-
-  readonly userNotificationTable = Models.UserNotification.Entity.userNotificationTableFactory(
-    this.parent.database,
-  );
-
-  readonly userNotificationService = singleton(
-    () => new Models.UserNotification.Service.UserNotificationService(this.userNotificationTable),
-  );
-
   readonly walletTable = Models.Wallet.Entity.walletTableFactory(this.parent.database);
 
   readonly walletService = singleton(
@@ -79,6 +58,30 @@ export class ModelContainer extends Container<typeof AppContainer> {
 
   readonly walletExchangeTable = Models.Wallet.Entity.walletExchangeTableFactory(
     this.parent.database,
+  );
+
+  readonly sessionService = singleton(
+    () =>
+      new Models.User.Service.SessionService(
+        this.parent.cache,
+        'defihelper:session',
+        this.parent.parent.session.ttl,
+      ),
+  );
+
+  readonly userTable = Models.User.Entity.tableFactory(this.parent.database);
+
+  readonly userService = singleton(
+    () =>
+      new Models.User.Service.UserService(this.userTable, this.sessionService, this.walletService),
+  );
+
+  readonly userNotificationTable = Models.UserNotification.Entity.userNotificationTableFactory(
+    this.parent.database,
+  );
+
+  readonly userNotificationService = singleton(
+    () => new Models.UserNotification.Service.UserNotificationService(this.userNotificationTable),
   );
 
   readonly protocolTable = Models.Protocol.Entity.protocolTableFactory(this.parent.database);
@@ -105,6 +108,9 @@ export class ModelContainer extends Container<typeof AppContainer> {
 
   readonly contractTable = Models.Protocol.Entity.contractTableFactory(this.parent.database);
 
+  readonly contractMigratableRemindersBulkTable =
+    Models.Protocol.Entity.contractMigratableRemindersBulkTableFactory(this.parent.database);
+
   readonly contractBlockchainTable = Models.Protocol.Entity.contractBlockchainTableFactory(
     this.parent.database,
   );
@@ -130,6 +136,7 @@ export class ModelContainer extends Container<typeof AppContainer> {
       new Models.Protocol.Service.ContractService(
         this.parent.database(),
         this.contractTable,
+        this.contractMigratableRemindersBulkTable,
         this.contractBlockchainTable,
         this.contractDebankTable,
         this.walletContractLinkTable,
@@ -179,22 +186,47 @@ export class ModelContainer extends Container<typeof AppContainer> {
     this.parent.database,
   );
 
+  readonly metricContractTaskTable = Models.Metric.Entity.metricContractTaskTableFactory(
+    this.parent.database,
+  );
+
   readonly metricWalletTable = Models.Metric.Entity.metricWalletTableFactory(this.parent.database);
+
+  readonly metricWalletRegistryTable = Models.Metric.Entity.metricWalletRegistryTableFactory(
+    this.parent.database,
+  );
+
+  readonly metricContractRegistryTable = Models.Metric.Entity.metricContractRegistryTableFactory(
+    this.parent.database,
+  );
+
+  readonly metricWalletTaskTable = Models.Metric.Entity.metricWalletTaskTableFactory(
+    this.parent.database,
+  );
 
   readonly metricWalletTokenTable = Models.Metric.Entity.metricWalletTokenTableFactory(
     this.parent.database,
   );
+
+  readonly metricWalletTokenRegistryTable =
+    Models.Metric.Entity.metricWalletTokenRegistryTableFactory(this.parent.database);
 
   readonly metricTokenTable = Models.Metric.Entity.metricTokenTableFactory(this.parent.database);
 
   readonly metricService = singleton(
     () =>
       new Models.Metric.Service.MetricContractService(
+        this.parent.database,
         this.metricBlockchainTable,
         this.metricProtocolTable,
         this.metricContractTable,
+        this.metricContractTaskTable,
         this.metricWalletTable,
+        this.metricWalletRegistryTable,
+        this.metricContractRegistryTable,
+        this.metricWalletTaskTable,
         this.metricWalletTokenTable,
+        this.metricWalletTokenRegistryTable,
         this.metricTokenTable,
       ),
   );
@@ -207,29 +239,12 @@ export class ModelContainer extends Container<typeof AppContainer> {
     this.parent.database,
   );
 
-  readonly userEventSubscriptionTable =
-    Models.Notification.Entity.userEventSubscriptionTableFactory(this.parent.database);
-
-  readonly contractEventWebHookTable = Models.Notification.Entity.contractEventWebHookTableFactory(
-    this.parent.database,
-  );
-
   readonly notificationService = singleton(
     () => new Models.Notification.Service.NotificationService(this.notificationTable),
   );
 
   readonly userContactService = singleton(
     () => new Models.Notification.Service.UserContactService(this.userContactTable),
-  );
-
-  readonly userEventSubscriptionService = singleton(
-    () =>
-      new Models.Notification.Service.UserEventSubscriptionService(this.userEventSubscriptionTable),
-  );
-
-  readonly contractEventWebHookService = singleton(
-    () =>
-      new Models.Notification.Service.ContractEventWebHookService(this.contractEventWebHookTable),
   );
 
   readonly billingBillTable = Models.Billing.Entity.billTableFactory(this.parent.database);
@@ -266,7 +281,11 @@ export class ModelContainer extends Container<typeof AppContainer> {
 
   readonly governanceService = singleton(
     () =>
-      new Models.Governance.Service.GovernanceService(this.govProposalTable, this.govReceiptTable),
+      new Models.Governance.Service.GovernanceService(
+        this.govProposalTable,
+        this.govReceiptTable,
+        this.parent.semafor,
+      ),
   );
 
   readonly automateTriggerTable = Models.Automate.Entity.triggerTableFactory(this.parent.database);
@@ -299,7 +318,6 @@ export class ModelContainer extends Container<typeof AppContainer> {
         this.automateContractTable,
         this.automateTransactionTable,
         this.walletTable,
-        this.parent.scanner,
       ),
   );
 }

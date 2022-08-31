@@ -10,9 +10,13 @@ export enum Role {
 export interface User {
   id: string;
   role: Role;
+  name: string;
   referrer: string | null;
   isPorfolioCollected: boolean;
   locale: Locale;
+  timezone: string;
+  authAt: Date;
+  lastSeenAt: Date;
   updatedAt: Date;
   createdAt: Date;
 }

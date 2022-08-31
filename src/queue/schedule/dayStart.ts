@@ -1,6 +1,7 @@
 import { Process } from '@models/Queue/Entity';
 import container from '@container';
 import { TriggerType } from '@models/Automate/Entity';
+import dayjs from 'dayjs';
 
 export default async (process: Process) => {
   const queue = container.model.queueService();
@@ -15,6 +16,17 @@ export default async (process: Process) => {
     queue.push('notificationAutomateWalletsNotEnoughFundsBroker', {}),
     queue.push('metricsContractAprWeekRealBroker', {}),
     queue.push('metricsUserBalancesBroker', {}),
+    queue.push('metricsWalletRegistrySync', {}),
+    queue.push('metricsWalletTokenRegistrySync', {}),
+    queue.push('metricsWalletBalancesWavesBroker', {}),
+    queue.push('migratablePoolsBroker', {}),
+    queue.push(
+      'migratablePoolsBatch',
+      {},
+      {
+        startAt: dayjs().add(15, 'minutes').toDate(),
+      },
+    ),
   ]);
 
   return process.done();

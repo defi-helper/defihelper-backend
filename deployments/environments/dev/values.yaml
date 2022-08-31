@@ -9,20 +9,20 @@ images:
     name: nginx
     resources:
       requests:
-        memory: 128Mi
-        cpu: 100m
+        memory: 64Mi
+        cpu: 50m
       limits:
-        memory: 128Mi
-        cpu: 1000m
+        memory: 64Mi
+        cpu: 100m
   app:
     name: app
     resources:
       requests:
         memory: 128Mi
-        cpu: 100m
+        cpu: 50m
       limits:
-        memory: 128Mi
-        cpu: 1000m
+        memory: 256Mi
+        cpu: 100m
 
 service:
   type: ClusterIP
@@ -44,10 +44,106 @@ ingress:
       hosts:
         - backend-dev.defihelper.info
 
+broker:
+  process:
+    labels:
+      app: app
+      component: broker
+      environment: prod
+      queue: process
+    queues:
+      queue:
+        name: queue
+        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue:consume -- -q tasks_default"'
+        replicas: 1
+        maxReplicas: 10
+        maxReadyMessagesForHpa: 25
+        graceperiod: 3600
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 50m
+          limits:
+            memory: 512Mi
+            cpu: 100m
+      events-trigger:
+        name: events-trigger
+        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run trigger:event"'
+        replicas: 1
+        maxReplicas: 20
+        maxReadyMessagesForHpa: 100
+        graceperiod: 3600
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 50m
+          limits:
+            memory: 128Mi
+            cpu: 100m
+      trigger:
+        name: trigger
+        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue:consume -- -q tasks_trigger"'
+        replicas: 1
+        maxReplicas: 20
+        maxReadyMessagesForHpa: 100
+        graceperiod: 3600
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 50m
+          limits:
+            memory: 128Mi
+            cpu: 100m
+      metrics:
+        name: metrics
+        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue:consume -- -q tasks_metricCurrent"'
+        replicas: 1
+        maxReplicas: 20
+        maxReadyMessagesForHpa: 100
+        graceperiod: 3600
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 50m
+          limits:
+            memory: 128Mi
+            cpu: 100m
+      history:
+        name: history
+        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue:consume -- -q tasks_metricHistory"'
+        replicas: 1
+        maxReplicas: 20
+        maxReadyMessagesForHpa: 100
+        graceperiod: 3600
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 50m
+          limits:
+            memory: 128Mi
+            cpu: 100m
+
 handlers:
   labels:
     app: backend
     component: cronHandler
+    environment: prod
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 100m
+    limits:
+      memory: 128Mi
+      cpu: 100m
+  schedules:
+    queue-deferred:
+      command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue:deferred"'
+      schedule: "* * * * *"
+
+migrator:
+  labels:
+    app: migrator
+    component: migrator
     environment: dev
   resources:
     requests:
@@ -55,11 +151,7 @@ handlers:
       cpu: 200m
     limits:
       memory: 256Mi
-      cpu: 300m
-  schedules:
-    queue-deferred:
-      command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue-deferred"'
-      schedule: "* * * * *"
+      cpu: 1200m
 
 resources: {}
 autoscaling:

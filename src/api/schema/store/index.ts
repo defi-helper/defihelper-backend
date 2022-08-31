@@ -1,5 +1,6 @@
 import container from '@container';
 import { Request } from 'express';
+import { BigNumber as BN } from 'bignumber.js';
 import {
   Product,
   ProductCode,
@@ -171,6 +172,45 @@ export const ProductType = new GraphQLObjectType<Product>({
   },
 });
 
+export const ProductPriceFeedType = new GraphQLObjectType({
+  name: 'StoreProductPriceFeedType',
+  fields: {
+    product: {
+      type: GraphQLNonNull(ProductType),
+    },
+    price: {
+      type: GraphQLNonNull(GraphQLFloat),
+      description: 'Price in native token',
+    },
+  },
+});
+
+export const ProductPriceFeedQuery: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(ProductPriceFeedType),
+  args: {
+    network: {
+      type: GraphQLNonNull(GraphQLString),
+    },
+    id: {
+      type: GraphQLNonNull(UuidType),
+      description: 'Target product ID',
+    },
+  },
+  resolve: async (root, { id, network }) => {
+    const product = await container.model.storeProductTable().where('id', id).first();
+    if (!product) throw new Error('Product not found');
+
+    const nativeTokenPrice = await container.blockchain.ethereum
+      .byNetwork(network)
+      .nativeTokenPrice();
+
+    return {
+      product,
+      price: new BN(product.priceUSD).div(nativeTokenPrice).toString(10),
+    };
+  },
+};
+
 export const UserStoreBalanceType = new GraphQLObjectType<User>({
   name: 'UserStoreBalanceType',
   fields: {
@@ -329,6 +369,7 @@ export const ProductListQuery: GraphQLFieldConfig<any, Request> = {
   },
   resolve: async (root, { filter, sort, pagination }) => {
     const select = container.model.storeProductTable().where(function () {
+      this.where('number', '>', 0);
       if (Array.isArray(filter.code) && filter.code.length > 0) {
         this.whereIn('code', filter.code);
       }

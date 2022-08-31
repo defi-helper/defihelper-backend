@@ -17,14 +17,13 @@ export default async (process: Process) => {
     .innerJoin(walletTableName, `${walletTableName}.id`, `${triggerTableName}.wallet`)
     .where(`${triggerTableName}.active`, true)
     .andWhere(`${triggerTableName}.type`, type)
-    .whereNull(`${walletTableName}.suspendReason`)
     .whereNull(`${walletTableName}.deletedAt`)
     .orderBy(`${triggerTableName}.id`, 'asc');
   const lag = 3600 / triggers.length;
   const queue = container.model.queueService();
   await triggers.reduce<Promise<dayjs.Dayjs>>(async (prev, { id }) => {
     const startAt = await prev;
-    await queue.push('automateTriggerRun', { id }, { startAt: startAt.toDate() });
+    await queue.push('automateTriggerRun', { id }, { startAt: startAt.toDate(), topic: 'trigger' });
 
     return startAt.clone().add(lag, 'seconds');
   }, Promise.resolve(dayjs()));

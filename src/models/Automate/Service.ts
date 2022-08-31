@@ -11,7 +11,6 @@ import {
   WalletTable,
   walletTableName,
 } from '@models/Wallet/Entity';
-import { ScannerService } from '@services/Scanner';
 import {
   Action,
   ActionParams,
@@ -25,6 +24,7 @@ import {
   ConditionType,
   Contract,
   ContractTable,
+  ContractType,
   ContractVerificationStatus,
   TransactionTable,
   Trigger,
@@ -44,13 +44,7 @@ export class AutomateService {
     }
   });
 
-  public readonly onTriggerDeleted = new Emitter<Trigger>(async (trigger) => {
-    if (trigger.type === TriggerType.ContractEvent) {
-      if (trigger.params.callback) {
-        await this.scanner().deleteCallback(trigger.params.callback);
-      }
-    }
-  });
+  public readonly onTriggerDeleted = new Emitter<Trigger>();
 
   public readonly onContractCreated = new Emitter<{
     blockchainWallet: Wallet & WalletBlockchain;
@@ -104,7 +98,6 @@ export class AutomateService {
     readonly contractTable: Factory<ContractTable>,
     readonly transactionTable: Factory<TransactionTable>,
     readonly walletTable: Factory<WalletTable>,
-    readonly scanner: Factory<ScannerService>,
   ) {}
 
   async createTrigger(wallet: Wallet, type: TriggerTypes, name: string, active: boolean = true) {
@@ -185,7 +178,6 @@ export class AutomateService {
       type,
       params,
       priority,
-      restakeAt: null,
       updatedAt: new Date(),
       createdAt: new Date(),
     };
@@ -256,6 +248,7 @@ export class AutomateService {
   }
 
   async createContract(
+    type: ContractType,
     blockchainWallet: Wallet & WalletBlockchain,
     protocol: Protocol,
     contract: ProtocolContract | null,
@@ -265,6 +258,7 @@ export class AutomateService {
   ) {
     const created: Contract = {
       id: uuid(),
+      type,
       wallet: blockchainWallet.id,
       protocol: protocol.id,
       contract: contract?.id ?? null,

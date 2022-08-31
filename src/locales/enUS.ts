@@ -8,6 +8,8 @@ export default {
     'hello world': 'hello world',
     'dollar': ['dollar', 'dollars'],
     'Confirm': 'Confirm',
+    'Your Telegram account ({{username}}) has been successfully connected to your DeFiHelper account.':
+      'Your Telegram account ({{username}}) has been successfully connected to your DeFiHelper account.',
     'Any questions? Drop us a reply!': 'Any questions? Drop us a reply!',
     'DeFiHelper team': 'DeFiHelper team',
     'We are excited to see you join the DeFiHelper community!':
@@ -22,8 +24,8 @@ export default {
       "This should say 'your automation in wallet {{visualizedWalletAddress}} may/will be paused soon, due to insufficient funds",
     "DeFiHelper's public beta now available. Get your APY boost right now on https://app.defihelper.io!":
       "DeFiHelper's public beta now available. Get your APY boost right now on https://app.defihelper.io!",
-    'Tracked Balance ${{totalNetWorth}}, Total unclaimed ${{totalEarnedUSD}}':
-      'Tracked Balance ${{totalNetWorth}}, Total unclaimed ${{totalEarnedUSD}}',
+    '[{{name}}]: Tracked Balance ${{totalNetWorth}} ({{percentageTracked}}%), Total unclaimed ${{totalEarnedUSD}} ({{percentageTracked}}%)':
+      '[{{name}}]: Tracked Balance ${{totalNetWorth}} ({{percentageTracked}}%), Total unclaimed ${{totalEarnedUSD}} ({{percentageEarned}}%)',
     'automate:trigger:contractEvent:name': 'Contract event',
     'automate:trigger:contractEvent:description': 'Call trigger for contract event',
     'automate:trigger:everyMonth:name': 'Periodic',
@@ -44,7 +46,7 @@ export default {
     'automate:condition:ethereumOptimalAutomateRun:name': 'Optimized Staking',
     'automate:condition:ethereumOptimalAutomateRun:description': 'Use auto-staking',
     'automate:action:ethereumOptimalAutomateRun:paramsDescription':
-      'Autostaking for action: {{id}}',
+      'Auto-staking for action: {{id}}',
     'automate:condition:ethereumOptimalAutomateRun:paramsDescription':
       'Restake optimal run for {{id}}',
     'automate:condition:ethereumAvgGasPrice:name': 'Gas Price Fluctuation',

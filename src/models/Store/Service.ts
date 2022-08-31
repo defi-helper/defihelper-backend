@@ -4,9 +4,9 @@ import { Factory } from '@services/Container';
 import { User } from '@models/User/Entity';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 import {
-  userContactTableName,
   NotificationTable,
   notificationTableName,
+  userContactTableName,
 } from '@models/Notification/Entity';
 import {
   Product,
@@ -87,8 +87,8 @@ export class StoreService {
     return created;
   }
 
-  async purchaseAmount(code: ProductCode, user: User): Promise<number> {
-    const result = await this.purchaseTable()
+  purchaseAmount(code: ProductCode, user: User): Promise<number> {
+    return this.purchaseTable()
       .sum<{ sum: string }>(`${purchaseTableName}.amount`)
       .innerJoin(productTableName, `${purchaseTableName}.product`, '=', `${productTableName}.id`)
       .innerJoin(walletBlockchainTableName, function () {
@@ -99,15 +99,14 @@ export class StoreService {
       .innerJoin(walletTableName, `${walletTableName}.id`, `${walletBlockchainTableName}.id`)
       .where(`${productTableName}.code`, code)
       .where(`${walletTableName}.user`, user.id)
-      .first();
-    if (!result) return 0;
-
-    return parseInt(result.sum, 10);
+      .first()
+      .then((row) => row ?? { sum: 0 })
+      .then(({ sum }) => Number(sum));
   }
 
   async availableNotifications(user: User): Promise<number> {
     const purchaseAmount = await this.purchaseAmount(ProductCode.Notification, user);
-    const result = await this.notificationTable()
+    const notificationsCount = await this.notificationTable()
       .countDistinct<{ count: string }>(`${notificationTableName}.id`)
       .innerJoin(
         userContactTableName,
@@ -115,8 +114,10 @@ export class StoreService {
         `${notificationTableName}.contact`,
       )
       .where(`${userContactTableName}.user`, user.id)
-      .first();
+      .first()
+      .then((row) => row ?? { count: 0 })
+      .then(({ count }) => Number(count));
 
-    return purchaseAmount - parseInt(result?.count || '0', 10);
+    return purchaseAmount - notificationsCount;
   }
 }

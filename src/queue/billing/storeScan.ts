@@ -4,7 +4,7 @@ import { Process } from '@models/Queue/Entity';
 import { Blockchain } from '@models/types';
 import { isKey } from '@services/types';
 import { ethers } from 'ethers';
-import { abi as storeAbi } from '@defihelper/networks/abi/Store.json';
+import { abi as storeAbi } from '@defihelper/networks/abi/StoreV2.json';
 import contracts from '@defihelper/networks/contracts.json';
 
 async function registerBuy(blockchain: Blockchain, network: string, events: ethers.Event[]) {
@@ -59,17 +59,30 @@ export default async (process: Process) => {
 
   const later = dayjs().add(1, 'minute').toDate();
   const provider = container.blockchain[blockchain].byNetwork(network).provider();
-  const currentBlockNumber = parseInt((await provider.getBlockNumber()).toString(), 10) - lag;
+
+  let currentBlockNumber;
+  try {
+    currentBlockNumber = parseInt((await provider.getBlockNumber()).toString(), 10) - lag;
+  } catch (e) {
+    return process.later(later).info(`${e}`);
+  }
+
   if (currentBlockNumber < from) {
     return process.later(later);
   }
   const to = from + step > currentBlockNumber ? currentBlockNumber : from + step;
 
-  const networkContracts = contracts[network] as { [name: string]: { address: string } };
-  const storeAddress = networkContracts.Store.address;
+  const storeAddress = contracts[network].StoreUpgradable.address;
   const store = container.blockchain[blockchain].contract(storeAddress, storeAbi, provider);
 
-  await registerBuy(blockchain, network, await store.queryFilter(store.filters.Buy(), from, to));
+  try {
+    await registerBuy(blockchain, network, await store.queryFilter(store.filters.Buy(), from, to));
+  } catch (e) {
+    if (currentBlockNumber - from > 100) {
+      throw new Error(`Task ${process.task.id}, lag: ${currentBlockNumber - from}, message: ${e}`);
+    }
+    return process.later(later).info(`${e}`);
+  }
 
   return process.param({ ...process.task.params, from: to + 1 }).later(later);
 };

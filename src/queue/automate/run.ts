@@ -1,7 +1,6 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
-import { getActionHandler, getConditionHandler, triggerTableName } from '@models/Automate/Entity';
-import { walletTableName } from '@models/Wallet/Entity';
+import { getActionHandler, getConditionHandler } from '@models/Automate/Entity';
 
 function isError(e: any): e is Error {
   return (
@@ -17,16 +16,13 @@ export default async (process: Process) => {
   const { id } = process.task.params as Params;
 
   const automateService = container.model.automateService();
-  const trigger = await automateService
-    .triggerTable()
-    .columns(`${triggerTableName}.*`)
-    .innerJoin(walletTableName, `${walletTableName}.id`, `${triggerTableName}.wallet`)
-    .where(`${triggerTableName}.id`, id)
-    .andWhere(`${triggerTableName}.active`, true)
-    .whereNull(`${walletTableName}.suspendReason`)
-    .whereNull(`${walletTableName}.deletedAt`)
-    .first();
+  const trigger = await automateService.triggerTable().where('id', id).first();
   if (!trigger) throw new Error('Trigger not found');
+  if (!trigger.active) throw new Error('Trigger not active');
+
+  const wallet = await container.model.walletTable().where('id', trigger.wallet).first();
+  if (!wallet) throw new Error('Owned wallet not found');
+  if (wallet.deletedAt !== null) throw new Error('Wned wallet deleted');
 
   try {
     const conditions = await automateService

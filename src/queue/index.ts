@@ -15,9 +15,10 @@ export * as metricsEthereumCurrent from './metrics/ethereumCurrent';
 export * as metricsContractBroker from './metrics/contractBroker';
 export * as metricsContractScannerBroker from './metrics/contractScannerBroker';
 export * as metricsContractHistory from './metrics/contractHistory';
-export * as metricsContractScannerHistory from './metrics/contractScannerHistory';
 export * as metricsWalletBroker from './metrics/walletBroker';
 export * as metricsWalletHistory from './metrics/walletHistory';
+export * as metricsWalletRegistrySync from './metrics/registry/walletSync';
+export * as metricsWalletTokenRegistrySync from './metrics/registry/walletTokenSync';
 export * as metricsContractCurrent from './metrics/contractCurrent';
 export * as metricsContractBlock from './metrics/contractBlock';
 export * as metricsContractAprWeekReal from './metrics/contractAprWeekReal';
@@ -28,10 +29,9 @@ export * as metricsWalletBlock from './metrics/walletBlock';
 export * as metricsWalletScanMutation from './metrics/walletScanMutation';
 export * as sendEmail from './email/send';
 export * as sendTelegram from './telegram/send';
-export * as subscribeToEventFromScanner from './scanner/subscribeToEvent';
+export * as sendTelegramByContact from './telegram/sendByContact';
 export * as registerContractInScanner from './scanner/registerContract';
-export * as scannerSyncContractFid from './scanner/syncContractFid';
-export * as sendEventsNotifications from './notifications/webHook';
+export * as watcherResolveContractId from './scanner/resolveWatcherId';
 export * as notificationSend from './notifications/send';
 export * as contractResolveDeployBlockNumber from './contract/resolveDeployBlockNumber';
 export * as contractResolveAbi from './contract/resolveAbi';
@@ -46,7 +46,8 @@ export * as automateTransactionEthereumConfirm from './automate/transactionEther
 export * as automateTransactionWavesConfirm from './automate/transactionWavesConfirm';
 export * as automateTriggerRun from './automate/run';
 export * as automateTriggerByTime from './automate/trigger/byTime';
-export * as logBilling from './log/billingLogger';
+export * as riskCalculationBroker from './contract/riskCalculationBroker';
+export * as riskCalculationFiller from './contract/riskCalculationFiller';
 
 /* billing */
 export * as emptyWalletsBroker from './billing/emptyWalletsBroker';
@@ -57,6 +58,9 @@ export * as metricsUserBalancesBroker from './metrics/walletBalances/userBalance
 export * as metricsUserBalancesFiller from './metrics/walletBalances/userBalancesFiller';
 
 export * as metricsWalletBalancesDeBankFiller from './metrics/walletBalances/walletBalancesDeBankFiller';
+
+export * as metricsWalletBalancesWavesFiller from './metrics/walletBalances/walletBalancesWavesFiller';
+export * as metricsWalletBalancesWavesBroker from './metrics/walletBalances/walletWavesBalancesBroker';
 
 export * as metricsWalletProtocolsBalancesDeBankFiller from './metrics/walletBalances/walletProtocolsBalancesDeBankFiller';
 export * as metricsWalletProtocolsBalancesDeBankBroker from './metrics/walletBalances/walletProtocolsBalancesDeBankBroker';
@@ -71,14 +75,17 @@ export * as protocolContractsResolver from './protocol/resolveContracts';
 
 /* regular notifications */
 export * as notificationPortfolioMetricsNotify from './notifications/PortfolioMetrics/sender';
-
+export * as notificationPortfolioMetricsNotifyHourly from './notifications/PortfolioMetrics/hourly';
 export * as notificationAutomateWalletsNotEnoughFundsNotify from './notifications/AutomateWalletsNotEnoughFunds/sender';
 export * as notificationAutomateWalletsNotEnoughFundsBroker from './notifications/AutomateWalletsNotEnoughFunds/broker';
 
 /* events */
+export * as eventsMetricContractCreated from './events/metricContractCreated';
 export * as eventsContractBlockchainCreated from './events/contractBlockchainCreated';
+export * as eventsContractBlockchainUpdated from './events/contractBlockchainUpdated';
 export * as eventsUserCreated from './events/userCreated';
 export * as eventsWalletCreated from './events/walletCreated';
+export * as eventsWalletContractLinked from './events/walletContractLinked';
 export * as eventsWalletChangeOwner from './events/walletChangeOwner';
 export * as eventsAutomateContractVerificationConfirmed from './events/automate/contractVerificationConfirmed';
 export * as followContractEvent from './scanner/followContractEvent';
@@ -98,11 +105,15 @@ export * as resolveTokenAliasLiquidity from './token/resolveTokenAliasLiquidity'
 export * as tokensBridgesFromAdapters from './token/tokensBridgesFromAdapters';
 export * as tokensDeleteDuplicates from './token/deleteTokenDuplicates';
 
+/* logs */
+export * as logBilling from './log/billingLogger';
+export * as logStuckQueueTask from './log/stuckQueueTaskWarning';
+
 /* treasury */
 export * as treasuryStatsCache from './treasury/cache';
 
-/* utils */
-export * as utilsTokensLogoBroker from './utils/tokensLogoBroker';
-
 export * as sendTelegramNews from './sendTelegramNews';
-export * as migrateAbi from './migrateAbi';
+
+export * as migratablePoolsBroker from './notifications/migratablePoolsBroker';
+export * as migratablePoolsNotifyUser from './notifications/migratablePoolsNotifyUser';
+export * as migratablePoolsBatch from './notifications/migratablePoolsBatch';

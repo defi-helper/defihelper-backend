@@ -8,6 +8,11 @@ spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0 # maxUnavailable define how many pods can be unavailable during the rolling update
+      maxSurge: 25% # how many pods we can add at a time
   selector:
     matchLabels:
       {{- include "website.selectorLabels" . | nindent 6 }}
@@ -38,14 +43,14 @@ spec:
             httpGet:
               path: /
               port: http
-            initialDelaySeconds: 15
-            timeoutSeconds: 1
+            initialDelaySeconds: 60
+            timeoutSeconds: 5
           readinessProbe:
             httpGet:
               path: /
               port: http
-            initialDelaySeconds: 15
-            timeoutSeconds: 1
+            initialDelaySeconds: 60
+            timeoutSeconds: 5
           resources:
             {{- toYaml .Values.images.nginx.resources | nindent 12 }}
         - name: app
@@ -61,14 +66,14 @@ spec:
             httpGet:
               path: /
               port: 8080
-            initialDelaySeconds: 15
-            timeoutSeconds: 1
+            initialDelaySeconds: 60
+            timeoutSeconds: 5
           readinessProbe:
             httpGet:
               path: /
               port: 8080
-            initialDelaySeconds: 15
-            timeoutSeconds: 1
+            initialDelaySeconds: 60
+            timeoutSeconds: 5
           volumeMounts:
             - mountPath: /app/configuration
               name: configuration

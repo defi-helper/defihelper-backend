@@ -15,7 +15,7 @@ export default (schema: SchemaBuilder) => {
           TaskStatus.Process,
           TaskStatus.Done,
           TaskStatus.Error,
-          TaskStatus.Collision,
+          // TaskStatus.Collision,
         ],
         {
           useNative: true,

@@ -17,11 +17,12 @@ import * as proposalSchemas from '@api/schema/proposal';
 import * as tokenSchemas from '@api/schema/token';
 import * as storeSchemas from '@api/schema/store';
 import * as governanceSchemas from '@api/schema/governance';
-import * as Automate from '@api/schema/automate';
+import * as automateSchemas from '@api/schema/automate';
 import * as restakeStrategySchemas from '@api/schema/restakeStrategy';
 import * as treasurySchemas from '@api/schema/treasury';
 import * as monitoringSchemas from '@api/schema/monitoring';
 import * as landingSchemas from '@api/schema/landing';
+import * as tradingSchemas from '@api/schema/trading';
 import Jimp from 'jimp';
 import { metricContractTableName } from '@models/Metric/Entity';
 import {
@@ -56,14 +57,12 @@ export function route({ express, server }: { express: Express; server: Server })
             resolve: () => 'pong',
           },
           config: configSchemas.ConfigQuery,
-          me: {
-            type: userSchemas.UserType,
-            resolve: (root, args, { currentUser }) => currentUser,
-          },
+          me: userSchemas.MeQuery,
           userReferrer: userSchemas.UserReferrerCodeQuery,
           users: userSchemas.UserListQuery,
           protocol: protocolSchemas.ProtocolQuery,
           protocols: protocolSchemas.ProtocolListQuery,
+          userProtocols: protocolSchemas.UserProtocolListQuery,
           contracts: protocolSchemas.ContractListQuery,
           proposal: proposalSchemas.ProposalQuery,
           proposals: proposalSchemas.ProposalListQuery,
@@ -71,26 +70,27 @@ export function route({ express, server }: { express: Express; server: Server })
           userContact: notificationSchemas.UserContactQuery,
           userContacts: notificationSchemas.UserContactListQuery,
           userNotifications: userNotificationSchemas.UserNotificationListQuery,
-          userEventSubscription: notificationSchemas.UserEventSubscriptionQuery,
-          userEventSubscriptions: notificationSchemas.UserEventSubscriptionListQuery,
           tokens: tokenSchemas.TokenListQuery,
           tokenAlias: tokenSchemas.TokenAliasQuery,
           tokensAlias: tokenSchemas.TokenAliasListQuery,
           products: storeSchemas.ProductListQuery,
+          productPriceFeed: storeSchemas.ProductPriceFeedQuery,
           billingBalance: billingSchemas.BalanceMetaQuery,
           govProposal: governanceSchemas.GovProposalQuery,
           govProposals: governanceSchemas.GovProposalListQuery,
           govReceipt: governanceSchemas.GovReceiptQuery,
           govVotes: governanceSchemas.GovVotesQuery,
-          automateDescription: Automate.DescriptionQuery,
-          automateTrigger: Automate.TriggerQuery,
-          automateTriggers: Automate.TriggerListQuery,
-          automateContracts: Automate.ContractListQuery,
+          automateDescription: automateSchemas.DescriptionQuery,
+          automateTrigger: automateSchemas.TriggerQuery,
+          automateTriggers: automateSchemas.TriggerListQuery,
+          automateContracts: automateSchemas.ContractListQuery,
           govToken: governanceSchemas.GovTokenQuery,
           restakeStrategy: restakeStrategySchemas.RestakeStrategyQuery,
           treasury: treasurySchemas.TreasuryQuery,
           monitoringUsersRegisteringHistory:
             monitoringSchemas.MonitoringUsersRegisteringHistoryQuery,
+          monitoringWalletsRegisteringHistory:
+            monitoringSchemas.MonitoringWalletRegisteringHistoryQuery,
           monitoringAutomateRunHistory: monitoringSchemas.MonitoringAutomateRunHistoryQuery,
           monitoringAutomatesCreationHistory:
             monitoringSchemas.MonitoringAutomatesCreationHistoryQuery,
@@ -145,24 +145,23 @@ export function route({ express, server }: { express: Express; server: Server })
           userContactUpdate: notificationSchemas.UserContactUpdateMutation,
           userContactEmailConfirm: notificationSchemas.UserContactEmailConfirmMutation,
           userContactDelete: notificationSchemas.UserContactDeleteMutation,
-          userEventSubscriptionCreate: notificationSchemas.UserEventSubscriptionCreateMutation,
-          userEventSubscriptionDelete: notificationSchemas.UserEventSubscriptionDeleteMutation,
           productCreate: storeSchemas.ProductCreateMutation,
           productUpdate: storeSchemas.ProductUpdateMutation,
           productDelete: storeSchemas.ProductDeleteMutation,
           billingTransferCreate: billingSchemas.AddTransferMutation,
-          automateTriggerCreate: Automate.TriggerCreateMutation,
-          automateTriggerUpdate: Automate.TriggerUpdateMutation,
-          automateTriggerDelete: Automate.TriggerDeleteMutation,
-          automateConditionCreate: Automate.ConditionCreateMutation,
-          automateConditionUpdate: Automate.ConditionUpdateMutation,
-          automateConditionDelete: Automate.ConditionDeleteMutation,
-          automateActionCreate: Automate.ActionCreateMutation,
-          automateActionUpdate: Automate.ActionUpdateMutation,
-          automateActionDelete: Automate.ActionDeleteMutation,
-          automateContractCreate: Automate.ContractCreateMutation,
-          automateContractUpdate: Automate.ContractUpdateMutation,
-          automateContractDelete: Automate.ContractDeleteMutation,
+          automateTriggerCreate: automateSchemas.TriggerCreateMutation,
+          automateTriggerUpdate: automateSchemas.TriggerUpdateMutation,
+          automateTriggerDelete: automateSchemas.TriggerDeleteMutation,
+          automateConditionCreate: automateSchemas.ConditionCreateMutation,
+          automateConditionUpdate: automateSchemas.ConditionUpdateMutation,
+          automateConditionDelete: automateSchemas.ConditionDeleteMutation,
+          automateActionCreate: automateSchemas.ActionCreateMutation,
+          automateActionUpdate: automateSchemas.ActionUpdateMutation,
+          automateActionDelete: automateSchemas.ActionDeleteMutation,
+          automateContractCreate: automateSchemas.ContractCreateMutation,
+          automateContractUpdate: automateSchemas.ContractUpdateMutation,
+          automateContractDelete: automateSchemas.ContractDeleteMutation,
+          tradingAuth: tradingSchemas.TradingAuthMutation,
         },
       }),
       subscription: new GraphQLObjectType<any, Request>({
@@ -200,6 +199,20 @@ export function route({ express, server }: { express: Express; server: Server })
               container.model.logService().create(`graphql:PARSING_ERROR`, error);
               container.logger().error(error);
             },
+            executionDidStart(context) {
+              const execStartTime = Date.now();
+              return {
+                executionDidEnd() {
+                  container
+                    .logger()
+                    .debug(
+                      `"${context.request.operationName}" execute time: ${
+                        Date.now() - execStartTime
+                      }ms`,
+                    );
+                },
+              };
+            },
           };
         },
       },
@@ -230,33 +243,6 @@ export function route({ express, server }: { express: Express; server: Server })
       })
       .redirect(codeRecord.redirectTo);
   });
-  express.route('/callback/event/:webHookId').post(json({ limit: '512kb' }), async (req, res) => {
-    const { secret } = req.query;
-    if (secret !== container.parent.api.secret) {
-      res.sendStatus(403);
-      return;
-    }
-
-    const webHook = await container.model
-      .contractEventWebHookTable()
-      .where('id', req.params.webHookId)
-      .first();
-
-    if (!webHook) {
-      res.sendStatus(404);
-      return;
-    }
-
-    const eventQueueParam = {
-      eventName: req.body.eventName,
-      events: req.body.events,
-      webHookId: req.params.webHookId,
-    };
-
-    await container.model.queueService().push('sendEventsNotifications', eventQueueParam);
-
-    res.sendStatus(200);
-  });
   express.route('/callback/trigger/:triggerId').post(json(), async (req, res) => {
     const { secret } = req.query;
     if (secret !== container.parent.api.secret) return res.sendStatus(403);
@@ -270,7 +256,9 @@ export function route({ express, server }: { express: Express; server: Server })
       .andWhere(`${triggerTableName}.active`, true)
       .first();
     if (trigger) {
-      await container.model.queueService().push('automateTriggerRun', { id: trigger.id });
+      await container.model
+        .queueService()
+        .push('automateTriggerRun', { id: trigger.id }, { topic: 'trigger' });
     }
 
     return res.sendStatus(200);
@@ -330,11 +318,13 @@ export function route({ express, server }: { express: Express; server: Server })
     );
 
     const isDebank = protocol.adapter === 'debankByApiReadonly';
-    const maxBoostedApy = Math.round(Math.max(...calculatedApyList.map((v) => v.boosted)));
     const avgInitialApy = Math.round(
       (calculatedApyList.reduce((prev, curr) => new BN(prev).plus(curr.initial).toNumber(), 0) /
         calculatedApyList.length) *
         100,
+    );
+    const maxBoostedApy = Math.round(
+      Math.max(...calculatedApyList.map((v) => v.boosted)) + avgInitialApy,
     );
 
     try {
@@ -481,6 +471,13 @@ export function route({ express, server }: { express: Express; server: Server })
     if (
       response.data?.result === '0' &&
       String(response.data?.result).includes('Max rate limit reached')
+    ) {
+      return res.status(503).send('Try next time');
+    }
+
+    if (
+      response.data?.result === '0' &&
+      String(response.data?.result).includes('Contract source code not verified')
     ) {
       return res.status(404).send('ABI not found');
     }

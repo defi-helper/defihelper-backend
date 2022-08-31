@@ -3,6 +3,7 @@ import { v4 as uuid } from 'uuid';
 import { Factory } from '@services/Container';
 import { Emitter } from '@services/Event';
 import container from '@container';
+import { WalletBlockchain } from '@models/Wallet/Entity';
 import { Bill, BillStatus, BillTable, Transfer, TransferTable } from './Entity';
 
 export class BillingService {
@@ -69,6 +70,42 @@ export class BillingService {
     this.onTransferUpdated.emit(updated);
 
     return updated;
+  }
+
+  balanceOf(blockchain: Blockchain, network: string, account: string) {
+    return this.transferTable()
+      .sum('amount')
+      .where({
+        blockchain,
+        network,
+        account,
+      })
+      .where('confirmed', true)
+      .first()
+      .then((row) => row ?? { sum: 0 })
+      .then(({ sum }) => Number(sum));
+  }
+
+  balanceOfWallet({ blockchain, network, address }: WalletBlockchain) {
+    return this.balanceOf(blockchain, network, address.toLowerCase());
+  }
+
+  claimOf(blockchain: Blockchain, network: string, account: string) {
+    return this.billTable()
+      .sum('claim')
+      .where({
+        blockchain,
+        network,
+        account,
+      })
+      .where('status', BillStatus.Accepted)
+      .first()
+      .then((row) => row ?? { sum: 0 })
+      .then(({ sum }) => Number(sum));
+  }
+
+  claimOfWallet({ blockchain, network, address }: WalletBlockchain) {
+    return this.claimOf(blockchain, network, address.toLowerCase());
   }
 
   async claim(

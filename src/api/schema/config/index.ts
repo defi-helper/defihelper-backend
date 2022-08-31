@@ -56,6 +56,9 @@ export const EthereumNetworkType = new GraphQLObjectType({
     icon: {
       type: GraphQLNonNull(EthereumNetworkIconEnum),
     },
+    rpcUrls: {
+      type: GraphQLList(GraphQLNonNull(GraphQLString)),
+    },
   },
 });
 
@@ -132,7 +135,10 @@ export const ConfigType = new GraphQLObjectType({
               },
               resolve: (_, { filter }) => {
                 return Object.values(container.blockchain.ethereum.networks).reduce<any[]>(
-                  (result, { id, name, testnet, nativeTokenDetails, explorerURL, icon }) => {
+                  (
+                    result,
+                    { id, name, testnet, nativeTokenDetails, explorerURL, icon, rpcUrls },
+                  ) => {
                     if (typeof filter.testnet === 'boolean') {
                       if (filter.testnet !== testnet) return result;
                     }
@@ -147,6 +153,7 @@ export const ConfigType = new GraphQLObjectType({
                         coin: nativeTokenDetails.symbol,
                         decimals: nativeTokenDetails.decimals,
                         icon,
+                        rpcUrls,
                       },
                     ];
                   },

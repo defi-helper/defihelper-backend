@@ -71,6 +71,7 @@ export class TokenService {
           aliasId: token.alias,
           network: token.network,
           address: token.address,
+          debug: 'token-on-created',
         });
       }
     }
@@ -84,13 +85,7 @@ export class TokenService {
     if (cur.alias !== null) return null;
     if (cur.name === '') return null;
 
-    return container.model.queueService().push(
-      'tokenAlias',
-      { tokenId: cur.id },
-      {
-        collisionSign: `tokenAlias-${cur.id}`,
-      },
-    );
+    return container.model.queueService().push('tokenAlias', { tokenId: cur.id });
   });
 
   constructor(

@@ -3,6 +3,7 @@ import { Factory } from '@services/Container';
 import { LogService } from '@models/Log/Service';
 import { Log } from '@services/Log';
 import dayjs from 'dayjs';
+import * as amqp from 'amqplib';
 import { Rabbit } from 'rabbit-queue';
 import { Task, TaskStatus, Table, Process } from './Entity';
 import * as Handlers from '../../queue';
@@ -13,7 +14,6 @@ export interface PushOptions {
   startAt?: Date;
   scanner?: boolean;
   priority?: number;
-  collisionSign?: string;
   topic?: string;
 }
 
@@ -33,8 +33,21 @@ export class QueueService {
     readonly logger: Factory<Log>,
   ) {}
 
+  async resetAndRestart(task: Task) {
+    const updated = {
+      ...task,
+      status: TaskStatus.Pending,
+      startAt: new Date(),
+      error: '',
+      updatedAt: new Date(),
+    };
+    await this.queueTable().update(updated).where('id', updated.id);
+
+    return updated;
+  }
+
   async push<H extends Handler>(handler: H, params: Object = {}, options: PushOptions = {}) {
-    let task: Task = {
+    const task: Task = {
       id: uuid(),
       handler,
       params,
@@ -42,29 +55,13 @@ export class QueueService {
       status: TaskStatus.Pending,
       info: '',
       error: '',
-      collisionSign: options.collisionSign ?? null,
       priority: options.priority ?? QueueService.defaultPriority,
       topic: options.topic ?? QueueService.defaultTopic,
       scanner: options.scanner ?? false,
+      executionTime: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-
-    if (typeof options.collisionSign === 'string') {
-      const duplicate = await this.queueTable()
-        .where({
-          collisionSign: options.collisionSign,
-        })
-        .whereIn('status', [TaskStatus.Pending, TaskStatus.Process])
-        .first();
-      if (duplicate) {
-        task = {
-          ...task,
-          status: TaskStatus.Collision,
-          error: `Duplicate for ${duplicate.id}`,
-        };
-      }
-    }
 
     if (!dayjs(task.startAt).isAfter(new Date())) {
       await this.queueTable().insert({
@@ -127,8 +124,11 @@ export class QueueService {
   async handle(task: Task) {
     const process = new Process(task);
     try {
+      const executionStart = Date.now();
       const { task: result } = await Handlers[task.handler].default(process);
-      return await this.queueTable().update(result).where('id', task.id);
+      return await this.queueTable()
+        .update({ ...result, executionTime: Date.now() - executionStart })
+        .where('id', task.id);
     } catch (e) {
       const error = e instanceof Error ? e : new Error(`${e}`);
 
@@ -143,18 +143,30 @@ export class QueueService {
     }
   }
 
-  async consumer(msg: any, ack: (error?: any, reply?: any) => any) {
-    const task: Task = JSON.parse(msg.content.toString());
-    this.logger().info(`Handle task: ${task.id}`);
-    await this.handle(task);
-    ack();
-  }
-
   consume({ queue }: ConsumerOptions) {
-    this.rabbitmq().createQueue(
+    let isConsume = false;
+    let isStoped = false;
+    const rabbit = this.rabbitmq();
+    rabbit.createQueue(
       queue ?? 'tasks_default',
-      { durable: false },
-      this.consumer.bind(this),
+      { durable: false, maxPriority: 9, priority: 9 } as amqp.Options.AssertQueue,
+      async (msg, ack) => {
+        if (isStoped) return;
+        isConsume = true;
+        const task: Task = JSON.parse(msg.content.toString());
+        this.logger().info(`Handle task: ${task.id}`);
+        await this.handle(task);
+        ack();
+        if (isStoped) setTimeout(() => rabbit.close(), 500); // for ack work
+        isConsume = false;
+      },
     );
+
+    return {
+      stop: () => {
+        isStoped = true;
+        if (!isConsume) rabbit.close();
+      },
+    };
   }
 }

@@ -1,74 +1,127 @@
-import { Process, TaskStatus } from '@models/Queue/Entity';
+import { Process } from '@models/Queue/Entity';
 import container from '@container';
-import { ContactBroker, ContactStatus } from '@models/Notification/Entity';
 import { DataLoaderContainer } from '@api/dataLoader/container';
 import BN from 'bignumber.js';
 import { TokenAliasLiquidity } from '@models/Token/Entity';
-import dayjs from 'dayjs';
+import { ContactBroker, ContactStatus } from '@models/Notification/Entity';
 
 interface Params {
-  userId: string;
-  wait: string[];
+  notificationId: string;
 }
 
 export default async (process: Process) => {
-  const { userId, wait } = process.task.params as Params;
+  const { notificationId } = process.task.params as Params;
 
-  const user = await container.model.userTable().where({ id: userId }).first();
+  const notificationSetting = await container.model
+    .userNotificationTable()
+    .where({ id: notificationId })
+    .first();
+  if (!notificationSetting || !notificationSetting.contact) {
+    throw new Error('NotificationSetting not found');
+  }
+
+  const dataLoader = new DataLoaderContainer({});
+  const contact = await container.model
+    .userContactTable()
+    .where({
+      id: notificationSetting.contact,
+      status: ContactStatus.Active,
+    })
+    .first();
+
+  if (!contact) {
+    throw new Error('Contact not found');
+  }
+
+  const user = await container.model
+    .userTable()
+    .where({
+      id: contact.user,
+    })
+    .first();
+
   if (!user) {
     throw new Error('User not found');
   }
 
-  const completedTasksCount = await container.model
-    .queueTable()
-    .count()
-    .whereIn('id', wait)
-    .andWhere('status', TaskStatus.Done)
-    .first()
-    .then((row) => Number(row?.count ?? '0'));
-  if (completedTasksCount < wait.length) {
-    return process.later(dayjs().add(5, 'minutes').toDate());
-  }
+  const chatId = contact.params?.chatId;
+  if (!chatId) return process.error(new Error('Chat id not found'));
 
-  const dataLoader = new DataLoaderContainer({});
-  const contacts = await container.model.userContactTable().where({
-    user: user.id,
-    broker: ContactBroker.Telegram,
-    status: ContactStatus.Active,
-  });
+  const [
+    {
+      stakingUSD: totalStackedUSD,
+      earnedUSD: totalEarnedUSD,
+      earnedUSDDayBefore,
+      stakingUSDDayBefore,
+    },
+    { usd: totalTokensUSD },
+  ] = await Promise.all([
+    dataLoader.userMetric().load(contact.user),
+    dataLoader
+      .userTokenMetric({
+        contract: null,
+        tokenAlias: { liquidity: [TokenAliasLiquidity.Stable, TokenAliasLiquidity.Unstable] },
+      })
+      .load(contact.user),
+  ]);
 
-  await Promise.all(
-    contacts.map(async (contact) => {
-      const chatId = contact.params?.chatId;
-      if (!chatId) return null;
+  if (!totalStackedUSD) return process.done().info('no totalStackedUSD');
+  const totalEarnedUSDFixedFloating = new BN(totalEarnedUSD).toFixed(2);
+  const totalNetWorth = new BN(totalStackedUSD)
+    .plus(totalEarnedUSD)
+    .plus(totalTokensUSD)
+    .toFixed(2);
 
-      const [totalStackedUSD, totalEarnedUSD, totalTokensUSD] = await Promise.all([
-        dataLoader.userMetric({ metric: 'stakingUSD' }).load(user.id),
-        dataLoader.userMetric({ metric: 'earnedUSD' }).load(user.id),
-        dataLoader
-          .userTokenMetric({
-            contract: null,
-            tokenAlias: { liquidity: [TokenAliasLiquidity.Stable, TokenAliasLiquidity.Unstable] },
-          })
-          .load(user.id),
-      ]);
+  const totalEarnedChange =
+    Number(earnedUSDDayBefore) !== 0
+      ? new BN(totalEarnedUSD).div(earnedUSDDayBefore).toString(10)
+      : '0';
 
-      if (!totalStackedUSD) return null;
+  const totalNetWorthChange =
+    Number(stakingUSDDayBefore) !== 0
+      ? new BN(totalStackedUSD).div(stakingUSDDayBefore).toString(10)
+      : '0';
 
-      return container.model.queueService().push('sendTelegram', {
-        chatId,
-        locale: user.locale,
+  switch (contact.broker) {
+    case ContactBroker.Telegram:
+      await container.model.queueService().push('sendTelegramByContact', {
+        contactId: contact.id,
         params: {
-          totalNetWorth: new BN(totalStackedUSD)
-            .plus(totalEarnedUSD)
-            .plus(totalTokensUSD)
-            .toFixed(2),
-          totalEarnedUSD: new BN(totalEarnedUSD).toFixed(2),
+          name: user.name === '' ? 'My Portfolio' : user.name,
+          totalNetWorth,
+          totalEarnedUSD: totalEarnedUSDFixedFloating,
+          percentageEarned: `${new BN(totalEarnedChange).isPositive() ? '+' : ''}${new BN(
+            totalEarnedChange,
+          ).toFixed(2)}`,
+          percentageTracked: `${new BN(totalNetWorthChange).isPositive() ? '+' : ''}${new BN(
+            totalNetWorthChange,
+          ).toFixed(2)}`,
         },
         template: 'portfolioMetrics',
       });
-    }),
-  );
+      break;
+    case ContactBroker.Email:
+      await container.email().send(
+        'portfolioMetrics',
+        {
+          ...container.template.i18n(container.i18n.byLocale(user.locale)),
+          name: user.name === '' ? 'My Portfolio' : user.name,
+          totalNetWorth,
+          totalEarnedUSD: totalEarnedUSDFixedFloating,
+          percentageEarned: `${new BN(totalEarnedChange).isPositive() ? '+' : ''} ${new BN(
+            totalEarnedChange,
+          ).toFixed(2)}`,
+          percentageTracked: `${new BN(totalNetWorthChange).isPositive() ? '+' : ''} ${new BN(
+            totalNetWorthChange,
+          ).toFixed(2)}`,
+        },
+        'Portfolio statistics',
+        contact.address,
+      );
+      break;
+    default:
+      throw new Error('Unknown broker');
+  }
 
   return process.done();
 };

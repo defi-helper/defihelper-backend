@@ -29,6 +29,7 @@ export interface WalletBlockchain {
   network: string;
   address: string;
   publicKey: string;
+  confirmed: boolean;
 }
 
 export enum WalletExchangeType {
@@ -42,6 +43,11 @@ export enum WalletExchangeType {
   Coinex = 'coinex',
   Poloniex = 'poloniex',
   Ftx = 'ftx',
+  BinanceUS = 'binanceus',
+  Bybit = 'bybit',
+  Lbank = 'lbank',
+  FtxUS = 'ftxus',
+  GateIO = 'gateio',
 }
 
 export interface WalletExchange {

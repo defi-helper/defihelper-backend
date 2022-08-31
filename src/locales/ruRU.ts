@@ -15,6 +15,8 @@ export default {
     'Confirm': 'Подтвердить',
     'Any questions? Drop us a reply!': 'Остались вопросы? Отправьте их в ответ на это письмо!',
     'DeFiHelper team': 'Команда DeFiHelper',
+    'Your Telegram account ({{username}}) has been successfully connected to your DeFiHelper account.':
+      'Ваш Telegram аккаунт ({{username}}) успешно привязан к вашему DefiHelper аккаунту.',
     'We are excited to see you join the DeFiHelper community!':
       'Мы рады видеть тебя в рядах сообщества DeFiHelper!',
     'Please confirm your E-Mail address <b>{{email}}</b> by clicking on the following link:':
@@ -27,8 +29,8 @@ export default {
       'Внимание, ваша автоматизация на кошельке {{visualizedWalletAddress}} скоро будет приостановлена ввиду нехватки средств',
     "DeFiHelper's public beta now available. Get your APY boost right now on https://app.defihelper.io!":
       'Стартовало публичное тестирование DeFiHelper. Посмотрите сейчас на https://app.defihelper.io!',
-    'Tracked Balance ${{totalNetWorth}}, Total unclaimed ${{totalEarnedUSD}}':
-      'Отслеживаемый баланс: {{totalNetWorth}}$, можно забрать: {{totalEarnedUSD}}$',
+    '[{{name}}]: Tracked Balance ${{totalNetWorth}} ({{percentageTracked}}%), Total unclaimed ${{totalEarnedUSD}} ({{percentageEarned}}%)':
+      '[{{name}}]: баланс {{totalNetWorth}}$ ({{percentageTracked}}%), доступно наград: {{percentageEarned}}$ ({{percentageEarned}}%)',
     'automate:trigger:contractEvent:name': 'Событие контракта',
     'automate:trigger:contractEvent:description': 'Вызов триггера в ответ на событие в контракте',
     'automate:trigger:everyMonth:name': 'Периодически',

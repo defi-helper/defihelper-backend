@@ -13,6 +13,10 @@ export const Templates = {
     `${__dirname}/welcomeNewWalletConnect.mustache`,
     'utf8',
   ),
+  automationsMigrableContracts: fs.promises.readFile(
+    `${__dirname}/AutomationsMigrableContracts.mustache`,
+    'utf8',
+  ),
   automateNotEnoughFunds: fs.promises.readFile(
     `${__dirname}/AutomateNotEnoughFunds.mustache`,
     'utf8',

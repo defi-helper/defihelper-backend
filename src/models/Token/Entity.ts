@@ -26,7 +26,7 @@ export const tokenAliasTableFactory = tableFactoryLegacy<TokenAlias>(tokenAliasT
 export type TokenAliasTable = ReturnType<ReturnType<typeof tokenAliasTableFactory>>;
 
 export enum TokenCreatedBy {
-  Manualy = 'manualy',
+  Manually = 'manually',
   Scanner = 'scanner',
   Adapter = 'adapter',
 }

@@ -13,7 +13,6 @@ import {
   Contract,
   ContractTable,
   WalletContractLinkTable,
-  WalletContractLink,
   ProtocolLinkMap,
   ProtocolUserFavoriteTable,
   MetadataTable,
@@ -30,6 +29,8 @@ import {
   UserContractLinkTable,
   UserContractLink,
   UserContractLinkType,
+  ContractMigratableRemindersBulkTable,
+  ContractMigratableRemindersBulk,
 } from './Entity';
 
 export class ProtocolService {
@@ -116,56 +117,116 @@ interface ContractRegisterData {
 }
 
 export class ContractService {
-  public readonly onContractDebankCreated = new Emitter<{
-    contract: Contract;
-    contractDebank: ContractDebankType;
-  }>();
+  public readonly onContractDebankCreated = new Emitter<
+    Readonly<{
+      contract: Contract;
+      contractDebank: ContractDebankType;
+    }>
+  >();
 
-  public readonly onContractBlockchainCreated = new Emitter<ContractRegisterData>((contract) => {
-    container.model.queueService().push('eventsContractBlockchainCreated', {
-      contract: contract.contract.id,
-      events: contract.eventsToSubscribe,
+  public readonly onContractBlockchainCreated = new Emitter<Readonly<ContractRegisterData>>(
+    (contract) => {
+      container.model.queueService().push('eventsContractBlockchainCreated', {
+        contract: contract.contract.id,
+        events: contract.eventsToSubscribe,
+      });
+    },
+  );
+
+  public readonly onContractBlockchainUpdated = new Emitter<
+    Readonly<ContractBlockchainType & Contract>
+  >((contract) => {
+    container.model.queueService().push('eventsContractBlockchainUpdated', {
+      contract: contract.id,
     });
   });
 
   public readonly onWalletLink = new Emitter<{
-    contract: Contract & ContractBlockchainType;
+    contract: Contract;
     wallet: WalletBlockchain;
-    link: WalletContractLink;
-  }>(({ contract, wallet, link }) => {
-    if (
-      contract.blockchain !== 'ethereum' ||
-      !container.blockchain.ethereum.isNetwork(wallet.network) ||
-      contract.deployBlockNumber === null ||
-      contract.deployBlockNumber === '0'
-    ) {
-      return null;
-    }
-    const { hasProvider, hasProviderHistorical } = container.blockchain.ethereum.byNetwork(
-      wallet.network,
-    );
-    if (hasProvider) {
-      container.model
-        .queueService()
-        .push('metricsWalletCurrent', { contract: link.contract, wallet: link.wallet });
-    }
-    if (hasProviderHistorical) {
-      container.model
-        .queueService()
-        .push('metricsWalletHistory', { contract: link.contract, wallet: link.wallet });
-    }
-    return null;
+  }>(({ contract, wallet }) => {
+    container.model
+      .queueService()
+      .push('eventsWalletContractLinked', { contractId: contract.id, walletId: wallet.id });
   });
 
   constructor(
     readonly database: Knex,
     readonly contractTable: Factory<ContractTable>,
+    readonly contractMigratableRemindersBulkTable: Factory<ContractMigratableRemindersBulkTable>,
     readonly contractBlockchainTable: Factory<ContractBlockchainTable>,
     readonly contractDebankTable: Factory<ContractDebankTable>,
     readonly walletLinkTable: Factory<WalletContractLinkTable>,
     readonly tokenLinkTable: Factory<TokenContractLinkTable>,
     readonly userLinkTable: Factory<UserContractLinkTable>,
   ) {}
+
+  async scheduleMigrationReminder(
+    contract: Contract,
+    wallet: WalletBlockchain,
+  ): Promise<ContractMigratableRemindersBulk> {
+    const existing = await this.contractMigratableRemindersBulkTable()
+      .where({
+        contract: contract.id,
+        wallet: wallet.id,
+      })
+      .first();
+
+    if (existing) {
+      if (existing.processed === true) {
+        const updatedInstance = {
+          ...existing,
+          processed: false,
+          updatedAt: new Date(),
+        };
+        await this.contractMigratableRemindersBulkTable()
+          .where('id', existing.id)
+          .update(updatedInstance);
+
+        return updatedInstance;
+      }
+
+      return existing;
+    }
+
+    const created: ContractMigratableRemindersBulk = {
+      id: uuid(),
+      wallet: wallet.id,
+      contract: contract.id,
+      processed: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    await this.contractMigratableRemindersBulkTable().insert(created);
+
+    return created;
+  }
+
+  async doneMigrationReminder(contract: Contract, wallet: WalletBlockchain): Promise<void> {
+    const existing = await this.contractMigratableRemindersBulkTable()
+      .where({
+        contract: contract.id,
+        wallet: wallet.id,
+      })
+      .first();
+
+    if (!existing) {
+      throw new Error(`No reminders found`);
+    }
+
+    if (existing.processed === true) {
+      return;
+    }
+
+    const updatedInstance = {
+      ...existing,
+      processed: true,
+      updatedAt: new Date(),
+    };
+    await this.contractMigratableRemindersBulkTable()
+      .where('id', existing.id)
+      .update(updatedInstance);
+  }
 
   async createDebank(
     { id: protocol }: Protocol,
@@ -243,10 +304,11 @@ export class ContractService {
       automate: {
         adapters: automate.adapters,
         autorestakeAdapter: automate.autorestakeAdapter,
-        buyLiquidity: automate.buyLiquidity,
+        lpTokensManager: automate.lpTokensManager,
       },
       blockchain,
       deployBlockNumber,
+      watcherId: null,
       metric,
       network,
     };
@@ -295,11 +357,14 @@ export class ContractService {
         network: updatedBlockchain.network,
         address: updatedBlockchain.address,
         deployBlockNumber: updatedBlockchain.deployBlockNumber,
+        watcherId: updatedBlockchain.watcherId,
         adapter: updatedBlockchain.adapter,
         automate: updatedBlockchain.automate,
         metric: updatedBlockchain.metric,
       });
     });
+
+    this.onContractBlockchainUpdated.emit(contractBlockchain);
 
     return updatedBlockchain;
   }
@@ -334,36 +399,31 @@ export class ContractService {
     await this.contractTable().where({ id: contract.id }).delete();
   }
 
-  async walletLink(
-    contract: Contract & ContractBlockchainType,
-    blockchainWallet: WalletBlockchain,
-  ) {
-    const duplicate = await this.walletLinkTable()
-      .where('contract', contract.id)
-      .andWhere('wallet', blockchainWallet.id)
-      .first();
-    if (duplicate) return duplicate;
-
+  async walletLink(contract: Contract, blockchainWallet: WalletBlockchain) {
     const created = {
       id: uuid(),
       contract: contract.id,
       wallet: blockchainWallet.id,
       createdAt: new Date(),
     };
-    await this.walletLinkTable().insert(created);
-    this.onWalletLink.emit({ contract, wallet: blockchainWallet, link: created });
+    const insert = await this.walletLinkTable()
+      .insert([created], ['id'])
+      .onConflict(['contract', 'wallet'])
+      .ignore();
+    if (insert.length > 0) {
+      this.onWalletLink.emit({ contract, wallet: blockchainWallet });
+    }
 
     return created;
   }
 
   async walletUnlink(contract: Contract, wallet: WalletBlockchain) {
-    const duplicate = await this.walletLinkTable()
-      .where('contract', contract.id)
-      .andWhere('wallet', wallet.id)
-      .first();
-    if (!duplicate) return;
-
-    await this.walletLinkTable().where('id', duplicate.id).delete();
+    await this.walletLinkTable()
+      .where({
+        contract: contract.id,
+        wallet: wallet.id,
+      })
+      .delete();
   }
 
   async tokenLink(

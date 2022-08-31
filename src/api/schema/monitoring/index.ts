@@ -19,6 +19,7 @@ import {
 } from '@models/Automate/Entity';
 import { billTableName } from '@models/Billing/Entity';
 import { AuthenticationError } from 'apollo-server-express';
+import { walletTableName } from '@models/Wallet/Entity';
 import { DateTimeType, onlyAllowed } from '../types';
 
 export const MonitoringStatisticsPointType = new GraphQLObjectType({
@@ -55,6 +56,32 @@ export const MonitoringUsersRegisteringHistoryQuery: GraphQLFieldConfig<any, Req
       .userTable()
       .column(database.raw('count(distinct id) as number'))
       .column(database.raw(`date_trunc('day', "${userTableName}"."createdAt") "date"`))
+      .orderBy('date')
+      .groupBy('date');
+
+    return rows.reduce<{ date: Date; number: number }[]>(
+      (prev, cur) => [
+        ...prev,
+        {
+          ...cur,
+          number: new BigNumber(cur.number).plus(prev.pop()?.number ?? 0).toNumber(),
+        },
+      ],
+      [],
+    );
+  }),
+};
+
+export const MonitoringWalletRegisteringHistoryQuery: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLList(GraphQLNonNull(MonitoringStatisticsPointType))),
+  resolve: onlyAllowed('monitoring.view', async (root, _, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const database = container.database();
+    const rows: { date: Date; number: number }[] = await container.model
+      .walletTable()
+      .column(database.raw('count(distinct id) as number'))
+      .column(database.raw(`date_trunc('day', "${walletTableName}"."createdAt") "date"`))
       .orderBy('date')
       .groupBy('date');
 

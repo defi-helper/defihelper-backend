@@ -2,6 +2,7 @@ import container from '@container';
 import { Blockchain } from '@models/types';
 import axios from 'axios';
 import BN from 'bignumber.js';
+import dayjs, { Dayjs } from 'dayjs';
 
 function range(start: number, end: number) {
   return Array.from(new Array(end).keys()).slice(start);
@@ -97,6 +98,50 @@ export async function everyDayRestake(
     },
     [{ t: 0, v: balance }],
   );
+}
+
+export async function optimalRestakeNearesDate(
+  blockchain: Blockchain,
+  network: string,
+  balance: number,
+  earned: number,
+  apy: number,
+  seq: number = 365,
+): Promise<Dayjs | null> {
+  if (!balance) {
+    return null;
+  }
+
+  const apd = apy / 365;
+  let fee = 3;
+  if (blockchain === 'ethereum') {
+    fee = await ethereumFeeCalc(network);
+  }
+
+  const { data: optimalRes } = await axios.get(
+    `${container.parent.restakeOptimal.host}/optimal-seq`,
+    {
+      params: {
+        balance,
+        earned,
+        apd,
+        fee,
+        seq,
+        limit: 1,
+        minInterval: 3600,
+      },
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    },
+  );
+
+  const [targetPoint] = optimalRes;
+  if (!targetPoint) {
+    return null;
+  }
+
+  return dayjs().add(new BN(targetPoint).multipliedBy(86400).toNumber(), 'seconds');
 }
 
 export async function optimalRestake(

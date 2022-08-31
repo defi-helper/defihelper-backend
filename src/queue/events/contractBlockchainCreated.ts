@@ -20,16 +20,12 @@ export default async (process: Process) => {
     .where(`${contractTableName}.id`, contractId)
     .first();
   if (!contract) throw new Error('Contract not found');
-
   if (contract.blockchain !== 'ethereum') return process.done();
+
   if (contract.deployBlockNumber === null) {
-    await container.model.queueService().push(
-      'contractResolveDeployBlockNumber',
-      { contract: contract.id },
-      {
-        collisionSign: `contractResolveDeployBlockNumber:${contract.id}`,
-      },
-    );
+    await container.model
+      .queueService()
+      .push('contractResolveDeployBlockNumber', { contract: contract.id });
     return process.later(dayjs().add(5, 'minutes').toDate());
   }
 
@@ -46,13 +42,6 @@ export default async (process: Process) => {
     }
     if (hasProviderHistorical) {
       container.model.queueService().push('metricsContractHistory', { contract: contract.id });
-      container.model
-        .queueService()
-        .push(
-          'metricsContractScannerHistory',
-          { contract: contract.id },
-          { startAt: dayjs().add(10, 'minutes').toDate() },
-        );
     }
   }
 

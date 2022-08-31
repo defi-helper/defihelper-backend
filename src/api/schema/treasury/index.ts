@@ -14,6 +14,9 @@ export const TreasuryType = new GraphQLObjectType({
     portfoliosCount: {
       type: GraphQLNonNull(GraphQLInt),
     },
+    walletsCount: {
+      type: GraphQLNonNull(GraphQLInt),
+    },
     protocolsCount: {
       type: GraphQLNonNull(GraphQLInt),
     },
@@ -30,17 +33,22 @@ export const TreasuryQuery: GraphQLFieldConfig<any, Request> = {
   type: GraphQLNonNull(TreasuryType),
   resolve: () => {
     return new Promise((resolve) => {
+      const def = {
+        protocolsCount: '0',
+        contractsCount: '0',
+        portfoliosCount: '0',
+        walletsCount: '0',
+        trackedUSD: '0',
+      };
       container.cache().get('defihelper:treasury:stats', (err, reply) => {
         if (err || reply === null) {
-          return resolve({
-            protocolsCount: '0',
-            contractsCount: '0',
-            portfoliosCount: '0',
-            trackedUSD: '0',
-          });
+          return resolve(def);
         }
 
-        return resolve(JSON.parse(reply as string));
+        return resolve({
+          ...def,
+          ...JSON.parse(reply as string),
+        });
       });
     });
   },

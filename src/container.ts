@@ -1,8 +1,7 @@
 import { Container, singleton, singletonParametric } from '@services/Container';
 import { SocialStatsGateway } from '@services/SocialStats';
-import { TreasuryService } from '@services/Treasury';
 import { pgConnectFactory } from '@services/Database';
-import { consoleFactory } from '@services/Log';
+import { ConsoleLogger } from '@services/Log';
 import * as Blockchain from '@services/Blockchain';
 import { I18nContainer } from '@services/I18n/container';
 import { ModelContainer } from '@models/container';
@@ -11,15 +10,18 @@ import { ACLContainer } from '@services/ACL/container';
 import { TemplateContainer } from '@services/Template/container';
 import { emailServiceFactory } from '@services/Email';
 import { telegramServiceFactory } from '@services/Telegram';
-import { scannerServiceFactory } from '@services/Scanner';
+import { ScannerService } from '@services/Scanner';
 import { rabbitmqFactory } from '@services/Rabbitmq';
 import { cryptographyServiceFactory } from '@services/Cryptography';
 import { cexServicesProviderFactory } from '@services/Cex';
 import { debankServiceFactory } from '@services/Debank';
+import { wavesNodeGatewayFactory } from '@services/WavesNodeGateway';
+import { WhatToFarmGateway } from '@services/WhatToFarm';
+import { amplitudeFactory } from '@services/Amplitude';
 import config from './config';
 
 class AppContainer extends Container<typeof config> {
-  readonly logger = singleton(consoleFactory());
+  readonly logger = singleton(() => new ConsoleLogger(this.parent.mode));
 
   readonly database = singleton(pgConnectFactory(this.parent.database));
 
@@ -37,13 +39,21 @@ class AppContainer extends Container<typeof config> {
 
   readonly cexServicesProvider = singleton(cexServicesProviderFactory());
 
-  readonly scanner = singleton(scannerServiceFactory(this.parent.scanner));
+  readonly scanner = singleton(ScannerService.factory(this.parent.scanner));
 
   readonly cryptography = singleton(cryptographyServiceFactory(this.parent.cryptography.key));
 
   readonly debank = singleton(debankServiceFactory());
 
+  readonly waves = singleton(
+    wavesNodeGatewayFactory(this.semafor, this.cache, this.debank, this.logger),
+  );
+
+  readonly whattofarm = singleton(() => new WhatToFarmGateway());
+
   readonly socialStats = singleton(() => new SocialStatsGateway(this.parent.socialStats));
+
+  readonly amplitude = singleton(amplitudeFactory(this.parent.amplitudeApiKey));
 
   readonly blockchain = {
     ethereum: new Blockchain.Ethereum.BlockchainContainer(this.parent.blockchain.ethereum),
@@ -57,8 +67,6 @@ class AppContainer extends Container<typeof config> {
   readonly acl = new ACLContainer(this);
 
   readonly template = new TemplateContainer(this);
-
-  readonly treasury = singleton(() => new TreasuryService(this.cache, 'defihelper:treasury', 60));
 
   readonly model = new ModelContainer(this);
 }

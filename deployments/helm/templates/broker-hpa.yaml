@@ -10,7 +10,7 @@ metadata:
     release: {{ $.Release.Name }}
   name: '{{ $.Release.Name }}-broker-{{ $params.name }}-hpa'
 spec:
-  maxReplicas: {{ $.Values.broker.maxReplicas }}
+  maxReplicas: {{ $params.maxReplicas }}
   metrics:
   - type: Object
     object:
@@ -22,14 +22,25 @@ spec:
         name: prometheus-rabbitmq-exporter
       target:
         type: Value
-        value: {{ $.Values.broker.maxReadyMessagesForHpa }}
+        value: {{ $params.maxReadyMessagesForHpa }}
   minReplicas: 1
   behavior:
-    scaleDown:
+    scaleUp:
+      stabilizationWindowSeconds: 0
       policies:
-      - type: Pods
-        value: 1
-        periodSeconds: 1800
+        - type: Percent
+          value: 25
+          periodSeconds: 60
+        - type: Pods
+          value: 2
+          periodSeconds: 60
+      selectPolicy: Max
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Percent
+          value: 25
+          periodSeconds: 60
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment

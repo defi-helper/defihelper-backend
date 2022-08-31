@@ -9,11 +9,12 @@ import {
   protocolUserLastAPRLoader,
   protocolUserLastMetricLoader,
 } from './protocol';
-import { tokenAliasLoader } from './token';
+import { tokenAliasLoader, tokenAliasUserLastMetricLoader } from './token';
 import {
   userBlockchainLoader,
   userLastAPRLoader,
   userLastMetricLoader,
+  userLoader,
   userTokenLastMetricLoader,
   walletLastMetricLoader,
   walletLoader,
@@ -38,9 +39,11 @@ export class DataLoaderContainer extends Container<{}> {
 
   readonly contractUserMetric = singletonParametric(contractUserLastMetricLoader);
 
+  readonly user = singleton(userLoader);
+
   readonly userBlockchains = singleton(userBlockchainLoader);
 
-  readonly userMetric = singletonParametric(userLastMetricLoader);
+  readonly userMetric = singleton(userLastMetricLoader);
 
   readonly userAPRMetric = singletonParametric(userLastAPRLoader);
 
@@ -55,4 +58,6 @@ export class DataLoaderContainer extends Container<{}> {
   readonly walletTriggersCount = singleton(walletTriggersCountLoader);
 
   readonly tokenAlias = singleton(tokenAliasLoader);
+
+  readonly tokenAliasUserLastMetric = singletonParametric(tokenAliasUserLastMetricLoader);
 }
