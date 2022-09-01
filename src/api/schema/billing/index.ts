@@ -189,6 +189,9 @@ export const BalanceType = new GraphQLObjectType({
     netBalance: {
       type: GraphQLNonNull(GraphQLFloat),
     },
+    netBalanceUSD: {
+      type: GraphQLNonNull(GraphQLFloat),
+    },
   },
 });
 
@@ -345,6 +348,7 @@ export const WalletBillingType = new GraphQLObjectType<Wallet & WalletBlockchain
             balance,
             claim,
             netBalance: balance - claim,
+            netBalanceUSD: 0,
             lowFeeFunds: false,
           };
         }
@@ -357,6 +361,7 @@ export const WalletBillingType = new GraphQLObjectType<Wallet & WalletBlockchain
           balance,
           claim,
           netBalance: balance - claim,
+          netBalanceUSD: (balance - claim) * chainNativeUSD,
           lowFeeFunds: balance * chainNativeUSD - (1 + chainNativeUSD * 0.1) <= 0,
         };
       },
