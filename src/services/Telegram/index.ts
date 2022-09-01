@@ -145,7 +145,7 @@ export class TelegramService implements ITelegramService {
   ): Promise<void> {
     const message = Mustache.render(await Templates[template], {
       data,
-      ...container.template.i18n(container.i18n.byLocale(locale)),
+      ...this.template.i18n(this.i18n.byLocale(locale)),
     });
 
     await this.bot.telegram.sendMessage(chatId, message, {
