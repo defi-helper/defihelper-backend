@@ -50,7 +50,7 @@ export default async (process: Process) => {
       network,
       status: BillStatus.Pending,
     })
-    .limit(10);
+    .limit(1);
   if (bills.length === 0) {
     return process.later(later);
   }

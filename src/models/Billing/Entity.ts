@@ -1,6 +1,12 @@
 import { tableFactoryLegacy } from '@services/Database';
 import { Blockchain } from '@models/types';
 
+export enum TransferStatus {
+  Pending = 'pending',
+  Confirmed = 'confirmed',
+  Rejected = 'rejected',
+}
+
 export interface Transfer {
   id: string;
   blockchain: Blockchain;
@@ -9,7 +15,8 @@ export interface Transfer {
   amount: number;
   tx: string;
   bill: string | null;
-  confirmed: boolean;
+  status: TransferStatus;
+  rejectReason: string;
   createdAt: Date;
   updatedAt: Date;
 }
