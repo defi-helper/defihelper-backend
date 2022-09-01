@@ -47,7 +47,7 @@ class AppContainer extends Container<typeof config> {
     wavesNodeGatewayFactory(this.semafor, this.cache, this.debank, this.logger),
   );
 
-  readonly whattofarm = singleton(() => new WhatToFarmGateway(this.parent.whatToFarm));
+  readonly whattofarm = singleton(() => new WhatToFarmGateway(this.parent.whattofarm));
 
   readonly socialStats = singleton(() => new SocialStatsGateway(this.parent.socialStats));
 

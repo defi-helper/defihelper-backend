@@ -34,11 +34,6 @@ export default {
   socialStats: {
     host: process.env.SOCIAL_STATS_HOST ?? 'https://stats.defihelper.io',
   },
-  whatToFarm: {
-    email: process.env.WHATTOFARM_EMAIL ?? '',
-    password: process.env.WHATTOFARM_PASSWORD ?? '',
-    username: process.env.WHATTOFARM_USERNAME ?? '',
-  },
   database: {
     host: process.env.DATABASE_HOST ?? 'localhost',
     port: int(process.env.DATABASE_PORT ?? '5432'),
