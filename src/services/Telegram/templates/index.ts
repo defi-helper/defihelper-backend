@@ -10,7 +10,7 @@ export const Templates = {
   publicBetaStarted: fs.promises.readFile(`${__dirname}/PublicBetaStarted.mustache`, 'utf8'),
   walletConnectWelcome: fs.promises.readFile(`${__dirname}/WalletConnectWelcome.mustache`, 'utf8'),
   welcomeNewWalletConnect: fs.promises.readFile(
-    `${__dirname}/welcomeNewWalletConnect.mustache`,
+    `${__dirname}/WelcomeNewWalletConnect.mustache`,
     'utf8',
   ),
   automationsMigrableContracts: fs.promises.readFile(
