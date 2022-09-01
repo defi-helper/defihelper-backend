@@ -7,6 +7,7 @@ import { isKey } from '@services/types';
 import { ethers } from 'ethers';
 import { abi as balanceAbi } from '@defihelper/networks/abi/Balance.json';
 import contracts from '@defihelper/networks/contracts.json';
+import { TransferStatus } from '@models/Billing/Entity';
 
 const ethFeeDecimals = new BN(10).pow(18);
 
@@ -31,7 +32,7 @@ async function registerTransfer(
       const { timestamp } = await getBlock();
       const duplicate = duplicates.find(({ tx }) => transactionHash === tx);
       if (duplicate) {
-        if (duplicate.confirmed) return null;
+        if (duplicate.status !== TransferStatus.Pending) return null;
 
         return billingService.transferConfirm(
           duplicate,
