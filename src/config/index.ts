@@ -2,7 +2,7 @@ import { Config as EthereumConfig } from '@services/Blockchain/Ethereum';
 import { Config as WavesConfig } from '@services/Blockchain/Waves';
 import dotenv from 'dotenv';
 
-dotenv.config();
+dotenv.config({ path: './configuration/.env' });
 
 function int(value: string): number {
   return parseInt(value, 10);
