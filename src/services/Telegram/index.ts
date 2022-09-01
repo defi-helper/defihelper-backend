@@ -3,7 +3,7 @@ import container from '@container';
 import { Factory } from '@services/Container';
 import { ContactBroker, ContactStatus } from '@models/Notification/Entity';
 import { Telegraf } from 'telegraf';
-import { Locale } from '@services/I18n/container';
+import { I18nContainer, Locale } from '@services/I18n/container';
 import { utils } from 'ethers';
 import {
   walletBlockchainTableName,
@@ -11,6 +11,7 @@ import {
   walletTableName,
 } from '@models/Wallet/Entity';
 import { Role } from '@models/User/Entity';
+import { TemplateContainer } from '@services/Template/container';
 import { Templates } from './templates';
 
 export type TelegramTemplate = keyof typeof Templates;
@@ -32,7 +33,14 @@ class NullService implements ITelegramService {
 export class TelegramService implements ITelegramService {
   protected bot: Telegraf;
 
-  constructor(token: string) {
+  protected template: TemplateContainer;
+
+  protected i18n: I18nContainer;
+
+  constructor(token: string, template: TemplateContainer, i18n: I18nContainer) {
+    this.template = template;
+    this.i18n = i18n;
+
     this.bot = new Telegraf(token);
   }
 
@@ -98,7 +106,6 @@ export class TelegramService implements ITelegramService {
         );
 
       const username = ctx.message.from?.username || '';
-
       const existingContact = await container.model
         .userContactTable()
         .whereRaw(`params->>'chatId' = '${ctx.chat.id}'`)
@@ -125,7 +132,7 @@ export class TelegramService implements ITelegramService {
       });
 
       return ctx.reply(
-        "Great work! Everything's done, now can use the app at https://app.defihelper.io",
+        "Great work! Everything's done, now you can use the app at https://app.defihelper.io",
       );
     });
   }
@@ -147,6 +154,10 @@ export class TelegramService implements ITelegramService {
   }
 }
 
-export function telegramServiceFactory(token: string): Factory<ITelegramService> {
-  return () => (token ? new TelegramService(token) : new NullService());
+export function telegramServiceFactory(
+  token: string,
+  template: TemplateContainer,
+  i18n: I18nContainer,
+): Factory<ITelegramService> {
+  return () => (token ? new TelegramService(token, template, i18n) : new NullService());
 }
