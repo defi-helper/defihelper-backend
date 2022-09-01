@@ -10,5 +10,3 @@ const server = createServer(express);
 route({ express, server });
 const { port } = container.parent.api;
 server.listen(port, () => container.logger().info(`Listen ${port}`));
-
-container.telegram().startHandler();

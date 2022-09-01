@@ -73,14 +73,14 @@ export default async (process: Process) => {
     .toFixed(2);
 
   const totalEarnedChange =
-    Number(earnedUSDDayBefore) !== 0
-      ? new BN(totalEarnedUSD).div(earnedUSDDayBefore).toString(10)
-      : '0';
+    Number(earnedUSDDayBefore) !== 0 ? new BN(totalEarnedUSD).div(earnedUSDDayBefore) : new BN(0);
+  const totalEarnedChangePercentage = totalEarnedChange.minus(1).multipliedBy(100);
 
   const totalNetWorthChange =
     Number(stakingUSDDayBefore) !== 0
-      ? new BN(totalStackedUSD).div(stakingUSDDayBefore).toString(10)
-      : '0';
+      ? new BN(totalStackedUSD).div(stakingUSDDayBefore)
+      : new BN(0);
+  const totalNetWorthChangePercentage = totalNetWorthChange.minus(1).multipliedBy(100);
 
   switch (contact.broker) {
     case ContactBroker.Telegram:
@@ -90,12 +90,12 @@ export default async (process: Process) => {
           name: user.name === '' ? 'My Portfolio' : user.name,
           totalNetWorth,
           totalEarnedUSD: totalEarnedUSDFixedFloating,
-          percentageEarned: `${new BN(totalEarnedChange).isPositive() ? '+' : ''}${new BN(
-            totalEarnedChange,
-          ).toFixed(2)}`,
-          percentageTracked: `${new BN(totalNetWorthChange).isPositive() ? '+' : ''}${new BN(
-            totalNetWorthChange,
-          ).toFixed(2)}`,
+          percentageEarned: `${
+            totalEarnedChangePercentage.isPositive() ? '+' : ''
+          }${totalEarnedChangePercentage.toFixed(2)}`,
+          percentageTracked: `${
+            totalNetWorthChangePercentage.isPositive() ? '+' : ''
+          }${totalNetWorthChangePercentage.toFixed(2)}`,
         },
         template: 'portfolioMetrics',
       });
@@ -108,12 +108,12 @@ export default async (process: Process) => {
           name: user.name === '' ? 'My Portfolio' : user.name,
           totalNetWorth,
           totalEarnedUSD: totalEarnedUSDFixedFloating,
-          percentageEarned: `${new BN(totalEarnedChange).isPositive() ? '+' : ''} ${new BN(
-            totalEarnedChange,
-          ).toFixed(2)}`,
-          percentageTracked: `${new BN(totalNetWorthChange).isPositive() ? '+' : ''} ${new BN(
-            totalNetWorthChange,
-          ).toFixed(2)}`,
+          percentageEarned: `${
+            totalEarnedChangePercentage.isPositive() ? '+' : ''
+          } ${totalEarnedChangePercentage.toFixed(2)}`,
+          percentageTracked: `${
+            totalNetWorthChangePercentage.isPositive() ? '+' : ''
+          } ${totalNetWorthChangePercentage.toFixed(2)}`,
         },
         'Portfolio statistics',
         contact.address,
