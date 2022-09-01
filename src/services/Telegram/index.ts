@@ -27,16 +27,22 @@ class NullService implements ITelegramService {
 export class TelegramService implements ITelegramService {
   protected bot: Telegraf;
 
+  private isLaunched: boolean = false;
+
   constructor(
     token: string,
     protected readonly template: TemplateContainer,
     protected readonly i18n: I18nContainer,
   ) {
     this.bot = new Telegraf(token);
-    this.bot.launch();
   }
 
   getBot() {
+    if (!this.isLaunched) {
+      this.bot.launch();
+      this.isLaunched = true;
+    }
+
     return this.bot;
   }
 
