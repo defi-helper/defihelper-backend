@@ -21,13 +21,16 @@ import {
   GraphQLString,
   GraphQLList,
   GraphQLFieldConfigMap,
+  GraphQLFloat,
 } from 'graphql';
 import { apyBoost, optimalRestakeNearesDate } from '@services/RestakeStrategy';
 import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
 import { metricContractTableName } from '@models/Metric/Entity';
 import dayjs from 'dayjs';
 import {
+  BigNumberType,
   DateTimeType,
+  EthereumAddressType,
   onlyAllowed,
   PaginateList,
   PaginationArgument,
@@ -954,6 +957,27 @@ export const ActionDeleteMutation: GraphQLFieldConfig<any, Request> = {
   }),
 };
 
+export const ContractStopLossType = new GraphQLObjectType<Automate.ContractStopLoss, Request>({
+  name: 'AutomateContractStopLossType',
+  fields: {
+    path: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString))),
+    },
+    amountOut: {
+      type: GraphQLNonNull(BigNumberType),
+    },
+    amountOutMin: {
+      type: GraphQLNonNull(BigNumberType),
+    },
+    slippage: {
+      type: GraphQLNonNull(GraphQLFloat),
+      resolve: ({ stopLoss: { amountOut, amountOutMin } }) => {
+        return new BN(amountOut).minus(amountOutMin).div(amountOut).toString(10);
+      },
+    },
+  },
+});
+
 export const ContractVerificationStatusEnum = new GraphQLEnumType({
   name: 'AutomateContractVerificationStatusEnum',
   values: Object.values(Automate.ContractVerificationStatus).reduce(
@@ -1187,6 +1211,12 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
     archivedAt: {
       type: DateTimeType,
       description: 'Date at archived contract',
+    },
+    stopLoss: {
+      type: ContractStopLossType,
+      resolve: (contract, args, { dataLoader }) => {
+        return dataLoader.automateContractStopLoss().load(contract.id);
+      },
     },
   },
 });
@@ -1455,6 +1485,93 @@ export const ContractDeleteMutation: GraphQLFieldConfig<any, Request> = {
       ...contract,
       archivedAt: new Date(),
     });
+
+    return true;
+  }),
+};
+
+export const ContractStopLossEnable: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLBoolean),
+  args: {
+    input: {
+      type: GraphQLNonNull(
+        new GraphQLInputObjectType({
+          name: 'AutomateContractStopLossEnableInputType',
+          fields: {
+            contract: {
+              type: GraphQLNonNull(UuidType),
+              description: 'Automate contract',
+            },
+            path: {
+              type: GraphQLNonNull(GraphQLList(GraphQLNonNull(EthereumAddressType))),
+              description: 'Swap path',
+            },
+            amountOut: {
+              type: GraphQLNonNull(BigNumberType),
+              description: 'Target amount',
+            },
+            amountOutMin: {
+              type: GraphQLNonNull(BigNumberType),
+              description: 'Amount out min',
+            },
+          },
+        }),
+      ),
+    },
+  },
+  resolve: onlyAllowed('automateContract.create', async (root, { input }, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const contract = await container.model
+      .automateContractTable()
+      .where('id', input.contract)
+      .first();
+    if (!contract) {
+      throw new UserInputError('Contract not found');
+    }
+
+    await container.model
+      .automateService()
+      .enableStopLoss(
+        contract,
+        input.path,
+        input.amountOut.toFixed(0),
+        input.amountOutMin.toFixed(0),
+      );
+
+    return true;
+  }),
+};
+
+export const ContractStopLossDisable: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLBoolean),
+  args: {
+    input: {
+      type: GraphQLNonNull(
+        new GraphQLInputObjectType({
+          name: 'AutomateContractStopLossDisableInputType',
+          fields: {
+            contract: {
+              type: GraphQLNonNull(UuidType),
+              description: 'Automate contract',
+            },
+          },
+        }),
+      ),
+    },
+  },
+  resolve: onlyAllowed('automateContract.create', async (root, { input }, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const contract = await container.model
+      .automateContractTable()
+      .where('id', input.contract)
+      .first();
+    if (!contract) {
+      throw new UserInputError('Contract not found');
+    }
+
+    await container.model.automateService().disableStopLoss(contract);
 
     return true;
   }),

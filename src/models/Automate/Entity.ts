@@ -165,6 +165,31 @@ export const contractTableFactory = tableFactoryLegacy<Contract>(contractTableNa
 
 export type ContractTable = ReturnType<ReturnType<typeof contractTableFactory>>;
 
+export enum ContractStopLossStatus {
+  Pending = 'pending',
+  Completed = 'completed',
+}
+
+export interface ContractStopLoss {
+  id: string;
+  contract: string;
+  stopLoss: {
+    path: string[];
+    amountOut: string;
+    amountOutMin: string;
+  };
+  status: ContractStopLossStatus;
+  createtAt: Date;
+  updatedAt: Date;
+}
+
+export const contractStopLossTableName = 'automate_contract_stoploss';
+
+export const contractStopLossTableFactory =
+  tableFactoryLegacy<ContractStopLoss>(contractStopLossTableName);
+
+export type ContractStopLossTable = ReturnType<ReturnType<typeof contractStopLossTableFactory>>;
+
 export interface EthereumAutomateTransaction {
   hash: string | undefined;
   from: string | undefined;

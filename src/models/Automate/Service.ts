@@ -23,6 +23,9 @@ import {
   ConditionTable,
   ConditionType,
   Contract,
+  ContractStopLoss,
+  ContractStopLossStatus,
+  ContractStopLossTable,
   ContractTable,
   ContractType,
   ContractVerificationStatus,
@@ -96,6 +99,7 @@ export class AutomateService {
     readonly actionTable: Factory<ActionTable>,
     readonly triggerCallHistoryTable: Factory<TriggerCallHistoryTable>,
     readonly contractTable: Factory<ContractTable>,
+    readonly contractStopLossTable: Factory<ContractStopLossTable>,
     readonly transactionTable: Factory<TransactionTable>,
     readonly walletTable: Factory<WalletTable>,
   ) {}
@@ -289,6 +293,44 @@ export class AutomateService {
 
   async deleteContract(contract: Contract) {
     await this.contractTable().where({ id: contract.id }).delete();
+  }
+
+  async enableStopLoss(
+    contract: Contract,
+    path: string[],
+    amountOut: string,
+    amountOutMin: string,
+  ) {
+    await this.disableStopLoss(contract);
+    const created: ContractStopLoss = {
+      id: uuid(),
+      contract: contract.id,
+      stopLoss: {
+        path,
+        amountOut,
+        amountOutMin,
+      },
+      status: ContractStopLossStatus.Pending,
+      createtAt: new Date(),
+      updatedAt: new Date(),
+    };
+    await this.contractStopLossTable().insert(created);
+
+    return created;
+  }
+
+  async disableStopLoss(contract: Contract) {
+    await this.contractStopLossTable().where('contract', contract.id).delete();
+  }
+
+  async updateStopLoss(stopLoss: ContractStopLoss) {
+    const updated: ContractStopLoss = {
+      ...stopLoss,
+      updatedAt: new Date(),
+    };
+    await this.contractStopLossTable().where('id', stopLoss.id).update(updated);
+
+    return updated;
   }
 
   async createTransaction<T extends AutomateTransactionData>(

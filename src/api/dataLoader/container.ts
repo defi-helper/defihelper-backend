@@ -1,4 +1,5 @@
 import { Container, singleton, singletonParametric } from '@services/Container';
+import { automateContractStopLossLoader } from './automate';
 import {
   contractLastMetricLoader,
   contractLoader,
@@ -60,4 +61,6 @@ export class DataLoaderContainer extends Container<{}> {
   readonly tokenAlias = singleton(tokenAliasLoader);
 
   readonly tokenAliasUserLastMetric = singletonParametric(tokenAliasUserLastMetricLoader);
+
+  readonly automateContractStopLoss = singleton(automateContractStopLossLoader);
 }

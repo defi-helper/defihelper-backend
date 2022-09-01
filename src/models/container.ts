@@ -295,6 +295,10 @@ export class ModelContainer extends Container<typeof AppContainer> {
     this.parent.database,
   );
 
+  readonly automateContractStopLossTable = Models.Automate.Entity.contractStopLossTableFactory(
+    this.parent.database,
+  );
+
   readonly automateTransactionTable = Models.Automate.Entity.transactionTableFactory(
     this.parent.database,
   );
@@ -307,6 +311,7 @@ export class ModelContainer extends Container<typeof AppContainer> {
         this.automateActionTable,
         this.automateTriggerCallHistoryTable,
         this.automateContractTable,
+        this.automateContractStopLossTable,
         this.automateTransactionTable,
         this.walletTable,
       ),
