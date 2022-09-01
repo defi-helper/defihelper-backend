@@ -35,8 +35,6 @@ class AppContainer extends Container<typeof config> {
 
   readonly email = singleton(emailServiceFactory(this.parent.email));
 
-  readonly telegram = singleton(telegramServiceFactory(this.parent.telegram.token));
-
   readonly cexServicesProvider = singleton(cexServicesProviderFactory());
 
   readonly scanner = singleton(ScannerService.factory(this.parent.scanner));
@@ -69,6 +67,10 @@ class AppContainer extends Container<typeof config> {
   readonly template = new TemplateContainer(this);
 
   readonly model = new ModelContainer(this);
+
+  readonly telegram = singleton(
+    telegramServiceFactory(this.parent.telegram.token, this.template, this.i18n),
+  );
 }
 
 export default new AppContainer(config);
