@@ -53,7 +53,7 @@ export class TelegramService implements ITelegramService {
     locale: Locale = 'enUS',
   ): Promise<void> {
     const message = Mustache.render(await Templates[template], {
-      data,
+      ...data,
       ...this.template.i18n(this.i18n.byLocale(locale)),
     });
 
