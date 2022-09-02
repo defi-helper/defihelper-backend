@@ -74,30 +74,31 @@ export default async (process: Process) => {
 
   const totalEarnedChange =
     Number(earnedUSDDayBefore) !== 0 ? new BN(totalEarnedUSD).div(earnedUSDDayBefore) : new BN(0);
-  const totalEarnedChangePercentage = totalEarnedChange.minus(1).multipliedBy(100);
+  const totalEarnedChangePercentage = totalEarnedChange.multipliedBy(100);
 
   const totalNetWorthChange =
     Number(stakingUSDDayBefore) !== 0
       ? new BN(totalStackedUSD).div(stakingUSDDayBefore)
       : new BN(0);
-  const totalNetWorthChangePercentage = totalNetWorthChange.minus(1).multipliedBy(100);
+  const totalNetWorthChangePercentage = totalNetWorthChange.multipliedBy(100);
+  const templateParams = {
+    name: user.name === '' ? 'My Portfolio' : user.name,
+    totalNetWorth,
+    totalEarnedUSD: totalEarnedUSDFixedFloating,
+    percentageEarned: `${
+      totalEarnedChangePercentage.isPositive() ? '+' : ''
+    }${totalEarnedChangePercentage.toFixed(2)}`,
+    percentageTracked: `${
+      totalNetWorthChangePercentage.isPositive() ? '+' : ''
+    }${totalNetWorthChangePercentage.toFixed(2)}`,
+  };
 
   switch (contact.broker) {
     case ContactBroker.Telegram:
       await container.model.queueService().push('sendTelegramByContact', {
         contactId: contact.id,
-        params: {
-          name: user.name === '' ? 'My Portfolio' : user.name,
-          totalNetWorth,
-          totalEarnedUSD: totalEarnedUSDFixedFloating,
-          percentageEarned: `${
-            totalEarnedChangePercentage.isPositive() ? '+' : ''
-          }${totalEarnedChangePercentage.toFixed(2)}`,
-          percentageTracked: `${
-            totalNetWorthChangePercentage.isPositive() ? '+' : ''
-          }${totalNetWorthChangePercentage.toFixed(2)}`,
-        },
         template: 'portfolioMetrics',
+        params: templateParams,
       });
       break;
     case ContactBroker.Email:
@@ -105,15 +106,7 @@ export default async (process: Process) => {
         'portfolioMetrics',
         {
           ...container.template.i18n(container.i18n.byLocale(user.locale)),
-          name: user.name === '' ? 'My Portfolio' : user.name,
-          totalNetWorth,
-          totalEarnedUSD: totalEarnedUSDFixedFloating,
-          percentageEarned: `${
-            totalEarnedChangePercentage.isPositive() ? '+' : ''
-          } ${totalEarnedChangePercentage.toFixed(2)}`,
-          percentageTracked: `${
-            totalNetWorthChangePercentage.isPositive() ? '+' : ''
-          } ${totalNetWorthChangePercentage.toFixed(2)}`,
+          ...templateParams,
         },
         'Portfolio statistics',
         contact.address,
