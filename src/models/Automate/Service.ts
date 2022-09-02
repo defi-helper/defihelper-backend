@@ -311,6 +311,7 @@ export class AutomateService {
         amountOutMin,
       },
       status: ContractStopLossStatus.Pending,
+      task: null,
       createtAt: new Date(),
       updatedAt: new Date(),
     };

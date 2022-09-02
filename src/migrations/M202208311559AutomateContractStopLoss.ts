@@ -1,5 +1,6 @@
 import { SchemaBuilder } from 'knex';
 import { contractTableName, contractStopLossTableName } from '@models/Automate/Entity';
+import { tableName as queueTableName } from '@models/Queue/Entity';
 
 export default async (schema: SchemaBuilder) => {
   return schema.createTable(contractStopLossTableName, (table) => {
@@ -7,6 +8,7 @@ export default async (schema: SchemaBuilder) => {
     table.string('contract', 36).notNullable().index();
     table.jsonb('stopLoss').notNullable().defaultTo('{}');
     table.string('status', 64).notNullable().index();
+    table.string('task', 36).nullable().index();
     table.dateTime('createdAt').notNullable();
     table.dateTime('updatedAt').notNullable();
     table.primary(['id'], `${contractStopLossTableName}_pkey`);
@@ -15,6 +17,11 @@ export default async (schema: SchemaBuilder) => {
       .foreign('contract')
       .references(`${contractTableName}.id`)
       .onUpdate('CASCADE')
+      .onDelete('CASCADE');
+    table
+      .foreign('task')
+      .references(`${queueTableName}.id`)
+      .onUpdate('SET NULL')
       .onDelete('CASCADE');
   });
 };

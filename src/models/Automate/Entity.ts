@@ -179,6 +179,7 @@ export interface ContractStopLoss {
     amountOutMin: string;
   };
   status: ContractStopLossStatus;
+  task: string | null;
   createtAt: Date;
   updatedAt: Date;
 }

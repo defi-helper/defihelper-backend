@@ -1,3 +1,4 @@
+export * as scheduleMinute5 from './schedule/minute5';
 export * as scheduleMinute10 from './schedule/minute10';
 export * as scheduleHourStart from './schedule/hourStart';
 export * as scheduleDayStart from './schedule/dayStart';
@@ -45,6 +46,8 @@ export * as automateContractWavesVerify from './automate/contractWavesVerify';
 export * as automateTransactionEthereumConfirm from './automate/transactionEthereumConfirm';
 export * as automateTransactionWavesConfirm from './automate/transactionWavesConfirm';
 export * as automateTriggerRun from './automate/run';
+export * as automateContractStopLossBroker from './automate/contractStopLossBroker';
+export * as automateContractStopLossRun from './automate/contractStopLossRun';
 export * as automateTriggerByTime from './automate/trigger/byTime';
 export * as riskCalculationBroker from './contract/riskCalculationBroker';
 export * as riskCalculationFiller from './contract/riskCalculationFiller';
