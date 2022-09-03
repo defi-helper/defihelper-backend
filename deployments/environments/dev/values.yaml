@@ -123,7 +123,7 @@ broker:
             memory: 128Mi
             cpu: 100m
       telegram-bot:
-        name: history
+        name: telegram-bot
         command: '"npm","run","telegram:bot"'
         replicas: 1
         maxReplicas: 1

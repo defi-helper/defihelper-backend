@@ -158,7 +158,7 @@ broker:
             value: "true"
             effect: NoSchedule
       telegram-bot:
-        name: history
+        name: telegram-bot
         command: '"npm","run","telegram:bot"'
         replicas: 1
         maxReplicas: 1
