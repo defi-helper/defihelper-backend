@@ -138,7 +138,7 @@ export default async (process: Process) => {
       registerRejectBill(await balance.queryFilter(balance.filters.RejectClaim(), from, to)),
     ]);
   } catch (e) {
-    if (currentBlockNumber - from > 100) {
+    if (currentBlockNumber - from > 200) {
       throw new Error(`Task ${process.task.id}, lag: ${currentBlockNumber - from}, message: ${e}`);
     }
     return process.later(later).info(`${e}`);
