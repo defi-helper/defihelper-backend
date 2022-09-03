@@ -54,7 +54,7 @@ broker:
     queues:
       queue:
         name: queue
-        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue:consume -- -q tasks_default"'
+        command: '"npm","run","queue:consume","--","-q","tasks_default"'
         replicas: 1
         maxReplicas: 10
         maxReadyMessagesForHpa: 25
@@ -75,7 +75,7 @@ broker:
             effect: NoSchedule
       events-trigger:
         name: events-trigger
-        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run trigger:event"'
+        command: '"npm","run","trigger:event"'
         replicas: 1
         maxReplicas: 20
         maxReadyMessagesForHpa: 100
@@ -96,7 +96,7 @@ broker:
             effect: NoSchedule
       trigger:
         name: trigger
-        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue:consume -- -q tasks_trigger"'
+        command: '"npm","run","queue:consume","--","-q","tasks_trigger"'
         replicas: 1
         maxReplicas: 20
         maxReadyMessagesForHpa: 100
@@ -117,7 +117,7 @@ broker:
             effect: NoSchedule
       metrics:
         name: metrics
-        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue:consume -- -q tasks_metricCurrent"'
+        command: '"npm","run","queue:consume","--","-q","tasks_metricCurrent"'
         replicas: 1
         maxReplicas: 20
         maxReadyMessagesForHpa: 100
@@ -138,10 +138,31 @@ broker:
             effect: NoSchedule
       history:
         name: history
-        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue:consume -- -q tasks_metricHistory"'
+        command: '"npm","run","queue:consume","--","-q","tasks_metricHistory"'
         replicas: 1
         maxReplicas: 20
         maxReadyMessagesForHpa: 100
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 50m
+          limits:
+            memory: 128Mi
+            cpu: 100m
+        nodeSelector:
+          group_name: "apps-jobs"
+        graceperiod: 3600
+        tolerations:
+          - key: node-role.kubernetes.io/apps-jobs
+            operator: "Equal"
+            value: "true"
+            effect: NoSchedule
+      telegram-bot:
+        name: history
+        command: '"npm","run","telegram:bot"'
+        replicas: 1
+        maxReplicas: 1
+        maxReadyMessagesForHpa: 5
         resources:
           requests:
             memory: 128Mi
@@ -172,22 +193,22 @@ handlers:
       cpu: 100m
   schedules:
     queue-deferred:
-      command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run queue:deferred"'
+      command: '"npm","run","queue:deferred"'
       schedule: "* * * * *"
     minute10:
-      command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run schedule -- --period minute10"'
+      command: '"npm","run","schedule","--","--period","minute10"'
       schedule: "*/10 * * * *"
     hour:
-      command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run schedule -- --period hourStart"'
+      command: '"npm","run","schedule","--","--period","hourStart"'
       schedule: "0 * * * *"
     day:
-      command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run schedule -- --period dayStart"'
+      command: '"npm","run","schedule","--","--period","dayStart"'
       schedule: "0 0 * * *"
     week:
-      command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run schedule -- --period weekStart"'
+      command: '"npm","run","schedule","--","--period","weekStart"'
       schedule: "0 0 * * 0"
     month:
-      command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run schedule -- --period monthStart"'
+      command: '"npm","run","schedule","--","--period","monthStart"'
       schedule: "0 0 1 * *"
 
 migrator:
