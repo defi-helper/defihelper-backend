@@ -56,9 +56,7 @@ bot.on('text', async (ctx) => {
     .first();
 
   if (foundWallet) {
-    return ctx.reply(
-      'You already have an account, please login at https://app.defihelper.io :sowwy:',
-    );
+    return ctx.reply('You already have an account, please login at https://app.defihelper.io');
   }
 
   const user = await container.model.userService().create(Role.User, 'UTC');
