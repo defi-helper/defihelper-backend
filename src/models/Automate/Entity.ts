@@ -167,7 +167,9 @@ export type ContractTable = ReturnType<ReturnType<typeof contractTableFactory>>;
 
 export enum ContractStopLossStatus {
   Pending = 'pending',
+  Sended = 'sended',
   Completed = 'completed',
+  Error = 'error',
 }
 
 export interface ContractStopLoss {
@@ -177,10 +179,14 @@ export interface ContractStopLoss {
     path: string[];
     amountOut: string;
     amountOutMin: string;
+    outToken: string | null;
   };
   status: ContractStopLossStatus;
+  tx: string;
   task: string | null;
-  createtAt: Date;
+  rejectReason: string;
+  amountOut: string | null;
+  createdAt: Date;
   updatedAt: Date;
 }
 

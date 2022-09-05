@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import { validate as isUuid } from 'uuid';
 import BN from 'bignumber.js';
-import ethers from 'ethers';
+import { utils as ethersUtils } from 'ethers';
 import * as Wallet from '@models/Wallet/Entity';
 import {
   GraphQLError,
@@ -285,7 +285,7 @@ export const EthereumAddressType = new GraphQLScalarType({
   name: 'EthereumAddressType',
   description: 'Address of ethereum blockchain',
   parseValue: (value: string) => {
-    if (!ethers.utils.isAddress(value)) {
+    if (!ethersUtils.isAddress(value)) {
       throw new GraphQLParseError('EthereumAddressType', value);
     }
 
@@ -300,7 +300,7 @@ export const EthereumTransactionHashType = new GraphQLScalarType({
   name: 'EthereumTransactionHashType',
   description: 'Address of ethereum transaction hash',
   parseValue: (value: string) => {
-    if (!ethers.utils.isHexString(value, 32)) {
+    if (!ethersUtils.isHexString(value, 32)) {
       throw new GraphQLParseError('EthereumTransactionHashType', value);
     }
 

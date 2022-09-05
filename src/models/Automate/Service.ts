@@ -93,6 +93,14 @@ export class AutomateService {
     }
   });
 
+  public readonly onStopLossEnabled = new Emitter<{ stopLoss: ContractStopLoss }>(
+    ({ stopLoss }) => {
+      container.model
+        .queueService()
+        .push('eventsAutomateContractStopLossEnabled', { id: stopLoss.id });
+    },
+  );
+
   constructor(
     readonly triggerTable: Factory<TriggerTable>,
     readonly conditionTable: Factory<ConditionTable>,
@@ -309,13 +317,18 @@ export class AutomateService {
         path,
         amountOut,
         amountOutMin,
+        outToken: null,
       },
       status: ContractStopLossStatus.Pending,
+      tx: '',
       task: null,
-      createtAt: new Date(),
+      rejectReason: '',
+      amountOut: null,
+      createdAt: new Date(),
       updatedAt: new Date(),
     };
     await this.contractStopLossTable().insert(created);
+    this.onStopLossEnabled.emit({ stopLoss: created });
 
     return created;
   }

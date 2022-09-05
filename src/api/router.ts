@@ -161,6 +161,8 @@ export function route({ express, server }: { express: Express; server: Server })
           automateContractCreate: automateSchemas.ContractCreateMutation,
           automateContractUpdate: automateSchemas.ContractUpdateMutation,
           automateContractDelete: automateSchemas.ContractDeleteMutation,
+          automateContractStopLossEnable: automateSchemas.ContractStopLossEnable,
+          automateContractStopLossDisable: automateSchemas.ContractStopLossDisable,
           tradingAuth: tradingSchemas.TradingAuthMutation,
         },
       }),

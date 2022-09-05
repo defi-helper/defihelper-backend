@@ -31,6 +31,7 @@ import {
   BigNumberType,
   DateTimeType,
   EthereumAddressType,
+  EthereumTransactionHashType,
   onlyAllowed,
   PaginateList,
   PaginationArgument,
@@ -41,6 +42,7 @@ import * as Actions from '../../../automate/action';
 import * as Conditions from '../../../automate/condition';
 import { WalletBlockchainType } from '../user';
 import { ProtocolType, ContractType as ProtocolContractType } from '../protocol';
+import { TokenType } from '../token';
 
 export const ConditionTypeEnum = new GraphQLEnumType({
   name: 'AutomateConditionTypeEnum',
@@ -957,23 +959,57 @@ export const ActionDeleteMutation: GraphQLFieldConfig<any, Request> = {
   }),
 };
 
+export const ContractStopLossStatusEnum = new GraphQLEnumType({
+  name: 'AutomateContractStopLossStatusEnum',
+  values: Object.values(Automate.ContractStopLossStatus).reduce(
+    (res, value) => ({ ...res, [value]: { value } }),
+    {} as GraphQLEnumValueConfigMap,
+  ),
+});
+
 export const ContractStopLossType = new GraphQLObjectType<Automate.ContractStopLoss, Request>({
   name: 'AutomateContractStopLossType',
   fields: {
-    path: {
-      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString))),
+    status: {
+      type: GraphQLNonNull(ContractStopLossStatusEnum),
+    },
+    tx: {
+      type: GraphQLNonNull(EthereumTransactionHashType),
     },
     amountOut: {
-      type: GraphQLNonNull(BigNumberType),
+      type: BigNumberType,
     },
-    amountOutMin: {
-      type: GraphQLNonNull(BigNumberType),
-    },
-    slippage: {
-      type: GraphQLNonNull(GraphQLFloat),
-      resolve: ({ stopLoss: { amountOut, amountOutMin } }) => {
-        return new BN(amountOut).minus(amountOutMin).div(amountOut).toString(10);
+    outToken: {
+      type: TokenType,
+      resolve: ({ stopLoss: { outToken } }, args, { dataLoader }) => {
+        if (outToken === null) return null;
+        return dataLoader.token().load(outToken);
       },
+    },
+    params: {
+      type: GraphQLNonNull(
+        new GraphQLObjectType<Automate.ContractStopLoss['stopLoss']>({
+          name: 'AutomateContractStopLossParamsType',
+          fields: {
+            path: {
+              type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString))),
+            },
+            amountOut: {
+              type: GraphQLNonNull(BigNumberType),
+            },
+            amountOutMin: {
+              type: GraphQLNonNull(BigNumberType),
+            },
+            slippage: {
+              type: GraphQLNonNull(GraphQLFloat),
+              resolve: ({ amountOut, amountOutMin }) => {
+                return new BN(amountOut).minus(amountOutMin).div(amountOut).toString(10);
+              },
+            },
+          },
+        }),
+      ),
+      resolve: ({ stopLoss }) => stopLoss,
     },
   },
 });

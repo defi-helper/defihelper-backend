@@ -1,7 +1,7 @@
 import container from '@container';
 import { metricWalletTokenRegistryTableName, QueryModify } from '@models/Metric/Entity';
 import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
-import { TokenAlias, tokenAliasTableName, tokenTableName } from '@models/Token/Entity';
+import { TokenAlias, Token, tokenAliasTableName, tokenTableName } from '@models/Token/Entity';
 import { walletTableName } from '@models/Wallet/Entity';
 import DataLoader from 'dataloader';
 
@@ -117,4 +117,14 @@ export const tokenAliasUserLastMetricLoader = ({
           usdMonthBefore: '0',
         },
     );
+  });
+
+export const tokenLoader = () =>
+  new DataLoader<string, Token | null>(async (tokensId) => {
+    const map = await container.model
+      .tokenTable()
+      .whereIn('id', tokensId)
+      .then((rows) => new Map(rows.map((token) => [token.id, token])));
+
+    return tokensId.map((id) => map.get(id) ?? null);
   });

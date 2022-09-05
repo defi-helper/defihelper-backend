@@ -48,6 +48,7 @@ export * as automateTransactionWavesConfirm from './automate/transactionWavesCon
 export * as automateTriggerRun from './automate/run';
 export * as automateContractStopLossBroker from './automate/contractStopLossBroker';
 export * as automateContractStopLossRun from './automate/contractStopLossRun';
+export * as automateContractStopLossTx from './automate/contractStopLossTx';
 export * as automateTriggerByTime from './automate/trigger/byTime';
 export * as riskCalculationBroker from './contract/riskCalculationBroker';
 export * as riskCalculationFiller from './contract/riskCalculationFiller';
@@ -92,6 +93,7 @@ export * as eventsWalletCreated from './events/walletCreated';
 export * as eventsWalletContractLinked from './events/walletContractLinked';
 export * as eventsWalletChangeOwner from './events/walletChangeOwner';
 export * as eventsAutomateContractVerificationConfirmed from './events/automate/contractVerificationConfirmed';
+export * as eventsAutomateContractStopLossEnabled from './events/automate/contractStopLossEnabled';
 export * as followContractEvent from './scanner/followContractEvent';
 
 /* wallets */
