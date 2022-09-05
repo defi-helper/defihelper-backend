@@ -48,7 +48,7 @@ export default async (process: Process) => {
     }
 
     const event = receipt.logs.reduce<ethers.utils.LogDescription | null>((prev, topic) => {
-      if (prev !== null) return null;
+      if (prev !== null) return prev;
       const logDescription = balance.interface.parseLog(topic);
       return ['Deposit', 'Refund'].includes(logDescription.name) ? logDescription : null;
     }, null);
