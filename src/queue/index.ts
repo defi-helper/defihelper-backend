@@ -79,6 +79,9 @@ export * as notificationPortfolioMetricsNotify from './notifications/PortfolioMe
 export * as notificationPortfolioMetricsNotifyHourly from './notifications/PortfolioMetrics/hourly';
 export * as notificationAutomateWalletsNotEnoughFundsNotify from './notifications/AutomateWalletsNotEnoughFunds/sender';
 export * as notificationAutomateWalletsNotEnoughFundsBroker from './notifications/AutomateWalletsNotEnoughFunds/broker';
+export * as migratablePoolsBroker from './notifications/migratablePoolsBroker';
+export * as migratablePoolsNotifyUser from './notifications/migratablePoolsNotifyUser';
+export * as migratablePoolsBatch from './notifications/migratablePoolsBatch';
 
 /* events */
 export * as eventsMetricContractCreated from './events/metricContractCreated';
@@ -115,6 +118,8 @@ export * as treasuryStatsCache from './treasury/cache';
 
 export * as sendTelegramNews from './sendTelegramNews';
 
-export * as migratablePoolsBroker from './notifications/migratablePoolsBroker';
-export * as migratablePoolsNotifyUser from './notifications/migratablePoolsNotifyUser';
-export * as migratablePoolsBatch from './notifications/migratablePoolsBatch';
+/* smart trade */
+export * as smartTradeOrderStatusResolve from './smartTrade/orderStatusResolve';
+export * as smartTradeOrderConfirm from './smartTrade/orderConfirm';
+export * as eventsSmartTradeOrderConfirmed from './events/smartTrade/orderConfirmed';
+export * as eventsSmartTradeOrderCallTxCreated from './events/smartTrade/orderCallTxCreated';
