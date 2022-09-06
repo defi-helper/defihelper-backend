@@ -66,9 +66,9 @@ broker:
           limits:
             memory: 512Mi
             cpu: 100m
-      events-smarttrade:
-        name: events-smarttrade
-        command: '"/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run smartTrade:event"'
+      events-smart-trade:
+        name: events-smart-trade
+        command: '"npm","run","smartTrade:event"'
         replicas: 1
         maxReplicas: 20
         maxReadyMessagesForHpa: 100
