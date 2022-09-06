@@ -40,7 +40,7 @@ bot.start(async ({ message }) => {
 bot.on('text', async (ctx) => {
   if (!utils.isAddress(ctx.message.text)) {
     return ctx.reply(
-      'Right now, I understand only Ethereum addresses(ex. 0xc1912fee45d61c87cc5ea59dae31190fffff232d) :(',
+      'Right now, I can track only Ethereum addresses (ex. 0xc1912fee45d61c87cc5ea59dae31190fffff232d)',
     );
   }
 
@@ -100,6 +100,6 @@ bot.on('text', async (ctx) => {
   });
 
   return ctx.reply(
-    "Great work! Everything's done, now you can use the app at https://app.defihelper.io",
+    'Great! I will start to send you your daily portfolio updates. You can change the time of your notifications here https://app.defihelper.io. Please use the same wallet address to login.',
   );
 });
