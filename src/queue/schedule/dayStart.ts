@@ -20,6 +20,7 @@ export default async (process: Process) => {
     queue.push('metricsWalletTokenRegistrySync', {}),
     queue.push('metricsWalletBalancesWavesBroker', {}),
     queue.push('migratablePoolsBroker', {}),
+    queue.push('metricsWalletProtocolsBalancesDeBankBroker', {}),
     queue.push(
       'migratablePoolsBatch',
       {},
