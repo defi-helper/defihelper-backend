@@ -59,7 +59,44 @@ bot.on('text', async (ctx) => {
     return ctx.reply('You already have an account, please login at https://app.defihelper.io');
   }
 
-  const user = await container.model.userService().create(Role.User, 'UTC');
+  const username = ctx.message.from?.username || '';
+  const existingContact = await container.model
+    .userContactTable()
+    .whereRaw(`params->>'chatId' = ?`, [ctx.chat.id])
+    .andWhere('broker', ContactBroker.Telegram)
+    .first();
+
+  let user;
+  if (existingContact) {
+    user = await container.model.userTable().where('id', existingContact.user).first();
+
+    if (!user) {
+      throw new Error('User not found, but must be');
+    }
+
+    await Promise.all([
+      container.model.userContactService().activate(existingContact, username, {
+        chatId: String(ctx.chat.id),
+      }),
+      container.model.userContactService().update({
+        ...existingContact,
+        user: user.id,
+      }),
+    ]);
+  }
+
+  if (!user) {
+    user = await container.model.userService().create(Role.User, 'UTC');
+  }
+
+  const contact = await container.model
+    .userContactService()
+    .create(ContactBroker.Telegram, username, user, 'Telegram account');
+
+  await container.model.userContactService().activate(contact, username, {
+    chatId: String(ctx.chat.id),
+  });
+
   await container.model
     .walletService()
     .createBlockchainWallet(
@@ -72,32 +109,6 @@ bot.on('text', async (ctx) => {
       '',
       false,
     );
-
-  const username = ctx.message.from?.username || '';
-  const existingContact = await container.model
-    .userContactTable()
-    .whereRaw(`params->>'chatId' = '${ctx.chat.id}'`)
-    .first();
-
-  if (existingContact) {
-    await Promise.all([
-      container.model.userContactService().activate(existingContact, username, {
-        chatId: String(ctx.chat.id),
-      }),
-      container.model.userContactService().update({
-        ...existingContact,
-        user: user.id,
-      }),
-    ]);
-  }
-
-  const contact = await container.model
-    .userContactService()
-    .create(ContactBroker.Telegram, username, user, 'Telegram account');
-
-  await container.model.userContactService().activate(contact, username, {
-    chatId: String(ctx.chat.id),
-  });
 
   return ctx.reply(
     'Great! I will start to send you your daily portfolio updates. You can change the time of your notifications here https://app.defihelper.io. Please use the same wallet address to login.',
