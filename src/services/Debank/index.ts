@@ -59,11 +59,11 @@ export class Debank {
       .find((v) => v.named === String(chain) || v.numbered === String(chain));
   };
 
-  private apiRequest = (
+  private apiRequest = <T>(
     path: string,
     queryParams: Record<string, string>,
     paidWay: boolean = false,
-  ): any => {
+  ): Promise<T> => {
     const url = buildUrl(
       paidWay ? 'https://pro-openapi.debank.com' : 'https://openapi.debank.com',
       {
@@ -78,63 +78,59 @@ export class Debank {
           AccessKey: paidWay ? this.apiKey : undefined,
         },
       })
-      .then((response) => {
-        const r = response.data;
-        if (r === null) {
+      .then(({ data }) => {
+        if (data === null) {
           throw new Error('Debank didn`t found anything');
         }
 
-        return r;
+        return data;
       })
       .catch((e) => {
         throw new Error(`[Debank]: ${url}; ${e}`);
       });
   };
 
-  getToken = async (chainId: string, address: string): Promise<Token> => {
+  getToken = async (chainId: string, address: string) => {
     const chain = this.chainResolver(chainId);
     if (!chain) {
       throw new Error(`Unknown chain: ${chainId}`);
     }
 
-    return this.apiRequest('token', {
+    return this.apiRequest<Token>('token', {
       id: address === '0x0000000000000000000000000000000000000000' ? chain.named : address,
       chain_id: chain.named,
     });
   };
 
-  getTokensOnWallet = async (wallet: string): Promise<(Token & { amount: number })[]> => {
-    return this.apiRequest('user/token_list', {
+  getTokensOnWallet = async (wallet: string) => {
+    return this.apiRequest<(Token & { amount: number })[]>('user/token_list', {
       id: wallet,
     });
   };
 
-  getTokensOnWalletNetwork = async (
-    wallet: string,
-    chainId: string,
-  ): Promise<(Token & { amount: number })[]> => {
+  getTokensOnWalletNetwork = async (wallet: string, chainId: string) => {
     const chain = this.chainResolver(chainId);
     if (!chain) {
       throw new Error(`Unknown chain: ${chainId}`);
     }
 
-    return this.apiRequest('user/token_list', {
+    return this.apiRequest<(Token & { amount: number })[]>('user/token_list', {
       id: wallet,
       chain_id: chain.named,
       is_all: 'true',
     });
   };
 
-  getProtocolListWallet = async (wallet: string): Promise<ProtocolListItem[]> => {
-    return (
-      this.apiRequest(
-        'user/all_complex_protocol_list',
-        {
-          id: wallet,
-        },
-        true,
-      ) ?? []
+  getProtocolListWallet = async (wallet: string) => {
+    const response = this.apiRequest<ProtocolListItem[]>(
+      'user/all_complex_protocol_list',
+      {
+        id: wallet,
+      },
+      true,
     );
+
+    return response ?? [];
   };
 }
 
