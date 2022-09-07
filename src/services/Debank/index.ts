@@ -120,7 +120,7 @@ export class Debank {
   }
 
   async getProtocolListWallet(wallet: string) {
-    const response = this.apiRequest<ProtocolListItem[]>(
+    const response = await this.apiRequest<ProtocolListItem[]>(
       'user/all_complex_protocol_list',
       {
         id: wallet,
