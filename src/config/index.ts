@@ -27,6 +27,9 @@ export default {
   scanner: {
     host: process.env.SCANNER_HOST ?? 'https://scanner-local.defihelper.io',
   },
+  debank: {
+    apiKey: process.env.DEBANK_API_KEY ?? '',
+  },
   cryptography: {
     // key must be 128 bit length
     key: process.env.ENCRYPT_KEY ?? '&F)J@NcRfUjXn2r5',

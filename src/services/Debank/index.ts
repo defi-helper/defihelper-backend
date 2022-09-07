@@ -34,6 +34,8 @@ export interface ProtocolListItem {
 }
 
 export class Debank {
+  constructor(public readonly apiKey: string) {}
+
   public readonly chains: { [named: string]: string } = {
     eth: '1',
     bsc: '56',
@@ -57,20 +59,36 @@ export class Debank {
       .find((v) => v.named === String(chain) || v.numbered === String(chain));
   };
 
-  private apiRequest = (path: string, queryParams: Record<string, string>): any => {
-    const url = buildUrl('https://openapi.debank.com', {
-      path: `/v1/${path}`,
-      queryParams,
-    });
+  private apiRequest = (
+    path: string,
+    queryParams: Record<string, string>,
+    paidWay: boolean = false,
+  ): any => {
+    const url = buildUrl(
+      paidWay ? 'https://pro-openapi.debank.com' : 'https://openapi.debank.com',
+      {
+        path: `/v1/${path}`,
+        queryParams,
+      },
+    );
 
-    return axios.get(url).then((response) => {
-      const r = response.data;
-      if (r === null) {
-        throw new Error('Debank didn`t found anything');
-      }
+    return axios
+      .get(url, {
+        headers: {
+          AccessKey: paidWay ? this.apiKey : undefined,
+        },
+      })
+      .then((response) => {
+        const r = response.data;
+        if (r === null) {
+          throw new Error('Debank didn`t found anything');
+        }
 
-      return r;
-    });
+        return r;
+      })
+      .catch((e) => {
+        throw new Error(`[Debank]: ${url}; ${e}`);
+      });
   };
 
   getToken = async (chainId: string, address: string): Promise<Token> => {
@@ -109,13 +127,17 @@ export class Debank {
 
   getProtocolListWallet = async (wallet: string): Promise<ProtocolListItem[]> => {
     return (
-      this.apiRequest('user/complex_protocol_list', {
-        id: wallet,
-      }) ?? []
+      this.apiRequest(
+        'user/all_complex_protocol_list',
+        {
+          id: wallet,
+        },
+        true,
+      ) ?? []
     );
   };
 }
 
-export function debankServiceFactory(): Factory<Debank> {
-  return () => new Debank();
+export function debankServiceFactory(apiKey: string): Factory<Debank> {
+  return () => new Debank(apiKey);
 }
