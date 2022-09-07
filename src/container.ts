@@ -41,7 +41,7 @@ class AppContainer extends Container<typeof config> {
 
   readonly cryptography = singleton(cryptographyServiceFactory(this.parent.cryptography.key));
 
-  readonly debank = singleton(debankServiceFactory());
+  readonly debank = singleton(debankServiceFactory(this.parent.debank.apiKey));
 
   readonly waves = singleton(
     wavesNodeGatewayFactory(this.semafor, this.cache, this.debank, this.logger),
