@@ -207,12 +207,6 @@ export class MetricContractService {
         ])
         .first(),
     ]);
-    const duplicate = await this.metricWalletRegistryTable()
-      .where({
-        contract: metric.contract,
-        wallet: metric.wallet,
-      })
-      .first();
     const data = {
       ...metric.data,
       stakingUSDDayBefore: dayBefore?.data.stakingUSD ?? '0',
@@ -222,6 +216,12 @@ export class MetricContractService {
       earnedUSDWeekBefore: weekBefore?.data.earnedUSD ?? '0',
       earnedUSDMonthBefore: monthBefore?.data.earnedUSD ?? '0',
     };
+    const duplicate = await this.metricWalletRegistryTable()
+      .where({
+        contract: metric.contract,
+        wallet: metric.wallet,
+      })
+      .first();
     if (!duplicate) {
       const query = this.metricWalletRegistryTable()
         .insert({
@@ -241,6 +241,7 @@ export class MetricContractService {
         .update({
           data: {
             ...duplicate.data,
+            ...data,
             ...metric.data,
           },
           date: metric.date,
@@ -381,6 +382,12 @@ export class MetricContractService {
         ])
         .first(),
     ]);
+    const data = {
+      ...metric.data,
+      usdDayBefore: dayBefore?.data.usd ?? '0',
+      usdWeekBefore: weekBefore?.data.usd ?? '0',
+      usdMonthBefore: monthBefore?.data.usd ?? '0',
+    };
     const duplicate = await this.metricWalletTokenRegistryTable()
       .where({
         contract: metric.contract,
@@ -388,12 +395,6 @@ export class MetricContractService {
         token: metric.token,
       })
       .first();
-    const data = {
-      ...metric.data,
-      usdDayBefore: dayBefore?.data.usd ?? '0',
-      usdWeekBefore: weekBefore?.data.usd ?? '0',
-      usdMonthBefore: monthBefore?.data.usd ?? '0',
-    };
     if (!duplicate) {
       const query = this.metricWalletTokenRegistryTable()
         .insert({
@@ -414,6 +415,7 @@ export class MetricContractService {
         .update({
           data: {
             ...duplicate.data,
+            ...data,
             ...metric.data,
           },
           date: metric.date,
