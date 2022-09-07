@@ -62,7 +62,8 @@ bot.on('text', async (ctx) => {
   const username = ctx.message.from?.username || '';
   const existingContact = await container.model
     .userContactTable()
-    .whereRaw(`params->>'chatId' = '${ctx.chat.id}'`)
+    .whereRaw(`params->>'chatId' = ?`, [ctx.chat.id])
+    .andWhere('broker', ContactBroker.Telegram)
     .first();
 
   let user;
