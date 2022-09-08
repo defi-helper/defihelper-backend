@@ -70,6 +70,7 @@ export type Order<T extends CallData = CallData> = {
   confirmed: boolean;
   statusTask: string | null;
   watcherListenerId: string | null;
+  checkTaskId: string | null;
   createdAt: Date;
   updatedAt: Date;
 } & T;

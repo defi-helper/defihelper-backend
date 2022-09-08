@@ -216,6 +216,9 @@ handlers:
     queue-deferred:
       command: '"npm","run","queue:deferred"'
       schedule: "* * * * *"
+    minute5:
+      command: '"npm","run","schedule","--","--period","minute5"'
+      schedule: "*/5 * * * *"
     minute10:
       command: '"npm","run","schedule","--","--period","minute10"'
       schedule: "*/10 * * * *"

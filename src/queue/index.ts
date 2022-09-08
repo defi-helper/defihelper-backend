@@ -1,3 +1,4 @@
+export * as scheduleMinute5 from './schedule/minute5';
 export * as scheduleMinute10 from './schedule/minute10';
 export * as scheduleHourStart from './schedule/hourStart';
 export * as scheduleDayStart from './schedule/dayStart';
@@ -121,5 +122,7 @@ export * as sendTelegramNews from './sendTelegramNews';
 /* smart trade */
 export * as smartTradeOrderStatusResolve from './smartTrade/orderStatusResolve';
 export * as smartTradeOrderConfirm from './smartTrade/orderConfirm';
+export * as smartTradeOrderCheckBroker from './smartTrade/orderCheckBroker';
+export * as smartTradeOrderCheck from './smartTrade/orderCheck';
 export * as eventsSmartTradeOrderConfirmed from './events/smartTrade/orderConfirmed';
 export * as eventsSmartTradeOrderCallTxCreated from './events/smartTrade/orderCallTxCreated';

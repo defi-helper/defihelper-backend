@@ -64,6 +64,7 @@ export class SmartTradeService {
       confirmed,
       statusTask: null,
       watcherListenerId: null,
+      checkTaskId: null,
       updatedAt: new Date(),
       createdAt: new Date(),
     };
