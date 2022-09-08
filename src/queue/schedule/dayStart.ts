@@ -16,8 +16,6 @@ export default async (process: Process) => {
     queue.push('notificationAutomateWalletsNotEnoughFundsBroker', {}),
     queue.push('metricsContractAprWeekRealBroker', {}),
     queue.push('metricsUserBalancesBroker', {}),
-    queue.push('metricsWalletRegistrySync', {}),
-    queue.push('metricsWalletTokenRegistrySync', {}),
     queue.push('metricsWalletBalancesWavesBroker', {}),
     queue.push('migratablePoolsBroker', {}),
     queue.push('metricsWalletProtocolsBalancesDeBankBroker', {}),
