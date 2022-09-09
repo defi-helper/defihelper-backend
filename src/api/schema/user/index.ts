@@ -2002,6 +2002,10 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
               description: 'Merged target account to current account',
               defaultValue: false,
             },
+            locale: {
+              type: GraphQLNonNull(GraphQLString),
+              description: 'Locale',
+            },
           },
         }),
       ),
@@ -2035,7 +2039,8 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
         .first();
       if (!duplicateWallet) {
         const user =
-          currentUser ?? (await userService.create(Role.User, input.timezone, codeRecord));
+          currentUser ??
+          (await userService.create(Role.User, input.timezone, codeRecord, input.locale));
         return userService.auth(
           user,
           await container.model
@@ -2108,6 +2113,7 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
         user.timezone = await userService
           .update({
             ...user,
+            locale: input.locale,
             timezone: input.timezone,
           })
           .then(({ timezone }) => timezone);
@@ -2116,7 +2122,9 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
       return userService.auth(user, duplicateWallet);
     }
 
-    const user = currentUser ?? (await userService.create(Role.User, input.timezone, codeRecord));
+    const user =
+      currentUser ??
+      (await userService.create(Role.User, input.timezone, codeRecord, input.locale));
     return userService.auth(
       user,
       await container.model
@@ -2171,6 +2179,10 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
               type: GraphQLNonNull(GraphQLString),
               description: 'Timezone',
             },
+            locale: {
+              type: GraphQLNonNull(GraphQLString),
+              description: 'Locale',
+            },
             merge: {
               type: GraphQLBoolean,
               description: 'Merged target account to current account',
@@ -2214,7 +2226,8 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
         .first();
       if (!duplicateWallet) {
         const user =
-          currentUser ?? (await userService.create(Role.User, input.timezone, codeRecord));
+          currentUser ??
+          (await userService.create(Role.User, input.timezone, codeRecord, input.locale));
         return userService.auth(
           user,
           await container.model
@@ -2292,6 +2305,7 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
           .update({
             ...user,
             timezone: input.timezone,
+            locale: input.locale,
           })
           .then(({ timezone }) => timezone);
       }
@@ -2299,7 +2313,9 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
       return userService.auth(user, duplicateWallet);
     }
 
-    const user = currentUser ?? (await userService.create(Role.User, input.timezone, codeRecord));
+    const user =
+      currentUser ??
+      (await userService.create(Role.User, input.timezone, codeRecord, input.locale));
     return userService.auth(
       user,
       await container.model
