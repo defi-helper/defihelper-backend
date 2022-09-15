@@ -1138,28 +1138,16 @@ export const UserType = new GraphQLObjectType<User, Request>({
       },
     },
 
+    isPortfolioCollectingFreezed: {
+      type: GraphQLNonNull(GraphQLBoolean),
+      description: 'Is portfolio metrics tracking freezed',
+      resolve: (user) => !user.isMetricsTracked,
+    },
+
     portfolioCollectingFreezedAt: {
       type: GraphQLNonNull(DateTimeType),
       description: 'Whan portfolio collecting (will be/was) freezed',
-      resolve: async (user) => {
-        const cacheKey = await container
-          .cache()
-          .promises.get(`defihelper:portfolio-preload:${user.id}`)
-          .catch(() => null);
-
-        if (cacheKey === null) {
-          container.model
-            .queueService()
-            .push('metricsUserPortfolioFiller', { id: user.id }, { priority: 9 });
-          container.cache().promises.setex(
-            `defihelper:portfolio-preload:${user.id}`,
-            3600, // 1 hour
-            'true',
-          );
-        }
-
-        return user.;
-      },
+      resolve: (user) => dayjs(user.createdAt).add(30, 'days'),
     },
     tokenAliasesStakedMetrics: {
       type: GraphQLNonNull(
