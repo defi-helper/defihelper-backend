@@ -131,6 +131,10 @@ export class ModelContainer extends Container<typeof AppContainer> {
     this.parent.database,
   );
 
+  readonly tagContractLinkTable = Models.Protocol.Entity.tagContractLinkTableFactory(
+    this.parent.database,
+  );
+
   readonly contractService = singleton(
     () =>
       new Models.Protocol.Service.ContractService(
@@ -142,6 +146,7 @@ export class ModelContainer extends Container<typeof AppContainer> {
         this.walletContractLinkTable,
         this.tokenContractLinkTable,
         this.userContractLinkTable,
+        this.tagContractLinkTable,
       ),
   );
 
@@ -274,6 +279,10 @@ export class ModelContainer extends Container<typeof AppContainer> {
   readonly metadataService = singleton(
     () => new Models.Protocol.Service.MetadataService(this.metadataTable),
   );
+
+  readonly tagTable = Models.Tag.Entity.tagTableFactory(this.parent.database);
+
+  readonly tagService = singleton(() => new Models.Tag.Service.TagService(this.tagTable));
 
   readonly govProposalTable = Models.Governance.Entity.proposalTableFactory(this.parent.database);
 

@@ -13,6 +13,8 @@ import {
   ContractBlockchainType,
 } from '@models/Protocol/Entity';
 import { apyBoost } from '@services/RestakeStrategy';
+import BigNumber from 'bignumber.js';
+import { TagType, TagPreservedName } from '@models/Tag/Entity';
 
 async function getOrCreateToken(contract: Contract & ContractBlockchainType, address: string) {
   const addressNormalize = contract.blockchain === 'ethereum' ? address.toLowerCase() : address;
@@ -127,6 +129,7 @@ export async function contractMetrics(process: Process) {
     typeof contractAdapterData.metrics === 'object' &&
     Object.keys(contractAdapterData.metrics).length > 0
   ) {
+    const tvl = new BigNumber(contractAdapterData.metrics.tvl ?? '0');
     await Promise.all([
       metricService.createContract(contract, contractAdapterData.metrics, date),
       container.model.contractService().updateBlockchain({
@@ -147,6 +150,38 @@ export async function contractMetrics(process: Process) {
         },
       }),
     ]);
+
+    await container.model.contractService().unlinkAllTagsByType(contract, TagType.Tvl);
+    let promise = Promise.resolve();
+
+    if (tvl.gte(100_000)) {
+      promise = container.model
+        .tagService()
+        .firstOrCreate(TagType.Tvl, TagPreservedName.TvlHundredThousand)
+        .then((tag) => container.model.contractService().linkTag(contract, tag));
+    }
+
+    if (tvl.gte(1_000_000)) {
+      promise = container.model
+        .tagService()
+        .firstOrCreate(TagType.Tvl, TagPreservedName.TvlOneMillion)
+        .then((tag) => container.model.contractService().linkTag(contract, tag));
+    }
+
+    if (tvl.gte(10_000_000)) {
+      promise = container.model
+        .tagService()
+        .firstOrCreate(TagType.Tvl, TagPreservedName.TvlTenMillion)
+        .then((tag) => container.model.contractService().linkTag(contract, tag));
+    }
+    if (tvl.gte(100_000_000)) {
+      promise = container.model
+        .tagService()
+        .firstOrCreate(TagType.Tvl, TagPreservedName.TvlHundredMillion)
+        .then((tag) => container.model.contractService().linkTag(contract, tag));
+    }
+
+    await promise;
 
     if (contractAdapterData.stakeToken) {
       await registerToken(

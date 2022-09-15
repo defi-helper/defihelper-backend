@@ -31,6 +31,7 @@ import {
   ContractDebankType as EntityContractDebankType,
   contractDebankTableName,
   ContractRiskFactor,
+  tagContractLinkTableName,
 } from '@models/Protocol/Entity';
 import { apyBoost } from '@services/RestakeStrategy';
 import {
@@ -51,6 +52,7 @@ import { Blockchain } from '@models/types';
 import { Post } from '@models/Protocol/Social/Entity';
 import { tokenPartTableName, tokenTableName } from '@models/Token/Entity';
 import { PostProvider } from '@services/SocialStats';
+import { tagTableName } from '@models/Tag/Entity';
 import {
   BlockchainEnum,
   BlockchainFilterInputType,
@@ -67,6 +69,7 @@ import {
   MetricChangeType,
 } from '../types';
 import { TokenType } from '../token';
+import { TagType } from '../tag';
 
 export const ContractRiskFactorEnum = new GraphQLEnumType({
   name: 'ContractRiskFactorEnum',
@@ -457,6 +460,22 @@ export const ContractType: GraphQLObjectType = new GraphQLObjectType<
       type: GraphQLNonNull(ContractTokenLinkType),
       resolve: (contract) => contract,
     },
+    tags: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(TagType))),
+      resolve: async (contract) => {
+        const tags = await container.model
+          .tagTable()
+          .column(`${tagTableName}.*`)
+          .innerJoin(
+            tagContractLinkTableName,
+            `${tagContractLinkTableName}.tag`,
+            `${tagTableName}.id`,
+          )
+          .where(`${tagContractLinkTableName}.contract`, contract.id);
+
+        return tags;
+      },
+    },
     createdAt: {
       type: GraphQLNonNull(DateTimeType),
       description: 'Date of created account',
@@ -623,6 +642,9 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
           protocol: {
             type: GraphQLList(GraphQLNonNull(UuidType)),
           },
+          tag: {
+            type: GraphQLList(GraphQLNonNull(UuidType)),
+          },
           blockchain: {
             type: BlockchainFilterInputType,
           },
@@ -699,7 +721,7 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
         `${contractTableName}.id`,
       )
       .where(function () {
-        const { id, protocol, hidden, deprecated, risk, userLink, search } = filter;
+        const { id, protocol, hidden, deprecated, risk, userLink, search, tag } = filter;
         if (id) {
           this.where(`${contractTableName}.id`, id);
         } else {
@@ -720,6 +742,22 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
           }
           if (typeof deprecated === 'boolean') {
             this.where('deprecated', deprecated);
+          }
+
+          if (typeof tag === 'object') {
+            this.whereIn(
+              `${contractTableName}.id`,
+              container.model
+                .contractTable()
+                .column(`${contractTableName}.id`)
+                .innerJoin(
+                  tagContractLinkTableName,
+                  `${tagContractLinkTableName}.contract`,
+                  `${contractTableName}.id`,
+                )
+                .innerJoin(tagTableName, `${tagTableName}.id`, `${tagContractLinkTableName}.tag`)
+                .whereIn(`${tagTableName}.id`, tag),
+            );
           }
 
           if (typeof risk === 'string') {

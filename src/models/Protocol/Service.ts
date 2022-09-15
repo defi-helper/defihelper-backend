@@ -7,6 +7,7 @@ import { Factory } from '@services/Container';
 import { Emitter } from '@services/Event';
 import { v4 as uuid } from 'uuid';
 import Knex from 'knex';
+import { Tag, tagTableName, TagType } from '@models/Tag/Entity';
 import {
   Protocol,
   ProtocolTable,
@@ -31,6 +32,9 @@ import {
   UserContractLinkType,
   ContractMigratableRemindersBulkTable,
   ContractMigratableRemindersBulk,
+  TagContractLinkTable,
+  TagContractLink,
+  tagContractLinkTableName,
 } from './Entity';
 
 export class ProtocolService {
@@ -159,7 +163,52 @@ export class ContractService {
     readonly walletLinkTable: Factory<WalletContractLinkTable>,
     readonly tokenLinkTable: Factory<TokenContractLinkTable>,
     readonly userLinkTable: Factory<UserContractLinkTable>,
+    readonly tagLinkTable: Factory<TagContractLinkTable>,
   ) {}
+
+  async linkTag(contract: Contract, tag: Tag): Promise<void> {
+    const existing = await this.tagLinkTable()
+      .where({
+        contract: contract.id,
+        tag: tag.id,
+      })
+      .first();
+
+    if (existing) {
+      return;
+    }
+
+    const created: TagContractLink = {
+      id: uuid(),
+      tag: tag.id,
+      contract: contract.id,
+      createdAt: new Date(),
+    };
+    await this.tagLinkTable().insert(created);
+  }
+
+  async unlinkTag(contract: Contract, tag: Tag): Promise<void> {
+    await this.tagLinkTable()
+      .where({
+        contract: contract.id,
+        tag: tag.id,
+      })
+      .delete();
+  }
+
+  async unlinkAllTagsByType(contract: Contract, type: TagType): Promise<void> {
+    await this.tagLinkTable()
+      .whereIn(
+        'id',
+        container.model
+          .tagContractLinkTable()
+          .column(`${tagContractLinkTableName}.id`)
+          .innerJoin(tagTableName, `${tagTableName}.id`, `${tagContractLinkTableName}.tag`)
+          .whereRaw(`${tagTableName}.type = ?`, [type])
+          .andWhere('contract', contract.id),
+      )
+      .delete();
+  }
 
   async scheduleMigrationReminder(
     contract: Contract,
