@@ -1137,6 +1137,18 @@ export const UserType = new GraphQLObjectType<User, Request>({
         return user.isPorfolioCollected;
       },
     },
+
+    isPortfolioCollectingFreezed: {
+      type: GraphQLNonNull(GraphQLBoolean),
+      description: 'Is portfolio metrics tracking freezed',
+      resolve: (user) => !user.isMetricsTracked,
+    },
+
+    portfolioCollectingFreezedAt: {
+      type: GraphQLNonNull(DateTimeType),
+      description: 'Whan portfolio collecting (will be/was) freezed',
+      resolve: (user) => dayjs(user.createdAt).add(30, 'days'),
+    },
     tokenAliasesStakedMetrics: {
       type: GraphQLNonNull(
         PaginateList(
