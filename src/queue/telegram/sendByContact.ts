@@ -47,5 +47,10 @@ export default async (process: Process) => {
     throw error;
   }
 
+  await container.model.queueService().push('amplitudeLogEvent', {
+    name: 'telegram_send_message_success',
+    user: user.id,
+  });
+
   return process.done();
 };
