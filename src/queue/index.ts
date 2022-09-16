@@ -55,6 +55,7 @@ export * as emptyWalletsBroker from './billing/emptyWalletsBroker';
 export * as eventsBillingTransferTxCreated from './events/billing/transferTxCreated';
 
 /* metrics */
+export * as metricsTrackingConditionsBroker from './metrics/userMetricsTrackingConditionsBroker';
 export * as metricsUserPortfolioFiller from './metrics/userPortfolioFiller';
 export * as metricsUserBalancesBroker from './metrics/walletBalances/userBalancesBroker';
 export * as metricsUserBalancesFiller from './metrics/walletBalances/userBalancesFiller';
@@ -113,6 +114,7 @@ export * as tokensDeleteDuplicates from './token/deleteTokenDuplicates';
 /* logs */
 export * as logBilling from './log/billingLogger';
 export * as logStuckQueueTask from './log/stuckQueueTaskWarning';
+export * as amplitudeLogEvent from './log/amplitudeLogEvent';
 
 /* treasury */
 export * as treasuryStatsCache from './treasury/cache';

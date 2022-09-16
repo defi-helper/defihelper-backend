@@ -16,6 +16,7 @@ export interface User {
   locale: Locale;
   timezone: string;
   authAt: Date;
+  isMetricsTracked: boolean;
   lastSeenAt: Date;
   updatedAt: Date;
   createdAt: Date;
