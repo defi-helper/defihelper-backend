@@ -1138,16 +1138,19 @@ export const UserType = new GraphQLObjectType<User, Request>({
       },
     },
 
-    isPortfolioCollectingFreezed: {
-      type: GraphQLNonNull(GraphQLBoolean),
-      description: 'Is portfolio metrics tracking freezed',
-      resolve: (user) => !user.isMetricsTracked,
-    },
-
     portfolioCollectingFreezedAt: {
-      type: GraphQLNonNull(DateTimeType),
+      type: DateTimeType,
       description: 'Whan portfolio collecting (will be/was) freezed',
-      resolve: (user) => dayjs(user.createdAt).add(30, 'days'),
+      resolve: async (user) => {
+        const [row] = await container.model.userContactTable().count().where('user', user.id);
+        const numberOfContacts = new BN(row?.count ?? 0);
+
+        if (numberOfContacts.gt(0)) {
+          return null;
+        }
+
+        return dayjs(user.createdAt).add(30, 'days');
+      },
     },
     tokenAliasesStakedMetrics: {
       type: GraphQLNonNull(
