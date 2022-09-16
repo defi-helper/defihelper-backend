@@ -114,6 +114,7 @@ export * as tokensDeleteDuplicates from './token/deleteTokenDuplicates';
 /* logs */
 export * as logBilling from './log/billingLogger';
 export * as logStuckQueueTask from './log/stuckQueueTaskWarning';
+export * as amplitudeLogEvent from './log/amplitudeLogEvent';
 
 /* treasury */
 export * as treasuryStatsCache from './treasury/cache';
