@@ -12,6 +12,10 @@ export interface Params {
 export default async (process: Process) => {
   const { name, user, payload } = process.task.params as Params;
 
-  await container.amplitude().log(name, user, payload ?? {});
+  const res = await container.amplitude().log(name, user, payload ?? {});
+  if (res.statusCode !== 200) {
+    throw new Error(`Amplitude did not accepted the request: ${res.status}`);
+  }
+
   return process.done();
 };
