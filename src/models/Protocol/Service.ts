@@ -166,7 +166,7 @@ export class ContractService {
     readonly tagLinkTable: Factory<TagContractLinkTable>,
   ) {}
 
-  async linkTag(contract: Contract, tag: Tag): Promise<void> {
+  async linkTag(contract: Contract, tag: Tag) {
     const existing = await this.tagLinkTable()
       .where({
         contract: contract.id,
@@ -187,7 +187,7 @@ export class ContractService {
     await this.tagLinkTable().insert(created);
   }
 
-  async unlinkTag(contract: Contract, tag: Tag): Promise<void> {
+  async unlinkTag(contract: Contract, tag: Tag) {
     await this.tagLinkTable()
       .where({
         contract: contract.id,
@@ -204,7 +204,7 @@ export class ContractService {
           .tagContractLinkTable()
           .column(`${tagContractLinkTableName}.id`)
           .innerJoin(tagTableName, `${tagTableName}.id`, `${tagContractLinkTableName}.tag`)
-          .whereRaw(`${tagTableName}.type = ?`, [type])
+          .andWhere(`${tagTableName}.type`, type)
           .andWhere('contract', contract.id),
       )
       .delete();

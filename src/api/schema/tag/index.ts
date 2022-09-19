@@ -36,8 +36,5 @@ export const TagType = new GraphQLObjectType({
 
 export const TagsListQuery: GraphQLFieldConfig<any, Request> = {
   type: GraphQLNonNull(GraphQLList(GraphQLNonNull(TagType))),
-  resolve: async () => {
-    const tags = await container.model.tagTable();
-    return tags;
-  },
+  resolve: () => container.model.tagTable(),
 };
