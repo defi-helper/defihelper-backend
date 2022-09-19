@@ -14,10 +14,8 @@ export default async (process: Process) => {
       `${userContactTableName}.id`,
     )
     .innerJoin(userTableName, `${userContactTableName}.user`, `${userTableName}.id`)
-    .where({
-      status: ContactStatus.Active,
-      type: UserNotificationType.PortfolioMetrics,
-    })
+    .where(`${userContactTableName}.status`, ContactStatus.Active)
+    .where(`${userNotificationTableName}.type`, UserNotificationType.PortfolioMetrics)
     .andWhereRaw(
       `to_char(NOW() AT TIME ZONE "${userTableName}".timezone,'HH24') = to_char("${userNotificationTableName}".time,'HH24')`,
     );
