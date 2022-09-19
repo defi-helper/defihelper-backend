@@ -325,4 +325,23 @@ export class ModelContainer extends Container<typeof AppContainer> {
         this.walletTable,
       ),
   );
+
+  readonly smartTradeOrderTable = Models.SmartTrade.Entity.smartTradeOrderTableFactory(
+    this.parent.database,
+  );
+
+  readonly smartTradeOrderTokenLinkTable =
+    Models.SmartTrade.Entity.smartTradeOrderTokenLinkTableFactory(this.parent.database);
+
+  readonly smartTradeOrderCallHistoryTable =
+    Models.SmartTrade.Entity.smartTradeOrderCallHistoryTableFactory(this.parent.database);
+
+  readonly smartTradeService = singleton(
+    () =>
+      new Models.SmartTrade.Service.SmartTradeService(
+        this.smartTradeOrderTable,
+        this.smartTradeOrderTokenLinkTable,
+        this.smartTradeOrderCallHistoryTable,
+      ),
+  );
 }

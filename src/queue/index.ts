@@ -58,6 +58,7 @@ export * as emptyWalletsBroker from './billing/emptyWalletsBroker';
 export * as eventsBillingTransferTxCreated from './events/billing/transferTxCreated';
 
 /* metrics */
+export * as metricsTrackingConditionsBroker from './metrics/userMetricsTrackingConditionsBroker';
 export * as metricsUserPortfolioFiller from './metrics/userPortfolioFiller';
 export * as metricsUserBalancesBroker from './metrics/walletBalances/userBalancesBroker';
 export * as metricsUserBalancesFiller from './metrics/walletBalances/userBalancesFiller';
@@ -83,6 +84,9 @@ export * as notificationPortfolioMetricsNotify from './notifications/PortfolioMe
 export * as notificationPortfolioMetricsNotifyHourly from './notifications/PortfolioMetrics/hourly';
 export * as notificationAutomateWalletsNotEnoughFundsNotify from './notifications/AutomateWalletsNotEnoughFunds/sender';
 export * as notificationAutomateWalletsNotEnoughFundsBroker from './notifications/AutomateWalletsNotEnoughFunds/broker';
+export * as migratablePoolsBroker from './notifications/migratablePoolsBroker';
+export * as migratablePoolsNotifyUser from './notifications/migratablePoolsNotifyUser';
+export * as migratablePoolsBatch from './notifications/migratablePoolsBatch';
 
 /* events */
 export * as eventsMetricContractCreated from './events/metricContractCreated';
@@ -114,12 +118,17 @@ export * as tokensDeleteDuplicates from './token/deleteTokenDuplicates';
 /* logs */
 export * as logBilling from './log/billingLogger';
 export * as logStuckQueueTask from './log/stuckQueueTaskWarning';
+export * as amplitudeLogEvent from './log/amplitudeLogEvent';
 
 /* treasury */
 export * as treasuryStatsCache from './treasury/cache';
 
 export * as sendTelegramNews from './sendTelegramNews';
 
-export * as migratablePoolsBroker from './notifications/migratablePoolsBroker';
-export * as migratablePoolsNotifyUser from './notifications/migratablePoolsNotifyUser';
-export * as migratablePoolsBatch from './notifications/migratablePoolsBatch';
+/* smart trade */
+export * as smartTradeOrderStatusResolve from './smartTrade/orderStatusResolve';
+export * as smartTradeOrderConfirm from './smartTrade/orderConfirm';
+export * as smartTradeOrderCheckBroker from './smartTrade/orderCheckBroker';
+export * as smartTradeOrderCheck from './smartTrade/orderCheck';
+export * as eventsSmartTradeOrderConfirmed from './events/smartTrade/orderConfirmed';
+export * as eventsSmartTradeOrderCallTxCreated from './events/smartTrade/orderCallTxCreated';

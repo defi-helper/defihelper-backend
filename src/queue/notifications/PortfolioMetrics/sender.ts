@@ -54,7 +54,7 @@ export default async (process: Process) => {
       earnedUSDDayBefore,
       stakingUSDDayBefore,
     },
-    { usd: totalTokensUSD },
+    { usd: totalTokensUSD, usdDayBefore },
   ] = await Promise.all([
     dataLoader.userMetric().load(contact.user),
     dataLoader
@@ -64,40 +64,35 @@ export default async (process: Process) => {
       })
       .load(contact.user),
   ]);
+  if (!totalStackedUSD) {
+    return process.done().info('no totalStackedUSD');
+  }
 
-  if (!totalStackedUSD) return process.done().info('no totalStackedUSD');
-  const totalEarnedUSDFixedFloating = new BN(totalEarnedUSD).toFixed(2);
-  const totalNetWorth = new BN(totalStackedUSD)
-    .plus(totalEarnedUSD)
-    .plus(totalTokensUSD)
-    .toFixed(2);
-
-  const totalEarnedChange =
-    Number(earnedUSDDayBefore) !== 0 ? new BN(totalEarnedUSD).div(earnedUSDDayBefore) : new BN(0);
-  const totalEarnedChangePercentage = totalEarnedChange.minus(1).multipliedBy(100);
-
-  const totalNetWorthChange =
+  const totalNetWorth = new BN(totalStackedUSD).plus(totalEarnedUSD).plus(totalTokensUSD);
+  const worthDayBefore = new BN(stakingUSDDayBefore).plus(earnedUSDDayBefore).plus(usdDayBefore);
+  const worthChange =
     Number(stakingUSDDayBefore) !== 0
-      ? new BN(totalStackedUSD).div(stakingUSDDayBefore)
+      ? new BN(totalNetWorth).div(worthDayBefore).multipliedBy(100)
       : new BN(0);
-  const totalNetWorthChangePercentage = totalNetWorthChange.minus(1).multipliedBy(100);
+  const earnedChange =
+    Number(earnedUSDDayBefore) !== 0
+      ? new BN(totalEarnedUSD).div(earnedUSDDayBefore).multipliedBy(100)
+      : new BN(0);
+
+  const templateParams = {
+    name: user.name === '' ? 'My Portfolio' : user.name,
+    totalNetWorth: totalNetWorth.toFixed(2),
+    totalEarnedUSD: new BN(totalEarnedUSD).toFixed(2),
+    percentageEarned: `${earnedChange.isPositive() ? '+' : ''}${earnedChange.toFixed(2)}`,
+    percentageTracked: `${worthChange.isPositive() ? '+' : ''}${worthChange.toFixed(2)}`,
+  };
 
   switch (contact.broker) {
     case ContactBroker.Telegram:
       await container.model.queueService().push('sendTelegramByContact', {
         contactId: contact.id,
-        params: {
-          name: user.name === '' ? 'My Portfolio' : user.name,
-          totalNetWorth,
-          totalEarnedUSD: totalEarnedUSDFixedFloating,
-          percentageEarned: `${
-            totalEarnedChangePercentage.isPositive() ? '+' : ''
-          }${totalEarnedChangePercentage.toFixed(2)}`,
-          percentageTracked: `${
-            totalNetWorthChangePercentage.isPositive() ? '+' : ''
-          }${totalNetWorthChangePercentage.toFixed(2)}`,
-        },
         template: 'portfolioMetrics',
+        params: templateParams,
       });
       break;
     case ContactBroker.Email:
@@ -105,15 +100,7 @@ export default async (process: Process) => {
         'portfolioMetrics',
         {
           ...container.template.i18n(container.i18n.byLocale(user.locale)),
-          name: user.name === '' ? 'My Portfolio' : user.name,
-          totalNetWorth,
-          totalEarnedUSD: totalEarnedUSDFixedFloating,
-          percentageEarned: `${
-            totalEarnedChangePercentage.isPositive() ? '+' : ''
-          } ${totalEarnedChangePercentage.toFixed(2)}`,
-          percentageTracked: `${
-            totalNetWorthChangePercentage.isPositive() ? '+' : ''
-          } ${totalNetWorthChangePercentage.toFixed(2)}`,
+          ...templateParams,
         },
         'Portfolio statistics',
         contact.address,

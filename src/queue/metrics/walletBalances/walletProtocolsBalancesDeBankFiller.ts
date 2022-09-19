@@ -533,8 +533,9 @@ export default async (process: Process) => {
     Object.entries(lastTokenMetricsAcrossWallets).map(([lastMetricWalletId, metrics]) => {
       return Promise.all(
         metrics.map(async (metricEntry) => {
+          const touchedMetricsList = touchedMetrics[lastMetricWalletId] ?? [];
           if (
-            touchedMetrics[lastMetricWalletId].some((exstng) => exstng.token === metricEntry.id) ||
+            touchedMetricsList.some((exstng) => exstng.token === metricEntry.id) ||
             metricEntry.balance === '0'
           ) {
             return null;

@@ -8,6 +8,11 @@ export const Templates = {
   triggerTemplate: fs.promises.readFile(`${__dirname}/Trigger.mustache`, 'utf8'),
   portfolioMetrics: fs.promises.readFile(`${__dirname}/PortfolioMetrics.mustache`, 'utf8'),
   publicBetaStarted: fs.promises.readFile(`${__dirname}/PublicBetaStarted.mustache`, 'utf8'),
+  walletConnectWelcome: fs.promises.readFile(`${__dirname}/WalletConnectWelcome.mustache`, 'utf8'),
+  welcomeNewWalletConnect: fs.promises.readFile(
+    `${__dirname}/WelcomeNewWalletConnect.mustache`,
+    'utf8',
+  ),
   automationsMigrableContracts: fs.promises.readFile(
     `${__dirname}/AutomationsMigrableContracts.mustache`,
     'utf8',

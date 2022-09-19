@@ -2,7 +2,7 @@ import { Config as EthereumConfig } from '@services/Blockchain/Ethereum';
 import { Config as WavesConfig } from '@services/Blockchain/Waves';
 import dotenv from 'dotenv';
 
-dotenv.config();
+dotenv.config({ path: './configuration/.env' });
 
 function int(value: string): number {
   return parseInt(value, 10);
@@ -26,6 +26,9 @@ export default {
   },
   scanner: {
     host: process.env.SCANNER_HOST ?? 'https://scanner-local.defihelper.io',
+  },
+  debank: {
+    apiKey: process.env.DEBANK_API_KEY ?? '',
   },
   cryptography: {
     // key must be 128 bit length
