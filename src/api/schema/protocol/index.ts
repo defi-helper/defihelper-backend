@@ -31,7 +31,6 @@ import {
   ContractDebankType as EntityContractDebankType,
   contractDebankTableName,
   ContractRiskFactor,
-  tagContractLinkTableName,
 } from '@models/Protocol/Entity';
 import { apyBoost } from '@services/RestakeStrategy';
 import {
@@ -52,7 +51,6 @@ import { Blockchain } from '@models/types';
 import { Post } from '@models/Protocol/Social/Entity';
 import { tokenPartTableName, tokenTableName } from '@models/Token/Entity';
 import { PostProvider } from '@services/SocialStats';
-import { tagTableName } from '@models/Tag/Entity';
 import {
   BlockchainEnum,
   BlockchainFilterInputType,
@@ -462,19 +460,7 @@ export const ContractType: GraphQLObjectType = new GraphQLObjectType<
     },
     tags: {
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(TagType))),
-      resolve: async (contract) => {
-        const tags = await container.model
-          .tagTable()
-          .column(`${tagTableName}.*`)
-          .innerJoin(
-            tagContractLinkTableName,
-            `${tagContractLinkTableName}.tag`,
-            `${tagTableName}.id`,
-          )
-          .where(`${tagContractLinkTableName}.contract`, contract.id);
-
-        return tags;
-      },
+      resolve: async (contract, _, { dataLoader }) => dataLoader.tag().load(contract.id),
     },
     createdAt: {
       type: GraphQLNonNull(DateTimeType),
@@ -747,16 +733,7 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
           if (typeof tag === 'object') {
             this.whereIn(
               `${contractTableName}.id`,
-              container.model
-                .contractTable()
-                .column(`${contractTableName}.id`)
-                .innerJoin(
-                  tagContractLinkTableName,
-                  `${tagContractLinkTableName}.contract`,
-                  `${contractTableName}.id`,
-                )
-                .innerJoin(tagTableName, `${tagTableName}.id`, `${tagContractLinkTableName}.tag`)
-                .whereIn(`${tagTableName}.id`, tag),
+              container.model.tagContractLinkTable().column('contract').whereIn('tag', tag),
             );
           }
 

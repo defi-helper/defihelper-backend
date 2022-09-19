@@ -147,6 +147,7 @@ export class ModelContainer extends Container<typeof AppContainer> {
         this.tokenContractLinkTable,
         this.userContractLinkTable,
         this.tagContractLinkTable,
+        this.tagTable,
       ),
   );
 

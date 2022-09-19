@@ -7,7 +7,7 @@ import { Factory } from '@services/Container';
 import { Emitter } from '@services/Event';
 import { v4 as uuid } from 'uuid';
 import Knex from 'knex';
-import { Tag, tagTableName, TagType } from '@models/Tag/Entity';
+import { Tag, TagTable, TagType } from '@models/Tag/Entity';
 import {
   Protocol,
   ProtocolTable,
@@ -34,7 +34,6 @@ import {
   ContractMigratableRemindersBulk,
   TagContractLinkTable,
   TagContractLink,
-  tagContractLinkTableName,
 } from './Entity';
 
 export class ProtocolService {
@@ -164,6 +163,7 @@ export class ContractService {
     readonly tokenLinkTable: Factory<TokenContractLinkTable>,
     readonly userLinkTable: Factory<UserContractLinkTable>,
     readonly tagLinkTable: Factory<TagContractLinkTable>,
+    readonly tagTable: Factory<TagTable>,
   ) {}
 
   async linkTag(contract: Contract, tag: Tag) {
@@ -198,15 +198,8 @@ export class ContractService {
 
   async unlinkAllTagsByType(contract: Contract, type: TagType): Promise<void> {
     await this.tagLinkTable()
-      .whereIn(
-        'id',
-        container.model
-          .tagContractLinkTable()
-          .column(`${tagContractLinkTableName}.id`)
-          .innerJoin(tagTableName, `${tagTableName}.id`, `${tagContractLinkTableName}.tag`)
-          .andWhere(`${tagTableName}.type`, type)
-          .andWhere('contract', contract.id),
-      )
+      .whereIn('tag', this.tagTable().column('id').where('type', type))
+      .where('contract', contract.id)
       .delete();
   }
 

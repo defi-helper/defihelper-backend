@@ -1,4 +1,4 @@
-import { tableFactoryLegacy } from '@services/Database';
+import { typedTableFactory } from '@services/Database';
 
 export enum TagType {
   Tvl = 'tvl',
@@ -21,32 +21,45 @@ export enum TagPreservedName {
   TypeMajorTokens = 'Major tokens',
 }
 
-// todo introduce type checking here, but idk how it have to be :(
-export const TagPreservedTypeToNameBindings = {
-  [TagPreservedName.TvlHundredThousand]: TagType.Tvl,
-  [TagPreservedName.TvlOneMillion]: TagType.Tvl,
-  [TagPreservedName.TvlHundredThousand]: TagType.Tvl,
-  [TagPreservedName.TvlHundredThousand]: TagType.Tvl,
+interface TvlType {
+  type: TagType.Tvl;
+  name:
+    | TagPreservedName.TvlHundredThousand
+    | TagPreservedName.TvlOneMillion
+    | TagPreservedName.TvlTenMillion
+    | TagPreservedName.TvlHundredMillion;
+}
 
-  [TagPreservedName.RiskLow]: TagType.Risk,
-  [TagPreservedName.RiskModerate]: TagType.Risk,
-  [TagPreservedName.RiskHigh]: TagType.Risk,
+interface RiskType {
+  type: TagType.Risk;
+  name: TagPreservedName.RiskLow | TagPreservedName.RiskModerate | TagPreservedName.RiskHigh;
+}
 
-  [TagPreservedName.TypeStable]: TagType.Pool,
-  [TagPreservedName.TypeStableVsNative]: TagType.Pool,
-  [TagPreservedName.TypeMajorTokens]: TagType.Pool,
-};
+interface SpecialMarkType {
+  type: TagType.Pool;
+  name:
+    | TagPreservedName.TypeStable
+    | TagPreservedName.TypeStableVsNative
+    | TagPreservedName.TypeMajorTokens;
+}
 
-export interface Tag {
+export type TagTypePair = TvlType | RiskType | SpecialMarkType;
+
+export type Tag = TagEntity & TagTypePair;
+export interface TagEntity {
   id: string;
-  type: TagType;
-  name: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
 export const tagTableName = 'tag';
 
-export const tagTableFactory = tableFactoryLegacy<Tag>(tagTableName);
+export const tagTableFactory = typedTableFactory(tagTableName);
 
 export type TagTable = ReturnType<ReturnType<typeof tagTableFactory>>;
+
+declare module 'knex/types/tables' {
+  interface Tables {
+    [tagTableName]: Tag;
+  }
+}
