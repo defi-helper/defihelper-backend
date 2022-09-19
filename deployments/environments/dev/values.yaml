@@ -44,112 +44,112 @@ ingress:
       hosts:
         - backend-dev.defihelper.info
 
-#broker:
-#  process:
-#    labels:
-#      app: app
-#      component: broker
-#      environment: prod
-#      queue: process
-#    queues:
-#      queue:
-#        name: queue
-#        command: '"npm","run","queue:consume","--","-q","tasks_default"'
-#        replicas: 1
-#        maxReplicas: 10
-#        maxReadyMessagesForHpa: 25
-#        graceperiod: 3600
-#        resources:
-#          requests:
-#            memory: 128Mi
-#            cpu: 50m
-#          limits:
-#            memory: 512Mi
-#            cpu: 100m
-#      events-smart-trade:
-#        name: events-smart-trade
-#        command: '"npm","run","smartTrade:event"'
-#        replicas: 1
-#        maxReplicas: 20
-#        maxReadyMessagesForHpa: 100
-#        graceperiod: 3600
-#        resources:
-#          requests:
-#            memory: 128Mi
-#            cpu: 50m
-#          limits:
-#            memory: 128Mi
-#            cpu: 100m
-#      events-trigger:
-#        name: events-trigger
-#        command: '"npm","run","trigger:event"'
-#        replicas: 1
-#        maxReplicas: 20
-#        maxReadyMessagesForHpa: 100
-#        graceperiod: 3600
-#        resources:
-#          requests:
-#            memory: 128Mi
-#            cpu: 50m
-#          limits:
-#            memory: 128Mi
-#            cpu: 100m
-#      trigger:
-#        name: trigger
-#        command: '"npm","run","queue:consume","--","-q","tasks_trigger"'
-#        replicas: 1
-#        maxReplicas: 20
-#        maxReadyMessagesForHpa: 100
-#        graceperiod: 3600
-#        resources:
-#          requests:
-#            memory: 128Mi
-#            cpu: 50m
-#          limits:
-#            memory: 128Mi
-#            cpu: 100m
-#      metrics:
-#        name: metrics
-#        command: '"npm","run","queue:consume","--","-q","tasks_metricCurrent"'
-#        replicas: 1
-#        maxReplicas: 20
-#        maxReadyMessagesForHpa: 100
-#        graceperiod: 3600
-#        resources:
-#          requests:
-#            memory: 128Mi
-#            cpu: 50m
-#          limits:
-#            memory: 128Mi
-#            cpu: 100m
-#      history:
-#        name: history
-#        command: '"npm","run","queue:consume","--","-q","tasks_metricHistory"'
-#        replicas: 1
-#        maxReplicas: 20
-#        maxReadyMessagesForHpa: 100
-#        graceperiod: 3600
-#        resources:
-#          requests:
-#            memory: 128Mi
-#            cpu: 50m
-#          limits:
-#            memory: 128Mi
-#            cpu: 100m
-#      telegram-bot:
-#        name: telegram-bot
-#        command: '"npm","run","telegram:bot"'
-#        replicas: 1
-#        maxReplicas: 1
-#        maxReadyMessagesForHpa: 5
-#        resources:
-#          requests:
-#            memory: 128Mi
-#            cpu: 50m
-#          limits:
-#            memory: 128Mi
-#            cpu: 100m
-#        graceperiod: 3600
+broker:
+  process:
+    labels:
+      app: app
+      component: broker
+      environment: prod
+      queue: process
+    queues:
+      queue:
+        name: queue
+        command: '"npm","run","queue:consume","--","-q","tasks_default"'
+        replicas: 1
+        maxReplicas: 10
+        maxReadyMessagesForHpa: 25
+        graceperiod: 3600
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 50m
+          limits:
+            memory: 512Mi
+            cpu: 100m
+      events-smart-trade:
+        name: events-smart-trade
+        command: '"npm","run","smartTrade:event"'
+        replicas: 1
+        maxReplicas: 20
+        maxReadyMessagesForHpa: 100
+        graceperiod: 3600
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 50m
+          limits:
+            memory: 128Mi
+            cpu: 100m
+      events-trigger:
+        name: events-trigger
+        command: '"npm","run","trigger:event"'
+        replicas: 1
+        maxReplicas: 20
+        maxReadyMessagesForHpa: 100
+        graceperiod: 3600
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 50m
+          limits:
+            memory: 128Mi
+            cpu: 100m
+      trigger:
+        name: trigger
+        command: '"npm","run","queue:consume","--","-q","tasks_trigger"'
+        replicas: 1
+        maxReplicas: 20
+        maxReadyMessagesForHpa: 100
+        graceperiod: 3600
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 50m
+          limits:
+            memory: 128Mi
+            cpu: 100m
+      metrics:
+        name: metrics
+        command: '"npm","run","queue:consume","--","-q","tasks_metricCurrent"'
+        replicas: 1
+        maxReplicas: 20
+        maxReadyMessagesForHpa: 100
+        graceperiod: 3600
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 50m
+          limits:
+            memory: 128Mi
+            cpu: 100m
+      history:
+        name: history
+        command: '"npm","run","queue:consume","--","-q","tasks_metricHistory"'
+        replicas: 1
+        maxReplicas: 20
+        maxReadyMessagesForHpa: 100
+        graceperiod: 3600
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 50m
+          limits:
+            memory: 128Mi
+            cpu: 100m
+      telegram-bot:
+        name: telegram-bot
+        command: '"npm","run","telegram:bot"'
+        replicas: 1
+        maxReplicas: 1
+        maxReadyMessagesForHpa: 5
+        resources:
+          requests:
+            memory: 128Mi
+            cpu: 50m
+          limits:
+            memory: 128Mi
+            cpu: 100m
+        graceperiod: 3600
 
 handlers:
   labels:
