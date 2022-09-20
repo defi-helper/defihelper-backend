@@ -29,9 +29,16 @@ bot.start(async ({ message }) => {
       chatId: message.chat.id.toString(),
     });
     const user = await container.model.userTable().where('id', userContact.user).first();
+    if (!user) return null;
+
     return container
       .telegram()
-      .send('welcomeTemplate', {}, message.chat.id, user?.locale || 'enUS');
+      .send(
+        'welcomeTemplate',
+        { username: userContact.name ?? userContact.address },
+        message.chat.id,
+        user.locale,
+      );
   }
 
   return container.telegram().send('welcomeNewWalletConnect', {}, message.chat.id, 'enUS');
