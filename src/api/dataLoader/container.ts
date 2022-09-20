@@ -9,7 +9,7 @@ import {
   protocolUserLastAPRLoader,
   protocolUserLastMetricLoader,
 } from './protocol';
-import { tagLoader } from './tag';
+import { tagContractLoader } from './tag';
 import { tokenAliasLoader, tokenAliasUserLastMetricLoader, tokenLoader } from './token';
 import {
   userBlockchainLoader,
@@ -26,7 +26,7 @@ import {
 export class DataLoaderContainer extends Container<{}> {
   readonly protocol = singleton(protocolLoader);
 
-  readonly tag = singleton(tagLoader);
+  readonly tag = singleton(tagContractLoader);
 
   readonly protocolFavorites = singletonParametric(protocolFavoritesLoader);
 

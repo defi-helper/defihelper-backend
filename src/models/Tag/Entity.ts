@@ -44,13 +44,10 @@ interface SpecialMarkType {
 }
 
 export type TagTypePair = TvlType | RiskType | SpecialMarkType;
-
-export type Tag = TagEntity & TagTypePair;
-export interface TagEntity {
+export type Tag = {
   id: string;
   createdAt: Date;
-  updatedAt: Date;
-}
+} & TagTypePair;
 
 export const tagTableName = 'tag';
 

@@ -730,7 +730,7 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
             this.where('deprecated', deprecated);
           }
 
-          if (typeof tag === 'object') {
+          if (Array.isArray(tag) && tag.length > 0) {
             this.whereIn(
               `${contractTableName}.id`,
               container.model.tagContractLinkTable().column('contract').whereIn('tag', tag),

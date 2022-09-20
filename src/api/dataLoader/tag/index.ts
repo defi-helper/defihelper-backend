@@ -3,7 +3,7 @@ import DataLoader from 'dataloader';
 import { Tag, tagTableName } from '@models/Tag/Entity';
 import { tagContractLinkTableName } from '@models/Protocol/Entity';
 
-export const tagLoader = () =>
+export const tagContractLoader = () =>
   new DataLoader<string, Tag | null>(async (contactsIds) => {
     const map = await container.model
       .tagTable()

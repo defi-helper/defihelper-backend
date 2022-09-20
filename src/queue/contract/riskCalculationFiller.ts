@@ -56,38 +56,24 @@ export default async (process: Process) => {
   }
 
   await container.model.contractService().unlinkAllTagsByType(contract, TagType.Risk);
-  switch (riskLevel) {
-    case ContractRiskFactor.low:
-      container.model
-        .tagService()
-        .createPreserved({
-          type: TagType.Risk,
-          name: TagPreservedName.RiskLow,
-        })
-        .then((tag) => container.model.contractService().linkTag(contract, tag));
-      break;
+  const appliedTag = {
+    [ContractRiskFactor.low]: TagPreservedName.RiskLow,
+    [ContractRiskFactor.moderate]: TagPreservedName.RiskModerate,
+    [ContractRiskFactor.high]: TagPreservedName.RiskHigh,
+    [ContractRiskFactor.notCalculated]: undefined,
+  };
 
-    case ContractRiskFactor.moderate:
-      container.model
-        .tagService()
-        .createPreserved({
-          type: TagType.Risk,
-          name: TagPreservedName.RiskModerate,
-        })
-        .then((tag) => container.model.contractService().linkTag(contract, tag));
-      break;
-
-    case ContractRiskFactor.high:
-      container.model
-        .tagService()
-        .createPreserved({
-          type: TagType.Risk,
-          name: TagPreservedName.RiskHigh,
-        })
-        .then((tag) => container.model.contractService().linkTag(contract, tag));
-      break;
-
-    default:
+  if (appliedTag[riskLevel]) {
+    await container.model
+      .tagService()
+      .createPreserved({
+        type: TagType.Risk,
+        name: appliedTag[riskLevel] as
+          | TagPreservedName.RiskLow
+          | TagPreservedName.RiskModerate
+          | TagPreservedName.RiskHigh,
+      })
+      .then((tag) => container.model.contractService().linkTag(contract, tag));
   }
 
   await Promise.all([

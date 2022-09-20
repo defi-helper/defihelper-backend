@@ -18,7 +18,6 @@ export class TagService {
       ...input,
       id: uuid(),
       createdAt: new Date(),
-      updatedAt: new Date(),
     };
 
     await this.table().insert(created);

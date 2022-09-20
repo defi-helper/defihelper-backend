@@ -172,38 +172,6 @@ export async function contractMetrics(process: Process) {
     const tvl = new BigNumber(contractAdapterData.metrics.tvl ?? '0');
     await container.model.contractService().unlinkAllTagsByType(contract, TagType.Tvl);
 
-    if (tvl.gte(100_000)) {
-      await container.model
-        .tagService()
-        .createPreserved({
-          type: TagType.Tvl,
-          name: TagPreservedName.TvlHundredThousand,
-        })
-        .then((tag) => container.model.contractService().linkTag(contract, tag));
-      return process.done();
-    }
-
-    if (tvl.gte(1_000_000)) {
-      await container.model
-        .tagService()
-        .createPreserved({
-          type: TagType.Tvl,
-          name: TagPreservedName.TvlOneMillion,
-        })
-        .then((tag) => container.model.contractService().linkTag(contract, tag));
-      return process.done();
-    }
-
-    if (tvl.gte(10_000_000)) {
-      await container.model
-        .tagService()
-        .createPreserved({
-          type: TagType.Tvl,
-          name: TagPreservedName.TvlTenMillion,
-        })
-        .then((tag) => container.model.contractService().linkTag(contract, tag));
-      return process.done();
-    }
     if (tvl.gte(100_000_000)) {
       await container.model
         .tagService()
@@ -212,7 +180,30 @@ export async function contractMetrics(process: Process) {
           name: TagPreservedName.TvlHundredMillion,
         })
         .then((tag) => container.model.contractService().linkTag(contract, tag));
-      return process.done();
+    } else if (tvl.gte(10_000_000)) {
+      await container.model
+        .tagService()
+        .createPreserved({
+          type: TagType.Tvl,
+          name: TagPreservedName.TvlTenMillion,
+        })
+        .then((tag) => container.model.contractService().linkTag(contract, tag));
+    } else if (tvl.gte(1_000_000)) {
+      await container.model
+        .tagService()
+        .createPreserved({
+          type: TagType.Tvl,
+          name: TagPreservedName.TvlOneMillion,
+        })
+        .then((tag) => container.model.contractService().linkTag(contract, tag));
+    } else if (tvl.gte(100_000)) {
+      await container.model
+        .tagService()
+        .createPreserved({
+          type: TagType.Tvl,
+          name: TagPreservedName.TvlHundredThousand,
+        })
+        .then((tag) => container.model.contractService().linkTag(contract, tag));
     }
   }
 

@@ -175,7 +175,7 @@ export class ContractService {
       .first();
 
     if (existing) {
-      return;
+      return existing;
     }
 
     const created: TagContractLink = {
@@ -185,6 +185,8 @@ export class ContractService {
       createdAt: new Date(),
     };
     await this.tagLinkTable().insert(created);
+
+    return created;
   }
 
   async unlinkTag(contract: Contract, tag: Tag) {
@@ -196,9 +198,9 @@ export class ContractService {
       .delete();
   }
 
-  async unlinkAllTagsByType(contract: Contract, type: TagType): Promise<void> {
+  async unlinkAllTagsByType(contract: Contract, type: TagType) {
     await this.tagLinkTable()
-      .whereIn('tag', this.tagTable().column('id').where('type', type))
+      .whereIn('tag', this.tagTable().where('type', type))
       .where('contract', contract.id)
       .delete();
   }
