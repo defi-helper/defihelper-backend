@@ -16,7 +16,7 @@ export default async (process: Process) => {
         .column(`${userTableName}.id`)
         .leftJoin(userContactTableName, `${userContactTableName}.user`, `${userTableName}.id`)
         .havingRaw(`count(${userContactTableName}.id) = 0`)
-        .whereRaw(`(CURRENT_TIMESTAMP::date - "${userTableName}"."createdAt"::date) > 30`)
+        .whereRaw(`(CURRENT_TIMESTAMP::date - "${userTableName}"."createdAt"::date) > 7`)
         .andWhere(`${userTableName}.isMetricsTracked`, true)
         .groupBy(`${userTableName}.id`),
     );
