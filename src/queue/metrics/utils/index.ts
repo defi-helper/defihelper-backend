@@ -170,38 +170,31 @@ export async function contractMetrics(process: Process) {
     }
 
     const tvl = new BigNumber(contractAdapterData.metrics.tvl ?? '0');
+    let choosenTag:
+      | TagPreservedName.TvlHundredThousand
+      | TagPreservedName.TvlHundredMillion
+      | TagPreservedName.TvlTenMillion
+      | TagPreservedName.TvlOneMillion
+      | undefined;
+
     await container.model.contractService().unlinkAllTagsByType(contract, TagType.Tvl);
 
     if (tvl.gte(100_000_000)) {
-      await container.model
-        .tagService()
-        .createPreserved({
-          type: TagType.Tvl,
-          name: TagPreservedName.TvlHundredMillion,
-        })
-        .then((tag) => container.model.contractService().linkTag(contract, tag));
+      choosenTag = TagPreservedName.TvlHundredMillion;
     } else if (tvl.gte(10_000_000)) {
-      await container.model
-        .tagService()
-        .createPreserved({
-          type: TagType.Tvl,
-          name: TagPreservedName.TvlTenMillion,
-        })
-        .then((tag) => container.model.contractService().linkTag(contract, tag));
+      choosenTag = TagPreservedName.TvlTenMillion;
     } else if (tvl.gte(1_000_000)) {
-      await container.model
-        .tagService()
-        .createPreserved({
-          type: TagType.Tvl,
-          name: TagPreservedName.TvlOneMillion,
-        })
-        .then((tag) => container.model.contractService().linkTag(contract, tag));
+      choosenTag = TagPreservedName.TvlOneMillion;
     } else if (tvl.gte(100_000)) {
+      choosenTag = TagPreservedName.TvlHundredThousand;
+    }
+
+    if (choosenTag) {
       await container.model
         .tagService()
         .createPreserved({
           type: TagType.Tvl,
-          name: TagPreservedName.TvlHundredThousand,
+          name: choosenTag,
         })
         .then((tag) => container.model.contractService().linkTag(contract, tag));
     }
