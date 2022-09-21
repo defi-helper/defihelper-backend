@@ -21,7 +21,7 @@ export enum TagPreservedName {
   TypeMajorTokens = 'Major tokens',
 }
 
-interface TvlType {
+export interface TagTvlType {
   type: TagType.Tvl;
   name:
     | TagPreservedName.TvlHundredThousand
@@ -30,12 +30,12 @@ interface TvlType {
     | TagPreservedName.TvlHundredMillion;
 }
 
-interface RiskType {
+export interface TagRiskType {
   type: TagType.Risk;
   name: TagPreservedName.RiskLow | TagPreservedName.RiskModerate | TagPreservedName.RiskHigh;
 }
 
-interface SpecialMarkType {
+export interface TagSpecialMarkType {
   type: TagType.Pool;
   name:
     | TagPreservedName.TypeStable
@@ -43,7 +43,7 @@ interface SpecialMarkType {
     | TagPreservedName.TypeMajorTokens;
 }
 
-export type TagTypePair = TvlType | RiskType | SpecialMarkType;
+export type TagTypePair = TagTvlType | TagRiskType | TagSpecialMarkType;
 export type Tag = {
   id: string;
   createdAt: Date;

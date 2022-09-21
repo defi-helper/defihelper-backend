@@ -5,7 +5,7 @@ import {
   contractTableName,
 } from '@models/Protocol/Entity';
 import { Process } from '@models/Queue/Entity';
-import { TagPreservedName, TagType } from '@models/Tag/Entity';
+import { TagPreservedName, TagRiskType, TagType } from '@models/Tag/Entity';
 import BigNumber from 'bignumber.js';
 
 export interface Params {
@@ -57,10 +57,7 @@ export default async (process: Process) => {
 
   await container.model.contractService().unlinkAllTagsByType(contract, TagType.Risk);
   const appliedTag: {
-    [risk: string]: {
-      type: TagType.Risk;
-      name: TagPreservedName.RiskLow | TagPreservedName.RiskModerate | TagPreservedName.RiskHigh;
-    };
+    [risk: string]: TagRiskType;
   } = {
     [ContractRiskFactor.low]: {
       type: TagType.Risk,
