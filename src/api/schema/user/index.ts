@@ -1149,7 +1149,7 @@ export const UserType = new GraphQLObjectType<User, Request>({
           return null;
         }
 
-        return dayjs(user.createdAt).add(30, 'days');
+        return dayjs(user.createdAt).add(7, 'days');
       },
     },
     tokenAliasesStakedMetrics: {
