@@ -35,7 +35,7 @@ bot.start(async ({ message }) => {
       .telegram()
       .send(
         'welcomeTemplate',
-        { username: userContact.name ?? userContact.address },
+        { username: userContact.address ?? userContact.name },
         message.chat.id,
         user.locale,
       );
