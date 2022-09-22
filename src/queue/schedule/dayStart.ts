@@ -8,10 +8,12 @@ export default async (process: Process) => {
   await Promise.all([
     queue.push('metricsTrackingConditionsBroker'),
     queue.push('systemGarbageCollector', {}),
+    queue.push('logGarbageCollector', {}),
     queue.push('automateTriggerByTime', { type: TriggerType.EveryDay }),
     queue.push('metricsProtocolLinksSocialBroker', {}),
     queue.push('metricsProtocolLinksListingBroker', {}),
     queue.push('metricsProtocolLinksPostBroker', {}),
+    queue.push('metricsGarbageCollector', {}),
     queue.push('metricsContractScannerBroker', {}),
     queue.push('metricsWalletBalancesBroker', {}),
     queue.push('notificationAutomateWalletsNotEnoughFundsBroker', {}),

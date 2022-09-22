@@ -58,6 +58,8 @@ export * as emptyWalletsBroker from './billing/emptyWalletsBroker';
 export * as eventsBillingTransferTxCreated from './events/billing/transferTxCreated';
 
 /* metrics */
+export * as metricsGarbageCollector from './metrics/garbageCollector';
+
 export * as metricsTrackingConditionsBroker from './metrics/userMetricsTrackingConditionsBroker';
 export * as metricsUserPortfolioFiller from './metrics/userPortfolioFiller';
 export * as metricsUserBalancesBroker from './metrics/walletBalances/userBalancesBroker';
@@ -116,6 +118,7 @@ export * as tokensBridgesFromAdapters from './token/tokensBridgesFromAdapters';
 export * as tokensDeleteDuplicates from './token/deleteTokenDuplicates';
 
 /* logs */
+export * as logGarbageCollector from './log/garbageCollector';
 export * as logBilling from './log/billingLogger';
 export * as logStuckQueueTask from './log/stuckQueueTaskWarning';
 export * as amplitudeLogEvent from './log/amplitudeLogEvent';
