@@ -49,6 +49,7 @@ import {
   contractTableName as protocolContractTableName,
 } from '@models/Protocol/Entity';
 import dayjs from 'dayjs';
+import { ContactStatus } from '@models/Notification/Entity';
 import { ContractType } from '../protocol';
 import {
   BlockchainEnum,
@@ -1140,12 +1141,15 @@ export const UserType = new GraphQLObjectType<User, Request>({
 
     portfolioCollectingFreezedAt: {
       type: DateTimeType,
-      description: 'Whan portfolio collecting (will be/was) freezed',
+      description: 'When portfolio collecting (will be/was) freezed',
       resolve: async (user) => {
-        const [row] = await container.model.userContactTable().count().where('user', user.id);
-        const numberOfContacts = new BN(row?.count ?? 0);
+        const [row] = await container.model.userContactTable().count().where({
+          user: user.id,
+          status: ContactStatus.Active,
+        });
 
-        if (numberOfContacts.gt(0)) {
+        const numberOfContacts = new BN(row?.count ?? 0);
+        if (!numberOfContacts.isZero()) {
           return null;
         }
 
