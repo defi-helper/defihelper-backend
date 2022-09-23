@@ -59,6 +59,7 @@ export class QueueService {
       topic: options.topic ?? QueueService.defaultTopic,
       scanner: options.scanner ?? false,
       executionTime: null,
+      attempt: 0,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -127,17 +128,22 @@ export class QueueService {
       const executionStart = Date.now();
       const { task: result } = await Handlers[task.handler].default(process);
       return await this.queueTable()
-        .update({ ...result, executionTime: Date.now() - executionStart })
+        .update({
+          ...result,
+          executionTime: Date.now() - executionStart,
+          attempt: result.attempt + 1,
+        })
         .where('id', task.id);
     } catch (e) {
       const error = e instanceof Error ? e : new Error(`${e}`);
+      const result = task.scanner
+        ? process.later(dayjs().add(10, 'seconds').toDate()).task
+        : process.error(error).task;
 
       return Promise.all([
-        task.scanner
-          ? this.queueTable()
-              .update(process.later(dayjs().add(10, 'seconds').toDate()).task)
-              .where('id', task.id)
-          : this.queueTable().update(process.error(error).task).where('id', task.id),
+        this.queueTable()
+          .update({ ...result, attempt: result.attempt + 1 })
+          .where('id', task.id),
         this.logService().create(`queue:${task.handler}`, `${task.id} ${error.stack ?? error}`),
       ]);
     }
