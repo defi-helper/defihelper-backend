@@ -1,4 +1,3 @@
-import { Factory } from '@services/Container';
 import BigNumber from 'bignumber.js';
 
 export class Numbers {
@@ -19,8 +18,4 @@ export class Numbers {
 
     return `${result.div(1_000_000).toFormat(0)}M`;
   };
-}
-
-export function numbersServiceFactory(): Factory<Numbers> {
-  return () => new Numbers();
 }

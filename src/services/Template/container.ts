@@ -9,6 +9,6 @@ export class TemplateContainer extends Container<typeof AppContainer> {
   readonly render = (template: string, data: any | typeof Mustache.Context) =>
     Mustache.render(template, {
       ...data,
-      numbersService: AppContainer.numbers(),
+      formatMoney: AppContainer.numbers().formatMoney,
     });
 }

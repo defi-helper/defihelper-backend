@@ -18,7 +18,7 @@ import { debankServiceFactory } from '@services/Debank';
 import { wavesNodeGatewayFactory } from '@services/WavesNodeGateway';
 import { WhatToFarmGateway } from '@services/WhatToFarm';
 import { amplitudeFactory } from '@services/Amplitude';
-import { numbersServiceFactory } from '@services/Numbers';
+import { Numbers } from '@services/Numbers';
 import config from './config';
 
 class AppContainer extends Container<typeof config> {
@@ -54,7 +54,7 @@ class AppContainer extends Container<typeof config> {
 
   readonly amplitude = singleton(amplitudeFactory(this.parent.amplitudeApiKey));
 
-  readonly numbers = singleton(numbersServiceFactory());
+  readonly numbers = singleton(() => new Numbers());
 
   readonly blockchain = {
     ethereum: new Blockchain.Ethereum.BlockchainContainer(this.parent.blockchain.ethereum),
