@@ -114,6 +114,9 @@ export const ContractMetricType = new GraphQLObjectType({
     },
     myAPYBoost: {
       type: GraphQLNonNull(GraphQLString),
+      resolve: ({ apyBoost: { blockchain, network, balance, aprYear } }) => {
+        return apyBoost(blockchain, network, balance, aprYear);
+      },
     },
   },
 });
@@ -380,14 +383,10 @@ export const ContractType: GraphQLObjectType = new GraphQLObjectType<
           myStaked: '0',
           myStakedChange: {
             day: '0',
-            week: '0',
-            month: '0',
           },
           myEarned: '0',
           myEarnedChange: {
             day: '0',
-            week: '0',
-            month: '0',
           },
           myAPYBoost: '0',
         };
@@ -419,14 +418,6 @@ export const ContractType: GraphQLObjectType = new GraphQLObjectType<
               Number(userMetric.stakingUSDDayBefore) !== 0
                 ? new BN(userMetric.stakingUSD).div(userMetric.stakingUSDDayBefore).toString(10)
                 : '0',
-            week:
-              Number(userMetric.stakingUSDWeekBefore) !== 0
-                ? new BN(userMetric.stakingUSD).div(userMetric.stakingUSDWeekBefore).toString(10)
-                : '0',
-            month:
-              Number(userMetric.stakingUSDMonthBefore) !== 0
-                ? new BN(userMetric.stakingUSD).div(userMetric.stakingUSDMonthBefore).toString(10)
-                : '0',
           },
           myEarned: userMetric.earnedUSD,
           myEarnedChange: {
@@ -434,21 +425,13 @@ export const ContractType: GraphQLObjectType = new GraphQLObjectType<
               Number(userMetric.earnedUSDDayBefore) !== 0
                 ? new BN(userMetric.earnedUSD).div(userMetric.earnedUSDDayBefore).toString(10)
                 : '0',
-            week:
-              Number(userMetric.earnedUSDWeekBefore) !== 0
-                ? new BN(userMetric.earnedUSD).div(userMetric.earnedUSDWeekBefore).toString(10)
-                : '0',
-            month:
-              Number(userMetric.earnedUSDMonthBefore) !== 0
-                ? new BN(userMetric.earnedUSD).div(userMetric.earnedUSDMonthBefore).toString(10)
-                : '0',
           },
-          myAPYBoost: await apyBoost(
-            contract.blockchain,
-            contract.network,
-            totalBalance > 0 ? totalBalance : 10000,
-            new BN(contract.metric.aprYear ?? '0').toNumber(),
-          ),
+          apyBoost: {
+            blockchain: contract.blockchain,
+            network: contract.network,
+            balance: totalBalance > 0 ? totalBalance : 10000,
+            aprYear: new BN(contract.metric.aprYear ?? '0').toNumber(),
+          },
         };
       },
     },
@@ -2027,14 +2010,10 @@ export const ProtocolType: GraphQLObjectType = new GraphQLObjectType<Protocol, R
           myStaked: '0',
           myStakedChange: {
             day: '0',
-            week: '0',
-            month: '0',
           },
           myEarned: '0',
           myEarnedChange: {
             day: '0',
-            week: '0',
-            month: '0',
           },
           myAPYBoost: '0',
         };
@@ -2056,28 +2035,12 @@ export const ProtocolType: GraphQLObjectType = new GraphQLObjectType<Protocol, R
               Number(userMetric.stakingUSDDayBefore) !== 0
                 ? new BN(userMetric.stakingUSD).div(userMetric.stakingUSDDayBefore).toString(10)
                 : '0',
-            week:
-              Number(userMetric.stakingUSDWeekBefore) !== 0
-                ? new BN(userMetric.stakingUSD).div(userMetric.stakingUSDWeekBefore).toString(10)
-                : '0',
-            month:
-              Number(userMetric.stakingUSDMonthBefore) !== 0
-                ? new BN(userMetric.stakingUSD).div(userMetric.stakingUSDMonthBefore).toString(10)
-                : '0',
           },
           myEarned: userMetric.earnedUSD,
           myEarnedChange: {
             day:
               Number(userMetric.earnedUSDDayBefore) !== 0
                 ? new BN(userMetric.earnedUSD).div(userMetric.earnedUSDDayBefore).toString(10)
-                : '0',
-            week:
-              Number(userMetric.earnedUSDWeekBefore) !== 0
-                ? new BN(userMetric.earnedUSD).div(userMetric.earnedUSDWeekBefore).toString(10)
-                : '0',
-            month:
-              Number(userMetric.earnedUSDMonthBefore) !== 0
-                ? new BN(userMetric.earnedUSD).div(userMetric.earnedUSDMonthBefore).toString(10)
                 : '0',
           },
           myAPYBoost: await apyBoost(

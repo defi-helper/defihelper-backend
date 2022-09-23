@@ -125,14 +125,6 @@ export const WalletTokenAliasType = new GraphQLObjectType<
               Number(tokenMetric.usdDayBefore) !== 0
                 ? new BN(tokenMetric.usd).div(tokenMetric.usdDayBefore).toString(10)
                 : '0',
-            week:
-              Number(tokenMetric.usdWeekBefore) !== 0
-                ? new BN(tokenMetric.usd).div(tokenMetric.usdWeekBefore).toString(10)
-                : '0',
-            month:
-              Number(tokenMetric.usdMonthBefore) !== 0
-                ? new BN(tokenMetric.usd).div(tokenMetric.usdMonthBefore).toString(10)
-                : '0',
           },
           portfolioPercent: '0',
         };
@@ -601,12 +593,6 @@ export const WalletBlockchainType = new GraphQLObjectType<
         const worthDayBefore = new BN(walletMetric.stakingUSDDayBefore)
           .plus(walletMetric.earnedUSDDayBefore)
           .plus(tokenMetric.usdDayBefore);
-        const worthWeekBefore = new BN(walletMetric.stakingUSDWeekBefore)
-          .plus(walletMetric.earnedUSDWeekBefore)
-          .plus(tokenMetric.usdWeekBefore);
-        const worthMonthBefore = new BN(walletMetric.stakingUSDMonthBefore)
-          .plus(walletMetric.earnedUSDMonthBefore)
-          .plus(tokenMetric.usdMonthBefore);
 
         return {
           stakedUSD: walletMetric.stakingUSD,
@@ -615,32 +601,12 @@ export const WalletBlockchainType = new GraphQLObjectType<
               Number(walletMetric.stakingUSDDayBefore) !== 0
                 ? new BN(walletMetric.stakingUSD).div(walletMetric.stakingUSDDayBefore).toString(10)
                 : '0',
-            week:
-              Number(walletMetric.stakingUSDWeekBefore) !== 0
-                ? new BN(walletMetric.stakingUSD)
-                    .div(walletMetric.stakingUSDWeekBefore)
-                    .toString(10)
-                : '0',
-            month:
-              Number(walletMetric.stakingUSDMonthBefore) !== 0
-                ? new BN(walletMetric.stakingUSD)
-                    .div(walletMetric.stakingUSDMonthBefore)
-                    .toString(10)
-                : '0',
           },
           earnedUSD: walletMetric.earnedUSD,
           earnedUSDChange: {
             day:
               Number(walletMetric.earnedUSDDayBefore) !== 0
                 ? new BN(walletMetric.earnedUSD).div(walletMetric.earnedUSDDayBefore).toString(10)
-                : '0',
-            week:
-              Number(walletMetric.earnedUSDWeekBefore) !== 0
-                ? new BN(walletMetric.earnedUSD).div(walletMetric.earnedUSDWeekBefore).toString(10)
-                : '0',
-            month:
-              Number(walletMetric.earnedUSDMonthBefore) !== 0
-                ? new BN(walletMetric.earnedUSD).div(walletMetric.earnedUSDMonthBefore).toString(10)
                 : '0',
           },
           balance: tokenMetric.balance,
@@ -650,20 +616,10 @@ export const WalletBlockchainType = new GraphQLObjectType<
               Number(tokenMetric.usdDayBefore) !== 0
                 ? new BN(tokenMetric.usd).div(tokenMetric.usdDayBefore).toString(10)
                 : '0',
-            week:
-              Number(tokenMetric.usdWeekBefore) !== 0
-                ? new BN(tokenMetric.usd).div(tokenMetric.usdWeekBefore).toString(10)
-                : '0',
-            month:
-              Number(tokenMetric.usdMonthBefore) !== 0
-                ? new BN(tokenMetric.usd).div(tokenMetric.usdMonthBefore).toString(10)
-                : '0',
           },
           worth: worth.toString(10),
           worthChange: {
             day: worthDayBefore.gt(0) ? worth.div(worthDayBefore).toString(10) : '0',
-            week: worthWeekBefore.gt(0) ? worth.div(worthWeekBefore).toString(10) : '0',
-            month: worthMonthBefore.gt(0) ? worth.div(worthMonthBefore).toString(10) : '0',
           },
         };
       },
@@ -1710,12 +1666,6 @@ export const UserType = new GraphQLObjectType<User, Request>({
         const worthDayBefore = new BN(walletMetric.stakingUSDDayBefore)
           .plus(walletMetric.earnedUSDDayBefore)
           .plus(tokenMetric.usdDayBefore);
-        const worthWeekBefore = new BN(walletMetric.stakingUSDWeekBefore)
-          .plus(walletMetric.earnedUSDWeekBefore)
-          .plus(tokenMetric.usdWeekBefore);
-        const worthMonthBefore = new BN(walletMetric.stakingUSDMonthBefore)
-          .plus(walletMetric.earnedUSDMonthBefore)
-          .plus(tokenMetric.usdMonthBefore);
 
         return {
           balanceUSD: tokenMetric.usd,
@@ -1724,32 +1674,12 @@ export const UserType = new GraphQLObjectType<User, Request>({
               Number(tokenMetric.usdDayBefore) !== 0
                 ? new BN(tokenMetric.usd).div(tokenMetric.usdDayBefore).toString(10)
                 : '0',
-            week:
-              Number(tokenMetric.usdWeekBefore) !== 0
-                ? new BN(tokenMetric.usd).div(tokenMetric.usdWeekBefore).toString(10)
-                : '0',
-            month:
-              Number(tokenMetric.usdMonthBefore) !== 0
-                ? new BN(tokenMetric.usd).div(tokenMetric.usdMonthBefore).toString(10)
-                : '0',
           },
           stakedUSD: walletMetric.stakingUSD,
           stakedUSDChange: {
             day:
               Number(walletMetric.stakingUSDDayBefore) !== 0
                 ? new BN(walletMetric.stakingUSD).div(walletMetric.stakingUSDDayBefore).toString(10)
-                : '0',
-            week:
-              Number(walletMetric.stakingUSDWeekBefore) !== 0
-                ? new BN(walletMetric.stakingUSD)
-                    .div(walletMetric.stakingUSDWeekBefore)
-                    .toString(10)
-                : '0',
-            month:
-              Number(walletMetric.stakingUSDMonthBefore) !== 0
-                ? new BN(walletMetric.stakingUSD)
-                    .div(walletMetric.stakingUSDMonthBefore)
-                    .toString(10)
                 : '0',
           },
           earnedUSD: walletMetric.earnedUSD,
@@ -1758,20 +1688,10 @@ export const UserType = new GraphQLObjectType<User, Request>({
               Number(walletMetric.earnedUSDDayBefore) !== 0
                 ? new BN(walletMetric.earnedUSD).div(walletMetric.earnedUSDDayBefore).toString(10)
                 : '0',
-            week:
-              Number(walletMetric.earnedUSDWeekBefore) !== 0
-                ? new BN(walletMetric.earnedUSD).div(walletMetric.earnedUSDWeekBefore).toString(10)
-                : '0',
-            month:
-              Number(walletMetric.earnedUSDMonthBefore) !== 0
-                ? new BN(walletMetric.earnedUSD).div(walletMetric.earnedUSDMonthBefore).toString(10)
-                : '0',
           },
           worth: worth.toString(10),
           worthChange: {
             day: worthDayBefore.gt(0) ? worth.div(worthDayBefore).toString(10) : '0',
-            week: worthWeekBefore.gt(0) ? worth.div(worthWeekBefore).toString(10) : '0',
-            month: worthMonthBefore.gt(0) ? worth.div(worthMonthBefore).toString(10) : '0',
           },
           apy: await dataLoader.userAPRMetric({ metric: 'aprYear' }).load(user.id),
         };
