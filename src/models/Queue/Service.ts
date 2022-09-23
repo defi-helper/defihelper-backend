@@ -131,7 +131,7 @@ export class QueueService {
         .update({
           ...result,
           executionTime: Date.now() - executionStart,
-          attempt: result.attempt + 1,
+          attempt: (result.attempt ?? 0) + 1,
         })
         .where('id', task.id);
     } catch (e) {
@@ -142,7 +142,7 @@ export class QueueService {
 
       return Promise.all([
         this.queueTable()
-          .update({ ...result, attempt: result.attempt + 1 })
+          .update({ ...result, attempt: (result.attempt ?? 0) + 1 })
           .where('id', task.id),
         this.logService().create(`queue:${task.handler}`, `${task.id} ${error.stack ?? error}`),
       ]);

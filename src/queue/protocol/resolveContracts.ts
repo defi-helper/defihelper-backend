@@ -106,7 +106,7 @@ export default async (process: Process) => {
 
     return process.done();
   } catch (e) {
-    if (process.task.attempt < 5) {
+    if ((process.task.attempt ?? 0) < 5) {
       return process.later(
         dayjs()
           .add(Math.floor(Math.random() * 5) + 1, 'minutes')
