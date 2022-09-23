@@ -172,49 +172,21 @@ export class MetricContractService {
   }
 
   async updateWalletRegistry(metric: MetricWallet, trx?: Knex.Transaction<any, any>) {
-    const [dayBefore, weekBefore, monthBefore] = await Promise.all([
-      this.metricWalletTable()
-        .modify(QueryModify.lastValue, ['contract', 'wallet'])
-        .where({
-          contract: metric.contract,
-          wallet: metric.wallet,
-        })
-        .whereBetween('date', [
-          dayjs(metric.date).add(-2, 'day').toDate(),
-          dayjs(metric.date).add(-1, 'day').toDate(),
-        ])
-        .first(),
-      this.metricWalletTable()
-        .modify(QueryModify.lastValue, ['contract', 'wallet'])
-        .where({
-          contract: metric.contract,
-          wallet: metric.wallet,
-        })
-        .whereBetween('date', [
-          dayjs(metric.date).add(-2, 'week').toDate(),
-          dayjs(metric.date).add(-1, 'week').toDate(),
-        ])
-        .first(),
-      this.metricWalletTable()
-        .modify(QueryModify.lastValue, ['contract', 'wallet'])
-        .where({
-          contract: metric.contract,
-          wallet: metric.wallet,
-        })
-        .whereBetween('date', [
-          dayjs(metric.date).add(-2, 'month').toDate(),
-          dayjs(metric.date).add(-1, 'month').toDate(),
-        ])
-        .first(),
-    ]);
+    const dayBefore = await this.metricWalletTable()
+      .modify(QueryModify.lastValue, ['contract', 'wallet'])
+      .where({
+        contract: metric.contract,
+        wallet: metric.wallet,
+      })
+      .whereBetween('date', [
+        dayjs(metric.date).add(-2, 'day').toDate(),
+        dayjs(metric.date).add(-1, 'day').toDate(),
+      ])
+      .first();
     const data = {
       ...metric.data,
       stakingUSDDayBefore: dayBefore?.data.stakingUSD ?? '0',
-      stakingUSDWeekBefore: weekBefore?.data.stakingUSD ?? '0',
-      stakingUSDMonthBefore: monthBefore?.data.stakingUSD ?? '0',
       earnedUSDDayBefore: dayBefore?.data.earnedUSD ?? '0',
-      earnedUSDWeekBefore: weekBefore?.data.earnedUSD ?? '0',
-      earnedUSDMonthBefore: monthBefore?.data.earnedUSD ?? '0',
     };
     const duplicate = await this.metricWalletRegistryTable()
       .where({
@@ -344,49 +316,22 @@ export class MetricContractService {
   }
 
   async updateWalletTokenRegistry(metric: MetricWalletToken, trx?: Knex.Transaction<any, any>) {
-    const [dayBefore, weekBefore, monthBefore] = await Promise.all([
-      this.metricWalletTokenTable()
-        .modify(QueryModify.lastValue, ['contract', 'wallet', 'token'])
-        .where({
-          contract: metric.contract,
-          wallet: metric.wallet,
-          token: metric.token,
-        })
-        .whereBetween('date', [
-          dayjs(metric.date).add(-2, 'day').toDate(),
-          dayjs(metric.date).add(-1, 'day').toDate(),
-        ])
-        .first(),
-      this.metricWalletTokenTable()
-        .modify(QueryModify.lastValue, ['contract', 'wallet', 'token'])
-        .where({
-          contract: metric.contract,
-          wallet: metric.wallet,
-          token: metric.token,
-        })
-        .whereBetween('date', [
-          dayjs(metric.date).add(-2, 'week').toDate(),
-          dayjs(metric.date).add(-1, 'week').toDate(),
-        ])
-        .first(),
-      this.metricWalletTokenTable()
-        .modify(QueryModify.lastValue, ['contract', 'wallet', 'token'])
-        .where({
-          contract: metric.contract,
-          wallet: metric.wallet,
-          token: metric.token,
-        })
-        .whereBetween('date', [
-          dayjs(metric.date).add(-2, 'month').toDate(),
-          dayjs(metric.date).add(-1, 'month').toDate(),
-        ])
-        .first(),
-    ]);
+    const dayBefore = await this.metricWalletTokenTable()
+      .modify(QueryModify.lastValue, ['contract', 'wallet', 'token'])
+      .where({
+        contract: metric.contract,
+        wallet: metric.wallet,
+        token: metric.token,
+      })
+      .whereBetween('date', [
+        dayjs(metric.date).add(-2, 'day').toDate(),
+        dayjs(metric.date).add(-1, 'day').toDate(),
+      ])
+      .first();
+
     const data = {
       ...metric.data,
       usdDayBefore: dayBefore?.data.usd ?? '0',
-      usdWeekBefore: weekBefore?.data.usd ?? '0',
-      usdMonthBefore: monthBefore?.data.usd ?? '0',
     };
     const duplicate = await this.metricWalletTokenRegistryTable()
       .where({
