@@ -156,36 +156,54 @@ export const ContractTokenLinkType = new GraphQLObjectType<
   Request
 >({
   name: 'ContractTokenLinkType',
-  fields: Object.values(TokenContractLinkType).reduce(
-    (result, linkType) => ({
-      ...result,
-      [linkType]: {
-        type: GraphQLNonNull(GraphQLList(GraphQLNonNull(TokenType))),
-        resolve: async (contract) => {
-          const token = await container.model
-            .tokenTable()
-            .column(`${tokenTableName}.*`)
-            .innerJoin(
-              tokenContractLinkTableName,
-              `${tokenTableName}.id`,
-              `${tokenContractLinkTableName}.token`,
-            )
-            .where(`${tokenContractLinkTableName}.contract`, contract.id)
-            .andWhere(`${tokenContractLinkTableName}.type`, linkType)
-            .first();
-          if (!token) return [];
-
-          const childTokens = await container.model
-            .tokenTable()
-            .innerJoin(tokenPartTableName, `${tokenTableName}.id`, `${tokenPartTableName}.child`)
-            .where(`${tokenPartTableName}.parent`, token.id);
-
-          return childTokens.length > 0 ? childTokens : [token];
-        },
+  fields: {
+    stakeBase: {
+      type: TokenType,
+      resolve: (contract) => {
+        return container.model
+          .tokenTable()
+          .column(`${tokenTableName}.*`)
+          .innerJoin(
+            tokenContractLinkTableName,
+            `${tokenTableName}.id`,
+            `${tokenContractLinkTableName}.token`,
+          )
+          .where(`${tokenContractLinkTableName}.contract`, contract.id)
+          .andWhere(`${tokenContractLinkTableName}.type`, TokenContractLinkType.Stake)
+          .first();
       },
-    }),
-    {} as GraphQLFieldConfigMap<Contract & ContractBlockchainType, Request>,
-  ),
+    },
+    ...Object.values(TokenContractLinkType).reduce(
+      (result, linkType) => ({
+        ...result,
+        [linkType]: {
+          type: GraphQLNonNull(GraphQLList(GraphQLNonNull(TokenType))),
+          resolve: async (contract) => {
+            const token = await container.model
+              .tokenTable()
+              .column(`${tokenTableName}.*`)
+              .innerJoin(
+                tokenContractLinkTableName,
+                `${tokenTableName}.id`,
+                `${tokenContractLinkTableName}.token`,
+              )
+              .where(`${tokenContractLinkTableName}.contract`, contract.id)
+              .andWhere(`${tokenContractLinkTableName}.type`, linkType)
+              .first();
+            if (!token) return [];
+
+            const childTokens = await container.model
+              .tokenTable()
+              .innerJoin(tokenPartTableName, `${tokenTableName}.id`, `${tokenPartTableName}.child`)
+              .where(`${tokenPartTableName}.parent`, token.id);
+
+            return childTokens.length > 0 ? childTokens : [token];
+          },
+        },
+      }),
+      {} as GraphQLFieldConfigMap<Contract & ContractBlockchainType, Request>,
+    ),
+  },
 });
 
 const metricChartResolver = async (contract: Contract, input: any) => {
