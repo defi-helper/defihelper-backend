@@ -388,15 +388,14 @@ export const ContractType: GraphQLObjectType = new GraphQLObjectType<
           myEarnedChange: {
             day: '0',
           },
-          myAPYBoost: '0',
+          apyBoost: {
+            blockchain: contract.blockchain,
+            network: contract.network,
+            balance: 10000,
+            aprYear: new BN(contract.metric.aprYear ?? '0').toNumber(),
+          },
         };
         if (!currentUser) {
-          metric.myAPYBoost = await apyBoost(
-            contract.blockchain,
-            contract.network,
-            10000,
-            new BN(contract.metric.aprYear ?? '0').toNumber(),
-          );
           return metric;
         }
 
