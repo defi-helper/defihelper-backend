@@ -252,12 +252,6 @@ export const MetricChangeType = new GraphQLObjectType({
     day: {
       type: GraphQLNonNull(GraphQLString),
     },
-    week: {
-      type: GraphQLNonNull(GraphQLString),
-    },
-    month: {
-      type: GraphQLNonNull(GraphQLString),
-    },
   },
 });
 

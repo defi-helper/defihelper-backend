@@ -28,8 +28,6 @@ export const tokenAliasUserLastMetricLoader = ({
       usd: string;
       balance: string;
       usdDayBefore: string;
-      usdWeekBefore: string;
-      usdMonthBefore: string;
     }
   >(async (tokenAliasIds) => {
     const select = container.model
@@ -43,14 +41,6 @@ export const tokenAliasUserLastMetricLoader = ({
       .modify(QueryModify.sumMetric, [
         'usdDayBefore',
         `${metricWalletTokenRegistryTableName}.data->>'usdDayBefore'`,
-      ])
-      .modify(QueryModify.sumMetric, [
-        'usdWeekBefore',
-        `${metricWalletTokenRegistryTableName}.data->>'usdWeekBefore'`,
-      ])
-      .modify(QueryModify.sumMetric, [
-        'usdMonthBefore',
-        `${metricWalletTokenRegistryTableName}.data->>'usdMonthBefore'`,
       ])
       .innerJoin(
         walletTableName,
@@ -89,18 +79,14 @@ export const tokenAliasUserLastMetricLoader = ({
           balance: string;
           usd: string;
           usdDayBefore: string;
-          usdWeekBefore: string;
-          usdMonthBefore: string;
         }>,
       ) =>
         new Map(
-          rows.map(({ alias, usd, balance, usdDayBefore, usdWeekBefore, usdMonthBefore }) => [
+          rows.map(({ alias, usd, balance, usdDayBefore }) => [
             alias,
             {
               usd,
               usdDayBefore,
-              usdWeekBefore,
-              usdMonthBefore,
               balance,
             },
           ]),
@@ -113,8 +99,6 @@ export const tokenAliasUserLastMetricLoader = ({
           usd: '0',
           balance: '0',
           usdDayBefore: '0',
-          usdWeekBefore: '0',
-          usdMonthBefore: '0',
         },
     );
   });
