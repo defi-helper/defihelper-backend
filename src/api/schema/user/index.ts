@@ -49,6 +49,7 @@ import {
   contractTableName as protocolContractTableName,
 } from '@models/Protocol/Entity';
 import dayjs from 'dayjs';
+import { ContactStatus } from '@models/Notification/Entity';
 import { ContractType } from '../protocol';
 import {
   BlockchainEnum,
@@ -123,14 +124,6 @@ export const WalletTokenAliasType = new GraphQLObjectType<
             day:
               Number(tokenMetric.usdDayBefore) !== 0
                 ? new BN(tokenMetric.usd).div(tokenMetric.usdDayBefore).toString(10)
-                : '0',
-            week:
-              Number(tokenMetric.usdWeekBefore) !== 0
-                ? new BN(tokenMetric.usd).div(tokenMetric.usdWeekBefore).toString(10)
-                : '0',
-            month:
-              Number(tokenMetric.usdMonthBefore) !== 0
-                ? new BN(tokenMetric.usd).div(tokenMetric.usdMonthBefore).toString(10)
                 : '0',
           },
           portfolioPercent: '0',
@@ -600,12 +593,6 @@ export const WalletBlockchainType = new GraphQLObjectType<
         const worthDayBefore = new BN(walletMetric.stakingUSDDayBefore)
           .plus(walletMetric.earnedUSDDayBefore)
           .plus(tokenMetric.usdDayBefore);
-        const worthWeekBefore = new BN(walletMetric.stakingUSDWeekBefore)
-          .plus(walletMetric.earnedUSDWeekBefore)
-          .plus(tokenMetric.usdWeekBefore);
-        const worthMonthBefore = new BN(walletMetric.stakingUSDMonthBefore)
-          .plus(walletMetric.earnedUSDMonthBefore)
-          .plus(tokenMetric.usdMonthBefore);
 
         return {
           stakedUSD: walletMetric.stakingUSD,
@@ -614,32 +601,12 @@ export const WalletBlockchainType = new GraphQLObjectType<
               Number(walletMetric.stakingUSDDayBefore) !== 0
                 ? new BN(walletMetric.stakingUSD).div(walletMetric.stakingUSDDayBefore).toString(10)
                 : '0',
-            week:
-              Number(walletMetric.stakingUSDWeekBefore) !== 0
-                ? new BN(walletMetric.stakingUSD)
-                    .div(walletMetric.stakingUSDWeekBefore)
-                    .toString(10)
-                : '0',
-            month:
-              Number(walletMetric.stakingUSDMonthBefore) !== 0
-                ? new BN(walletMetric.stakingUSD)
-                    .div(walletMetric.stakingUSDMonthBefore)
-                    .toString(10)
-                : '0',
           },
           earnedUSD: walletMetric.earnedUSD,
           earnedUSDChange: {
             day:
               Number(walletMetric.earnedUSDDayBefore) !== 0
                 ? new BN(walletMetric.earnedUSD).div(walletMetric.earnedUSDDayBefore).toString(10)
-                : '0',
-            week:
-              Number(walletMetric.earnedUSDWeekBefore) !== 0
-                ? new BN(walletMetric.earnedUSD).div(walletMetric.earnedUSDWeekBefore).toString(10)
-                : '0',
-            month:
-              Number(walletMetric.earnedUSDMonthBefore) !== 0
-                ? new BN(walletMetric.earnedUSD).div(walletMetric.earnedUSDMonthBefore).toString(10)
                 : '0',
           },
           balance: tokenMetric.balance,
@@ -649,20 +616,10 @@ export const WalletBlockchainType = new GraphQLObjectType<
               Number(tokenMetric.usdDayBefore) !== 0
                 ? new BN(tokenMetric.usd).div(tokenMetric.usdDayBefore).toString(10)
                 : '0',
-            week:
-              Number(tokenMetric.usdWeekBefore) !== 0
-                ? new BN(tokenMetric.usd).div(tokenMetric.usdWeekBefore).toString(10)
-                : '0',
-            month:
-              Number(tokenMetric.usdMonthBefore) !== 0
-                ? new BN(tokenMetric.usd).div(tokenMetric.usdMonthBefore).toString(10)
-                : '0',
           },
           worth: worth.toString(10),
           worthChange: {
             day: worthDayBefore.gt(0) ? worth.div(worthDayBefore).toString(10) : '0',
-            week: worthWeekBefore.gt(0) ? worth.div(worthWeekBefore).toString(10) : '0',
-            month: worthMonthBefore.gt(0) ? worth.div(worthMonthBefore).toString(10) : '0',
           },
         };
       },
@@ -1135,6 +1092,24 @@ export const UserType = new GraphQLObjectType<User, Request>({
         }
 
         return user.isPorfolioCollected;
+      },
+    },
+
+    portfolioCollectingFreezedAt: {
+      type: DateTimeType,
+      description: 'When portfolio collecting (will be/was) freezed',
+      resolve: async (user) => {
+        const [row] = await container.model.userContactTable().count().where({
+          user: user.id,
+          status: ContactStatus.Active,
+        });
+
+        const numberOfContacts = new BN(row?.count ?? 0);
+        if (!numberOfContacts.isZero()) {
+          return null;
+        }
+
+        return dayjs(user.createdAt).add(7, 'days');
       },
     },
     tokenAliasesStakedMetrics: {
@@ -1691,12 +1666,6 @@ export const UserType = new GraphQLObjectType<User, Request>({
         const worthDayBefore = new BN(walletMetric.stakingUSDDayBefore)
           .plus(walletMetric.earnedUSDDayBefore)
           .plus(tokenMetric.usdDayBefore);
-        const worthWeekBefore = new BN(walletMetric.stakingUSDWeekBefore)
-          .plus(walletMetric.earnedUSDWeekBefore)
-          .plus(tokenMetric.usdWeekBefore);
-        const worthMonthBefore = new BN(walletMetric.stakingUSDMonthBefore)
-          .plus(walletMetric.earnedUSDMonthBefore)
-          .plus(tokenMetric.usdMonthBefore);
 
         return {
           balanceUSD: tokenMetric.usd,
@@ -1705,32 +1674,12 @@ export const UserType = new GraphQLObjectType<User, Request>({
               Number(tokenMetric.usdDayBefore) !== 0
                 ? new BN(tokenMetric.usd).div(tokenMetric.usdDayBefore).toString(10)
                 : '0',
-            week:
-              Number(tokenMetric.usdWeekBefore) !== 0
-                ? new BN(tokenMetric.usd).div(tokenMetric.usdWeekBefore).toString(10)
-                : '0',
-            month:
-              Number(tokenMetric.usdMonthBefore) !== 0
-                ? new BN(tokenMetric.usd).div(tokenMetric.usdMonthBefore).toString(10)
-                : '0',
           },
           stakedUSD: walletMetric.stakingUSD,
           stakedUSDChange: {
             day:
               Number(walletMetric.stakingUSDDayBefore) !== 0
                 ? new BN(walletMetric.stakingUSD).div(walletMetric.stakingUSDDayBefore).toString(10)
-                : '0',
-            week:
-              Number(walletMetric.stakingUSDWeekBefore) !== 0
-                ? new BN(walletMetric.stakingUSD)
-                    .div(walletMetric.stakingUSDWeekBefore)
-                    .toString(10)
-                : '0',
-            month:
-              Number(walletMetric.stakingUSDMonthBefore) !== 0
-                ? new BN(walletMetric.stakingUSD)
-                    .div(walletMetric.stakingUSDMonthBefore)
-                    .toString(10)
                 : '0',
           },
           earnedUSD: walletMetric.earnedUSD,
@@ -1739,20 +1688,10 @@ export const UserType = new GraphQLObjectType<User, Request>({
               Number(walletMetric.earnedUSDDayBefore) !== 0
                 ? new BN(walletMetric.earnedUSD).div(walletMetric.earnedUSDDayBefore).toString(10)
                 : '0',
-            week:
-              Number(walletMetric.earnedUSDWeekBefore) !== 0
-                ? new BN(walletMetric.earnedUSD).div(walletMetric.earnedUSDWeekBefore).toString(10)
-                : '0',
-            month:
-              Number(walletMetric.earnedUSDMonthBefore) !== 0
-                ? new BN(walletMetric.earnedUSD).div(walletMetric.earnedUSDMonthBefore).toString(10)
-                : '0',
           },
           worth: worth.toString(10),
           worthChange: {
             day: worthDayBefore.gt(0) ? worth.div(worthDayBefore).toString(10) : '0',
-            week: worthWeekBefore.gt(0) ? worth.div(worthWeekBefore).toString(10) : '0',
-            month: worthMonthBefore.gt(0) ? worth.div(worthMonthBefore).toString(10) : '0',
           },
           apy: await dataLoader.userAPRMetric({ metric: 'aprYear' }).load(user.id),
         };
@@ -2002,6 +1941,10 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
               description: 'Merged target account to current account',
               defaultValue: false,
             },
+            locale: {
+              type: GraphQLNonNull(GraphQLString),
+              description: 'Locale',
+            },
           },
         }),
       ),
@@ -2035,7 +1978,8 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
         .first();
       if (!duplicateWallet) {
         const user =
-          currentUser ?? (await userService.create(Role.User, input.timezone, codeRecord));
+          currentUser ??
+          (await userService.create(Role.User, input.timezone, codeRecord, input.locale));
         return userService.auth(
           user,
           await container.model
@@ -2108,6 +2052,7 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
         user.timezone = await userService
           .update({
             ...user,
+            locale: input.locale,
             timezone: input.timezone,
           })
           .then(({ timezone }) => timezone);
@@ -2116,7 +2061,9 @@ export const AuthEthereumMutation: GraphQLFieldConfig<any, Request> = {
       return userService.auth(user, duplicateWallet);
     }
 
-    const user = currentUser ?? (await userService.create(Role.User, input.timezone, codeRecord));
+    const user =
+      currentUser ??
+      (await userService.create(Role.User, input.timezone, codeRecord, input.locale));
     return userService.auth(
       user,
       await container.model
@@ -2171,6 +2118,10 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
               type: GraphQLNonNull(GraphQLString),
               description: 'Timezone',
             },
+            locale: {
+              type: GraphQLNonNull(GraphQLString),
+              description: 'Locale',
+            },
             merge: {
               type: GraphQLBoolean,
               description: 'Merged target account to current account',
@@ -2214,7 +2165,8 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
         .first();
       if (!duplicateWallet) {
         const user =
-          currentUser ?? (await userService.create(Role.User, input.timezone, codeRecord));
+          currentUser ??
+          (await userService.create(Role.User, input.timezone, codeRecord, input.locale));
         return userService.auth(
           user,
           await container.model
@@ -2292,6 +2244,7 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
           .update({
             ...user,
             timezone: input.timezone,
+            locale: input.locale,
           })
           .then(({ timezone }) => timezone);
       }
@@ -2299,7 +2252,9 @@ export const AuthWavesMutation: GraphQLFieldConfig<any, Request> = {
       return userService.auth(user, duplicateWallet);
     }
 
-    const user = currentUser ?? (await userService.create(Role.User, input.timezone, codeRecord));
+    const user =
+      currentUser ??
+      (await userService.create(Role.User, input.timezone, codeRecord, input.locale));
     return userService.auth(
       user,
       await container.model

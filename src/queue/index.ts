@@ -1,3 +1,4 @@
+export * as scheduleMinute5 from './schedule/minute5';
 export * as scheduleMinute10 from './schedule/minute10';
 export * as scheduleHourStart from './schedule/hourStart';
 export * as scheduleDayStart from './schedule/dayStart';
@@ -45,6 +46,9 @@ export * as automateContractWavesVerify from './automate/contractWavesVerify';
 export * as automateTransactionEthereumConfirm from './automate/transactionEthereumConfirm';
 export * as automateTransactionWavesConfirm from './automate/transactionWavesConfirm';
 export * as automateTriggerRun from './automate/run';
+export * as automateContractStopLossBroker from './automate/contractStopLossBroker';
+export * as automateContractStopLossRun from './automate/contractStopLossRun';
+export * as automateContractStopLossTx from './automate/contractStopLossTx';
 export * as automateTriggerByTime from './automate/trigger/byTime';
 export * as riskCalculationBroker from './contract/riskCalculationBroker';
 export * as riskCalculationFiller from './contract/riskCalculationFiller';
@@ -54,6 +58,9 @@ export * as emptyWalletsBroker from './billing/emptyWalletsBroker';
 export * as eventsBillingTransferTxCreated from './events/billing/transferTxCreated';
 
 /* metrics */
+export * as metricsGarbageCollector from './metrics/garbageCollector';
+
+export * as metricsTrackingConditionsBroker from './metrics/userMetricsTrackingConditionsBroker';
 export * as metricsUserPortfolioFiller from './metrics/userPortfolioFiller';
 export * as metricsUserBalancesBroker from './metrics/walletBalances/userBalancesBroker';
 export * as metricsUserBalancesFiller from './metrics/walletBalances/userBalancesFiller';
@@ -79,6 +86,9 @@ export * as notificationPortfolioMetricsNotify from './notifications/PortfolioMe
 export * as notificationPortfolioMetricsNotifyHourly from './notifications/PortfolioMetrics/hourly';
 export * as notificationAutomateWalletsNotEnoughFundsNotify from './notifications/AutomateWalletsNotEnoughFunds/sender';
 export * as notificationAutomateWalletsNotEnoughFundsBroker from './notifications/AutomateWalletsNotEnoughFunds/broker';
+export * as migratablePoolsBroker from './notifications/migratablePoolsBroker';
+export * as migratablePoolsNotifyUser from './notifications/migratablePoolsNotifyUser';
+export * as migratablePoolsBatch from './notifications/migratablePoolsBatch';
 
 /* events */
 export * as eventsMetricContractCreated from './events/metricContractCreated';
@@ -89,6 +99,7 @@ export * as eventsWalletCreated from './events/walletCreated';
 export * as eventsWalletContractLinked from './events/walletContractLinked';
 export * as eventsWalletChangeOwner from './events/walletChangeOwner';
 export * as eventsAutomateContractVerificationConfirmed from './events/automate/contractVerificationConfirmed';
+export * as eventsAutomateContractStopLossEnabled from './events/automate/contractStopLossEnabled';
 export * as followContractEvent from './scanner/followContractEvent';
 
 /* wallets */
@@ -108,14 +119,20 @@ export * as tokensDeleteDuplicates from './token/deleteTokenDuplicates';
 export * as whatToFarmTokensIterator from './token/whatToFarmTokensIterator';
 
 /* logs */
+export * as logGarbageCollector from './log/garbageCollector';
 export * as logBilling from './log/billingLogger';
 export * as logStuckQueueTask from './log/stuckQueueTaskWarning';
+export * as amplitudeLogEvent from './log/amplitudeLogEvent';
 
 /* treasury */
 export * as treasuryStatsCache from './treasury/cache';
 
 export * as sendTelegramNews from './sendTelegramNews';
 
-export * as migratablePoolsBroker from './notifications/migratablePoolsBroker';
-export * as migratablePoolsNotifyUser from './notifications/migratablePoolsNotifyUser';
-export * as migratablePoolsBatch from './notifications/migratablePoolsBatch';
+/* smart trade */
+export * as smartTradeOrderStatusResolve from './smartTrade/orderStatusResolve';
+export * as smartTradeOrderConfirm from './smartTrade/orderConfirm';
+export * as smartTradeOrderCheckBroker from './smartTrade/orderCheckBroker';
+export * as smartTradeOrderCheck from './smartTrade/orderCheck';
+export * as eventsSmartTradeOrderConfirmed from './events/smartTrade/orderConfirmed';
+export * as eventsSmartTradeOrderCallTxCreated from './events/smartTrade/orderCallTxCreated';

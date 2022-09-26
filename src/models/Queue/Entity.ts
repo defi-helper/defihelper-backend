@@ -68,6 +68,7 @@ export interface Task {
   topic: string;
   scanner: boolean;
   executionTime: number | null;
+  attempt: number;
   updatedAt: Date;
   createdAt: Date;
 }

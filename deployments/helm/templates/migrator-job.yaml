@@ -27,7 +27,7 @@ spec:
       containers:
       - name: migrator
         image: "{{ $.Values.image.repository }}/{{ .Values.images.app.name }}:{{ $.Values.image.tag }}"
-        command: ["/bin/sh","-c","ln -s ./configuration/.env ./.env && npm run migrate"]
+        command: ["npm","run","migrate"]
         imagePullPolicy: Always
         volumeMounts:
           - mountPath: /app/configuration

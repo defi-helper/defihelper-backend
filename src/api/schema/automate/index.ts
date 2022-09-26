@@ -21,13 +21,17 @@ import {
   GraphQLString,
   GraphQLList,
   GraphQLFieldConfigMap,
+  GraphQLFloat,
 } from 'graphql';
 import { apyBoost, optimalRestakeNearesDate } from '@services/RestakeStrategy';
 import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
 import { metricContractTableName } from '@models/Metric/Entity';
 import dayjs from 'dayjs';
 import {
+  BigNumberType,
   DateTimeType,
+  EthereumAddressType,
+  EthereumTransactionHashType,
   onlyAllowed,
   PaginateList,
   PaginationArgument,
@@ -38,6 +42,7 @@ import * as Actions from '../../../automate/action';
 import * as Conditions from '../../../automate/condition';
 import { WalletBlockchainType } from '../user';
 import { ProtocolType, ContractType as ProtocolContractType } from '../protocol';
+import { TokenType } from '../token';
 
 export const ConditionTypeEnum = new GraphQLEnumType({
   name: 'AutomateConditionTypeEnum',
@@ -954,6 +959,61 @@ export const ActionDeleteMutation: GraphQLFieldConfig<any, Request> = {
   }),
 };
 
+export const ContractStopLossStatusEnum = new GraphQLEnumType({
+  name: 'AutomateContractStopLossStatusEnum',
+  values: Object.values(Automate.ContractStopLossStatus).reduce(
+    (res, value) => ({ ...res, [value]: { value } }),
+    {} as GraphQLEnumValueConfigMap,
+  ),
+});
+
+export const ContractStopLossType = new GraphQLObjectType<Automate.ContractStopLoss, Request>({
+  name: 'AutomateContractStopLossType',
+  fields: {
+    status: {
+      type: GraphQLNonNull(ContractStopLossStatusEnum),
+    },
+    tx: {
+      type: GraphQLNonNull(EthereumTransactionHashType),
+    },
+    amountOut: {
+      type: BigNumberType,
+    },
+    outToken: {
+      type: TokenType,
+      resolve: ({ stopLoss: { outToken } }, args, { dataLoader }) => {
+        if (outToken === null) return null;
+        return dataLoader.token().load(outToken);
+      },
+    },
+    params: {
+      type: GraphQLNonNull(
+        new GraphQLObjectType<Automate.ContractStopLoss['stopLoss']>({
+          name: 'AutomateContractStopLossParamsType',
+          fields: {
+            path: {
+              type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString))),
+            },
+            amountOut: {
+              type: GraphQLNonNull(BigNumberType),
+            },
+            amountOutMin: {
+              type: GraphQLNonNull(BigNumberType),
+            },
+            slippage: {
+              type: GraphQLNonNull(GraphQLFloat),
+              resolve: ({ amountOut, amountOutMin }) => {
+                return new BN(amountOut).minus(amountOutMin).div(amountOut).toString(10);
+              },
+            },
+          },
+        }),
+      ),
+      resolve: ({ stopLoss }) => stopLoss,
+    },
+  },
+});
+
 export const ContractVerificationStatusEnum = new GraphQLEnumType({
   name: 'AutomateContractVerificationStatusEnum',
   values: Object.values(Automate.ContractVerificationStatus).reduce(
@@ -1187,6 +1247,12 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
     archivedAt: {
       type: DateTimeType,
       description: 'Date at archived contract',
+    },
+    stopLoss: {
+      type: ContractStopLossType,
+      resolve: (contract, args, { dataLoader }) => {
+        return dataLoader.automateContractStopLoss().load(contract.id);
+      },
     },
   },
 });
@@ -1455,6 +1521,93 @@ export const ContractDeleteMutation: GraphQLFieldConfig<any, Request> = {
       ...contract,
       archivedAt: new Date(),
     });
+
+    return true;
+  }),
+};
+
+export const ContractStopLossEnable: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLBoolean),
+  args: {
+    input: {
+      type: GraphQLNonNull(
+        new GraphQLInputObjectType({
+          name: 'AutomateContractStopLossEnableInputType',
+          fields: {
+            contract: {
+              type: GraphQLNonNull(UuidType),
+              description: 'Automate contract',
+            },
+            path: {
+              type: GraphQLNonNull(GraphQLList(GraphQLNonNull(EthereumAddressType))),
+              description: 'Swap path',
+            },
+            amountOut: {
+              type: GraphQLNonNull(BigNumberType),
+              description: 'Target amount',
+            },
+            amountOutMin: {
+              type: GraphQLNonNull(BigNumberType),
+              description: 'Amount out min',
+            },
+          },
+        }),
+      ),
+    },
+  },
+  resolve: onlyAllowed('automateContract.create', async (root, { input }, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const contract = await container.model
+      .automateContractTable()
+      .where('id', input.contract)
+      .first();
+    if (!contract) {
+      throw new UserInputError('Contract not found');
+    }
+
+    await container.model
+      .automateService()
+      .enableStopLoss(
+        contract,
+        input.path,
+        input.amountOut.toFixed(0),
+        input.amountOutMin.toFixed(0),
+      );
+
+    return true;
+  }),
+};
+
+export const ContractStopLossDisable: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLBoolean),
+  args: {
+    input: {
+      type: GraphQLNonNull(
+        new GraphQLInputObjectType({
+          name: 'AutomateContractStopLossDisableInputType',
+          fields: {
+            contract: {
+              type: GraphQLNonNull(UuidType),
+              description: 'Automate contract',
+            },
+          },
+        }),
+      ),
+    },
+  },
+  resolve: onlyAllowed('automateContract.create', async (root, { input }, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const contract = await container.model
+      .automateContractTable()
+      .where('id', input.contract)
+      .first();
+    if (!contract) {
+      throw new UserInputError('Contract not found');
+    }
+
+    await container.model.automateService().disableStopLoss(contract);
 
     return true;
   }),

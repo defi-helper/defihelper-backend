@@ -8,6 +8,8 @@ const options = cli([{ name: 'period', type: String }]);
 function pushPeriod() {
   const queue = container.model.queueService();
   switch (options.period) {
+    case 'minute5':
+      return queue.push('scheduleMinute5', {});
     case 'minute10':
       return queue.push('scheduleMinute10', {});
     case 'hourStart':

@@ -34,7 +34,9 @@ export interface ProtocolListItem {
 }
 
 export class Debank {
-  public readonly chains: { [named: string]: string } = {
+  constructor(public readonly apiKey: string) {}
+
+  public readonly chains = {
     eth: '1',
     bsc: '56',
     matic: '137',
@@ -49,73 +51,97 @@ export class Debank {
     hmy: '1666600000',
   };
 
-  public chainResolver = (
-    chain: string | number,
-  ): { named: string; numbered: string } | undefined => {
+  public chainResolver(chain: string | number): { named: string; numbered: string } | undefined {
     return Object.entries(this.chains)
       .map(([named, numbered]) => ({ named, numbered }))
       .find((v) => v.named === String(chain) || v.numbered === String(chain));
-  };
+  }
 
-  private apiRequest = (path: string, queryParams: Record<string, string>): any => {
-    const url = buildUrl('https://openapi.debank.com', {
-      path: `/v1/${path}`,
-      queryParams,
-    });
+  private apiRequest<T>(
+    path: string,
+    queryParams: Record<string, string>,
+    paidWay: boolean = false,
+  ): Promise<T> {
+    const url = buildUrl(
+      paidWay ? 'https://pro-openapi.debank.com' : 'https://openapi.debank.com',
+      {
+        path: `/v1/${path}`,
+        queryParams,
+      },
+    );
 
-    return axios.get(url).then((response) => {
-      const r = response.data;
-      if (r === null) {
-        throw new Error('Debank didn`t found anything');
-      }
+    return axios
+      .get(url, {
+        headers: paidWay
+          ? {
+              AccessKey: this.apiKey,
+            }
+          : {},
+      })
+      .then(({ data }) => {
+        if (data === null) {
+          throw new Error('Debank didn`t found anything');
+        }
 
-      return r;
-    });
-  };
+        return data;
+      })
+      .catch((e) => {
+        throw new Error(`[Debank ${paidWay ? 'PAID' : 'NONPAID'}]: ${url}; ${e}`);
+      });
+  }
 
-  getToken = async (chainId: string, address: string): Promise<Token> => {
+  async getToken(chainId: string, address: string) {
     const chain = this.chainResolver(chainId);
     if (!chain) {
       throw new Error(`Unknown chain: ${chainId}`);
     }
 
-    return this.apiRequest('token', {
+    return this.apiRequest<Token>('token', {
       id: address === '0x0000000000000000000000000000000000000000' ? chain.named : address,
       chain_id: chain.named,
     });
-  };
+  }
 
-  getTokensOnWallet = async (wallet: string): Promise<(Token & { amount: number })[]> => {
-    return this.apiRequest('user/token_list', {
-      id: wallet,
-    });
-  };
+  async getTokensOnWallet(wallet: string) {
+    return this.apiRequest<(Token & { amount: number })[]>(
+      'user/all_token_list',
+      {
+        id: wallet,
+      },
+      true,
+    );
+  }
 
-  getTokensOnWalletNetwork = async (
-    wallet: string,
-    chainId: string,
-  ): Promise<(Token & { amount: number })[]> => {
+  async getTokensOnWalletNetwork(wallet: string, chainId: string) {
     const chain = this.chainResolver(chainId);
     if (!chain) {
       throw new Error(`Unknown chain: ${chainId}`);
     }
 
-    return this.apiRequest('user/token_list', {
-      id: wallet,
-      chain_id: chain.named,
-      is_all: 'true',
-    });
-  };
-
-  getProtocolListWallet = async (wallet: string): Promise<ProtocolListItem[]> => {
-    return (
-      this.apiRequest('user/complex_protocol_list', {
+    return this.apiRequest<(Token & { amount: number })[]>(
+      'user/token_list',
+      {
         id: wallet,
-      }) ?? []
+        chain_id: chain.named,
+        is_all: 'true',
+      },
+      true,
     );
-  };
+  }
+
+  async getProtocolListWallet(wallet: string) {
+    const response = await this.apiRequest<ProtocolListItem[]>(
+      'user/all_complex_protocol_list',
+      {
+        id: wallet,
+      },
+      true,
+    );
+
+    return response ?? [];
+  }
 }
 
-export function debankServiceFactory(): Factory<Debank> {
-  return () => new Debank();
+export function debankServiceFactory(apiKey: string): Factory<Debank> {
+  return () => new Debank(apiKey);
 }
