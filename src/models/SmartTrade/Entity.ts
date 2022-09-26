@@ -20,6 +20,14 @@ export interface MockCallData {
   };
 }
 
+export interface SwapCallDataRoute {
+  amountOut: string;
+  amountOutMin: string;
+  slippage: string;
+  moving: number | null;
+  direction: 'gt' | 'lt';
+}
+
 export interface SwapCallData {
   type: HandlerType.SwapHandler;
   callData: {
@@ -29,13 +37,9 @@ export interface SwapCallData {
     tokenInDecimals: number;
     tokenOutDecimals: number;
     amountIn: string;
+    amountOut: string;
     boughtPrice: string;
-    routes: Array<{
-      amountOut: string;
-      amountOutMin: string;
-      slippage: string;
-      direction: 'gt' | 'lt';
-    } | null>;
+    routes: Array<SwapCallDataRoute | null>;
     deadline: number;
   };
 }

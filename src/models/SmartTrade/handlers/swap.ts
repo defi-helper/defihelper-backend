@@ -50,7 +50,41 @@ export default async function (
     })
     .send();
 
-  const routeIndex = order.callData.routes.reduce<number | null>((prev, route, index) => {
+  const routes = order.callData.routes.map((route) => {
+    if (route === null) return route;
+    if (route.direction === 'lt') {
+      if (route.moving && actualAmountOut.gt(order.callData.amountOut)) {
+        return {
+          ...route,
+          amountOut: actualAmountOut
+            .minus(new BN(order.callData.amountOut).minus(route.amountOut))
+            .toFixed(0),
+        };
+      }
+    }
+    if (route.direction === 'gt') {
+      if (route.moving && actualAmountOut.lt(order.callData.amountOut)) {
+        return {
+          ...route,
+          amountOut: actualAmountOut
+            .plus(new BN(route.amountOut).minus(order.callData.amountOut))
+            .toFixed(0),
+        };
+      }
+    }
+
+    return route;
+  });
+  await container.model.smartTradeService().updateOrder({
+    ...order,
+    callData: {
+      ...order.callData,
+      amountOut: actualAmountOut.toFixed(0),
+      routes,
+    },
+  });
+
+  const routeIndex = routes.reduce<number | null>((prev, route, index) => {
     if (prev !== null || route === null) return prev;
     if (
       (route.direction === 'gt' && actualAmountOut.lt(route.amountOut)) ||

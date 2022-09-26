@@ -373,6 +373,9 @@ export const SwapOrderCallDataRouteInputType = new GraphQLInputObjectType({
     amountOutMin: {
       type: GraphQLNonNull(BigNumberType),
     },
+    moving: {
+      type: GraphQLNonNull(GraphQLBoolean),
+    },
     slippage: {
       type: GraphQLNonNull(GraphQLFloat),
     },
@@ -419,6 +422,9 @@ export const SwapOrderCreateInputType = new GraphQLInputObjectType({
               type: GraphQLNonNull(GraphQLInt),
             },
             amountIn: {
+              type: GraphQLNonNull(BigNumberType),
+            },
+            amountOut: {
               type: GraphQLNonNull(BigNumberType),
             },
             boughtPrice: {
@@ -512,13 +518,15 @@ export const SwapOrderCreateMutation: GraphQLFieldConfig<any, Request> = {
           path: callData.path,
           tokenInDecimals: callData.tokenInDecimals,
           tokenOutDecimals: callData.tokenOutDecimals,
-          amountIn: callData.amountIn.toString(10),
+          amountIn: callData.amountIn.toFixed(0),
+          amountOut: callData.amountOut.toFixed(0),
           boughtPrice: callData.boughtPrice.toString(10),
           routes: [
             callData.stopLoss
               ? {
                   amountOut: callData.stopLoss.amountOut.toFixed(0),
                   amountOutMin: callData.stopLoss.amountOutMin.toFixed(0),
+                  moving: callData.stopLoss.moving,
                   slippage: callData.stopLoss.slippage.toString(),
                   direction: 'lt',
                 }
@@ -527,6 +535,7 @@ export const SwapOrderCreateMutation: GraphQLFieldConfig<any, Request> = {
               ? {
                   amountOut: callData.takeProfit.amountOut.toFixed(0),
                   amountOutMin: callData.takeProfit.amountOutMin.toFixed(0),
+                  moving: callData.takeProfit.moving,
                   slippage: callData.takeProfit.slippage.toString(),
                   direction: 'gt',
                 }
