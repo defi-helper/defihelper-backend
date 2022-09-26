@@ -2177,7 +2177,7 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
     },
     sort: SortArgument(
       'ProtocolListSortInputType',
-      ['id', 'name', 'createdAt'],
+      ['id', 'name', 'createdAt', 'tvl'],
       [{ column: 'name', order: 'asc' }],
     ),
     pagination: PaginationArgument('ProtocolListPaginationInputType'),
@@ -2250,7 +2250,16 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
     });
 
     return {
-      list: await select.clone().orderBy(sort).limit(pagination.limit).offset(pagination.offset),
+      list: await select
+        .clone()
+        .orderBy(
+          sort.map((r: { column: string; order: 'asc' | 'desc' }) => ({
+            ...r,
+            column: r.column === 'tvl' ? database.raw(`(metric->>'tvl')::float`) : r.column,
+          })),
+        )
+        .limit(pagination.limit)
+        .offset(pagination.offset),
       pagination: {
         count: await select.clone().count().first(),
       },
