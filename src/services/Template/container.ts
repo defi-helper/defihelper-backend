@@ -6,9 +6,11 @@ import { i18nContext } from './index';
 export class TemplateContainer extends Container<typeof AppContainer> {
   readonly i18n = i18nContext;
 
-  readonly render = (template: string, data: any | typeof Mustache.Context) =>
-    Mustache.render(template, {
+  readonly render = (template: string, data: any | typeof Mustache.Context) => {
+    return Mustache.render(template, {
       ...data,
-      formatMoney: AppContainer.numbers().formatMoney,
+      formatMoney: () => (text: string, render: any) =>
+        this.parent.numbers().formatMoney(render(text)),
     });
+  };
 }
