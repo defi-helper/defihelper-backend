@@ -24,7 +24,7 @@ export interface SwapCallDataRoute {
   amountOut: string;
   amountOutMin: string;
   slippage: string;
-  moving: number | null;
+  moving: string | null;
   direction: 'gt' | 'lt';
 }
 
@@ -37,7 +37,6 @@ export interface SwapCallData {
     tokenInDecimals: number;
     tokenOutDecimals: number;
     amountIn: string;
-    amountOut: string;
     boughtPrice: string;
     routes: Array<SwapCallDataRoute | null>;
     deadline: number;

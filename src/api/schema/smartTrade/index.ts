@@ -519,14 +519,15 @@ export const SwapOrderCreateMutation: GraphQLFieldConfig<any, Request> = {
           tokenInDecimals: callData.tokenInDecimals,
           tokenOutDecimals: callData.tokenOutDecimals,
           amountIn: callData.amountIn.toFixed(0),
-          amountOut: callData.amountOut.toFixed(0),
           boughtPrice: callData.boughtPrice.toString(10),
           routes: [
             callData.stopLoss
               ? {
                   amountOut: callData.stopLoss.amountOut.toFixed(0),
                   amountOutMin: callData.stopLoss.amountOutMin.toFixed(0),
-                  moving: callData.stopLoss.moving,
+                  moving: callData.stopLoss.moving
+                    ? callData.amountOut.minus(callData.stopLoss.amountOut).toFixed(0)
+                    : null,
                   slippage: callData.stopLoss.slippage.toString(),
                   direction: 'lt',
                 }
@@ -535,7 +536,9 @@ export const SwapOrderCreateMutation: GraphQLFieldConfig<any, Request> = {
               ? {
                   amountOut: callData.takeProfit.amountOut.toFixed(0),
                   amountOutMin: callData.takeProfit.amountOutMin.toFixed(0),
-                  moving: callData.takeProfit.moving,
+                  moving: callData.takeProfit.moving
+                    ? callData.takeProfit.amountOut.minus(callData.amountOut).toFixed(0)
+                    : null,
                   slippage: callData.takeProfit.slippage.toString(),
                   direction: 'gt',
                 }

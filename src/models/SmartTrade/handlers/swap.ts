@@ -53,22 +53,21 @@ export default async function (
   const routes = order.callData.routes.map((route) => {
     if (route === null) return route;
     if (route.direction === 'lt') {
-      if (route.moving && actualAmountOut.gt(order.callData.amountOut)) {
+      if (route.moving !== null && actualAmountOut.minus(route.amountOut).gt(route.moving)) {
         return {
           ...route,
-          amountOut: actualAmountOut
-            .minus(new BN(order.callData.amountOut).minus(route.amountOut))
-            .toFixed(0),
+          amountOut: actualAmountOut.minus(route.moving).toFixed(0),
         };
       }
     }
     if (route.direction === 'gt') {
-      if (route.moving && actualAmountOut.lt(order.callData.amountOut)) {
+      if (
+        route.moving !== null &&
+        new BN(route.amountOut).minus(actualAmountOut).gt(route.moving)
+      ) {
         return {
           ...route,
-          amountOut: actualAmountOut
-            .plus(new BN(route.amountOut).minus(order.callData.amountOut))
-            .toFixed(0),
+          amountOut: actualAmountOut.plus(route.moving).toFixed(0),
         };
       }
     }
@@ -79,7 +78,6 @@ export default async function (
     ...order,
     callData: {
       ...order.callData,
-      amountOut: actualAmountOut.toFixed(0),
       routes,
     },
   });
