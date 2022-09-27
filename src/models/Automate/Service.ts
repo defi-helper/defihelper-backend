@@ -317,6 +317,7 @@ export class AutomateService {
         path,
         amountOut,
         amountOutMin,
+        inToken: null,
         outToken: null,
       },
       status: ContractStopLossStatus.Pending,
