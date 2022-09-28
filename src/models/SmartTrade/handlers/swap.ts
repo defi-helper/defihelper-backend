@@ -57,6 +57,7 @@ export default async function (
         return {
           ...route,
           amountOut: actualAmountOut.minus(route.moving).toFixed(0),
+          // todo change amountOutMin value
         };
       }
     }
@@ -68,6 +69,7 @@ export default async function (
         return {
           ...route,
           amountOut: actualAmountOut.plus(route.moving).toFixed(0),
+          // todo change amountOutMin value
         };
       }
     }
