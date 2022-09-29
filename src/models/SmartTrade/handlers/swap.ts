@@ -54,22 +54,11 @@ export default async function (
     if (route === null) return route;
     if (route.direction === 'lt') {
       if (route.moving !== null && actualAmountOut.minus(route.amountOut).gt(route.moving)) {
+        const amountOut = actualAmountOut.minus(route.moving);
         return {
           ...route,
-          amountOut: actualAmountOut.minus(route.moving).toFixed(0),
-          // todo change amountOutMin value
-        };
-      }
-    }
-    if (route.direction === 'gt') {
-      if (
-        route.moving !== null &&
-        new BN(route.amountOut).minus(actualAmountOut).gt(route.moving)
-      ) {
-        return {
-          ...route,
-          amountOut: actualAmountOut.plus(route.moving).toFixed(0),
-          // todo change amountOutMin value
+          amountOut: amountOut.toFixed(0),
+          amountOutMin: amountOut.multipliedBy(new BN(1).minus(route.slippage)).toFixed(0),
         };
       }
     }

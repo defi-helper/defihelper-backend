@@ -364,8 +364,23 @@ export const OrderListQuery: GraphQLFieldConfig<any, Request> = {
   ),
 };
 
-export const SwapOrderCallDataRouteInputType = new GraphQLInputObjectType({
-  name: 'SwapOrderCallDataRouteInputType',
+export const SwapOrderCallDataTakeProfitInputType = new GraphQLInputObjectType({
+  name: 'SwapOrderCallDataTakeProfitInputType',
+  fields: {
+    amountOut: {
+      type: GraphQLNonNull(BigNumberType),
+    },
+    amountOutMin: {
+      type: GraphQLNonNull(BigNumberType),
+    },
+    slippage: {
+      type: GraphQLNonNull(GraphQLFloat),
+    },
+  },
+});
+
+export const SwapOrderCallDataStopLossInputType = new GraphQLInputObjectType({
+  name: 'SwapOrderCallDataStopLossInputType',
   fields: {
     amountOut: {
       type: GraphQLNonNull(BigNumberType),
@@ -431,10 +446,10 @@ export const SwapOrderCreateInputType = new GraphQLInputObjectType({
               type: GraphQLNonNull(BigNumberType),
             },
             stopLoss: {
-              type: SwapOrderCallDataRouteInputType,
+              type: SwapOrderCallDataStopLossInputType,
             },
             takeProfit: {
-              type: SwapOrderCallDataRouteInputType,
+              type: SwapOrderCallDataTakeProfitInputType,
             },
             deadline: {
               type: GraphQLNonNull(GraphQLInt),
@@ -536,9 +551,7 @@ export const SwapOrderCreateMutation: GraphQLFieldConfig<any, Request> = {
               ? {
                   amountOut: callData.takeProfit.amountOut.toFixed(0),
                   amountOutMin: callData.takeProfit.amountOutMin.toFixed(0),
-                  moving: callData.takeProfit.moving
-                    ? callData.takeProfit.amountOut.minus(callData.amountOut).toFixed(0)
-                    : null,
+                  moving: null,
                   slippage: callData.takeProfit.slippage.toString(),
                   direction: 'gt',
                 }
