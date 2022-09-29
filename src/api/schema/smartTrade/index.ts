@@ -364,6 +364,30 @@ export const OrderListQuery: GraphQLFieldConfig<any, Request> = {
   ),
 };
 
+export const OrderCancelMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(OrderType),
+  args: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+    },
+  },
+  resolve: onlyAllowed('smartTradeOrder.cancel-own', async (root, { id }, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const order = await container.model.smartTradeOrderTable().where('id', id).first();
+    if (!order) throw new UserInputError('Order not found');
+
+    const ownerWallet = await container.model.walletTable().where('id', order.owner).first();
+    if (!ownerWallet) throw new UserInputError('Owner wallet not found');
+    if (ownerWallet.user !== currentUser.id) throw new UserInputError('Foreign order');
+
+    return container.model.smartTradeService().updateOrder({
+      ...order,
+      status: OrderStatus.Canceled,
+    });
+  }),
+};
+
 export const SwapOrderCallDataTakeProfitInputType = new GraphQLInputObjectType({
   name: 'SwapOrderCallDataTakeProfitInputType',
   fields: {
