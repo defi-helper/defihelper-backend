@@ -3,6 +3,6 @@ import { tableName } from '@models/Queue/Entity';
 
 export default async (schema: SchemaBuilder) => {
   return schema.alterTable(tableName, (table) => {
-    table.integer('coingecko_id').nullable();
+    table.string('coingecko_id').nullable();
   });
 };
