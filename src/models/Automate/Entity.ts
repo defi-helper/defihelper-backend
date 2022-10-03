@@ -179,6 +179,7 @@ export interface ContractStopLoss {
     path: string[];
     amountOut: string;
     amountOutMin: string;
+    inToken: string | null;
     outToken: string | null;
   };
   status: ContractStopLossStatus;

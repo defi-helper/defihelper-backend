@@ -19,6 +19,7 @@ import { wavesNodeGatewayFactory } from '@services/WavesNodeGateway';
 import { WhatToFarmGateway } from '@services/WhatToFarm';
 import { amplitudeFactory } from '@services/Amplitude';
 import { Coingecko } from '@services/Coingecko';
+import { Numbers } from '@services/Numbers';
 import config from './config';
 
 class AppContainer extends Container<typeof config> {
@@ -55,6 +56,8 @@ class AppContainer extends Container<typeof config> {
   readonly socialStats = singleton(() => new SocialStatsGateway(this.parent.socialStats));
 
   readonly amplitude = singleton(amplitudeFactory(this.parent.amplitudeApiKey));
+
+  readonly numbers = singleton(() => new Numbers());
 
   readonly blockchain = {
     ethereum: new Blockchain.Ethereum.BlockchainContainer(this.parent.blockchain.ethereum),

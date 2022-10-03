@@ -2168,6 +2168,10 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
                 lpTokensManager: {
                   type: GraphQLBoolean,
                 },
+                autorestake: {
+                  type: GraphQLBoolean,
+                  description: 'Has autorestake automate',
+                },
               },
             }),
           },
@@ -2177,7 +2181,7 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
     },
     sort: SortArgument(
       'ProtocolListSortInputType',
-      ['id', 'name', 'createdAt'],
+      ['id', 'name', 'createdAt', 'tvl'],
       [{ column: 'name', order: 'asc' }],
     ),
     pagination: PaginationArgument('ProtocolListPaginationInputType'),
@@ -2246,11 +2250,33 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
             0,
           );
         }
+        if (typeof automate.autorestake === 'boolean') {
+          this.where(
+            database.raw(`(
+              select count(${contractTableName}.id)
+              from ${contractTableName}
+              inner join ${contractBlockchainTableName} on ${contractBlockchainTableName}.id = ${contractTableName}.id
+              where ${contractTableName}.protocol = ${protocolTableName}.id
+              and ${contractBlockchainTableName}.automate->>'autorestakeAdapter' IS NOT NULL
+            )`),
+            automate.autorestake ? '>' : '=',
+            0,
+          );
+        }
       }
     });
 
     return {
-      list: await select.clone().orderBy(sort).limit(pagination.limit).offset(pagination.offset),
+      list: await select
+        .clone()
+        .orderBy(
+          sort.map((r: { column: string; order: 'asc' | 'desc' }) => ({
+            ...r,
+            column: r.column === 'tvl' ? database.raw(`(metric->>'tvl')::float`) : r.column,
+          })),
+        )
+        .limit(pagination.limit)
+        .offset(pagination.offset),
       pagination: {
         count: await select.clone().count().first(),
       },
