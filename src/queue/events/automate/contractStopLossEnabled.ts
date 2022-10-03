@@ -2,6 +2,31 @@ import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import { TokenCreatedBy } from '@models/Token/Entity';
 
+async function createToken(network: string, tokenAddress: string) {
+  let token = await container.model
+    .tokenTable()
+    .where('blockchain', 'ethereum')
+    .where('network', network)
+    .where('address', tokenAddress.toLowerCase())
+    .first();
+  if (!token) {
+    token = await container.model
+      .tokenService()
+      .create(
+        null,
+        'ethereum',
+        network,
+        tokenAddress.toLowerCase(),
+        '',
+        '',
+        0,
+        TokenCreatedBy.AutomateContractStopLoss,
+      );
+  }
+
+  return token;
+}
+
 interface Params {
   id: string;
 }
@@ -12,9 +37,6 @@ export default async (process: Process) => {
   const stopLoss = await container.model.automateContractStopLossTable().where('id', id).first();
   if (!stopLoss) {
     throw new Error('Automate contract stop loss not found');
-  }
-  if (stopLoss.stopLoss.outToken !== null) {
-    return process.done();
   }
 
   const contract = await container.model
@@ -36,34 +58,25 @@ export default async (process: Process) => {
     throw new Error('Ethereum blockchain supported only');
   }
 
-  const outTokenAddress = stopLoss.stopLoss.path[stopLoss.stopLoss.path.length - 1];
-  let token = await container.model
-    .tokenTable()
-    .where('blockchain', 'ethereum')
-    .where('network', ownerWallet.network)
-    .where('address', outTokenAddress.toLowerCase())
-    .first();
-  if (!token) {
-    token = await container.model
-      .tokenService()
-      .create(
-        null,
-        'ethereum',
-        ownerWallet.network,
-        outTokenAddress.toLowerCase(),
-        '',
-        '',
-        0,
-        TokenCreatedBy.AutomateContractStopLoss,
-      );
+  const stopLossUpdated = {
+    ...stopLoss.stopLoss,
+  };
+  if (stopLoss.stopLoss.inToken === null) {
+    stopLossUpdated.inToken = await createToken(
+      ownerWallet.network,
+      stopLoss.stopLoss.path[0],
+    ).then((token) => token.id);
+  }
+  if (stopLoss.stopLoss.outToken === null) {
+    stopLossUpdated.outToken = await createToken(
+      ownerWallet.network,
+      stopLoss.stopLoss.path[stopLoss.stopLoss.path.length - 1],
+    ).then((token) => token.id);
   }
 
   await container.model.automateService().updateStopLoss({
     ...stopLoss,
-    stopLoss: {
-      ...stopLoss.stopLoss,
-      outToken: token.id,
-    },
+    stopLoss: stopLossUpdated,
   });
 
   return process.done();
