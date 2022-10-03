@@ -979,6 +979,13 @@ export const ContractStopLossType = new GraphQLObjectType<Automate.ContractStopL
     amountOut: {
       type: BigNumberType,
     },
+    inToken: {
+      type: TokenType,
+      resolve: ({ stopLoss: { inToken } }, args, { dataLoader }) => {
+        if (inToken === null) return null;
+        return dataLoader.token().load(inToken);
+      },
+    },
     outToken: {
       type: TokenType,
       resolve: ({ stopLoss: { outToken } }, args, { dataLoader }) => {
