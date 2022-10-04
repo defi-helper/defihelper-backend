@@ -5,6 +5,7 @@ import {
   contractTableName,
 } from '@models/Protocol/Entity';
 import { Process } from '@models/Queue/Entity';
+import { LogJsonMessage } from '@services/Log';
 import BigNumber from 'bignumber.js';
 
 export interface Params {
@@ -12,6 +13,7 @@ export interface Params {
 }
 
 export default async (process: Process) => {
+  const log = LogJsonMessage.debug({ source: 'riskCalculationFiller' });
   const { id } = process.task.params as Params;
   const contract = await container.model
     .contractTable()
@@ -39,6 +41,14 @@ export default async (process: Process) => {
   const currentApy = new BigNumber(lastMetric.data.aprYear ?? '-1').multipliedBy(100);
   const currentTvl = new BigNumber(lastMetric.data.tvl ?? '0');
 
+  log
+    .ex({
+      contract: contract.id,
+      currentApy: currentApy.toString(10),
+      currentTvl: currentTvl.toString(10),
+    })
+    .send();
+
   if (currentApy.gt(0) && currentApy.lt(20)) {
     if (currentTvl.gte(100_000)) {
       riskLevel = ContractRiskFactor.low;
@@ -54,6 +64,7 @@ export default async (process: Process) => {
     riskLevel = ContractRiskFactor.high;
   }
 
+  log.ex({ contract: contract.id, riskLevel }).send();
   await Promise.all([
     container.model.metricService().createContract(
       contract,
