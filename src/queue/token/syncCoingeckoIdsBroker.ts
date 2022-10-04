@@ -6,6 +6,12 @@ export default async (process: Process) => {
   const tokensCandidates = await container.model
     .tokenTable()
     .whereNull('coingeckoId')
+    .whereIn(
+      'network',
+      Object.values(container.blockchain.ethereum.networks)
+        .filter((n) => n.coingeckoPlatform)
+        .map((n) => n.id),
+    )
     .andWhere('blockchain', 'ethereum');
 
   const lag = 172800 / tokensCandidates.length; // 2 days
