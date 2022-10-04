@@ -3,6 +3,6 @@ import { tokenTableName } from '@models/Token/Entity';
 
 export default async (schema: SchemaBuilder) => {
   return schema.alterTable(tokenTableName, (table) => {
-    table.string('coingecko_id').nullable();
+    table.string('coingeckoId').nullable();
   });
 };

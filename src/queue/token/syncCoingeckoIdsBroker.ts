@@ -5,7 +5,7 @@ import dayjs from 'dayjs';
 export default async (process: Process) => {
   const tokensCandidates = await container.model
     .tokenTable()
-    .whereNotNull('coingeckoId')
+    .whereNull('coingeckoId')
     .andWhere('blockchain', 'ethereum');
 
   const lag = 172800 / tokensCandidates.length; // 2 days
