@@ -115,6 +115,7 @@ export class TokenService {
       decimals,
       tradable: false,
       priceFeed,
+      coingeckoId: null,
       priceFeedNeeded: false,
       createdBy,
       createdAt: new Date(),

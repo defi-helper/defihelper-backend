@@ -116,6 +116,8 @@ export * as tokenInfoWaves from './token/wavesInfo';
 export * as resolveTokenAliasLiquidity from './token/resolveTokenAliasLiquidity';
 export * as tokensBridgesFromAdapters from './token/tokensBridgesFromAdapters';
 export * as tokensDeleteDuplicates from './token/deleteTokenDuplicates';
+export * as syncCoingeckoIdsBroker from './token/syncCoingeckoIdsBroker';
+export * as syncCoingeckoIdsFiller from './token/syncCoingeckoIdsFiller';
 
 /* logs */
 export * as logGarbageCollector from './log/garbageCollector';
