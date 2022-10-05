@@ -7,7 +7,7 @@ import {
   walletTableName,
 } from '@models/Wallet/Entity';
 import BN from 'bignumber.js';
-import { metricWalletTokenTableName } from '@models/Metric/Entity';
+import { MetricWalletToken, metricWalletTokenTableName } from '@models/Metric/Entity';
 import { Token, tokenTableName } from '@models/Token/Entity';
 
 interface Params {
@@ -117,9 +117,11 @@ export default async (process: Process) => {
     { found: [], notFound: [] },
   );
 
-  await Promise.all(
-    found.map(({ token, amount, amountUsd }) =>
-      walletMetrics.createWalletToken(
+  await found.reduce<Promise<MetricWalletToken | null>>(
+    async (prev, { token, amount, amountUsd }) => {
+      await prev;
+
+      return walletMetrics.createWalletToken(
         null,
         exchangeWallet,
         token,
@@ -128,8 +130,9 @@ export default async (process: Process) => {
           balance: amount.toString(10),
         },
         new Date(),
-      ),
-    ),
+      );
+    },
+    Promise.resolve(null),
   );
 
   return process

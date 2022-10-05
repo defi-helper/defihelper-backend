@@ -255,10 +255,12 @@ export class ContractService {
       metric,
     };
 
-    await this.database.transaction(async (trx) => {
-      await this.contractTable().insert(parentContract).transacting(trx);
-      await this.contractDebankTable().insert(childContract).transacting(trx);
-    });
+    await this.database.transaction((trx) =>
+      Promise.all([
+        this.contractTable().insert(parentContract).transacting(trx),
+        this.contractDebankTable().insert(childContract).transacting(trx),
+      ]),
+    );
 
     this.onContractDebankCreated.emit({
       contract: parentContract,
@@ -313,10 +315,12 @@ export class ContractService {
       network,
     };
 
-    await this.database.transaction(async (trx) => {
-      await this.contractTable().insert(parentContract).transacting(trx);
-      await this.contractBlockchainTable().insert(childContract).transacting(trx);
-    });
+    await this.database.transaction((trx) =>
+      Promise.all([
+        this.contractTable().insert(parentContract).transacting(trx),
+        this.contractBlockchainTable().insert(childContract).transacting(trx),
+      ]),
+    );
 
     this.onContractBlockchainCreated.emit({
       contract: { ...parentContract, ...childContract },
@@ -335,34 +339,39 @@ export class ContractService {
           : contractBlockchain.address,
     };
 
-    await this.database.transaction(async (trx) => {
-      await this.contractTable()
-        .where('id', updatedBlockchain.id)
-        .update({
-          id: contractBlockchain.id,
-          protocol: contractBlockchain.protocol,
-          layout: contractBlockchain.layout,
-          name: contractBlockchain.name,
-          description: contractBlockchain.description,
-          link: contractBlockchain.link,
-          hidden: contractBlockchain.hidden,
-          deprecated: contractBlockchain.deprecated,
-          updatedAt: new Date(),
-          createdAt: contractBlockchain.createdAt,
-        })
-        .transacting(trx);
-      await this.contractBlockchainTable().where('id', updatedBlockchain.id).update({
-        id: updatedBlockchain.id,
-        blockchain: updatedBlockchain.blockchain,
-        network: updatedBlockchain.network,
-        address: updatedBlockchain.address,
-        deployBlockNumber: updatedBlockchain.deployBlockNumber,
-        watcherId: updatedBlockchain.watcherId,
-        adapter: updatedBlockchain.adapter,
-        automate: updatedBlockchain.automate,
-        metric: updatedBlockchain.metric,
-      });
-    });
+    await this.database.transaction((trx) =>
+      Promise.all([
+        this.contractTable()
+          .where('id', updatedBlockchain.id)
+          .update({
+            id: contractBlockchain.id,
+            protocol: contractBlockchain.protocol,
+            layout: contractBlockchain.layout,
+            name: contractBlockchain.name,
+            description: contractBlockchain.description,
+            link: contractBlockchain.link,
+            hidden: contractBlockchain.hidden,
+            deprecated: contractBlockchain.deprecated,
+            updatedAt: new Date(),
+            createdAt: contractBlockchain.createdAt,
+          })
+          .transacting(trx),
+        this.contractBlockchainTable()
+          .where('id', updatedBlockchain.id)
+          .update({
+            id: updatedBlockchain.id,
+            blockchain: updatedBlockchain.blockchain,
+            network: updatedBlockchain.network,
+            address: updatedBlockchain.address,
+            deployBlockNumber: updatedBlockchain.deployBlockNumber,
+            watcherId: updatedBlockchain.watcherId,
+            adapter: updatedBlockchain.adapter,
+            automate: updatedBlockchain.automate,
+            metric: updatedBlockchain.metric,
+          })
+          .transacting(trx),
+      ]),
+    );
 
     this.onContractBlockchainUpdated.emit(contractBlockchain);
 
@@ -370,27 +379,32 @@ export class ContractService {
   }
 
   async updateDebank(contractDebank: ContractDebankType & Contract) {
-    await this.database.transaction(async (trx) => {
-      await this.contractTable()
-        .where('id', contractDebank.id)
-        .update({
-          id: contractDebank.id,
-          protocol: contractDebank.protocol,
-          layout: contractDebank.layout,
-          name: contractDebank.name,
-          description: contractDebank.description,
-          link: contractDebank.link,
-          hidden: contractDebank.hidden,
-          updatedAt: new Date(),
-          createdAt: contractDebank.createdAt,
-        })
-        .transacting(trx);
-      await this.contractDebankTable().where('id', contractDebank.id).update({
-        id: contractDebank.id,
-        address: contractDebank.address,
-        metric: contractDebank.metric,
-      });
-    });
+    await this.database.transaction((trx) =>
+      Promise.all([
+        this.contractTable()
+          .where('id', contractDebank.id)
+          .update({
+            id: contractDebank.id,
+            protocol: contractDebank.protocol,
+            layout: contractDebank.layout,
+            name: contractDebank.name,
+            description: contractDebank.description,
+            link: contractDebank.link,
+            hidden: contractDebank.hidden,
+            updatedAt: new Date(),
+            createdAt: contractDebank.createdAt,
+          })
+          .transacting(trx),
+        this.contractDebankTable()
+          .where('id', contractDebank.id)
+          .update({
+            id: contractDebank.id,
+            address: contractDebank.address,
+            metric: contractDebank.metric,
+          })
+          .transacting(trx),
+      ]),
+    );
 
     return contractDebank;
   }
@@ -437,23 +451,23 @@ export class ContractService {
           new Map(rows.map((duplicate) => [`${duplicate.token}:${duplicate.type}`, duplicate])),
       );
 
-    return Promise.all(
-      tokens.map(async ({ token, type }) => {
-        const duplicate = duplicates.get(`${token.id}:${type}`);
-        if (duplicate) return duplicate;
+    return tokens.reduce<Promise<TokenContractLink[]>>(async (prev, { token, type }) => {
+      const res = await prev;
 
-        const created: TokenContractLink = {
-          id: uuid(),
-          contract: contract.id,
-          token: token.id,
-          type,
-          createdAt: new Date(),
-        };
-        await this.tokenLinkTable().insert(created);
+      const duplicate = duplicates.get(`${token.id}:${type}`);
+      if (duplicate) return [...res, duplicate];
 
-        return created;
-      }),
-    );
+      const created: TokenContractLink = {
+        id: uuid(),
+        contract: contract.id,
+        token: token.id,
+        type,
+        createdAt: new Date(),
+      };
+      await this.tokenLinkTable().insert(created);
+
+      return [...res, created];
+    }, Promise.resolve([]));
   }
 
   async userLink(contract: Contract, users: Array<{ user: User; type: UserContractLinkType }>) {
