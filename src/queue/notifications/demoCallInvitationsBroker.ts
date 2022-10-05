@@ -1,7 +1,7 @@
 import { Process } from '@models/Queue/Entity';
 import container from '@container';
 import { tableName as userTableName } from '@models/User/Entity';
-import { userContactTableName } from '@models/Notification/Entity';
+import { ContactBroker, ContactStatus, userContactTableName } from '@models/Notification/Entity';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 
 export default async (process: Process) => {
@@ -10,7 +10,9 @@ export default async (process: Process) => {
     .column(`${userContactTableName}.user`)
     .column(`${userContactTableName}.id`)
     .innerJoin(userContactTableName, `${userContactTableName}.user`, `${userTableName}.id`)
-    .whereRaw(`(CURRENT_TIMESTAMP::date - "${userTableName}"."createdAt"::date) = 14`);
+    .whereRaw(`(CURRENT_TIMESTAMP::date - "${userTableName}"."createdAt"::date) = 14`)
+    .andWhere(`${userContactTableName}.broker`, ContactBroker.Telegram)
+    .andWhere(`${userContactTableName}.status`, ContactStatus.Active);
 
   const contractsByUser = await container.model
     .walletTable()
