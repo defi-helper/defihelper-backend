@@ -22,17 +22,16 @@ export default async (process: Process) => {
     throw new Error('Unknown target platform');
   }
 
-  try {
-    const { id: coingeckoId } = await container
-      .coingecko()
-      .findCoinByAddress(platform, token.address);
-    await container.model.tokenService().update({
-      ...token,
-      coingeckoId,
-    });
-  } catch {
+  const coin = await container.coingecko().findCoinByAddress(platform, token.address);
+
+  if (!coin) {
     return process.done().info('no coin found');
   }
+
+  await container.model.tokenService().update({
+    ...token,
+    coingeckoId: coin.id,
+  });
 
   return process.done();
 };

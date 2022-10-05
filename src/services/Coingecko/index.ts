@@ -11,15 +11,17 @@ export class Coingecko {
       queryParams,
     });
 
-    const res = await axios.get(url);
-    if (res.data.error) {
-      throw new Error(res.data.error);
-    }
-
-    return res.data;
+    return axios.get(url).then(({ data }) => data);
   };
 
   async findCoinByAddress(platformId: string, address: string) {
-    return this.apiRequest<{ id: string }>(`coins/${platformId}/contract/${address}`);
+    const res = await this.apiRequest<{ error: string } | { id: string }>(
+      `coins/${platformId}/contract/${address}`,
+    );
+    if ('error' in res) {
+      return null;
+    }
+
+    return res;
   }
 }
