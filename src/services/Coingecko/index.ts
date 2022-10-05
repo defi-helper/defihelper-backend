@@ -19,7 +19,11 @@ export class Coingecko {
       `coins/${platformId}/contract/${address}`,
     );
     if ('error' in res) {
-      return null;
+      if (res.error === 'Could not find coin with the given id') {
+        return null;
+      }
+
+      throw new Error(res.error);
     }
 
     return res;
