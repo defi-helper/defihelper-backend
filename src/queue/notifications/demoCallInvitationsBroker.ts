@@ -8,13 +8,18 @@ import {
   walletTableName,
 } from '@models/Wallet/Entity';
 
+export interface Params {
+  days: number;
+}
+
 export default async (process: Process) => {
+  const { days } = process.task.params as Params;
   const contacts = await container.model
     .userTable()
     .column(`${userContactTableName}.user`)
     .column(`${userContactTableName}.id`)
     .innerJoin(userContactTableName, `${userContactTableName}.user`, `${userTableName}.id`)
-    .whereRaw(`(CURRENT_TIMESTAMP::date - "${userTableName}"."createdAt"::date) = 14`)
+    .whereRaw(`(CURRENT_TIMESTAMP::date - "${userTableName}"."createdAt"::date) = ?`, [days])
     .andWhere(`${userContactTableName}.broker`, ContactBroker.Telegram)
     .andWhere(`${userContactTableName}.status`, ContactStatus.Active);
 
