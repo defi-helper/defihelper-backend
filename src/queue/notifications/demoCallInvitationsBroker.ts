@@ -27,6 +27,10 @@ export default async (process: Process) => {
       `${walletBlockchainTableName}.id`,
     )
     .andWhere(`${walletBlockchainTableName}.type`, WalletBlockchainType.Contract)
+    .whereIn(
+      `${walletTableName}.user`,
+      contacts.map(({ user }) => user),
+    )
     .groupBy(`${walletTableName}.user`)
     .then((rows) => new Set(rows.map((row) => [row.user, row])));
 
