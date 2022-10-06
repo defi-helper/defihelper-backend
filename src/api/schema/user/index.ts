@@ -1094,7 +1094,6 @@ export const UserType = new GraphQLObjectType<User, Request>({
         return user.isPorfolioCollected;
       },
     },
-
     portfolioCollectingFreezedAt: {
       type: DateTimeType,
       description: 'When portfolio collecting (will be/was) freezed',

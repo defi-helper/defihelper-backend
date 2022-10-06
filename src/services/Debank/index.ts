@@ -33,6 +33,12 @@ export interface ProtocolListItem {
   }[];
 }
 
+export class TemporaryOutOfService extends Error {
+  constructor(m = 'debank api temporary out of service') {
+    super(m);
+  }
+}
+
 export class Debank {
   constructor(public readonly apiKey: string) {}
 
@@ -86,6 +92,10 @@ export class Debank {
         return data;
       })
       .catch((e) => {
+        if (!e.response) {
+          throw new TemporaryOutOfService();
+        }
+
         throw new Error(`[Debank ${paidWay ? 'PAID' : 'NONPAID'}]: ${url}; ${e}`);
       });
   }

@@ -78,6 +78,8 @@ export * as metricsWalletBalancesBroker from './metrics/walletBalances/walletBal
 export * as metricsWalletBalancesCexUniversalFiller from './metrics/walletBalances/cex/walletBalancesUniversalFiller';
 export * as walletBalancesCentralizedExchangeBroker from './metrics/walletBalances/cex/walletBalancesCentralizedExchangeBroker';
 
+export * as notificationsDemoCallInvitationsBroker from './notifications/demoCallInvitationsBroker';
+
 /* protocol */
 export * as protocolContractsResolver from './protocol/resolveContracts';
 
@@ -116,6 +118,8 @@ export * as tokenInfoWaves from './token/wavesInfo';
 export * as resolveTokenAliasLiquidity from './token/resolveTokenAliasLiquidity';
 export * as tokensBridgesFromAdapters from './token/tokensBridgesFromAdapters';
 export * as tokensDeleteDuplicates from './token/deleteTokenDuplicates';
+export * as syncCoingeckoIdsBroker from './token/syncCoingeckoIdsBroker';
+export * as syncCoingeckoIdsFiller from './token/syncCoingeckoIdsFiller';
 
 /* logs */
 export * as logGarbageCollector from './log/garbageCollector';

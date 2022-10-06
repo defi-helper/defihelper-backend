@@ -133,27 +133,30 @@ export default async (process: Process) => {
     Promise.resolve([]),
   );
 
-  await Promise.all(
-    lastTokenMetrics.map((v) => {
-      if (createdMetrics.some((exstng) => exstng && exstng.token === v.id) || v.balance === '0') {
-        return null;
-      }
+  await lastTokenMetrics.reduce(async (prev, metric) => {
+    await prev;
 
-      return metricService.createWalletToken(
-        null,
-        blockchainWallet,
-        v,
-        {
-          usd: '0',
-          balance: '0',
-        },
-        new Date(),
-      );
-    }),
-  );
+    if (
+      createdMetrics.some((exstng) => exstng && exstng.token === metric.id) ||
+      metric.balance === '0'
+    ) {
+      return null;
+    }
 
-  container.model.userService().portfolioCollectedSuccessful(owner);
-  container.model.walletService().statisticsUpdated(blockchainWallet);
+    return metricService.createWalletToken(
+      null,
+      blockchainWallet,
+      metric,
+      {
+        usd: '0',
+        balance: '0',
+      },
+      new Date(),
+    );
+  }, Promise.resolve(null));
+
+  await container.model.userService().portfolioCollectedSuccessful(owner);
+  await container.model.walletService().statisticsUpdated(blockchainWallet);
 
   return process.done();
 };
