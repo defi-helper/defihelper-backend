@@ -78,6 +78,8 @@ export * as metricsWalletBalancesBroker from './metrics/walletBalances/walletBal
 export * as metricsWalletBalancesCexUniversalFiller from './metrics/walletBalances/cex/walletBalancesUniversalFiller';
 export * as walletBalancesCentralizedExchangeBroker from './metrics/walletBalances/cex/walletBalancesCentralizedExchangeBroker';
 
+export * as notificationsDemoCallInvitationsBroker from './notifications/demoCallInvitationsBroker';
+
 /* protocol */
 export * as protocolContractsResolver from './protocol/resolveContracts';
 
