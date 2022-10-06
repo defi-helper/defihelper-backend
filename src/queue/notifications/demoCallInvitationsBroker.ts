@@ -2,7 +2,11 @@ import { Process } from '@models/Queue/Entity';
 import container from '@container';
 import { tableName as userTableName } from '@models/User/Entity';
 import { ContactBroker, ContactStatus, userContactTableName } from '@models/Notification/Entity';
-import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
+import {
+  walletBlockchainTableName,
+  WalletBlockchainType,
+  walletTableName,
+} from '@models/Wallet/Entity';
 
 export default async (process: Process) => {
   const contacts = await container.model
@@ -22,12 +26,13 @@ export default async (process: Process) => {
       `${walletTableName}.id`,
       `${walletBlockchainTableName}.id`,
     )
-    .andWhere(`${walletBlockchainTableName}.type`, 'contract')
-    .groupBy(`${walletTableName}.user`);
+    .andWhere(`${walletBlockchainTableName}.type`, WalletBlockchainType.Contract)
+    .groupBy(`${walletTableName}.user`)
+    .then((rows) => new Set(rows.map((row) => [row.user, row])));
 
   await Promise.all(
     contacts.map((contact) => {
-      if (contractsByUser.some((v) => v.user === contact.user)) {
+      if (contractsByUser.has(contact.user)) {
         return null;
       }
 
