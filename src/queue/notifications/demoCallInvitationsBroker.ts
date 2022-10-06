@@ -32,7 +32,7 @@ export default async (process: Process) => {
       contacts.map(({ user }) => user),
     )
     .groupBy(`${walletTableName}.user`)
-    .then((rows) => new Set(rows.map((row) => [row.user, row])));
+    .then((rows) => new Set(rows.map(({ user }) => user)));
 
   await Promise.all(
     contacts.map((contact) => {
