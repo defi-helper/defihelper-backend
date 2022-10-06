@@ -941,7 +941,14 @@ export const ContractDebankListQuery: GraphQLFieldConfig<any, Request> = {
     pagination: PaginationArgument('ContractDebankListPaginationInputType'),
   },
   resolve: async (root, { filter, sort, pagination }, { currentUser }) => {
-    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+    if (!currentUser) {
+      return {
+        list: [],
+        pagination: {
+          count: 0,
+        },
+      };
+    }
 
     const database = container.database();
     const select = container.model
