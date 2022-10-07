@@ -87,6 +87,7 @@ export function route({ express, server }: { express: Express; server: Server })
           automateContracts: automateSchemas.ContractListQuery,
           govToken: governanceSchemas.GovTokenQuery,
           restakeStrategy: restakeStrategySchemas.RestakeStrategyQuery,
+          restakeCalculator: restakeStrategySchemas.RestakeCalculatorQuery,
           treasury: treasurySchemas.TreasuryQuery,
           monitoringUsersRegisteringHistory:
             monitoringSchemas.MonitoringUsersRegisteringHistoryQuery,
