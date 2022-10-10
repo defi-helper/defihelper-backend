@@ -71,7 +71,7 @@ export default async (process: Process) => {
       { topic: 'metricCurrent' },
     );
 
-    return metricService.setWalletTask(contract, wallet, task);
+    return metricService.setWalletTask(contract.id, wallet.id, task.id);
   }, Promise.resolve(null));
 
   return process.done();

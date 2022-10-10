@@ -31,6 +31,9 @@ import {
   MetricWalletTokenRegistryTable,
   QueryModify,
   MetricContractRegistryTable,
+  UserCollectorTable,
+  UserCollector,
+  UserCollectorStatus,
 } from './Entity';
 
 export class MetricContractService {
@@ -76,6 +79,7 @@ export class MetricContractService {
     readonly metricWalletTokenTable: Factory<MetricWalletTokenTable>,
     readonly metricWalletTokenRegistryTable: Factory<MetricWalletTokenRegistryTable>,
     readonly metricTokenTable: Factory<MetricTokenTable>,
+    readonly userCollectorTable: Factory<UserCollectorTable>,
   ) {}
 
   async createBlockchain(blockchain: Blockchain, network: string, data: MetricMap, date: Date) {
@@ -254,14 +258,14 @@ export class MetricContractService {
     return null;
   }
 
-  async setWalletTask(contract: Contract, wallet: Wallet, task: Task) {
+  async setWalletTask(contractId: string, walletId: string, taskId: string) {
     const duplicate = await this.metricWalletTaskTable()
-      .where({ contract: contract.id, wallet: wallet.id })
+      .where({ contract: contractId, wallet: walletId })
       .first();
     if (duplicate) {
       const updated: MetricWalletTask = {
         ...duplicate,
-        task: task.id,
+        task: taskId,
         createdAt: new Date(),
       };
       await this.metricWalletTaskTable().where('id', updated.id).update(updated);
@@ -271,9 +275,9 @@ export class MetricContractService {
 
     const created: MetricWalletTask = {
       id: uuid(),
-      contract: contract.id,
-      wallet: wallet.id,
-      task: task.id,
+      contract: contractId,
+      wallet: walletId,
+      task: taskId,
       createdAt: new Date(),
     };
     await this.metricWalletTaskTable().insert(created);
@@ -374,5 +378,30 @@ export class MetricContractService {
     await this.metricTokenTable().insert(created);
 
     return created;
+  }
+
+  async createUserCollector(userId: string, tasks: string[]) {
+    const created: UserCollector = {
+      id: uuid(),
+      user: userId,
+      data: { tasks },
+      status: UserCollectorStatus.Pending,
+      updatedAt: new Date(),
+      createdAt: new Date(),
+    };
+    await this.userCollectorTable().insert(created);
+
+    return created;
+  }
+
+  async doneUserCollector(collector: UserCollector) {
+    const updated: UserCollector = {
+      ...collector,
+      status: UserCollectorStatus.Done,
+      updatedAt: new Date(),
+    };
+    await this.userCollectorTable().update(updated).where('id', collector.id);
+
+    return updated;
   }
 }

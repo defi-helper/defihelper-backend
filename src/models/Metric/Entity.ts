@@ -199,3 +199,23 @@ export const metricTokenTableName = 'metric_token';
 export const metricTokenTableFactory = tableFactoryLegacy<MetricToken>(metricTokenTableName);
 
 export type MetricTokenTable = ReturnType<ReturnType<typeof metricTokenTableFactory>>;
+
+export enum UserCollectorStatus {
+  Pending = 'pending',
+  Done = 'done',
+}
+
+export interface UserCollector {
+  id: string;
+  user: string;
+  data: { tasks: string[] };
+  status: UserCollectorStatus;
+  updatedAt: Date;
+  createdAt: Date;
+}
+
+export const userCollectorTableName = 'metric_user_collector';
+
+export const userCollectorTableFactory = tableFactoryLegacy<UserCollector>(userCollectorTableName);
+
+export type UserCollectorTable = ReturnType<ReturnType<typeof userCollectorTableFactory>>;
