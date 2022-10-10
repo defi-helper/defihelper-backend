@@ -60,10 +60,9 @@ export * as eventsBillingTransferTxCreated from './events/billing/transferTxCrea
 /* metrics */
 export * as metricsGarbageCollector from './metrics/garbageCollector';
 
+export * as metricsUserBroker from './metrics/userBroker';
 export * as metricsTrackingConditionsBroker from './metrics/userMetricsTrackingConditionsBroker';
 export * as metricsUserPortfolioFiller from './metrics/userPortfolioFiller';
-export * as metricsUserBalancesBroker from './metrics/walletBalances/userBalancesBroker';
-export * as metricsUserBalancesFiller from './metrics/walletBalances/userBalancesFiller';
 
 export * as metricsWalletBalancesDeBankFiller from './metrics/walletBalances/walletBalancesDeBankFiller';
 
@@ -93,7 +92,8 @@ export * as migratablePoolsNotifyUser from './notifications/migratablePoolsNotif
 export * as migratablePoolsBatch from './notifications/migratablePoolsBatch';
 
 /* events */
-export * as eventsMetricContractCreated from './events/metricContractCreated';
+export * as eventsMetricContractCreated from './events/metrics/metricContractCreated';
+export * as eventsMetricUserCollected from './events/metrics/userCollected';
 export * as eventsContractBlockchainCreated from './events/contractBlockchainCreated';
 export * as eventsContractBlockchainUpdated from './events/contractBlockchainUpdated';
 export * as eventsUserCreated from './events/userCreated';
