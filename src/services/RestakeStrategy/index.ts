@@ -48,7 +48,7 @@ function calcRestakeOptimal(
       cBalance += cEarned - fee;
       cEarned = 0;
     }
-    res.push({ t: tick, v: cBalance + cEarned });
+    res.push({ t: tick, v: cBalance + cEarned, restake: restake_days.includes(tick) });
     prevTick = tick;
   }
 

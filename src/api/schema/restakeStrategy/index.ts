@@ -130,8 +130,8 @@ export const RestakeCalculatorQuery: GraphQLFieldConfig<any, Request> = {
       .where('contract', contract.id)
       .first();
     if (!metric) return nullValue;
-
     if (!metric.data.aprYear) return nullValue;
+
     const aprYear = new BN(metric.data.aprYear);
     if (aprYear.lte(0)) return nullValue;
 
@@ -139,7 +139,7 @@ export const RestakeCalculatorQuery: GraphQLFieldConfig<any, Request> = {
       const holdPoints = hold(amount.toNumber(), aprYear.toNumber(), period);
 
       return {
-        earnedUSD: holdPoints[holdPoints.length - 1].v,
+        earnedUSD: new BN(holdPoints[holdPoints.length - 1].v).minus(amount).toString(10),
       };
     }
 
@@ -150,10 +150,11 @@ export const RestakeCalculatorQuery: GraphQLFieldConfig<any, Request> = {
       Number(aprYear),
       period,
     );
+    const nextRestakeAt = optimalPoints.find(({ restake }) => restake);
 
     return {
-      earnedUSD: optimalPoints[optimalPoints.length - 1].v,
-      nextRestakeAt: dayjs().add(optimalPoints[0].t, 'days').toDate(),
+      earnedUSD: new BN(optimalPoints[optimalPoints.length - 1].v).minus(amount).toString(10),
+      nextRestakeAt: nextRestakeAt ? dayjs().add(nextRestakeAt.t, 'days').toDate() : null,
     };
   },
 };
