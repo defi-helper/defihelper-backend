@@ -20,6 +20,7 @@ import { WhatToFarmGateway } from '@services/WhatToFarm';
 import { amplitudeFactory } from '@services/Amplitude';
 import { Coingecko } from '@services/Coingecko';
 import { Numbers } from '@services/Numbers';
+import { riskRankingFactory } from '@services/RiskRanking';
 import config from './config';
 
 class AppContainer extends Container<typeof config> {
@@ -44,6 +45,8 @@ class AppContainer extends Container<typeof config> {
   readonly cryptography = singleton(cryptographyServiceFactory(this.parent.cryptography.key));
 
   readonly debank = singleton(debankServiceFactory(this.parent.debank.apiKey));
+
+  readonly riskRanking = singleton(riskRankingFactory(this.parent.riskRankingServiceUrl));
 
   readonly coingecko = singleton(() => new Coingecko());
 
