@@ -37,7 +37,7 @@ export class RiskRanking {
     return axios[type](url)
       .then(({ data }) => {
         if (data === null) {
-          throw new Error('Debank didn`t found anything');
+          throw new Error('Api didn`t found anything');
         }
 
         return data;
