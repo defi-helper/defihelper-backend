@@ -16,8 +16,7 @@ import UniswapRouterABI from '../data/uniswapRouterABI.json';
 export default async function (
   order: Order<SwapCallData>,
 ): Promise<ethers.ContractTransaction | Error | null> {
-  const log = LogJsonMessage.debug({ source: 'smartTradeSwapHandler' });
-  log.ex({ orderId: order.id }).send();
+  const log = LogJsonMessage.debug({ source: 'smartTradeSwapHandler', orderId: order.id });
   const ownerWallet = await container.model
     .walletTable()
     .innerJoin(

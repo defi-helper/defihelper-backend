@@ -179,6 +179,7 @@ export function route({ express, server }: { express: Express; server: Server })
           onTokenMetricUpdated: userSchemas.OnTokenMetricUpdated,
           onBillingTransferCreated: billingSchemas.OnTransferCreated,
           onBillingTransferUpdated: billingSchemas.OnTransferUpdated,
+          onUserContactActivated: notificationSchemas.OnUserContactActivated,
         },
       }),
     }),
