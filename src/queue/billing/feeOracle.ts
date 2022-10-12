@@ -7,6 +7,7 @@ import { Blockchain } from '@models/types';
 import { isKey } from '@services/types';
 import { abi as balanceAbi } from '@defihelper/networks/abi/Balance.json';
 import contracts from '@defihelper/networks/contracts.json';
+import { LogJsonMessage } from '@services/Log';
 
 const ethFeeDecimals = new BN(10).pow(18);
 
@@ -23,6 +24,7 @@ export interface Params {
 }
 
 export default async (process: Process) => {
+  const log = LogJsonMessage.debug({ source: 'billingFeeOracle', taskId: process.task.id });
   const { blockchain, network } = process.task.params as Params;
   if (blockchain !== 'ethereum') {
     throw new Error('Invalid blockchain');
@@ -51,6 +53,7 @@ export default async (process: Process) => {
       status: BillStatus.Pending,
     })
     .limit(1);
+  log.ex({ billsCount: bills.length }).send();
   if (bills.length === 0) {
     return process.later(later);
   }
@@ -92,18 +95,21 @@ export default async (process: Process) => {
   const acceptedFees = fees.filter(({ accept }) => accept);
   const rejectedFees = fees.filter(({ accept }) => !accept);
 
-  await Promise.all([
-    acceptedFees.length > 0
-      ? balance.connect(inspector).acceptClaims(
-          acceptedFees.map(({ bill }) => bill.number),
-          acceptedFees.map(({ gasFee }) => gasFee.toFixed(0)),
-          acceptedFees.map(({ protocolFee }) => protocolFee.toFixed(0)),
-        )
-      : null,
-    rejectedFees.length > 0
-      ? balance.connect(inspector).rejectClaims(rejectedFees.map(({ bill }) => bill.number))
-      : null,
-  ]);
+  log
+    .ex({ acceptedFees: JSON.stringify(acceptedFees), rejectedFees: JSON.stringify(rejectedFees) })
+    .send();
+
+  if (acceptedFees.length > 0) {
+    await balance.connect(inspector).acceptClaims(
+      acceptedFees.map(({ bill }) => bill.number),
+      acceptedFees.map(({ gasFee }) => gasFee.toFixed(0)),
+      acceptedFees.map(({ protocolFee }) => protocolFee.toFixed(0)),
+    );
+  }
+
+  if (rejectedFees.length > 0) {
+    await balance.connect(inspector).rejectClaims(rejectedFees.map(({ bill }) => bill.number));
+  }
 
   return process.later(later);
 };
