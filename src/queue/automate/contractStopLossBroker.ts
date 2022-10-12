@@ -1,11 +1,22 @@
 import container from '@container';
-import { ContractStopLossStatus } from '@models/Automate/Entity';
+import {
+  ContractStopLossStatus,
+  contractStopLossTableName,
+  contractTableName,
+} from '@models/Automate/Entity';
 import { Process, TaskStatus } from '@models/Queue/Entity';
 
 export default async (process: Process) => {
   const candidates = await container.model
     .automateContractStopLossTable()
-    .where('status', ContractStopLossStatus.Pending);
+    .columns(`${contractStopLossTableName}.*`)
+    .innerJoin(
+      contractTableName,
+      `${contractStopLossTableName}.contract`,
+      `${contractTableName}.id`,
+    )
+    .where('status', ContractStopLossStatus.Pending)
+    .whereNull(`${contractTableName}.archivedAt`);
 
   const automateService = container.model.automateService();
   const queue = container.model.queueService();

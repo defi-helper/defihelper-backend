@@ -71,6 +71,12 @@ export class UserContactService {
     },
   );
 
+  public readonly onActivated = new Emitter<{ contact: UserContact }>(({ contact }) => {
+    container
+      .cache()
+      .publish('defihelper:channel:onUserContactActivated', JSON.stringify({ id: contact.id }));
+  });
+
   async create(
     broker: ContactBroker,
     rawAddress: string,
@@ -131,7 +137,7 @@ export class UserContactService {
       return contact;
     }
 
-    return this.update({
+    const updated = await this.update({
       ...contact,
       params: params || contact.params,
       confirmationCode: '',
@@ -139,6 +145,9 @@ export class UserContactService {
       status: ContactStatus.Active,
       activatedAt: new Date(),
     });
+    this.onActivated.emit({ contact: updated });
+
+    return updated;
   }
 
   async deactivate(contact: UserContact): Promise<UserContact> {
