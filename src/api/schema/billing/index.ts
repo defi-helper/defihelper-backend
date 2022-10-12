@@ -309,7 +309,7 @@ export const WalletBillingType = new GraphQLObjectType<Wallet & WalletBlockchain
     balance: {
       type: GraphQLNonNull(BalanceType),
       resolve: async (wallet) => {
-        const [transferSum, billSum, activeAutomates] = await Promise.all([
+        const [transferSum, unconfirmedTransferSum, billSum, activeAutomates] = await Promise.all([
           container.model
             .billingTransferTable()
             .sum('amount')
@@ -319,6 +319,16 @@ export const WalletBillingType = new GraphQLObjectType<Wallet & WalletBlockchain
               account: wallet.address,
             })
             .where('status', TransferStatus.Confirmed)
+            .first(),
+          container.model
+            .billingTransferTable()
+            .sum('amount')
+            .where({
+              blockchain: wallet.blockchain,
+              network: wallet.network,
+              account: wallet.address,
+            })
+            .whereIn('status', [TransferStatus.Pending, TransferStatus.Confirmed])
             .first(),
           container.model
             .billingBillTable()
@@ -340,6 +350,7 @@ export const WalletBillingType = new GraphQLObjectType<Wallet & WalletBlockchain
             .first(),
         ]);
         const balance = transferSum?.sum || 0;
+        const unconfirmedBalance = unconfirmedTransferSum?.sum || 0;
         const claim = billSum?.sum || 0;
         const activeAutomatesCount = activeAutomates?.count || 0;
 
@@ -353,16 +364,17 @@ export const WalletBillingType = new GraphQLObjectType<Wallet & WalletBlockchain
           };
         }
 
-        const chainNativeUSD = new BN(
-          await container.blockchain.ethereum.byNetwork(wallet.network).nativeTokenPrice(),
-        ).toNumber();
+        const chainNativeUSD = await container.blockchain.ethereum
+          .byNetwork(wallet.network)
+          .nativeTokenPrice()
+          .then((v) => Number(v));
 
         return {
           balance,
           claim,
           netBalance: balance - claim,
           netBalanceUSD: (balance - claim) * chainNativeUSD,
-          lowFeeFunds: balance * chainNativeUSD - (1 + chainNativeUSD * 0.1) <= 0,
+          lowFeeFunds: unconfirmedBalance * chainNativeUSD - (1 + chainNativeUSD * 0.1) <= 0,
         };
       },
     },
@@ -666,14 +678,12 @@ export const AddTransferMutation: GraphQLFieldConfig<any, Request> = {
         tx,
       })
       .first();
-    if (duplicate) {
-      return duplicate;
-    }
+    if (duplicate) return duplicate;
 
     const amountFloat = Number(amount);
     if (Number.isNaN(amountFloat)) throw new UserInputError('Invalid amount');
 
-    const updated = await container.model
+    return container.model
       .billingService()
       .transfer(
         blockchain,
@@ -685,8 +695,6 @@ export const AddTransferMutation: GraphQLFieldConfig<any, Request> = {
         new Date(),
         null,
       );
-
-    return updated;
   },
 };
 
