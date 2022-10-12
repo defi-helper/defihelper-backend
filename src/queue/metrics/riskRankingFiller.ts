@@ -1,5 +1,5 @@
 import container from '@container';
-import { TokenRiskFactor } from '@models/Metric/Entity';
+import { MetricTokenRiskFactor } from '@models/Metric/Entity';
 import { Process } from '@models/Queue/Entity';
 
 export interface Params {
@@ -18,33 +18,23 @@ export default async (process: Process) => {
     throw new Error('No coingeckoId found');
   }
 
-  const lastMetric = await container.model
-    .metricTokenTable()
-    .where('token', token.id)
-    .orderBy('date', 'desc')
-    .first();
-
-  if (!lastMetric) {
-    throw new Error(`No last metric found for token`);
-  }
-
   const resolvedRisk = await container.riskRanking().getCoinInfo(token.coingeckoId);
   if (!resolvedRisk) {
     return process.done().info('no coin found');
   }
 
-  let risk = TokenRiskFactor.notCalculated;
+  let risk = MetricTokenRiskFactor.notCalculated;
   switch (resolvedRisk.total.svetofor) {
     case 'green':
-      risk = TokenRiskFactor.low;
+      risk = MetricTokenRiskFactor.low;
       break;
 
     case 'yellow':
-      risk = TokenRiskFactor.moderate;
+      risk = MetricTokenRiskFactor.moderate;
       break;
 
     case 'red':
-      risk = TokenRiskFactor.high;
+      risk = MetricTokenRiskFactor.high;
       break;
 
     default:
@@ -54,7 +44,6 @@ export default async (process: Process) => {
   await container.model.metricService().createToken(
     token,
     {
-      ...lastMetric.data,
       risk,
     },
     new Date(),

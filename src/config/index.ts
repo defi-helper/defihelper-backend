@@ -18,8 +18,6 @@ function array(value: string): string[] {
 
 export default {
   mode: process.env.NODE_ENV ?? 'development',
-  amplitudeApiKey: process.env.AMPLITUDE_API_KEY ?? '',
-  riskRankingServiceUrl: process.env.RISK_RANKING_URL ?? '',
   api: {
     port: int(process.env.API_PORT ?? '8080'),
     internalUrl: process.env.API_INTERNAL_URL ?? 'https://backend-local.defihelper.io',
@@ -37,6 +35,9 @@ export default {
   },
   socialStats: {
     host: process.env.SOCIAL_STATS_HOST ?? 'https://stats.defihelper.io',
+  },
+  riskRanking: {
+    host: process.env.RISK_RANKING_HOST ?? '',
   },
   database: {
     host: process.env.DATABASE_HOST ?? 'localhost',
@@ -67,6 +68,7 @@ export default {
     database: process.env.CACHE_DATABASE ?? undefined,
     tls: bool(process.env.CACHE_TLS ?? ''),
   },
+  amplitudeApiKey: process.env.AMPLITUDE_API_KEY ?? '',
   blockchain: {
     ethereum: {
       eth: {
