@@ -24,7 +24,7 @@ export default async (process: Process) => {
     queue.push('migratablePoolsBroker', {}),
     queue.push('metricsWalletProtocolsBalancesDeBankBroker', {}),
     queue.push('riskCalculationBroker'),
-    // queue.push('notificationsDemoCallInvitationsBroker', { days: 14 }),
+    queue.push('notificationsDemoCallInvitationsBroker', { days: 14 }),
     queue.push(
       'migratablePoolsBatch',
       {},
