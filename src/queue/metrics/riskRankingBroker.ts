@@ -5,7 +5,10 @@ export default async (process: Process) => {
   const queue = container.model.queueService();
   const tokens = await container.model.tokenTable().whereNotNull('coingeckoId');
 
-  await Promise.all(tokens.map(({ id }) => queue.push('metricsRiskRankingFiller', { id })));
+  await tokens.reduce<Promise<any>>(async (prev, { id }) => {
+    await prev;
+    return queue.push('metricsRiskRankingFiller', { id });
+  }, Promise.resolve());
 
   return process.done();
 };
