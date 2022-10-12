@@ -46,7 +46,7 @@ class AppContainer extends Container<typeof config> {
 
   readonly debank = singleton(debankServiceFactory(this.parent.debank.apiKey));
 
-  readonly riskRanking = singleton(riskRankingFactory(this.parent.riskRankingServiceUrl));
+  readonly riskRanking = singleton(riskRankingFactory(this.parent.riskRanking.host));
 
   readonly coingecko = singleton(() => new Coingecko());
 
