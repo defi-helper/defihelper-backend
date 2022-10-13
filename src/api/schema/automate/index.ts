@@ -1529,6 +1529,21 @@ export const ContractDeleteMutation: GraphQLFieldConfig<any, Request> = {
       archivedAt: new Date(),
     });
 
+    const automateService = container.model.automateService();
+    await container.model
+      .automateTriggerTable()
+      .whereIn(
+        'id',
+        container.model
+          .automateActionTable()
+          .column('trigger')
+          .where('type', 'ethereumAutomateRun')
+          .whereRaw("params->>'id' = ?", [contract.id]),
+      )
+      .then((triggers) =>
+        Promise.all(triggers.map((trigger) => automateService.deleteTrigger(trigger))),
+      );
+
     return true;
   }),
 };
