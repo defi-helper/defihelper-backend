@@ -30,6 +30,7 @@ import {
 } from 'graphql';
 import BN from 'bignumber.js';
 import {
+  BigNumberType,
   BlockchainEnum,
   BlockchainFilterInputType,
   DateTimeType,
@@ -178,19 +179,19 @@ export const BalanceType = new GraphQLObjectType({
       type: GraphQLNonNull(GraphQLBoolean),
     },
     pending: {
-      type: GraphQLNonNull(GraphQLFloat),
+      type: GraphQLNonNull(BigNumberType),
     },
     balance: {
-      type: GraphQLNonNull(GraphQLFloat),
+      type: GraphQLNonNull(BigNumberType),
     },
     claim: {
-      type: GraphQLNonNull(GraphQLFloat),
+      type: GraphQLNonNull(BigNumberType),
     },
     netBalance: {
-      type: GraphQLNonNull(GraphQLFloat),
+      type: GraphQLNonNull(BigNumberType),
     },
     netBalanceUSD: {
-      type: GraphQLNonNull(GraphQLFloat),
+      type: GraphQLNonNull(BigNumberType),
     },
   },
 });
@@ -349,16 +350,16 @@ export const WalletBillingType = new GraphQLObjectType<Wallet & WalletBlockchain
             .count()
             .first(),
         ]);
-        const balance = transferSum?.sum || 0;
-        const unconfirmedBalance = unconfirmedTransferSum?.sum || 0;
-        const claim = billSum?.sum || 0;
+        const balance = new BN(transferSum?.sum || 0);
+        const unconfirmedBalance = new BN(unconfirmedTransferSum?.sum || 0);
+        const claim = new BN(billSum?.sum || 0);
         const activeAutomatesCount = activeAutomates?.count || 0;
 
         if (wallet.blockchain !== 'ethereum' || activeAutomatesCount < 1) {
           return {
             balance,
             claim,
-            netBalance: balance - claim,
+            netBalance: balance.minus(claim),
             netBalanceUSD: 0,
             lowFeeFunds: false,
           };
@@ -372,9 +373,12 @@ export const WalletBillingType = new GraphQLObjectType<Wallet & WalletBlockchain
         return {
           balance,
           claim,
-          netBalance: balance - claim,
-          netBalanceUSD: (balance - claim) * chainNativeUSD,
-          lowFeeFunds: unconfirmedBalance * chainNativeUSD - (1 + chainNativeUSD * 0.1) <= 0,
+          netBalance: balance.minus(claim),
+          netBalanceUSD: balance.minus(claim).multipliedBy(chainNativeUSD),
+          lowFeeFunds: unconfirmedBalance
+            .multipliedBy(chainNativeUSD)
+            .minus(new BN(1).plus(chainNativeUSD).multipliedBy(0.1))
+            .lte(0),
         };
       },
     },
@@ -576,15 +580,15 @@ export const UserBillingType = new GraphQLObjectType<User>({
             .where(`${walletTableName}.user`, user.id)
             .first(),
         ]);
-        const pending = transferUnconfirmedSum?.sum || 0;
-        const balance = transferConfirmedSum?.sum || 0;
-        const claim = billSum?.sum || 0;
+        const pending = new BN(transferUnconfirmedSum?.sum || 0);
+        const balance = new BN(transferConfirmedSum?.sum || 0);
+        const claim = new BN(billSum?.sum || 0);
 
         return {
           pending,
           balance,
           claim,
-          netBalance: balance - claim,
+          netBalance: balance.minus(claim),
         };
       },
     },
@@ -655,7 +659,7 @@ export const AddTransferMutation: GraphQLFieldConfig<any, Request> = {
               type: GraphQLNonNull(GraphQLString),
             },
             amount: {
-              type: GraphQLNonNull(GraphQLString),
+              type: GraphQLNonNull(BigNumberType),
             },
             tx: {
               type: GraphQLNonNull(GraphQLString),
@@ -680,16 +684,13 @@ export const AddTransferMutation: GraphQLFieldConfig<any, Request> = {
       .first();
     if (duplicate) return duplicate;
 
-    const amountFloat = Number(amount);
-    if (Number.isNaN(amountFloat)) throw new UserInputError('Invalid amount');
-
     return container.model
       .billingService()
       .transfer(
         blockchain,
         network,
         blockchain === 'ethereum' ? account.toLowerCase() : account,
-        amountFloat,
+        amount,
         tx,
         false,
         new Date(),
