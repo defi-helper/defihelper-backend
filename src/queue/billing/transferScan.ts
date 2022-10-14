@@ -36,7 +36,7 @@ async function registerTransfer(
 
         return billingService.transferConfirm(
           duplicate,
-          new BN(args.amount.toString()).div(ethFeeDecimals).multipliedBy(k).toNumber(),
+          new BN(args.amount.toString()).div(ethFeeDecimals).multipliedBy(k),
           dayjs.unix(timestamp).toDate(),
         );
       }
@@ -45,7 +45,7 @@ async function registerTransfer(
         blockchain,
         network,
         args.recipient.toLowerCase(),
-        new BN(args.amount.toString()).div(ethFeeDecimals).multipliedBy(k).toNumber(),
+        new BN(args.amount.toString()).div(ethFeeDecimals).multipliedBy(k),
         transactionHash,
         true,
         dayjs.unix(timestamp).toDate(),
