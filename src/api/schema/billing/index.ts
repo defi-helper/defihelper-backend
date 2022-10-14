@@ -371,10 +371,7 @@ export const WalletBillingType = new GraphQLObjectType<Wallet & WalletBlockchain
           claim,
           netBalance: balance.minus(claim),
           netBalanceUSD: balance.minus(claim).multipliedBy(chainNativeUSD),
-          lowFeeFunds: unconfirmedBalance
-            .multipliedBy(chainNativeUSD)
-            .minus(new BN(chainNativeUSD).multipliedBy(0.1).plus(1))
-            .lte(0),
+          lowFeeFunds: unconfirmedBalance.multipliedBy(chainNativeUSD).lte(20),
         };
       },
     },
