@@ -37,7 +37,7 @@ export interface SwapCallData {
     tokenInDecimals: number;
     tokenOutDecimals: number;
     amountIn: string;
-    boughtPrice: string;
+    boughtPrice: string | null;
     routes: Array<SwapCallDataRoute | null>;
     deadline: number;
   };

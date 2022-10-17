@@ -1,12 +1,9 @@
 import BN from 'bignumber.js';
 import { Bill, BillStatus } from '@models/Billing/Entity';
 import container from '@container';
-import dayjs from 'dayjs';
 import { Process } from '@models/Queue/Entity';
 import { Blockchain } from '@models/types';
-import { isKey } from '@services/types';
 import { abi as balanceAbi } from '@defihelper/networks/abi/Balance.json';
-import contracts from '@defihelper/networks/contracts.json';
 import { LogJsonMessage } from '@services/Log';
 
 const ethFeeDecimals = new BN(10).pow(18);
@@ -29,21 +26,26 @@ export default async (process: Process) => {
   if (blockchain !== 'ethereum') {
     throw new Error('Invalid blockchain');
   }
-  if (!isKey(contracts, network)) {
+  const blockchainContainer = container.blockchain[blockchain];
+  const networkContainer = blockchainContainer.byNetwork(network);
+  const contracts = networkContainer.dfhContracts();
+  if (contracts === null) {
     throw new Error('Contracts not deployed to target network');
   }
-
-  const later = dayjs().add(5, 'minute').toDate();
-  const networkContainer = container.blockchain[blockchain].byNetwork(network);
+  const balanceAddress = contracts.BalanceUpgradable?.address ?? contracts.Balance?.address;
+  if (balanceAddress === undefined) {
+    throw new Error('Balance contract not deployed on this network');
+  }
+  const storeAddress = contracts.StoreUpgradable?.address;
+  if (storeAddress === undefined) {
+    throw new Error('Store contract not deployed on this network');
+  }
   const provider = networkContainer.provider();
   const inspector = networkContainer.inspector();
   if (inspector === null) {
-    return process.later(later);
+    return process.laterAt(5, 'minutes');
   }
-  const networkContracts = contracts[network] as { [name: string]: { address: string } };
-  const balanceAddress = networkContracts.Balance.address;
-  const balance = container.blockchain[blockchain].contract(balanceAddress, balanceAbi, provider);
-  const storeAddress = networkContracts.StoreUpgradable.address;
+  const balance = blockchainContainer.contract(balanceAddress, balanceAbi, provider);
 
   const bills = await container.model
     .billingBillTable()
@@ -55,7 +57,7 @@ export default async (process: Process) => {
     .limit(1);
   log.ex({ billsCount: bills.length }).send();
   if (bills.length === 0) {
-    return process.later(later);
+    return process.laterAt(5, 'minutes');
   }
 
   const normalizeBills = await Promise.all(
@@ -111,5 +113,5 @@ export default async (process: Process) => {
     await balance.connect(inspector).rejectClaims(rejectedFees.map(({ bill }) => bill.number));
   }
 
-  return process.later(later);
+  return process.laterAt(5, 'minutes');
 };

@@ -45,6 +45,10 @@ export default async (process: Process) => {
     await reject(contract, 'Network not supported');
     return process.done();
   }
+  const erc1167Address = contracts.ERC1167?.address;
+  if (erc1167Address === undefined) {
+    throw new Error('ERC1167 library not deployed on target network');
+  }
 
   const automate = ethereum.contract(contract.address, ethereum.abi.automateABI, provider);
   try {
@@ -58,7 +62,7 @@ export default async (process: Process) => {
     return process.done();
   }
 
-  const erc1167 = ethereum.contract(contracts.ERC1167.address, ethereum.abi.erc1167ABI, provider);
+  const erc1167 = ethereum.contract(erc1167Address, ethereum.abi.erc1167ABI, provider);
   try {
     const expectedPrototype = await container.blockchainAdapter.loadEthereumAutomateArtifact(
       blockchainWallet.network,

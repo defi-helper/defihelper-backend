@@ -59,17 +59,17 @@ export default async function (this: Action, params: Params) {
   if (adapterFactory === undefined) throw new Error('Automate adapter not found');
 
   const network = container.blockchain.ethereum.byNetwork(wallet.network);
+  const contracts = network.dfhContracts();
+  if (contracts === null) {
+    throw new Error('Contracts not deployed to target network');
+  }
   const provider = network.provider();
   const consumers = network.consumers();
-
-  const balanceAddress = network.dfhContracts()?.Balance.address;
-  if (!balanceAddress)
-    throw new Error(`Balance contract not found for "${wallet.network}" network`);
-  const balance = await container.blockchain.ethereum.contract(
-    balanceAddress,
-    balanceAbi,
-    provider,
-  );
+  const balanceAddress = contracts.BalanceUpgradable?.address ?? contracts.Balance?.address;
+  if (balanceAddress === undefined) {
+    throw new Error(`Balance contract not deployed on "${wallet.network}" network`);
+  }
+  const balance = container.blockchain.ethereum.contract(balanceAddress, balanceAbi, provider);
   const walletBalance: BN = await balance
     .netBalanceOf(wallet.address)
     .then((v: ethers.BigNumber) =>

@@ -122,7 +122,8 @@ function networkFactory({
     coingeckoPlatform,
     inspector: () => (inspectors.length > 0 ? new ethers.Wallet(inspectors[0], provider()) : null),
     consumers: () => signersFactory(consumers, provider()),
-    dfhContracts: () => (isKey(dfhContracts, id) ? dfhContracts[id] : null),
+    dfhContracts: (): Record<string, { address: string } | undefined> | null =>
+      isKey(dfhContracts, id) ? dfhContracts[id] : null,
   };
 }
 
