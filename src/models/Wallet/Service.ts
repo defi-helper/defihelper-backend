@@ -104,10 +104,12 @@ export class WalletService {
       confirmed,
     };
 
-    await this.database.transaction(async (trx) => {
-      await this.walletTable().insert(wallet).transacting(trx);
-      await this.walletBlockchainTable().insert(blockchainWallet).transacting(trx);
-    });
+    await this.database.transaction((trx) =>
+      Promise.all([
+        this.walletTable().insert(wallet).transacting(trx),
+        this.walletBlockchainTable().insert(blockchainWallet).transacting(trx),
+      ]),
+    );
     this.onBlockchainWalletCreated.emit({ wallet, blockchainWallet });
 
     return { ...wallet, ...blockchainWallet };
@@ -134,10 +136,12 @@ export class WalletService {
       payload: this.crypto.encryptJson(payload),
     };
 
-    await this.database.transaction(async (trx) => {
-      await this.walletTable().insert(wallet).transacting(trx);
-      await this.walletExchangeTable().insert(exchangeWallet).transacting(trx);
-    });
+    await this.database.transaction((trx) =>
+      Promise.all([
+        this.walletTable().insert(wallet).transacting(trx),
+        this.walletExchangeTable().insert(exchangeWallet).transacting(trx),
+      ]),
+    );
     this.onExchangeWalletCreated.emit({ wallet, exchangeWallet });
 
     return { ...wallet, ...exchangeWallet };
@@ -150,10 +154,12 @@ export class WalletService {
   }
 
   deleteExchangeWallet({ id }: Wallet) {
-    return this.database.transaction(async (trx) => {
-      await this.walletTable().where('id', id).delete().transacting(trx);
-      await this.walletExchangeTable().where('id', id).delete().transacting(trx);
-    });
+    return this.database.transaction((trx) =>
+      Promise.all([
+        this.walletTable().where('id', id).delete().transacting(trx),
+        this.walletExchangeTable().where('id', id).delete().transacting(trx),
+      ]),
+    );
   }
 
   async updateWallet(wallet: Wallet, trx?: Knex.Transaction): Promise<Wallet> {
@@ -211,13 +217,15 @@ export class WalletService {
       updatedAt: new Date(),
     };
 
-    await this.database.transaction(async (trx) => {
-      await this.walletTable().where('id', wallet.id).update(walletUpdated).transacting(trx);
-      await this.walletExchangeTable()
-        .where('id', walletExchange.id)
-        .update(walletExchange)
-        .transacting(trx);
-    });
+    await this.database.transaction((trx) =>
+      Promise.all([
+        this.walletTable().where('id', wallet.id).update(walletUpdated).transacting(trx),
+        this.walletExchangeTable()
+          .where('id', walletExchange.id)
+          .update(walletExchange)
+          .transacting(trx),
+      ]),
+    );
 
     return { ...walletUpdated, ...walletExchange };
   }

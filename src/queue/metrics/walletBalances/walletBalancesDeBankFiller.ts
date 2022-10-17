@@ -3,7 +3,7 @@ import { Process } from '@models/Queue/Entity';
 import { TokenAliasLiquidity, TokenCreatedBy, tokenTableName } from '@models/Token/Entity';
 import BN from 'bignumber.js';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
-import { metricWalletTokenTableName } from '@models/Metric/Entity';
+import { MetricWalletToken, metricWalletTokenTableName } from '@models/Metric/Entity';
 
 interface Params {
   id: string;
@@ -68,12 +68,13 @@ export default async (process: Process) => {
     .orderBy(`${metricWalletTokenTableName}.token`)
     .orderBy(`${metricWalletTokenTableName}.date`, 'DESC');
 
-  const createdMetrics = await Promise.all(
-    debankUserTokenList.map(async (tokenAsset) => {
+  const createdMetrics = await debankUserTokenList.reduce<Promise<MetricWalletToken[]>>(
+    async (prev, tokenAsset) => {
+      const res = await prev;
+
       let tokenRecord = existingTokensRecords.find(
         (exstng) => exstng.address.toLowerCase() === tokenAsset.id,
       );
-
       if (!tokenRecord) {
         let tokenRecordAlias = await container.model
           .tokenAliasTable()
@@ -105,44 +106,48 @@ export default async (process: Process) => {
           );
       }
 
-      return walletMetrics.createWalletToken(
-        null,
-        blockchainWallet,
-        tokenRecord,
-        {
-          usd: new BN(tokenAsset.price).multipliedBy(tokenAsset.amount).toString(10),
-          balance: tokenAsset.amount.toString(10),
-        },
-        new Date(),
-      );
-    }),
+      return [
+        ...res,
+        await walletMetrics.createWalletToken(
+          null,
+          blockchainWallet,
+          tokenRecord,
+          {
+            usd: new BN(tokenAsset.price).multipliedBy(tokenAsset.amount).toString(10),
+            balance: tokenAsset.amount.toString(10),
+          },
+          new Date(),
+        ),
+      ];
+    },
+    Promise.resolve([]),
   );
 
-  await Promise.all(
-    lastTokenMetrics.map((v) => {
-      if (createdMetrics.some((exstng) => exstng.token === v.id) || v.balance === '0') {
-        return null;
-      }
+  await lastTokenMetrics.reduce(async (prev, metric) => {
+    await prev;
+    if (createdMetrics.some((exstng) => exstng.token === metric.id) || metric.balance === '0') {
+      return null;
+    }
 
-      return walletMetrics.createWalletToken(
-        null,
-        blockchainWallet,
-        v,
-        {
-          usd: '0',
-          balance: '0',
-        },
-        new Date(),
-      );
-    }),
-  );
+    return walletMetrics.createWalletToken(
+      null,
+      blockchainWallet,
+      metric,
+      {
+        usd: '0',
+        balance: '0',
+      },
+      new Date(),
+    );
+  }, Promise.resolve(null));
 
   const owner = await container.model.userTable().where('id', blockchainWallet.user).first();
   if (!owner) {
     throw new Error('Onwer must be accesible here');
   }
-  container.model.userService().portfolioCollectedSuccessful(owner);
-  container.model.walletService().statisticsUpdated(blockchainWallet);
+
+  await container.model.userService().portfolioCollectedSuccessful(owner);
+  await container.model.walletService().statisticsUpdated(blockchainWallet);
 
   return process.done();
 };

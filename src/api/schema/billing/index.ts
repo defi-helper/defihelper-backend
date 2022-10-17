@@ -20,7 +20,6 @@ import {
 import {
   GraphQLBoolean,
   GraphQLEnumType,
-  GraphQLFloat,
   GraphQLInputObjectType,
   GraphQLList,
   GraphQLNonNull,
@@ -30,6 +29,7 @@ import {
 } from 'graphql';
 import BN from 'bignumber.js';
 import {
+  BigNumberType,
   BlockchainEnum,
   BlockchainFilterInputType,
   DateTimeType,
@@ -78,23 +78,23 @@ export const BillType = new GraphQLObjectType<Bill>({
       description: 'Claimant',
     },
     claimGasFee: {
-      type: GraphQLNonNull(GraphQLFloat),
+      type: GraphQLNonNull(BigNumberType),
       description: 'Declarate gas fee',
     },
     claimProtocolFee: {
-      type: GraphQLNonNull(GraphQLFloat),
+      type: GraphQLNonNull(BigNumberType),
       description: 'Declarate protocol fee',
     },
     gasFee: {
-      type: GraphQLFloat,
+      type: BigNumberType,
       description: 'Confirmed gas fee',
     },
     protocolFee: {
-      type: GraphQLFloat,
+      type: BigNumberType,
       description: 'Confirmed protocol fee',
     },
     claim: {
-      type: GraphQLNonNull(GraphQLFloat),
+      type: GraphQLNonNull(BigNumberType),
       description: 'Balance of claim after make the bill',
     },
     status: {
@@ -144,7 +144,7 @@ export const TransferType = new GraphQLObjectType<Transfer>({
       description: 'Account',
     },
     amount: {
-      type: GraphQLNonNull(GraphQLFloat),
+      type: GraphQLNonNull(BigNumberType),
       description: 'Transfer amount (must be negative)',
     },
     tx: {
@@ -171,26 +171,23 @@ export const TransferType = new GraphQLObjectType<Transfer>({
   },
 });
 
-export const BalanceType = new GraphQLObjectType({
-  name: 'BillingBalanceType',
+export const WalletBalanceType = new GraphQLObjectType({
+  name: 'BillingWalletBalanceType',
   fields: {
     lowFeeFunds: {
       type: GraphQLNonNull(GraphQLBoolean),
     },
-    pending: {
-      type: GraphQLNonNull(GraphQLFloat),
-    },
     balance: {
-      type: GraphQLNonNull(GraphQLFloat),
+      type: GraphQLNonNull(BigNumberType),
     },
     claim: {
-      type: GraphQLNonNull(GraphQLFloat),
+      type: GraphQLNonNull(BigNumberType),
     },
     netBalance: {
-      type: GraphQLNonNull(GraphQLFloat),
+      type: GraphQLNonNull(BigNumberType),
     },
     netBalanceUSD: {
-      type: GraphQLNonNull(GraphQLFloat),
+      type: GraphQLNonNull(BigNumberType),
     },
   },
 });
@@ -307,9 +304,9 @@ export const WalletBillingType = new GraphQLObjectType<Wallet & WalletBlockchain
       },
     },
     balance: {
-      type: GraphQLNonNull(BalanceType),
+      type: GraphQLNonNull(WalletBalanceType),
       resolve: async (wallet) => {
-        const [transferSum, billSum, activeAutomates] = await Promise.all([
+        const [transferSum, unconfirmedTransferSum, billSum, activeAutomates] = await Promise.all([
           container.model
             .billingTransferTable()
             .sum('amount')
@@ -319,6 +316,16 @@ export const WalletBillingType = new GraphQLObjectType<Wallet & WalletBlockchain
               account: wallet.address,
             })
             .where('status', TransferStatus.Confirmed)
+            .first(),
+          container.model
+            .billingTransferTable()
+            .sum('amount')
+            .where({
+              blockchain: wallet.blockchain,
+              network: wallet.network,
+              account: wallet.address,
+            })
+            .whereIn('status', [TransferStatus.Pending, TransferStatus.Confirmed])
             .first(),
           container.model
             .billingBillTable()
@@ -339,32 +346,52 @@ export const WalletBillingType = new GraphQLObjectType<Wallet & WalletBlockchain
             .count()
             .first(),
         ]);
-        const balance = transferSum?.sum || 0;
-        const claim = billSum?.sum || 0;
+        const balance = new BN(transferSum?.sum || 0);
+        const unconfirmedBalance = new BN(unconfirmedTransferSum?.sum || 0);
+        const claim = new BN(billSum?.sum || 0);
         const activeAutomatesCount = activeAutomates?.count || 0;
 
         if (wallet.blockchain !== 'ethereum' || activeAutomatesCount < 1) {
           return {
             balance,
             claim,
-            netBalance: balance - claim,
+            netBalance: balance.minus(claim),
             netBalanceUSD: 0,
             lowFeeFunds: false,
           };
         }
 
-        const chainNativeUSD = new BN(
-          await container.blockchain.ethereum.byNetwork(wallet.network).nativeTokenPrice(),
-        ).toNumber();
+        const chainNativeUSD = await container.blockchain.ethereum
+          .byNetwork(wallet.network)
+          .nativeTokenPrice()
+          .then((v) => Number(v));
 
         return {
           balance,
           claim,
-          netBalance: balance - claim,
-          netBalanceUSD: (balance - claim) * chainNativeUSD,
-          lowFeeFunds: balance * chainNativeUSD - (1 + chainNativeUSD * 0.1) <= 0,
+          netBalance: balance.minus(claim),
+          netBalanceUSD: balance.minus(claim).multipliedBy(chainNativeUSD),
+          lowFeeFunds: unconfirmedBalance.multipliedBy(chainNativeUSD).lte(20),
         };
       },
+    },
+  },
+});
+
+export const UserBalanceType = new GraphQLObjectType({
+  name: 'BillingUserBalanceType',
+  fields: {
+    pending: {
+      type: GraphQLNonNull(BigNumberType),
+    },
+    balance: {
+      type: GraphQLNonNull(BigNumberType),
+    },
+    claim: {
+      type: GraphQLNonNull(BigNumberType),
+    },
+    netBalance: {
+      type: GraphQLNonNull(BigNumberType),
     },
   },
 });
@@ -487,11 +514,12 @@ export const UserBillingType = new GraphQLObjectType<User>({
       resolve: async (user, { filter, sort, pagination }) => {
         const select = container.model
           .billingBillTable()
-          .innerJoin(walletTableName, function () {
-            this.on(`${walletBlockchainTableName}.blockchain`, '=', `${billTableName}.blockchain`)
-              .andOn(`${walletBlockchainTableName}.network`, '=', `${billTableName}.network`)
-              .andOn(`${walletTableName}.address`, '=', `${billTableName}.account`);
+          .innerJoin(walletBlockchainTableName, function () {
+            this.on(`${walletBlockchainTableName}.blockchain`, '=', `${billTableName}.blockchain`);
+            this.on(`${walletBlockchainTableName}.network`, '=', `${billTableName}.network`);
+            this.on(`${walletBlockchainTableName}.address`, '=', `${billTableName}.account`);
           })
+          .innerJoin(walletTableName, `${walletTableName}.id`, `${walletBlockchainTableName}.id`)
           .where(function () {
             this.where(`${walletTableName}.user`, user.id);
             if (filter.blockchain) {
@@ -520,59 +548,66 @@ export const UserBillingType = new GraphQLObjectType<User>({
       },
     },
     balance: {
-      type: GraphQLNonNull(BalanceType),
+      type: GraphQLNonNull(UserBalanceType),
       resolve: async (user) => {
         const [transferUnconfirmedSum, transferConfirmedSum, billSum] = await Promise.all([
           container.model
             .billingTransferTable()
-            .sum('amount')
-            .innerJoin(walletTableName, function () {
+            .sum({ sum: `${transferTableName}.amount` })
+            .innerJoin(walletBlockchainTableName, function () {
               this.on(
                 `${walletBlockchainTableName}.blockchain`,
                 '=',
                 `${transferTableName}.blockchain`,
-              )
-                .andOn(`${walletBlockchainTableName}.network`, '=', `${transferTableName}.network`)
-                .andOn(`${walletTableName}.address`, '=', `${transferTableName}.account`);
+              );
+              this.on(`${walletBlockchainTableName}.network`, '=', `${transferTableName}.network`);
+              this.on(`${walletBlockchainTableName}.address`, '=', `${transferTableName}.account`);
             })
+            .innerJoin(walletTableName, `${walletTableName}.id`, `${walletBlockchainTableName}.id`)
             .where(`${walletTableName}.user`, user.id)
             .where(`${transferTableName}.status`, TransferStatus.Pending)
             .first(),
           container.model
             .billingTransferTable()
-            .sum('amount')
-            .innerJoin(walletTableName, function () {
+            .sum({ sum: `${transferTableName}.amount` })
+            .innerJoin(walletBlockchainTableName, function () {
               this.on(
                 `${walletBlockchainTableName}.blockchain`,
                 '=',
                 `${transferTableName}.blockchain`,
-              )
-                .andOn(`${walletBlockchainTableName}.network`, '=', `${transferTableName}.network`)
-                .andOn(`${walletTableName}.address`, '=', `${transferTableName}.account`);
+              );
+              this.on(`${walletBlockchainTableName}.network`, '=', `${transferTableName}.network`);
+              this.on(`${walletBlockchainTableName}.address`, '=', `${transferTableName}.account`);
             })
+            .innerJoin(walletTableName, `${walletTableName}.id`, `${walletBlockchainTableName}.id`)
             .where(`${walletTableName}.user`, user.id)
             .where(`${transferTableName}.status`, TransferStatus.Confirmed)
             .first(),
           container.model
             .billingBillTable()
-            .sum('claim')
-            .innerJoin(walletTableName, function () {
-              this.on(`${walletBlockchainTableName}.blockchain`, '=', `${billTableName}.blockchain`)
-                .andOn(`${walletBlockchainTableName}.network`, '=', `${billTableName}.network`)
-                .andOn(`${walletTableName}.address`, '=', `${billTableName}.account`);
+            .sum({ sum: 'claim' })
+            .innerJoin(walletBlockchainTableName, function () {
+              this.on(
+                `${walletBlockchainTableName}.blockchain`,
+                '=',
+                `${billTableName}.blockchain`,
+              );
+              this.on(`${walletBlockchainTableName}.network`, '=', `${billTableName}.network`);
+              this.on(`${walletBlockchainTableName}.address`, '=', `${billTableName}.account`);
             })
+            .innerJoin(walletTableName, `${walletTableName}.id`, `${walletBlockchainTableName}.id`)
             .where(`${walletTableName}.user`, user.id)
             .first(),
         ]);
-        const pending = transferUnconfirmedSum?.sum || 0;
-        const balance = transferConfirmedSum?.sum || 0;
-        const claim = billSum?.sum || 0;
+        const pending = new BN(transferUnconfirmedSum?.sum || 0);
+        const balance = new BN(transferConfirmedSum?.sum || 0);
+        const claim = new BN(billSum?.sum || 0);
 
         return {
           pending,
           balance,
           claim,
-          netBalance: balance - claim,
+          netBalance: balance.minus(claim),
         };
       },
     },
@@ -643,7 +678,7 @@ export const AddTransferMutation: GraphQLFieldConfig<any, Request> = {
               type: GraphQLNonNull(GraphQLString),
             },
             amount: {
-              type: GraphQLNonNull(GraphQLString),
+              type: GraphQLNonNull(BigNumberType),
             },
             tx: {
               type: GraphQLNonNull(GraphQLString),
@@ -666,27 +701,20 @@ export const AddTransferMutation: GraphQLFieldConfig<any, Request> = {
         tx,
       })
       .first();
-    if (duplicate) {
-      return duplicate;
-    }
+    if (duplicate) return duplicate;
 
-    const amountFloat = Number(amount);
-    if (Number.isNaN(amountFloat)) throw new UserInputError('Invalid amount');
-
-    const updated = await container.model
+    return container.model
       .billingService()
       .transfer(
         blockchain,
         network,
         blockchain === 'ethereum' ? account.toLowerCase() : account,
-        amountFloat,
+        amount,
         tx,
         false,
         new Date(),
         null,
       );
-
-    return updated;
   },
 };
 

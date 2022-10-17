@@ -213,6 +213,10 @@ export class ModelContainer extends Container<typeof AppContainer> {
 
   readonly metricTokenTable = Models.Metric.Entity.metricTokenTableFactory(this.parent.database);
 
+  readonly metricUserCollectorTable = Models.Metric.Entity.userCollectorTableFactory(
+    this.parent.database,
+  );
+
   readonly metricService = singleton(
     () =>
       new Models.Metric.Service.MetricContractService(
@@ -228,6 +232,7 @@ export class ModelContainer extends Container<typeof AppContainer> {
         this.metricWalletTokenTable,
         this.metricWalletTokenRegistryTable,
         this.metricTokenTable,
+        this.metricUserCollectorTable,
       ),
   );
 

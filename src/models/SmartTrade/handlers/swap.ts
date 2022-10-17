@@ -16,8 +16,7 @@ import UniswapRouterABI from '../data/uniswapRouterABI.json';
 export default async function (
   order: Order<SwapCallData>,
 ): Promise<ethers.ContractTransaction | Error | null> {
-  const log = LogJsonMessage.debug({ source: 'smartTradeSwapHandler' });
-  log.ex({ orderId: order.id }).send();
+  const log = LogJsonMessage.debug({ source: 'smartTradeSwapHandler', orderId: order.id });
   const ownerWallet = await container.model
     .walletTable()
     .innerJoin(
@@ -50,7 +49,30 @@ export default async function (
     })
     .send();
 
-  const routeIndex = order.callData.routes.reduce<number | null>((prev, route, index) => {
+  const routes = order.callData.routes.map((route) => {
+    if (route === null) return route;
+    if (route.direction === 'lt') {
+      if (route.moving !== null && actualAmountOut.minus(route.amountOut).gt(route.moving)) {
+        const amountOut = actualAmountOut.minus(route.moving);
+        return {
+          ...route,
+          amountOut: amountOut.toFixed(0),
+          amountOutMin: amountOut.multipliedBy(new BN(1).minus(route.slippage)).toFixed(0),
+        };
+      }
+    }
+
+    return route;
+  });
+  await container.model.smartTradeService().updateOrder({
+    ...order,
+    callData: {
+      ...order.callData,
+      routes,
+    },
+  });
+
+  const routeIndex = routes.reduce<number | null>((prev, route, index) => {
     if (prev !== null || route === null) return prev;
     if (
       (route.direction === 'gt' && actualAmountOut.lt(route.amountOut)) ||

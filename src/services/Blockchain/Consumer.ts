@@ -10,7 +10,7 @@ export const useEthereumFreeConsumer = async (network: string) => {
         (wallet) =>
           wallet ||
           semafor
-            .lock(`defihelper:automate:consumer:ethereum:${network}:${current.address}`)
+            .lock(`defihelper:automate:consumer:ethereum:${network}:${current.address}`, 300) // 5 minutes
             .then(() => current)
             .catch(() => null),
       ),

@@ -29,7 +29,7 @@ export class ACLContainer extends Container<typeof AppContainer> {
       automateAction: ['create', 'update-own', 'delete-own'],
       automateContract: ['create', 'update-own', 'delete-own'],
       integration: ['connect', 'disconnect'],
-      smartTradeOrder: ['list-own', 'create'],
+      smartTradeOrder: ['list-own', 'create', 'cancel-own'],
     }),
   );
 

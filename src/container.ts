@@ -18,6 +18,7 @@ import { debankServiceFactory } from '@services/Debank';
 import { wavesNodeGatewayFactory } from '@services/WavesNodeGateway';
 import { WhatToFarmGateway } from '@services/WhatToFarm';
 import { amplitudeFactory } from '@services/Amplitude';
+import { Coingecko } from '@services/Coingecko';
 import { Numbers } from '@services/Numbers';
 import config from './config';
 
@@ -43,6 +44,8 @@ class AppContainer extends Container<typeof config> {
   readonly cryptography = singleton(cryptographyServiceFactory(this.parent.cryptography.key));
 
   readonly debank = singleton(debankServiceFactory(this.parent.debank.apiKey));
+
+  readonly coingecko = singleton(() => new Coingecko());
 
   readonly waves = singleton(
     wavesNodeGatewayFactory(this.semafor, this.cache, this.debank, this.logger),

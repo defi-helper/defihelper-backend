@@ -42,8 +42,8 @@ async function registerClaims(
         network,
         args.account.toLowerCase(),
         bill.claimant.toLowerCase(),
-        new BN(bill.gasFee.toString()).div(ethFeeDecimals).toNumber(),
-        new BN(bill.protocolFee.toString()).div(ethFeeDecimals).toNumber(),
+        new BN(bill.gasFee.toString()).div(ethFeeDecimals),
+        new BN(bill.protocolFee.toString()).div(ethFeeDecimals),
         args.description,
         transactionHash,
         dayjs.unix(timestamp).toDate(),
@@ -74,8 +74,8 @@ async function registerAcceptBill(
 
       return billingService.acceptBill(
         claim,
-        new BN(bill.gasFee.toString()).div(ethFeeDecimals).toNumber(),
-        new BN(bill.protocolFee.toString()).div(ethFeeDecimals).toNumber(),
+        new BN(bill.gasFee.toString()).div(ethFeeDecimals),
+        new BN(bill.protocolFee.toString()).div(ethFeeDecimals),
         transactionHash,
         dayjs.unix(timestamp).toDate(),
       );

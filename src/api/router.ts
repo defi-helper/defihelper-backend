@@ -87,6 +87,7 @@ export function route({ express, server }: { express: Express; server: Server })
           automateContracts: automateSchemas.ContractListQuery,
           govToken: governanceSchemas.GovTokenQuery,
           restakeStrategy: restakeStrategySchemas.RestakeStrategyQuery,
+          restakeCalculator: restakeStrategySchemas.RestakeCalculatorQuery,
           treasury: treasurySchemas.TreasuryQuery,
           monitoringUsersRegisteringHistory:
             monitoringSchemas.MonitoringUsersRegisteringHistoryQuery,
@@ -166,6 +167,7 @@ export function route({ express, server }: { express: Express; server: Server })
           automateContractStopLossEnable: automateSchemas.ContractStopLossEnable,
           automateContractStopLossDisable: automateSchemas.ContractStopLossDisable,
           tradingAuth: tradingSchemas.TradingAuthMutation,
+          smartTradeCancel: smartTradeSchemas.OrderCancelMutation,
           smartTradeSwapOrderCreate: smartTradeSchemas.SwapOrderCreateMutation,
         },
       }),
@@ -177,6 +179,7 @@ export function route({ express, server }: { express: Express; server: Server })
           onTokenMetricUpdated: userSchemas.OnTokenMetricUpdated,
           onBillingTransferCreated: billingSchemas.OnTransferCreated,
           onBillingTransferUpdated: billingSchemas.OnTransferUpdated,
+          onUserContactActivated: notificationSchemas.OnUserContactActivated,
         },
       }),
     }),

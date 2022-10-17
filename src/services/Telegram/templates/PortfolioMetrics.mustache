@@ -1,1 +1,1 @@
-{{#t}}[{{name}}]: Tracked Balance ${{formatMoney(totalNetWorth)}} ({{percentageTracked}}%), Total unclaimed ${{formatMoney(totalEarnedUSD)}} ({{percentageEarned}}%){{/t}}
+{{#t}}[{{name}}]: Tracked Balance ${{#formatMoney}}{{totalNetWorth}}{{/formatMoney}} ({{percentageTracked}}%), Total unclaimed ${{#formatMoney}}{{totalEarnedUSD}}{{/formatMoney}} ({{percentageEarned}}%) on {{time}}{{/t}}

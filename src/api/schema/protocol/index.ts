@@ -941,7 +941,14 @@ export const ContractDebankListQuery: GraphQLFieldConfig<any, Request> = {
     pagination: PaginationArgument('ContractDebankListPaginationInputType'),
   },
   resolve: async (root, { filter, sort, pagination }, { currentUser }) => {
-    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+    if (!currentUser) {
+      return {
+        list: [],
+        pagination: {
+          count: 0,
+        },
+      };
+    }
 
     const database = container.database();
     const select = container.model
@@ -2168,6 +2175,10 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
                 lpTokensManager: {
                   type: GraphQLBoolean,
                 },
+                autorestake: {
+                  type: GraphQLBoolean,
+                  description: 'Has autorestake automate',
+                },
               },
             }),
           },
@@ -2243,6 +2254,19 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
               and ${contractBlockchainTableName}.automate->>'lpTokensManager' IS NOT NULL
             )`),
             automate.lpTokensManager ? '>' : '=',
+            0,
+          );
+        }
+        if (typeof automate.autorestake === 'boolean') {
+          this.where(
+            database.raw(`(
+              select count(${contractTableName}.id)
+              from ${contractTableName}
+              inner join ${contractBlockchainTableName} on ${contractBlockchainTableName}.id = ${contractTableName}.id
+              where ${contractTableName}.protocol = ${protocolTableName}.id
+              and ${contractBlockchainTableName}.automate->>'autorestakeAdapter' IS NOT NULL
+            )`),
+            automate.autorestake ? '>' : '=',
             0,
           );
         }
