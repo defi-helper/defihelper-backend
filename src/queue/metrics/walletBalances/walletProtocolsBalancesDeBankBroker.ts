@@ -6,6 +6,7 @@ import {
   walletTableName,
   WalletBlockchainType,
 } from '@models/Wallet/Entity';
+import { tableName as userTableName } from '@models/User/Entity';
 
 export default async (process: Process) => {
   const wallets = await container.model
@@ -17,8 +18,10 @@ export default async (process: Process) => {
       `${walletBlockchainTableName}.id`,
       `${walletTableName}.id`,
     )
+    .innerJoin(userTableName, `${walletTableName}.user`, `${userTableName}.id`)
     .where(`${walletBlockchainTableName}.type`, WalletBlockchainType.Wallet)
     .andWhere(`${walletBlockchainTableName}.blockchain`, 'ethereum')
+    .andWhere(`${userTableName}.isMetricsTracked`, true)
     .whereNull(`${walletTableName}.deletedAt`);
 
   const lag = 600 / wallets.length;
@@ -27,7 +30,11 @@ export default async (process: Process) => {
 
     await container.model
       .queueService()
-      .push('metricsWalletProtocolsBalancesDeBankFiller', { id }, { startAt: startAt.toDate() });
+      .push(
+        'metricsWalletProtocolsBalancesDeBankFiller',
+        { id },
+        { topic: 'metricCurrent', startAt: startAt.toDate() },
+      );
 
     return startAt.clone().add(lag, 'seconds');
   }, Promise.resolve(dayjs()));

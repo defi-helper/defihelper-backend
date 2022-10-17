@@ -55,8 +55,8 @@ export default async function (this: Action, params: Params) {
     protocol.adapter,
   );
   if (!automates) throw new Error('Automates adapters not found');
-  const adapter = automates[contract.adapter];
-  if (adapter === undefined) throw new Error('Automate adapter not found');
+  const adapterFactory = automates[contract.adapter];
+  if (adapterFactory === undefined) throw new Error('Automate adapter not found');
 
   const network = container.blockchain.ethereum.byNetwork(wallet.network);
   const provider = network.provider();
@@ -117,11 +117,12 @@ export default async function (this: Action, params: Params) {
   }, Promise.resolve(null));
   if (consumer === null) throw new Error('Not free consumer');
 
-  const { run } = await adapter(consumer, contract.address);
+  const { run: adapter } = await adapterFactory(consumer, contract.address);
   try {
-    const tx = await run();
-    if (tx instanceof Error) throw tx;
+    const res = await adapter.methods.run();
+    if (res instanceof Error) throw res;
 
+    const { tx } = res;
     await Promise.all([
       container.model
         .automateService()

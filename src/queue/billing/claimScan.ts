@@ -20,7 +20,8 @@ async function registerClaims(
     .billingBillTable()
     .column('tx')
     .where(function () {
-      this.where({ blockchain, network }).whereIn(
+      this.where({ blockchain, network });
+      this.whereIn(
         'tx',
         events.map(({ transactionHash }) => transactionHash),
       );
@@ -41,8 +42,8 @@ async function registerClaims(
         network,
         args.account.toLowerCase(),
         bill.claimant.toLowerCase(),
-        new BN(bill.gasFee.toString()).div(ethFeeDecimals).toNumber(),
-        new BN(bill.protocolFee.toString()).div(ethFeeDecimals).toNumber(),
+        new BN(bill.gasFee.toString()).div(ethFeeDecimals),
+        new BN(bill.protocolFee.toString()).div(ethFeeDecimals),
         args.description,
         transactionHash,
         dayjs.unix(timestamp).toDate(),
@@ -51,21 +52,30 @@ async function registerClaims(
   );
 }
 
-async function registerAcceptBill(balance: ethers.Contract, events: ethers.Event[]) {
+async function registerAcceptBill(
+  network: string,
+  balance: ethers.Contract,
+  events: ethers.Event[],
+) {
   const billingService = container.model.billingService();
   return Promise.all(
     events.map(async ({ getBlock, transactionHash, args }) => {
       if (!args) return null;
       const { timestamp } = await getBlock();
-      const billId = parseInt(args.bill.toString(), 10);
+      const billId = Number(args.bill.toString());
       const bill = await balance.bills(billId);
-      const claim = await billingService.billTable().where('number', billId).first();
+      const claim = await billingService
+        .billTable()
+        .where('blockchain', 'ethereum')
+        .where('network', network)
+        .where('number', billId)
+        .first();
       if (!claim) return null;
 
       return billingService.acceptBill(
         claim,
-        new BN(bill.gasFee.toString()).div(ethFeeDecimals).toNumber(),
-        new BN(bill.protocolFee.toString()).div(ethFeeDecimals).toNumber(),
+        new BN(bill.gasFee.toString()).div(ethFeeDecimals),
+        new BN(bill.protocolFee.toString()).div(ethFeeDecimals),
         transactionHash,
         dayjs.unix(timestamp).toDate(),
       );
@@ -73,14 +83,19 @@ async function registerAcceptBill(balance: ethers.Contract, events: ethers.Event
   );
 }
 
-async function registerRejectBill(events: ethers.Event[]) {
+async function registerRejectBill(network: string, events: ethers.Event[]) {
   const billingService = container.model.billingService();
   return Promise.all(
     events.map(async ({ getBlock, transactionHash, args }) => {
       if (!args) return null;
       const { timestamp } = await getBlock();
-      const billId = parseInt(args.bill.toString(), 10);
-      const claim = await billingService.billTable().where('number', billId).first();
+      const billId = Number(args.bill.toString());
+      const claim = await billingService
+        .billTable()
+        .where('blockchain', 'ethereum')
+        .where('network', network)
+        .where('number', billId)
+        .first();
       if (!claim) return null;
 
       return billingService.rejectBill(claim, transactionHash, dayjs.unix(timestamp).toDate());
@@ -132,13 +147,17 @@ export default async (process: Process) => {
     );
     await Promise.all([
       registerAcceptBill(
+        network,
         balance,
         await balance.queryFilter(balance.filters.AcceptClaim(), from, to),
       ),
-      registerRejectBill(await balance.queryFilter(balance.filters.RejectClaim(), from, to)),
+      registerRejectBill(
+        network,
+        await balance.queryFilter(balance.filters.RejectClaim(), from, to),
+      ),
     ]);
   } catch (e) {
-    if (currentBlockNumber - from > 100) {
+    if (currentBlockNumber - from > 200) {
       throw new Error(`Task ${process.task.id}, lag: ${currentBlockNumber - from}, message: ${e}`);
     }
     return process.later(later).info(`${e}`);

@@ -114,6 +114,17 @@ export const ConfigBlockchainFilterInputType = new GraphQLInputObjectType({
     testnet: {
       type: GraphQLBoolean,
     },
+    automate: {
+      type: new GraphQLInputObjectType({
+        name: 'ConfigBlockchainAutomateFilterInputType',
+        fields: {
+          autorestake: {
+            type: GraphQLBoolean,
+            description: 'Has autorestake automate',
+          },
+        },
+      }),
+    },
   },
 });
 
@@ -133,7 +144,17 @@ export const ConfigType = new GraphQLObjectType({
                   defaultValue: {},
                 },
               },
-              resolve: (_, { filter }) => {
+              resolve: async (_, { filter }) => {
+                let autorestakeNetworksSet = new Set<string>([]);
+                if (filter.automate?.autorestake !== undefined) {
+                  autorestakeNetworksSet = await container.model
+                    .contractBlockchainTable()
+                    .distinct('network')
+                    .where('blockchain', 'ethereum')
+                    .whereRaw(`automate->>'autorestakeAdapter' IS NOT NULL`)
+                    .then((rows) => new Set(rows.map(({ network }) => network)));
+                }
+
                 return Object.values(container.blockchain.ethereum.networks).reduce<any[]>(
                   (
                     result,
@@ -141,6 +162,11 @@ export const ConfigType = new GraphQLObjectType({
                   ) => {
                     if (typeof filter.testnet === 'boolean') {
                       if (filter.testnet !== testnet) return result;
+                    }
+                    if (typeof filter.automate?.autorestake === 'boolean') {
+                      if (filter.automate.autorestake !== autorestakeNetworksSet.has(id)) {
+                        return result;
+                      }
                     }
 
                     return [

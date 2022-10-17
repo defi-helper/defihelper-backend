@@ -11,7 +11,7 @@ export class I18nContainer extends Container<typeof AppContainer> {
 
   readonly ruRU = singleton(() => new I18n(locales.ruRU.messages, locales.ruRU.plural));
 
-  readonly byLocale = (locale: Locale) => this[locale]() ?? this.enUS();
+  readonly byLocale = (locale: Locale) => (this[locale] ? this[locale]() : this.enUS());
 
   readonly byUser = (user?: User) => (user ? this.byLocale(user.locale) : this.enUS());
 }

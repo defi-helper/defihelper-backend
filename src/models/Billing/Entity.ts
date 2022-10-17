@@ -12,7 +12,7 @@ export interface Transfer {
   blockchain: Blockchain;
   network: string;
   account: string;
-  amount: number;
+  amount: string;
   tx: string;
   bill: string | null;
   status: TransferStatus;
@@ -40,11 +40,11 @@ export interface Bill {
   network: string;
   account: string;
   claimant: string;
-  claimGasFee: number;
-  claimProtocolFee: number;
-  gasFee: number | null;
-  protocolFee: number | null;
-  claim: number;
+  claimGasFee: string;
+  claimProtocolFee: string;
+  gasFee: string | null;
+  protocolFee: string | null;
+  claim: string;
   description: string;
   status: BillStatus;
   tx: string;

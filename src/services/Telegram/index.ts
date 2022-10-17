@@ -1,4 +1,3 @@
-import * as Mustache from 'mustache';
 import { Factory } from '@services/Container';
 import { Telegraf } from 'telegraf';
 import { I18nContainer, Locale } from '@services/I18n/container';
@@ -15,8 +14,20 @@ export interface ITelegramService {
 }
 
 class NullService implements ITelegramService {
+  constructor(
+    protected readonly template: TemplateContainer,
+    protected readonly i18n: I18nContainer,
+  ) {}
+
   // eslint-disable-next-line
-  async send() {}
+  async send(template: TelegramTemplate, data: Object, chatId: number, locale: Locale = 'enUS') {
+    console.info(
+      this.template.render(await Templates[template], {
+        ...data,
+        ...this.template.i18n(this.i18n.byLocale(locale)),
+      }),
+    );
+  }
 
   // eslint-disable-next-line
   getBot() {
@@ -52,8 +63,8 @@ export class TelegramService implements ITelegramService {
     chatId: number,
     locale: Locale = 'enUS',
   ): Promise<void> {
-    const message = Mustache.render(await Templates[template], {
-      data,
+    const message = this.template.render(await Templates[template], {
+      ...data,
       ...this.template.i18n(this.i18n.byLocale(locale)),
     });
 
@@ -68,5 +79,6 @@ export function telegramServiceFactory(
   template: TemplateContainer,
   i18n: I18nContainer,
 ): Factory<ITelegramService> {
-  return () => (token ? new TelegramService(token, template, i18n) : new NullService());
+  return () =>
+    token ? new TelegramService(token, template, i18n) : new NullService(template, i18n);
 }

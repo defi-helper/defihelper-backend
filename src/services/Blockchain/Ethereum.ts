@@ -22,6 +22,7 @@ function providerFactory(url: URL) {
       url: `${url.protocol}//${url.hostname}${url.pathname}`,
       user: url.username ? url.username : undefined,
       password: url.password ? url.password : undefined,
+      timeout: 60000,
     });
 }
 
@@ -71,6 +72,7 @@ function networkFactory({
   nativeTokenDetails,
   tokenPriceResolver,
   rpcUrls,
+  coingeckoPlatform,
   network: { node, historicalNode, avgBlockTime, inspectors, consumers },
 }: {
   id: string;
@@ -88,6 +90,7 @@ function networkFactory({
   tokenPriceResolver: { usd: TokenPriceFeedUSD };
   rpcUrls?: string[];
   network: NetworkConfig;
+  coingeckoPlatform: string | null;
 }) {
   const provider = providerRandomizerFactory(
     node.map((host) => singleton(providerFactory(new URL(host)))),
@@ -116,6 +119,7 @@ function networkFactory({
     rpcUrls,
     tokenPriceResolver,
     nativeTokenDetails,
+    coingeckoPlatform,
     inspector: () => (inspectors.length > 0 ? new ethers.Wallet(inspectors[0], provider()) : null),
     consumers: () => signersFactory(consumers, provider()),
     dfhContracts: () => (isKey(dfhContracts, id) ? dfhContracts[id] : null),
@@ -257,6 +261,7 @@ export class BlockchainContainer extends Container<Config> {
       },
       tokenPriceResolver: debankPriceFeed('1'),
       network: this.parent.eth,
+      coingeckoPlatform: 'ethereum',
     }),
     '3': networkFactory({
       id: '3',
@@ -277,6 +282,7 @@ export class BlockchainContainer extends Container<Config> {
       },
       tokenPriceResolver: debankPriceFeed('1'),
       network: this.parent.ethRopsten,
+      coingeckoPlatform: 'ethereum',
     }),
     '4': networkFactory({
       id: '4',
@@ -297,6 +303,7 @@ export class BlockchainContainer extends Container<Config> {
       },
       tokenPriceResolver: debankPriceFeed('1'),
       network: this.parent.ethRinkeby,
+      coingeckoPlatform: 'ethereum',
     }),
     '5': networkFactory({
       id: '5',
@@ -317,6 +324,7 @@ export class BlockchainContainer extends Container<Config> {
       },
       tokenPriceResolver: debankPriceFeed('1'),
       network: this.parent.ethGoerli,
+      coingeckoPlatform: 'ethereum',
     }),
     '10': networkFactory({
       id: '10',
@@ -338,6 +346,7 @@ export class BlockchainContainer extends Container<Config> {
       tokenPriceResolver: debankPriceFeed('10'),
       rpcUrls: ['https://mainnet.optimism.io'],
       network: this.parent.optimistic,
+      coingeckoPlatform: 'optimistic-ethereum',
     }),
     '25': networkFactory({
       id: '25',
@@ -358,6 +367,7 @@ export class BlockchainContainer extends Container<Config> {
       },
       tokenPriceResolver: debankPriceFeed('25'),
       network: this.parent.cronos,
+      coingeckoPlatform: 'cronos',
     }),
     '56': networkFactory({
       id: '56',
@@ -383,6 +393,7 @@ export class BlockchainContainer extends Container<Config> {
       ],
       tokenPriceResolver: debankPriceFeed('56'),
       network: this.parent.bsc,
+      coingeckoPlatform: 'binance-smart-chain',
     }),
     '137': networkFactory({
       id: '137',
@@ -404,6 +415,7 @@ export class BlockchainContainer extends Container<Config> {
       tokenPriceResolver: debankPriceFeed('137'),
       rpcUrls: ['https://rpc-mainnet.maticvigil.com/', 'https://rpc-mainnet.maticvigil.com/'],
       network: this.parent.polygon,
+      coingeckoPlatform: 'polygon-pos',
     }),
     '250': networkFactory({
       id: '250',
@@ -425,6 +437,7 @@ export class BlockchainContainer extends Container<Config> {
       tokenPriceResolver: debankPriceFeed('250'),
       rpcUrls: ['https://rpc.ftm.tools'],
       network: this.parent.fantom,
+      coingeckoPlatform: 'fantom',
     }),
     '1284': networkFactory({
       id: '1284',
@@ -446,6 +459,7 @@ export class BlockchainContainer extends Container<Config> {
       tokenPriceResolver: debankPriceFeed('1284'),
       rpcUrls: ['https://rpc.api.moonbeam.network', 'https://rpc.api.moonbeam.network'],
       network: this.parent.moonriver,
+      coingeckoPlatform: 'moonbeam',
     }),
     '1285': networkFactory({
       id: '1285',
@@ -467,6 +481,7 @@ export class BlockchainContainer extends Container<Config> {
       tokenPriceResolver: debankPriceFeed('1285'),
       rpcUrls: ['https://rpc.moonriver.moonbeam.network', 'https://rpc.moonriver.moonbeam.network'],
       network: this.parent.moonriver,
+      coingeckoPlatform: 'moonriver',
     }),
     '31337': networkFactory({
       id: '31337',
@@ -487,6 +502,7 @@ export class BlockchainContainer extends Container<Config> {
       },
       tokenPriceResolver: debankPriceFeed('1'),
       network: this.parent.local,
+      coingeckoPlatform: 'ethereum',
     }),
     '42161': networkFactory({
       id: '42161',
@@ -508,6 +524,7 @@ export class BlockchainContainer extends Container<Config> {
       tokenPriceResolver: debankPriceFeed('42161'),
       rpcUrls: ['https://arb1.arbitrum.io/rpc'],
       network: this.parent.arbitrum,
+      coingeckoPlatform: 'arbitrum-one',
     }),
     '43113': networkFactory({
       id: '43113',
@@ -528,6 +545,7 @@ export class BlockchainContainer extends Container<Config> {
       },
       tokenPriceResolver: debankPriceFeed('43113'),
       network: this.parent.avalancheTestnet,
+      coingeckoPlatform: 'avalanche',
     }),
     '43114': networkFactory({
       id: '43114',
@@ -549,6 +567,7 @@ export class BlockchainContainer extends Container<Config> {
       tokenPriceResolver: debankPriceFeed('43114'),
       rpcUrls: ['https://api.avax.network/ext/bc/C/rpc', 'https://api.avax.network/ext/bc/C/rpc'],
       network: this.parent.avalanche,
+      coingeckoPlatform: 'avalanche',
     }),
     '1313161554': networkFactory({
       id: '1313161554',
@@ -569,6 +588,7 @@ export class BlockchainContainer extends Container<Config> {
       },
       tokenPriceResolver: debankPriceFeed('1313161554'),
       network: this.parent.aurora,
+      coingeckoPlatform: 'aurora',
     }),
     '1666600000': networkFactory({
       id: '1666600000',
@@ -597,6 +617,7 @@ export class BlockchainContainer extends Container<Config> {
         'https://s3.api.harmony.one',
       ],
       network: this.parent.harmony,
+      coingeckoPlatform: null,
     }),
   } as const;
 

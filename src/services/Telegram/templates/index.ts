@@ -8,9 +8,10 @@ export const Templates = {
   triggerTemplate: fs.promises.readFile(`${__dirname}/Trigger.mustache`, 'utf8'),
   portfolioMetrics: fs.promises.readFile(`${__dirname}/PortfolioMetrics.mustache`, 'utf8'),
   publicBetaStarted: fs.promises.readFile(`${__dirname}/PublicBetaStarted.mustache`, 'utf8'),
-  walletConnectWelcome: fs.promises.readFile(`${__dirname}/walletConnectWelcome.mustache`, 'utf8'),
+  walletConnectWelcome: fs.promises.readFile(`${__dirname}/WalletConnectWelcome.mustache`, 'utf8'),
+  demoCallInvite: fs.promises.readFile(`${__dirname}/DemoCallInvite.mustache`, 'utf8'),
   welcomeNewWalletConnect: fs.promises.readFile(
-    `${__dirname}/welcomeNewWalletConnect.mustache`,
+    `${__dirname}/WelcomeNewWalletConnect.mustache`,
     'utf8',
   ),
   automationsMigrableContracts: fs.promises.readFile(

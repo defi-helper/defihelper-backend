@@ -14,3 +14,4 @@ export * as Store from './Store';
 export * as Governance from './Governance';
 export * as Automate from './Automate';
 export * as ReferrerCode from './ReferrerCode';
+export * as SmartTrade from './SmartTrade';

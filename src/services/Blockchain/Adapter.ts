@@ -77,12 +77,12 @@ export interface EthereumAutomateRunParams {
 
 export interface EthereumAutomateAdapter {
   (signer: any, contract: string): Promise<{
-    contract: string;
-    migrate: () => Promise<ethers.Transaction | Error>;
-    deposit: () => Promise<ethers.Transaction | Error>;
-    refund: () => Promise<ethers.Transaction | Error>;
-    runParams: () => Promise<EthereumAutomateRunParams | Error>;
-    run: () => Promise<ethers.Transaction | Error>;
+    run: {
+      methods: {
+        runParams: () => Promise<EthereumAutomateRunParams | Error>;
+        run: () => Promise<{ tx: ethers.ContractTransaction } | Error>;
+      };
+    };
   }>;
 }
 

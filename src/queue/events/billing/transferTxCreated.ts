@@ -30,7 +30,8 @@ export default async (process: Process) => {
   }
 
   const billingService = container.model.billingService();
-  const provider = container.blockchain.ethereum.byNetwork(transfer.network).provider();
+  const network = container.blockchain.ethereum.byNetwork(transfer.network);
+  const provider = network.provider();
   const networkContracts = contracts[transfer.network] as { [name: string]: { address: string } };
   const balance = container.blockchain.ethereum.contract(
     networkContracts.Balance.address,
@@ -48,7 +49,7 @@ export default async (process: Process) => {
     }
 
     const event = receipt.logs.reduce<ethers.utils.LogDescription | null>((prev, topic) => {
-      if (prev !== null) return null;
+      if (prev !== null) return prev;
       const logDescription = balance.interface.parseLog(topic);
       return ['Deposit', 'Refund'].includes(logDescription.name) ? logDescription : null;
     }, null);
@@ -62,14 +63,15 @@ export default async (process: Process) => {
     }
     const timestamp = await provider.getBlock(receipt.blockHash).then((block) => block.timestamp);
 
-    await container.model.billingService().transferConfirm(
-      transfer,
-      new BN(event.args.amount.toString())
-        .div('1e18')
-        .multipliedBy(event.name === 'Deposit' ? 1 : -1)
-        .toNumber(),
-      dayjs.unix(timestamp).toDate(),
-    );
+    await container.model
+      .billingService()
+      .transferConfirm(
+        transfer,
+        new BN(event.args.amount.toString())
+          .div(`1e${network.nativeTokenDetails.decimals}`)
+          .multipliedBy(event.name === 'Deposit' ? 1 : -1),
+        dayjs.unix(timestamp).toDate(),
+      );
   } catch (e) {
     if (e instanceof Error) {
       if (e.message.includes('timeout exceeded')) {

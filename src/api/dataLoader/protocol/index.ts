@@ -146,12 +146,8 @@ export const protocolUserLastMetricLoader = ({ userId }: { userId: string }) =>
     {
       stakingUSD: string;
       stakingUSDDayBefore: string;
-      stakingUSDWeekBefore: string;
-      stakingUSDMonthBefore: string;
       earnedUSD: string;
       earnedUSDDayBefore: string;
-      earnedUSDWeekBefore: string;
-      earnedUSDMonthBefore: string;
       minUpdatedAt: string | null;
     }
   >(async (protocolsId) => {
@@ -167,28 +163,12 @@ export const protocolUserLastMetricLoader = ({ userId }: { userId: string }) =>
         `${metricWalletRegistryTableName}.data->>'stakingUSDDayBefore'`,
       ])
       .modify(QueryModify.sumMetric, [
-        'stakingUSDWeekBefore',
-        `${metricWalletRegistryTableName}.data->>'stakingUSDWeekBefore'`,
-      ])
-      .modify(QueryModify.sumMetric, [
-        'stakingUSDMonthBefore',
-        `${metricWalletRegistryTableName}.data->>'stakingUSDMonthBefore'`,
-      ])
-      .modify(QueryModify.sumMetric, [
         'earnedUSD',
         `${metricWalletRegistryTableName}.data->>'earnedUSD'`,
       ])
       .modify(QueryModify.sumMetric, [
         'earnedUSDDayBefore',
         `${metricWalletRegistryTableName}.data->>'earnedUSDDayBefore'`,
-      ])
-      .modify(QueryModify.sumMetric, [
-        'earnedUSDWeekBefore',
-        `${metricWalletRegistryTableName}.data->>'earnedUSDWeekBefore'`,
-      ])
-      .modify(QueryModify.sumMetric, [
-        'earnedUSDMonthBefore',
-        `${metricWalletRegistryTableName}.data->>'earnedUSDMonthBefore'`,
       ])
       .min(`${metricWalletRegistryTableName}.date AS minUpdatedAt`)
       .innerJoin(
@@ -213,12 +193,8 @@ export const protocolUserLastMetricLoader = ({ userId }: { userId: string }) =>
             protocol: string;
             stakingUSD: string;
             stakingUSDDayBefore: string;
-            stakingUSDWeekBefore: string;
-            stakingUSDMonthBefore: string;
             earnedUSD: string;
             earnedUSDDayBefore: string;
-            earnedUSDWeekBefore: string;
-            earnedUSDMonthBefore: string;
             minUpdatedAt: Date | null;
           }>,
         ) =>
@@ -228,24 +204,16 @@ export const protocolUserLastMetricLoader = ({ userId }: { userId: string }) =>
                 protocol,
                 stakingUSD,
                 stakingUSDDayBefore,
-                stakingUSDWeekBefore,
-                stakingUSDMonthBefore,
                 earnedUSD,
                 earnedUSDDayBefore,
-                earnedUSDWeekBefore,
-                earnedUSDMonthBefore,
                 minUpdatedAt,
               }) => [
                 protocol,
                 {
                   stakingUSD,
                   stakingUSDDayBefore,
-                  stakingUSDWeekBefore,
-                  stakingUSDMonthBefore,
                   earnedUSD,
                   earnedUSDDayBefore,
-                  earnedUSDWeekBefore,
-                  earnedUSDMonthBefore,
                   minUpdatedAt: minUpdatedAt ? minUpdatedAt.toISOString() : null,
                 },
               ],
@@ -258,12 +226,8 @@ export const protocolUserLastMetricLoader = ({ userId }: { userId: string }) =>
         map.get(id) ?? {
           stakingUSD: '0',
           stakingUSDDayBefore: '0',
-          stakingUSDWeekBefore: '0',
-          stakingUSDMonthBefore: '0',
           earnedUSD: '0',
           earnedUSDDayBefore: '0',
-          earnedUSDWeekBefore: '0',
-          earnedUSDMonthBefore: '0',
           minUpdatedAt: null,
         },
     );
@@ -418,12 +382,8 @@ export const contractUserLastMetricLoader = ({
     {
       stakingUSD: string;
       stakingUSDDayBefore: string;
-      stakingUSDWeekBefore: string;
-      stakingUSDMonthBefore: string;
       earnedUSD: string;
       earnedUSDDayBefore: string;
-      earnedUSDWeekBefore: string;
-      earnedUSDMonthBefore: string;
     }
   >(async (contractsId) => {
     const map = await container.model
@@ -438,28 +398,12 @@ export const contractUserLastMetricLoader = ({
         `${metricWalletRegistryTableName}.data->>'stakingUSDDayBefore'`,
       ])
       .modify(QueryModify.sumMetric, [
-        'stakingUSDWeekBefore',
-        `${metricWalletRegistryTableName}.data->>'stakingUSDWeekBefore'`,
-      ])
-      .modify(QueryModify.sumMetric, [
-        'stakingUSDMonthBefore',
-        `${metricWalletRegistryTableName}.data->>'stakingUSDMonthBefore'`,
-      ])
-      .modify(QueryModify.sumMetric, [
         'earnedUSD',
         `${metricWalletRegistryTableName}.data->>'earnedUSD'`,
       ])
       .modify(QueryModify.sumMetric, [
         'earnedUSDDayBefore',
         `${metricWalletRegistryTableName}.data->>'earnedUSDDayBefore'`,
-      ])
-      .modify(QueryModify.sumMetric, [
-        'earnedUSDWeekBefore',
-        `${metricWalletRegistryTableName}.data->>'earnedUSDWeekBefore'`,
-      ])
-      .modify(QueryModify.sumMetric, [
-        'earnedUSDMonthBefore',
-        `${metricWalletRegistryTableName}.data->>'earnedUSDMonthBefore'`,
       ])
       .innerJoin(
         walletTableName,
@@ -483,37 +427,19 @@ export const contractUserLastMetricLoader = ({
             contract: string;
             stakingUSD: string;
             stakingUSDDayBefore: string;
-            stakingUSDWeekBefore: string;
-            stakingUSDMonthBefore: string;
             earnedUSD: string;
             earnedUSDDayBefore: string;
-            earnedUSDWeekBefore: string;
-            earnedUSDMonthBefore: string;
           }>,
         ) =>
           new Map(
             rows.map(
-              ({
-                contract,
-                stakingUSD,
-                stakingUSDDayBefore,
-                stakingUSDWeekBefore,
-                stakingUSDMonthBefore,
-                earnedUSD,
-                earnedUSDDayBefore,
-                earnedUSDWeekBefore,
-                earnedUSDMonthBefore,
-              }) => [
+              ({ contract, stakingUSD, stakingUSDDayBefore, earnedUSD, earnedUSDDayBefore }) => [
                 contract,
                 {
                   stakingUSD,
                   stakingUSDDayBefore,
-                  stakingUSDWeekBefore,
-                  stakingUSDMonthBefore,
                   earnedUSD,
                   earnedUSDDayBefore,
-                  earnedUSDWeekBefore,
-                  earnedUSDMonthBefore,
                 },
               ],
             ),
@@ -525,12 +451,8 @@ export const contractUserLastMetricLoader = ({
         map.get(id) ?? {
           stakingUSD: '0',
           stakingUSDDayBefore: '0',
-          stakingUSDWeekBefore: '0',
-          stakingUSDMonthBefore: '0',
           earnedUSD: '0',
           earnedUSDDayBefore: '0',
-          earnedUSDWeekBefore: '0',
-          earnedUSDMonthBefore: '0',
         },
     );
   });
