@@ -3,10 +3,8 @@ import container from '@container';
 import dayjs from 'dayjs';
 import { Process } from '@models/Queue/Entity';
 import { Blockchain } from '@models/types';
-import { isKey } from '@services/types';
 import { ethers } from 'ethers';
 import { abi as balanceAbi } from '@defihelper/networks/abi/Balance.json';
-import contracts from '@defihelper/networks/contracts.json';
 
 const ethFeeDecimals = new BN(10).pow(18);
 
@@ -42,8 +40,8 @@ async function registerClaims(
         network,
         args.account.toLowerCase(),
         bill.claimant.toLowerCase(),
-        new BN(bill.gasFee.toString()).div(ethFeeDecimals).toNumber(),
-        new BN(bill.protocolFee.toString()).div(ethFeeDecimals).toNumber(),
+        new BN(bill.gasFee.toString()).div(ethFeeDecimals),
+        new BN(bill.protocolFee.toString()).div(ethFeeDecimals),
         args.description,
         transactionHash,
         dayjs.unix(timestamp).toDate(),
@@ -74,8 +72,8 @@ async function registerAcceptBill(
 
       return billingService.acceptBill(
         claim,
-        new BN(bill.gasFee.toString()).div(ethFeeDecimals).toNumber(),
-        new BN(bill.protocolFee.toString()).div(ethFeeDecimals).toNumber(),
+        new BN(bill.gasFee.toString()).div(ethFeeDecimals),
+        new BN(bill.protocolFee.toString()).div(ethFeeDecimals),
         transactionHash,
         dayjs.unix(timestamp).toDate(),
       );
@@ -116,27 +114,30 @@ export default async (process: Process) => {
   if (blockchain !== 'ethereum') {
     throw new Error('Invalid blockchain');
   }
-  if (!isKey(contracts, network)) {
+  const blockchainContainer = container.blockchain[blockchain];
+  const networkContainer = blockchainContainer.byNetwork(network);
+  const contracts = networkContainer.dfhContracts();
+  if (contracts === null) {
     throw new Error('Contracts not deployed to target network');
   }
-
-  const later = dayjs().add(1, 'minute').toDate();
-  const provider = container.blockchain[blockchain].byNetwork(network).provider();
-  let currentBlockNumber;
-  try {
-    currentBlockNumber = parseInt((await provider.getBlockNumber()).toString(), 10) - lag;
-  } catch (e) {
-    return process.later(later).info(`${e}`);
+  const balanceAddress = contracts.BalanceUpgradable?.address ?? contracts.Balance?.address;
+  if (balanceAddress === undefined) {
+    throw new Error('Balance contract not deployed on this network');
   }
+  const provider = networkContainer.provider();
+  const balance = blockchainContainer.contract(balanceAddress, balanceAbi, provider);
 
+  const currentBlockNumber = await provider
+    .getBlockNumber()
+    .then((v) => v - lag)
+    .catch((e) => e);
+  if (typeof currentBlockNumber !== 'number') {
+    return process.laterAt(1, 'minutes').info(`${currentBlockNumber}`);
+  }
   if (currentBlockNumber < from) {
-    return process.later(later);
+    return process.laterAt(1, 'minutes');
   }
   const to = from + step > currentBlockNumber ? currentBlockNumber : from + step;
-
-  const networkContracts = contracts[network] as { [name: string]: { address: string } };
-  const balanceAddress = networkContracts.Balance.address;
-  const balance = container.blockchain[blockchain].contract(balanceAddress, balanceAbi, provider);
 
   try {
     await registerClaims(
@@ -160,8 +161,8 @@ export default async (process: Process) => {
     if (currentBlockNumber - from > 200) {
       throw new Error(`Task ${process.task.id}, lag: ${currentBlockNumber - from}, message: ${e}`);
     }
-    return process.later(later).info(`${e}`);
+    return process.laterAt(1, 'minutes').info(`${e}`);
   }
 
-  return process.param({ ...process.task.params, from: to + 1 }).later(later);
+  return process.param({ ...process.task.params, from: to + 1 }).laterAt(1, 'minutes');
 };

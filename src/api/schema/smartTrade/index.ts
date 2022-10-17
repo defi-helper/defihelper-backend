@@ -163,7 +163,7 @@ export const SwapHandlerCallDataType = new GraphQLObjectType<SwapCallData>({
         new BN(amountIn).div(`1e${tokenInDecimals}`),
     },
     boughtPrice: {
-      type: GraphQLNonNull(BigNumberType),
+      type: BigNumberType,
       resolve: ({ callData: { boughtPrice } }) => boughtPrice,
     },
     stopLoss: {
@@ -467,7 +467,7 @@ export const SwapOrderCreateInputType = new GraphQLInputObjectType({
               type: GraphQLNonNull(BigNumberType),
             },
             boughtPrice: {
-              type: GraphQLNonNull(BigNumberType),
+              type: BigNumberType,
             },
             stopLoss: {
               type: SwapOrderCallDataStopLossInputType,
@@ -558,7 +558,7 @@ export const SwapOrderCreateMutation: GraphQLFieldConfig<any, Request> = {
           tokenInDecimals: callData.tokenInDecimals,
           tokenOutDecimals: callData.tokenOutDecimals,
           amountIn: callData.amountIn.toFixed(0),
-          boughtPrice: callData.boughtPrice.toString(10),
+          boughtPrice: callData.boughtPrice ? callData.boughtPrice.toString(10) : null,
           routes: [
             callData.stopLoss
               ? {
@@ -604,4 +604,70 @@ export const SwapOrderCreateMutation: GraphQLFieldConfig<any, Request> = {
 
     return order;
   }),
+};
+
+export const SwapOrderUpdateInputType = new GraphQLInputObjectType({
+  name: 'SmartTradeSwapOrderUpdateInputType',
+  fields: {
+    callData: {
+      type: new GraphQLInputObjectType({
+        name: 'SmartTradeSwapOrderUpdateCallDataInputType',
+        fields: {
+          boughtPrice: {
+            type: BigNumberType,
+          },
+        },
+      }),
+    },
+  },
+});
+
+export const SwapOrderUpdateMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(OrderType),
+  args: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+    },
+    input: {
+      type: GraphQLNonNull(SwapOrderUpdateInputType),
+    },
+  },
+  resolve: onlyAllowed(
+    'smartTradeOrder.update-own',
+    async (root, { id, input }, { currentUser }) => {
+      if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+      const order = await container.model
+        .smartTradeOrderTable()
+        .where('id', id)
+        .first()
+        .then((v) => v as Order<SwapCallData> | undefined);
+      if (!order) {
+        throw new UserInputError('Order not found');
+      }
+      const ownerWallet = await container.model
+        .walletTable()
+        .innerJoin(
+          walletBlockchainTableName,
+          `${walletTableName}.id`,
+          `${walletBlockchainTableName}.id`,
+        )
+        .where(`${walletTableName}.id`, order.owner)
+        .first();
+      if (!ownerWallet) {
+        throw new UserInputError('Owner wallet not found');
+      }
+      if (currentUser.id !== ownerWallet.user) {
+        throw new UserInputError('Foreign order');
+      }
+
+      return container.model.smartTradeService().updateOrder({
+        ...order,
+        callData: {
+          ...order.callData,
+          boughtPrice: input.callData?.boughtPrice ?? order.callData.boughtPrice,
+        },
+      });
+    },
+  ),
 };

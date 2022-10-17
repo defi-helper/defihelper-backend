@@ -2,8 +2,6 @@ import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import dayjs from 'dayjs';
 import { abi as BalanceABI } from '@defihelper/networks/abi/Balance.json';
-import contracts from '@defihelper/networks/contracts.json';
-import { isKey } from '@services/types';
 import { ethers } from 'ethers';
 import { BigNumber as BN } from 'bignumber.js';
 import { TransferStatus } from '@models/Billing/Entity';
@@ -25,17 +23,20 @@ export default async (process: Process) => {
   if (transfer.blockchain !== 'ethereum') {
     throw new Error(`Invalid blockchain "${transfer.blockchain}"`);
   }
-  if (!isKey(contracts, transfer.network)) {
-    throw new Error('Contracts not deployed to target network');
-  }
 
   const billingService = container.model.billingService();
-  const provider = container.blockchain.ethereum.byNetwork(transfer.network).provider();
-  const networkContracts = contracts[transfer.network] as { [name: string]: { address: string } };
-  const balance = container.blockchain.ethereum.contract(
-    networkContracts.Balance.address,
-    BalanceABI,
-  );
+  const network = container.blockchain.ethereum.byNetwork(transfer.network);
+  const contracts = network.dfhContracts();
+  if (contracts === null) {
+    throw new Error('Contracts not deployed to target network');
+  }
+  const balanceAddress = contracts.BalanceUpgradable?.address ?? contracts.Balance?.address;
+  if (balanceAddress === undefined) {
+    throw new Error('Balance contract not deployed on target network');
+  }
+  const provider = network.provider();
+  const balance = container.blockchain.ethereum.contract(balanceAddress, BalanceABI, provider);
+
   try {
     const tx = await provider.getTransaction(transfer.tx);
     if (tx === null) {
@@ -62,14 +63,15 @@ export default async (process: Process) => {
     }
     const timestamp = await provider.getBlock(receipt.blockHash).then((block) => block.timestamp);
 
-    await container.model.billingService().transferConfirm(
-      transfer,
-      new BN(event.args.amount.toString())
-        .div('1e18')
-        .multipliedBy(event.name === 'Deposit' ? 1 : -1)
-        .toNumber(),
-      dayjs.unix(timestamp).toDate(),
-    );
+    await container.model
+      .billingService()
+      .transferConfirm(
+        transfer,
+        new BN(event.args.amount.toString())
+          .div(`1e${network.nativeTokenDetails.decimals}`)
+          .multipliedBy(event.name === 'Deposit' ? 1 : -1),
+        dayjs.unix(timestamp).toDate(),
+      );
   } catch (e) {
     if (e instanceof Error) {
       if (e.message.includes('timeout exceeded')) {

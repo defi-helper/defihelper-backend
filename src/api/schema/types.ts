@@ -147,7 +147,7 @@ export const BigNumberType = new GraphQLScalarType({
     return number;
   },
   serialize: (value: BN | string | number) => {
-    return value.toString();
+    return BN.isBigNumber(value) ? value.toString(10) : value.toString();
   },
 });
 

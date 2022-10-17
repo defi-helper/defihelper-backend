@@ -74,11 +74,10 @@ export default async (process: Process) => {
       },
       new Date(),
     ),
-
     container.model.contractService().updateBlockchain({
       ...contract,
       metric: {
-        ...lastMetric.data,
+        ...contract.metric,
         risk: riskLevel,
       },
     }),

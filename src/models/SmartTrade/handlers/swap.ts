@@ -1,6 +1,4 @@
 import container from '@container';
-import { isKey } from '@services/types';
-import contracts from '@defihelper/networks/contracts.json';
 import { useEthereumFreeConsumer } from '@services/Blockchain/Consumer';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 import { LogJsonMessage } from '@services/Log';
@@ -29,10 +27,23 @@ export default async function (
   if (!ownerWallet) {
     return new Error('Owner wallet not found');
   }
-  if (!isKey(contracts, ownerWallet.network)) {
-    return new Error('Contracts not deployed to target network');
-  }
   const network = container.blockchain.ethereum.byNetwork(ownerWallet.network);
+  const contracts = network.dfhContracts();
+  if (contracts === null) {
+    throw new Error('Contracts not deployed to target network');
+  }
+  const balanceAddress = contracts.BalanceUpgradable?.address ?? contracts.Balance?.address;
+  if (balanceAddress === undefined) {
+    throw new Error('Balance contract not deployed on target network');
+  }
+  const smartTradeRouterAddress = contracts.SmartTradeRouter?.address;
+  if (smartTradeRouterAddress === undefined) {
+    return new Error('Smart trade router not deployed to target network');
+  }
+  const smartTradeSwapHandlerAddress = contracts.SmartTradeSwapHandler?.address;
+  if (smartTradeSwapHandlerAddress === undefined) {
+    return new Error('Smart trade swap handler not deployed to target network');
+  }
   const provider = network.provider();
   const uniswapRouter = new ethers.Contract(order.callData.exchange, UniswapRouterABI, provider);
   const actualAmountOut = await uniswapRouter
@@ -94,36 +105,23 @@ export default async function (
   if (freeConsumer === null) return new Error('Not free consumer');
 
   try {
-    const networkContracts = contracts[ownerWallet.network] as Record<
-      string,
-      { address: string } | undefined
-    >;
-    if (networkContracts.Balance === undefined) {
-      return new Error('Balance contract not deployed to target network');
-    }
     const balance = container.blockchain.ethereum.contract(
-      networkContracts.Balance.address,
+      balanceAddress,
       BalanceABI,
       freeConsumer.consumer,
     );
-    if (networkContracts.SmartTradeRouter === undefined) {
-      return new Error('Smart trade router not deployed to target network');
-    }
     const smartTradeRouter = container.blockchain.ethereum.contract(
-      networkContracts.SmartTradeRouter.address,
+      smartTradeRouterAddress,
       SmartTradeRouterABI,
       freeConsumer.consumer,
     );
-    if (networkContracts.SmartTradeSwapHandler === undefined) {
-      return new Error('Smart trade swap handler not deployed to target network');
-    }
     const smartTradeHandler = container.blockchain.ethereum.contract(
-      networkContracts.SmartTradeSwapHandler.address,
+      smartTradeSwapHandlerAddress,
       SmartTradeSwapHandlerABI,
       freeConsumer.consumer,
     );
 
-    const routerBalance = await smartTradeRouter
+    const routerBalance: string = await smartTradeRouter
       .balanceOf(ownerWallet.address, order.callData.path[0])
       .then((v: ethers.BigNumber) => v.toString());
     log.ex({ routerBalance }).send();
