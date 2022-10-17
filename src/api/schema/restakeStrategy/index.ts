@@ -11,7 +11,13 @@ import {
 } from 'graphql';
 import BN from 'bignumber.js';
 import dayjs from 'dayjs';
-import { Point, hold, everyDayRestake, optimalRestake } from '@services/RestakeStrategy';
+import {
+  Point,
+  hold,
+  everyDayRestake,
+  optimalRestake,
+  apyBoostAt,
+} from '@services/RestakeStrategy';
 import container from '@container';
 import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
 import { BigNumberType, BlockchainEnum, DateTimeType, UuidType } from '../types';
@@ -84,6 +90,9 @@ export const RestakeCalculatorType = new GraphQLObjectType({
     nextRestakeAt: {
       type: DateTimeType,
     },
+    apyBoost: {
+      type: GraphQLString,
+    },
   },
 });
 
@@ -155,6 +164,7 @@ export const RestakeCalculatorQuery: GraphQLFieldConfig<any, Request> = {
     return {
       earnedUSD: new BN(optimalPoints[optimalPoints.length - 1].v).minus(amount).toString(10),
       nextRestakeAt: nextRestakeAt ? dayjs().add(nextRestakeAt.t, 'days').toDate() : null,
+      apyBoost: apyBoostAt(amount.toNumber(), optimalPoints),
     };
   },
 };
