@@ -24,7 +24,7 @@ export default async (process: Process) => {
   }
 
   let risk = MetricTokenRiskFactor.notCalculated;
-  switch (resolvedRisk.total.svetofor) {
+  switch (resolvedRisk.total.ranking) {
     case 'green':
       risk = MetricTokenRiskFactor.low;
       break;
@@ -41,10 +41,29 @@ export default async (process: Process) => {
       throw new Error('No risk case found');
   }
 
+  const volatility = resolvedRisk.volatility.quantile_volatility_scoring;
+  const profitability = resolvedRisk.profitability.quantile_profitability_scoring;
+  const reliability = resolvedRisk.reliability.quantile_reliability_scoring;
+
+  if (volatility < 0 || volatility > 1) {
+    throw new Error(`Expected volatility quantile 0.0-1.0, got ${volatility}`);
+  }
+
+  if (profitability < 0 || profitability > 1) {
+    throw new Error(`Expected profitability quantile 0.0-1.0, got ${profitability}`);
+  }
+
+  if (reliability < 0 || reliability > 1) {
+    throw new Error(`Expected reliability quantile 0.0-1.0, got ${reliability}`);
+  }
+
   await container.model.metricService().createToken(
     token,
     {
       risk,
+      reliability: reliability.toString(10),
+      profitability: profitability.toString(10),
+      volatility: volatility.toString(10),
     },
     new Date(),
   );

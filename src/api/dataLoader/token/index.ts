@@ -1,5 +1,10 @@
 import container from '@container';
-import { metricWalletTokenRegistryTableName, QueryModify } from '@models/Metric/Entity';
+import {
+  metricTokenRegistryTableName,
+  MetricTokenRiskFactor,
+  metricWalletTokenRegistryTableName,
+  QueryModify,
+} from '@models/Metric/Entity';
 import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
 import { TokenAlias, Token, tokenAliasTableName, tokenTableName } from '@models/Token/Entity';
 import { walletTableName } from '@models/Wallet/Entity';
@@ -99,6 +104,65 @@ export const tokenAliasUserLastMetricLoader = ({
           usd: '0',
           balance: '0',
           usdDayBefore: '0',
+        },
+    );
+  });
+
+export const tokenLastMetricLoader = () =>
+  new DataLoader<
+    string,
+    {
+      risk: MetricTokenRiskFactor;
+      reliability: string;
+      volatility: string;
+      profitability: string;
+    }
+  >(async (tokensIds) => {
+    const select = container.model
+      .metricTokenRegistryTable()
+      .column(`${metricTokenRegistryTableName}.id as token`)
+      .column(`${metricTokenRegistryTableName}.data->>'risk' as risk`)
+      .column(
+        `COALESCE(${metricTokenRegistryTableName}.data->>'reliability', '1')::float as reliability`,
+      )
+      .column(
+        `COALESCE(${metricTokenRegistryTableName}.data->>'volatility', '1')::float as volatility`,
+      )
+      .column(
+        `COALESCE(${metricTokenRegistryTableName}.data->>'profitability', '1')::float as profitability`,
+      )
+      .whereIn(`${metricTokenRegistryTableName}.token`, tokensIds);
+
+    const map = await select.then(
+      (
+        rows: Array<{
+          token: string;
+          risk: MetricTokenRiskFactor;
+          reliability: string;
+          volatility: string;
+          profitability: string;
+        }>,
+      ) =>
+        new Map(
+          rows.map(({ token, risk, reliability, volatility, profitability }) => [
+            token,
+            {
+              risk,
+              reliability,
+              volatility,
+              profitability,
+            },
+          ]),
+        ),
+    );
+
+    return tokensIds.map(
+      (id) =>
+        map.get(id) ?? {
+          risk: MetricTokenRiskFactor.notCalculated,
+          reliability: '1',
+          volatility: '1',
+          profitability: '1',
         },
     );
   });

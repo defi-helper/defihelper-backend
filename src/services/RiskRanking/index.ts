@@ -5,8 +5,18 @@ import buildUrl from 'build-url';
 export interface CoinInfo {
   id: string;
   name: string;
+  volatility: {
+    quantile_volatility_scoring: number;
+  };
+  reliability: {
+    quantile_reliability_scoring: number;
+  };
+  profitability: {
+    quantile_profitability_scoring: number;
+  };
   total: {
-    svetofor: 'green' | 'red' | 'yellow';
+    ranking: 'green' | 'red' | 'yellow';
+    quantile_scoring: number;
   };
 }
 
