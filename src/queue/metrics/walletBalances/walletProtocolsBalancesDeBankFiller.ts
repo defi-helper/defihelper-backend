@@ -16,7 +16,11 @@ import {
 import { TokenAliasLiquidity, TokenCreatedBy, Token, tokenTableName } from '@models/Token/Entity';
 import BN from 'bignumber.js';
 import { ProtocolListItem, TemporaryOutOfService } from '@services/Debank';
-import { MetricWalletToken, metricWalletTokenTableName } from '@models/Metric/Entity';
+import {
+  MetricWalletRegistry,
+  MetricWalletToken,
+  metricWalletTokenTableName,
+} from '@models/Metric/Entity';
 import dayjs from 'dayjs';
 
 interface Params {
@@ -31,6 +35,19 @@ const makePoolHashAddress = (tokens: { id: string; chain: string; protocolId: st
       .join(':'),
   );
 };
+
+const toucher = () => ({
+  values: new Map<string, string[]>(),
+  touch(key: string, value: string) {
+    const values = this.values.get(key) ?? [];
+    this.values.set(key, [...values, value]);
+  },
+  has(key: string, value: string) {
+    const values = this.values.get(key) ?? [];
+    return values.includes(value);
+  },
+});
+
 export default async (process: Process) => {
   const { id: walletId } = process.task.params as Params;
 
@@ -85,6 +102,20 @@ export default async (process: Process) => {
         .orderBy(`${metricWalletTokenTableName}.date`, 'DESC'),
     };
   }, Promise.resolve({}));
+
+  const lastMetricsAcrossWallets = await container.model
+    .metricWalletRegistryTable()
+    .whereIn(
+      'wallet',
+      chainsWallets.map(({ id }) => id),
+    )
+    .whereNotNull('contract')
+    .then((rows) =>
+      rows.reduce<Record<string, MetricWalletRegistry>>(
+        (res, metric) => ({ ...res, [metric.wallet]: metric }),
+        {},
+      ),
+    );
 
   const protocolAdaptersMap = await container.model
     .protocolTable()
@@ -285,7 +316,8 @@ export default async (process: Process) => {
     })),
   );
 
-  const touchedMetrics: { [walletId: string]: MetricWalletToken[] } = {};
+  const touchedWalletContracts = toucher();
+  const touchedTokenMetrics: { [walletId: string]: MetricWalletToken[] } = {};
   const appliedTokens: {
     [walletUuid: string]: {
       [contractUuid: string]: {
@@ -512,6 +544,8 @@ export default async (process: Process) => {
         },
         new Date(),
       );
+      touchedWalletContracts.touch(walletSummary.walletEntity.id, walletSummary.contractEntity.id);
+
       await Object.keys(contract).reduce<Promise<unknown>>(async (prev3, tokenIndex) => {
         await prev3;
 
@@ -527,10 +561,10 @@ export default async (process: Process) => {
           new Date(),
         );
 
-        if (!touchedMetrics[contractSummary.walletEntity.id]) {
-          touchedMetrics[contractSummary.walletEntity.id] = [];
+        if (!touchedTokenMetrics[contractSummary.walletEntity.id]) {
+          touchedTokenMetrics[contractSummary.walletEntity.id] = [];
         }
-        touchedMetrics[contractSummary.walletEntity.id].push(mwt);
+        touchedTokenMetrics[contractSummary.walletEntity.id].push(mwt);
       }, Promise.resolve(null));
     }, Promise.resolve(null));
   }, Promise.resolve(null));
@@ -542,7 +576,7 @@ export default async (process: Process) => {
       await metrics.reduce<Promise<unknown>>(async (prev2, metricEntry) => {
         await prev2;
 
-        const touchedMetricsList = touchedMetrics[lastMetricWalletId] ?? [];
+        const touchedMetricsList = touchedTokenMetrics[lastMetricWalletId] ?? [];
         if (
           touchedMetricsList.some((exstng) => exstng.token === metricEntry.id) ||
           metricEntry.balance === '0'
@@ -578,6 +612,46 @@ export default async (process: Process) => {
     Promise.resolve(null),
   );
 
+  await Object.entries(lastMetricsAcrossWallets).reduce<Promise<unknown>>(
+    async (prev, [lastMetricWalletId, metricEntry]) => {
+      await prev;
+
+      if (
+        touchedWalletContracts.has(lastMetricWalletId, metricEntry.contract) ||
+        (metricEntry.data.staking === '0' && metricEntry.data.earned === '0')
+      ) {
+        return null;
+      }
+
+      const foundTargetWallet = chainsWallets.find((w) => w.id === lastMetricWalletId);
+      if (!foundTargetWallet) {
+        throw new Error('Wallet not found');
+      }
+
+      const foundContract = await container.model
+        .contractTable()
+        .where('id', metricEntry.contract)
+        .first();
+      if (!foundContract) {
+        throw new Error('Contract not found');
+      }
+
+      return walletMetrics.createWallet(
+        foundContract,
+        foundTargetWallet,
+        {
+          earned: '0',
+          staking: '0',
+          earnedUSD: '0',
+          stakingUSD: '0',
+        },
+        new Date(),
+      );
+    },
+    Promise.resolve(null),
+  );
+
   await container.model.walletService().statisticsUpdated(targetWallet);
+
   return process.done();
 };

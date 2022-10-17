@@ -1,9 +1,9 @@
 import { Blockchain } from '@models/types';
 import { v4 as uuid } from 'uuid';
+import BN from 'bignumber.js';
 import { Factory } from '@services/Container';
 import { Emitter } from '@services/Event';
 import container from '@container';
-import { WalletBlockchain } from '@models/Wallet/Entity';
 import { Bill, BillStatus, BillTable, Transfer, TransferStatus, TransferTable } from './Entity';
 
 export class BillingService {
@@ -37,7 +37,7 @@ export class BillingService {
     blockchain: Blockchain,
     network: string,
     account: string,
-    amount: number,
+    amount: BN,
     tx: string,
     confirmed: boolean,
     createdAt: Date,
@@ -48,7 +48,7 @@ export class BillingService {
       blockchain,
       network,
       account,
-      amount,
+      amount: amount.toPrecision(15, BN.ROUND_FLOOR),
       tx,
       status: confirmed ? TransferStatus.Confirmed : TransferStatus.Pending,
       rejectReason: '',
@@ -62,10 +62,10 @@ export class BillingService {
     return created;
   }
 
-  async transferConfirm(transfer: Transfer, amount: number, createdAt: Date) {
+  async transferConfirm(transfer: Transfer, amount: BN, createdAt: Date) {
     const updated: Transfer = {
       ...transfer,
-      amount,
+      amount: amount.toPrecision(15, BN.ROUND_FLOOR),
       status: TransferStatus.Confirmed,
       createdAt,
       updatedAt: new Date(),
@@ -89,50 +89,14 @@ export class BillingService {
     return updated;
   }
 
-  balanceOf(blockchain: Blockchain, network: string, account: string) {
-    return this.transferTable()
-      .sum('amount')
-      .where({
-        blockchain,
-        network,
-        account,
-      })
-      .where('confirmed', true)
-      .first()
-      .then((row) => row ?? { sum: 0 })
-      .then(({ sum }) => Number(sum));
-  }
-
-  balanceOfWallet({ blockchain, network, address }: WalletBlockchain) {
-    return this.balanceOf(blockchain, network, address.toLowerCase());
-  }
-
-  claimOf(blockchain: Blockchain, network: string, account: string) {
-    return this.billTable()
-      .sum('claim')
-      .where({
-        blockchain,
-        network,
-        account,
-      })
-      .where('status', BillStatus.Accepted)
-      .first()
-      .then((row) => row ?? { sum: 0 })
-      .then(({ sum }) => Number(sum));
-  }
-
-  claimOfWallet({ blockchain, network, address }: WalletBlockchain) {
-    return this.claimOf(blockchain, network, address.toLowerCase());
-  }
-
   async claim(
     billId: number,
     blockchain: Blockchain,
     network: string,
     account: string,
     claimant: string,
-    gasFee: number,
-    protocolFee: number,
+    gasFee: BN,
+    protocolFee: BN,
     description: string,
     tx: string,
     createdAt: Date,
@@ -144,11 +108,11 @@ export class BillingService {
       network,
       account,
       claimant,
-      claimGasFee: gasFee,
-      claimProtocolFee: protocolFee,
+      claimGasFee: gasFee.toPrecision(15, BN.ROUND_FLOOR),
+      claimProtocolFee: protocolFee.toPrecision(15, BN.ROUND_FLOOR),
       gasFee: null,
       protocolFee: null,
-      claim: gasFee + protocolFee,
+      claim: gasFee.plus(protocolFee).toPrecision(15, BN.ROUND_FLOOR),
       status: BillStatus.Pending,
       description,
       tx,
@@ -161,12 +125,12 @@ export class BillingService {
     return created;
   }
 
-  async acceptBill(bill: Bill, gasFee: number, protocolFee: number, tx: string, updatedAt: Date) {
+  async acceptBill(bill: Bill, gasFee: BN, protocolFee: BN, tx: string, updatedAt: Date) {
     const updated: Bill = {
       ...bill,
-      gasFee,
-      protocolFee,
-      claim: 0,
+      gasFee: gasFee.toPrecision(15, BN.ROUND_FLOOR),
+      protocolFee: protocolFee.toPrecision(15, BN.ROUND_FLOOR),
+      claim: '0',
       status: BillStatus.Accepted,
       processTx: tx,
       updatedAt,
@@ -177,7 +141,7 @@ export class BillingService {
       bill.blockchain,
       bill.network,
       bill.account,
-      -(gasFee + protocolFee),
+      gasFee.plus(protocolFee).multipliedBy(-1),
       tx,
       true,
       updatedAt,
@@ -190,7 +154,7 @@ export class BillingService {
   async rejectBill(bill: Bill, tx: string, updatedAt: Date) {
     const updated: Bill = {
       ...bill,
-      claim: 0,
+      claim: '0',
       status: BillStatus.Rejected,
       processTx: tx,
       updatedAt,

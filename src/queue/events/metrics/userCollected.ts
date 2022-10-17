@@ -79,7 +79,7 @@ async function sendPortfolioNotification(user: User) {
   await notifications.reduce<Promise<unknown>>(async (prev, notification) => {
     await prev;
 
-    let sendDate = dayjs(`${dayjs().format('YYYY-MM-DD')} ${notification.time}`);
+    let sendDate = dayjs.tz(`${dayjs().format('YYYY-MM-DD')} ${notification.time}`, user.timezone);
     if (sendDate.add(1, 'hour').isBefore(dayjs())) {
       sendDate = sendDate.add(1, 'day');
     }
