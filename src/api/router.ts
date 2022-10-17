@@ -169,6 +169,7 @@ export function route({ express, server }: { express: Express; server: Server })
           tradingAuth: tradingSchemas.TradingAuthMutation,
           smartTradeCancel: smartTradeSchemas.OrderCancelMutation,
           smartTradeSwapOrderCreate: smartTradeSchemas.SwapOrderCreateMutation,
+          smartTradeSwapOrderUpdate: smartTradeSchemas.SwapOrderUpdateMutation,
         },
       }),
       subscription: new GraphQLObjectType<any, Request>({
