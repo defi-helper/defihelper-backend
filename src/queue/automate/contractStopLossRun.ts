@@ -4,9 +4,7 @@ import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import { useEthereumFreeConsumer } from '@services/Blockchain/Consumer';
 import { ethers } from 'ethers';
-import contracts from '@defihelper/networks/contracts.json';
 import { abi as BalanceABI } from '@defihelper/networks/abi/Balance.json';
-import { isKey } from '@services/types';
 import { ContractStopLossStatus, ContractVerificationStatus } from '@models/Automate/Entity';
 
 interface EthersError extends Error {
@@ -52,24 +50,18 @@ export default async (process: Process) => {
   if (ownerWallet.blockchain !== 'ethereum') {
     throw new Error('Ethereum blockchain supported only');
   }
-  if (!isKey(contracts, ownerWallet.network)) {
-    throw new Error('Contracts not deployed to target network');
-  }
 
   const network = container.blockchain.ethereum.byNetwork(ownerWallet.network);
-  const provider = network.provider();
-  const networkContracts = contracts[ownerWallet.network] as Record<
-    string,
-    { address: string } | undefined
-  >;
-  if (networkContracts.Balance === undefined) {
-    throw new Error('Balance contract not deployed to target network');
+  const contracts = network.dfhContracts();
+  if (contracts === null) {
+    throw new Error('Contracts not deployed to target network');
   }
-  const balance = container.blockchain.ethereum.contract(
-    networkContracts.Balance.address,
-    BalanceABI,
-    provider,
-  );
+  const balanceAddress = contracts.BalanceUpgradable?.address ?? contracts.Balance?.address;
+  if (balanceAddress === undefined) {
+    throw new Error('Balance contract not deployed on target network');
+  }
+  const provider = network.provider();
+  const balance = container.blockchain.ethereum.contract(balanceAddress, BalanceABI, provider);
 
   const freeConsumer = await useEthereumFreeConsumer(ownerWallet.network);
   if (freeConsumer === null) throw new Error('Not free consumer');
