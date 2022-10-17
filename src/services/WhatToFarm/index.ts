@@ -8,6 +8,10 @@ export const networksMap = {
   arbitrum: '42161',
   cronos: '25',
   eth: '1',
+  optimism: '10',
+  heco: '128',
+  metis: '1088',
+  velas: '106',
 };
 
 export interface LoginResponse {
