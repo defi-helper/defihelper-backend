@@ -7,7 +7,7 @@ export default async (process: Process) => {
 
   await tokens.reduce<Promise<any>>(async (prev, { id }) => {
     await prev;
-    return queue.push('metricsRiskRankingFiller', { id });
+    return queue.push('metricsTokenRiskRankingFiller', { id });
   }, Promise.resolve());
 
   return process.done();

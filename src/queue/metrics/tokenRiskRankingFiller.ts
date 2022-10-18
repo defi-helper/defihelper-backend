@@ -23,23 +23,12 @@ export default async (process: Process) => {
     return process.done().info('no coin found');
   }
 
-  let risk = MetricTokenRiskFactor.notCalculated;
-  switch (resolvedRisk.total.ranking) {
-    case 'green':
-      risk = MetricTokenRiskFactor.low;
-      break;
-
-    case 'yellow':
-      risk = MetricTokenRiskFactor.moderate;
-      break;
-
-    case 'red':
-      risk = MetricTokenRiskFactor.high;
-      break;
-
-    default:
-      throw new Error('No risk case found');
-  }
+  const risk =
+    {
+      green: MetricTokenRiskFactor.low,
+      yellow: MetricTokenRiskFactor.moderate,
+      red: MetricTokenRiskFactor.high,
+    }[resolvedRisk.total.ranking] ?? MetricTokenRiskFactor.notCalculated;
 
   const volatility = resolvedRisk.volatility.quantile_volatility_scoring;
   const profitability = resolvedRisk.profitability.quantile_profitability_scoring;

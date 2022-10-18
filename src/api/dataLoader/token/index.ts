@@ -113,9 +113,9 @@ export const tokenLastMetricLoader = () =>
     string,
     {
       risk: MetricTokenRiskFactor;
-      reliability: string;
-      volatility: string;
-      profitability: string;
+      reliability: number;
+      volatility: number;
+      profitability: number;
     }
   >(async (tokensIds) => {
     const select = container.model
@@ -138,9 +138,9 @@ export const tokenLastMetricLoader = () =>
         rows: Array<{
           token: string;
           risk: MetricTokenRiskFactor;
-          reliability: string;
-          volatility: string;
-          profitability: string;
+          reliability: number;
+          volatility: number;
+          profitability: number;
         }>,
       ) =>
         new Map(
@@ -160,9 +160,9 @@ export const tokenLastMetricLoader = () =>
       (id) =>
         map.get(id) ?? {
           risk: MetricTokenRiskFactor.notCalculated,
-          reliability: '1',
-          volatility: '1',
-          profitability: '1',
+          reliability: 1,
+          volatility: 1,
+          profitability: 1,
         },
     );
   });
