@@ -121,6 +121,7 @@ export * as tokensBridgesFromAdapters from './token/tokensBridgesFromAdapters';
 export * as tokensDeleteDuplicates from './token/deleteTokenDuplicates';
 
 export * as tokenResolveUniswapRoute from './token/uniswapRouteRevealer';
+export * as whatToFarmTokensIterator from './token/whatToFarmTokensIterator';
 
 export * as syncCoingeckoIdsBroker from './token/syncCoingeckoIdsBroker';
 export * as syncCoingeckoIdsFiller from './token/syncCoingeckoIdsFiller';
