@@ -60,6 +60,12 @@ export interface ContractAutomate {
   };
 }
 
+export enum ContractRiskFactor {
+  notCalculated = 'notCalculated',
+  low = 'low',
+  moderate = 'moderate',
+  high = 'high',
+}
 export interface ContractMetric {
   tvl?: string;
   aprDay?: string;
@@ -68,6 +74,7 @@ export interface ContractMetric {
   aprYear?: string;
   aprBoosted?: string;
   aprWeekReal?: string;
+  risk?: ContractRiskFactor;
 }
 
 export interface Contract {
@@ -100,6 +107,24 @@ export interface ContractBlockchainType {
   automate: ContractAutomate;
   metric: ContractMetric;
 }
+
+export interface ContractMigratableRemindersBulk {
+  id: string;
+  wallet: string;
+  contract: string;
+  processed: boolean;
+  updatedAt: Date;
+  createdAt: Date;
+}
+
+export const contractMigratableRemindersBulkTableName =
+  'protocol_contract_migratable_reminders_bulk';
+export const contractMigratableRemindersBulkTableFactory = typedTableFactory(
+  contractMigratableRemindersBulkTableName,
+);
+export type ContractMigratableRemindersBulkTable = ReturnType<
+  ReturnType<typeof contractMigratableRemindersBulkTableFactory>
+>;
 
 export const contractTableName = 'protocol_contract';
 export const contractTableFactory = typedTableFactory(contractTableName);
@@ -192,5 +217,6 @@ declare module 'knex/types/tables' {
     [contractBlockchainTableName]: ContractBlockchainType;
     [tokenContractLinkTableName]: TokenContractLink;
     [userContractLinkTableName]: UserContractLink;
+    [contractMigratableRemindersBulkTableName]: ContractMigratableRemindersBulk;
   }
 }

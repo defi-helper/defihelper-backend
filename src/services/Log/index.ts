@@ -1,4 +1,12 @@
+import container from '@container';
 import dayjs from 'dayjs';
+
+export enum Level {
+  Debug = 'debug',
+  Info = 'info',
+  Warn = 'warn',
+  Error = 'error',
+}
 
 export interface Log {
   debug(msg: string): any;
@@ -8,9 +16,12 @@ export interface Log {
   warn(msg: string): any;
 
   error(msg: string): any;
+
+  log(msg: string | { toString(): string }): any;
 }
 
 /* eslint-disable no-console */
+/* eslint-disable class-methods-use-this */
 export class ConsoleLogger implements Log {
   protected dateFormat: string = ``;
 
@@ -35,5 +46,52 @@ export class ConsoleLogger implements Log {
 
   error(msg: string) {
     console.error(this.format('ERROR', msg));
+  }
+
+  log(msg: string | { toString(): string }) {
+    console.log(msg.toString());
+  }
+}
+
+export type LogPayloadValue = string | number | boolean | null | undefined;
+
+export interface LogPayload {
+  [key: string]: LogPayloadValue | LogPayload | Array<LogPayloadValue | LogPayload>;
+}
+
+export class LogJsonMessage {
+  public readonly time = new Date();
+
+  constructor(public readonly level: Level, public readonly payload: LogPayload) {}
+
+  static error(payload: LogPayload) {
+    return new LogJsonMessage(Level.Error, payload);
+  }
+
+  static warn(payload: LogPayload) {
+    return new LogJsonMessage(Level.Warn, payload);
+  }
+
+  static debug(payload: LogPayload) {
+    return new LogJsonMessage(Level.Debug, payload);
+  }
+
+  static info(payload: LogPayload) {
+    return new LogJsonMessage(Level.Info, payload);
+  }
+
+  ex(payload: LogPayload) {
+    return new LogJsonMessage(this.level, {
+      ...this.payload,
+      ...payload,
+    });
+  }
+
+  toString() {
+    return JSON.stringify(this);
+  }
+
+  send() {
+    container.logger().log(this);
   }
 }

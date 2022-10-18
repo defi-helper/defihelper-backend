@@ -29,6 +29,8 @@ export enum TokenCreatedBy {
   Manually = 'manually',
   Scanner = 'scanner',
   Adapter = 'adapter',
+  AutomateContractStopLoss = 'automateContractStopLoss',
+  SmartTrade = 'smartTrade',
 }
 
 export namespace PriceFeed {
@@ -120,6 +122,7 @@ export interface Token {
   tradable: boolean;
   priceFeed: PriceFeed.PriceFeed | null;
   priceFeedNeeded: boolean;
+  coingeckoId: string | null;
   createdBy: TokenCreatedBy;
   updatedAt: Date;
   createdAt: Date;

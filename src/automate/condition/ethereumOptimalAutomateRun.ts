@@ -133,7 +133,7 @@ export default async function (this: Condition, params: Params) {
   const automateAdapterFactory = adapters.automates[contract.adapter] as EthereumAutomateAdapter;
   if (typeof automateAdapterFactory !== 'function') throw new Error('Automate adapter not found');
   const automateAdapter = await automateAdapterFactory(signer, contract.address);
-  const automateRunParams = await automateAdapter.runParams();
+  const automateRunParams = await automateAdapter.run.methods.runParams();
   if (automateRunParams instanceof Error) {
     if (automateRunParams.message === 'No earned') {
       return false;

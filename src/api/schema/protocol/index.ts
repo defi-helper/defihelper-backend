@@ -30,9 +30,11 @@ import {
   protocolTableName,
   ContractDebankType as EntityContractDebankType,
   contractDebankTableName,
+  ContractRiskFactor,
 } from '@models/Protocol/Entity';
 import { apyBoost } from '@services/RestakeStrategy';
 import {
+  metricContractRegistryTableName,
   metricContractTableName,
   metricProtocolTableName,
   metricWalletRegistryTableName,
@@ -66,6 +68,14 @@ import {
 } from '../types';
 import { TokenType } from '../token';
 
+export const ContractRiskFactorEnum = new GraphQLEnumType({
+  name: 'ContractRiskFactorEnum',
+  values: Object.values(ContractRiskFactor).reduce(
+    (prev, name) => ({ ...prev, [name]: { value: name } }),
+    {},
+  ),
+});
+
 export const ContractMetricType = new GraphQLObjectType({
   name: 'ContractMetricType',
   fields: {
@@ -84,6 +94,9 @@ export const ContractMetricType = new GraphQLObjectType({
     aprYear: {
       type: GraphQLNonNull(GraphQLString),
     },
+    risk: {
+      type: GraphQLNonNull(ContractRiskFactorEnum),
+    },
     aprWeekReal: {
       type: GraphQLString,
     },
@@ -101,6 +114,9 @@ export const ContractMetricType = new GraphQLObjectType({
     },
     myAPYBoost: {
       type: GraphQLNonNull(GraphQLString),
+      resolve: ({ apyBoost: { blockchain, network, balance, aprYear } }) => {
+        return apyBoost(blockchain, network, balance, aprYear);
+      },
     },
   },
 });
@@ -143,36 +159,54 @@ export const ContractTokenLinkType = new GraphQLObjectType<
   Request
 >({
   name: 'ContractTokenLinkType',
-  fields: Object.values(TokenContractLinkType).reduce(
-    (result, linkType) => ({
-      ...result,
-      [linkType]: {
-        type: GraphQLNonNull(GraphQLList(GraphQLNonNull(TokenType))),
-        resolve: async (contract) => {
-          const token = await container.model
-            .tokenTable()
-            .column(`${tokenTableName}.*`)
-            .innerJoin(
-              tokenContractLinkTableName,
-              `${tokenTableName}.id`,
-              `${tokenContractLinkTableName}.token`,
-            )
-            .where(`${tokenContractLinkTableName}.contract`, contract.id)
-            .andWhere(`${tokenContractLinkTableName}.type`, linkType)
-            .first();
-          if (!token) return [];
-
-          const childTokens = await container.model
-            .tokenTable()
-            .innerJoin(tokenPartTableName, `${tokenTableName}.id`, `${tokenPartTableName}.child`)
-            .where(`${tokenPartTableName}.parent`, token.id);
-
-          return childTokens.length > 0 ? childTokens : [token];
-        },
+  fields: {
+    stakeBase: {
+      type: TokenType,
+      resolve: (contract) => {
+        return container.model
+          .tokenTable()
+          .column(`${tokenTableName}.*`)
+          .innerJoin(
+            tokenContractLinkTableName,
+            `${tokenTableName}.id`,
+            `${tokenContractLinkTableName}.token`,
+          )
+          .where(`${tokenContractLinkTableName}.contract`, contract.id)
+          .andWhere(`${tokenContractLinkTableName}.type`, TokenContractLinkType.Stake)
+          .first();
       },
-    }),
-    {} as GraphQLFieldConfigMap<Contract & ContractBlockchainType, Request>,
-  ),
+    },
+    ...Object.values(TokenContractLinkType).reduce(
+      (result, linkType) => ({
+        ...result,
+        [linkType]: {
+          type: GraphQLNonNull(GraphQLList(GraphQLNonNull(TokenType))),
+          resolve: async (contract) => {
+            const token = await container.model
+              .tokenTable()
+              .column(`${tokenTableName}.*`)
+              .innerJoin(
+                tokenContractLinkTableName,
+                `${tokenTableName}.id`,
+                `${tokenContractLinkTableName}.token`,
+              )
+              .where(`${tokenContractLinkTableName}.contract`, contract.id)
+              .andWhere(`${tokenContractLinkTableName}.type`, linkType)
+              .first();
+            if (!token) return [];
+
+            const childTokens = await container.model
+              .tokenTable()
+              .innerJoin(tokenPartTableName, `${tokenTableName}.id`, `${tokenPartTableName}.child`)
+              .where(`${tokenPartTableName}.parent`, token.id);
+
+            return childTokens.length > 0 ? childTokens : [token];
+          },
+        },
+      }),
+      {} as GraphQLFieldConfigMap<Contract & ContractBlockchainType, Request>,
+    ),
+  },
 });
 
 const metricChartResolver = async (contract: Contract, input: any) => {
@@ -344,28 +378,24 @@ export const ContractType: GraphQLObjectType = new GraphQLObjectType<
           aprWeek: contract.metric.aprWeek ?? '0',
           aprMonth: contract.metric.aprMonth ?? '0',
           aprYear: contract.metric.aprYear ?? '0',
+          risk: contract.metric.risk ?? ContractRiskFactor.notCalculated,
           aprWeekReal: contract.metric.aprWeekReal,
           myStaked: '0',
           myStakedChange: {
             day: '0',
-            week: '0',
-            month: '0',
           },
           myEarned: '0',
           myEarnedChange: {
             day: '0',
-            week: '0',
-            month: '0',
           },
-          myAPYBoost: '0',
+          apyBoost: {
+            blockchain: contract.blockchain,
+            network: contract.network,
+            balance: 10000,
+            aprYear: new BN(contract.metric.aprYear ?? '0').toNumber(),
+          },
         };
         if (!currentUser) {
-          metric.myAPYBoost = await apyBoost(
-            contract.blockchain,
-            contract.network,
-            10000,
-            new BN(contract.metric.aprYear ?? '0').toNumber(),
-          );
           return metric;
         }
 
@@ -387,14 +417,6 @@ export const ContractType: GraphQLObjectType = new GraphQLObjectType<
               Number(userMetric.stakingUSDDayBefore) !== 0
                 ? new BN(userMetric.stakingUSD).div(userMetric.stakingUSDDayBefore).toString(10)
                 : '0',
-            week:
-              Number(userMetric.stakingUSDWeekBefore) !== 0
-                ? new BN(userMetric.stakingUSD).div(userMetric.stakingUSDWeekBefore).toString(10)
-                : '0',
-            month:
-              Number(userMetric.stakingUSDMonthBefore) !== 0
-                ? new BN(userMetric.stakingUSD).div(userMetric.stakingUSDMonthBefore).toString(10)
-                : '0',
           },
           myEarned: userMetric.earnedUSD,
           myEarnedChange: {
@@ -402,21 +424,13 @@ export const ContractType: GraphQLObjectType = new GraphQLObjectType<
               Number(userMetric.earnedUSDDayBefore) !== 0
                 ? new BN(userMetric.earnedUSD).div(userMetric.earnedUSDDayBefore).toString(10)
                 : '0',
-            week:
-              Number(userMetric.earnedUSDWeekBefore) !== 0
-                ? new BN(userMetric.earnedUSD).div(userMetric.earnedUSDWeekBefore).toString(10)
-                : '0',
-            month:
-              Number(userMetric.earnedUSDMonthBefore) !== 0
-                ? new BN(userMetric.earnedUSD).div(userMetric.earnedUSDMonthBefore).toString(10)
-                : '0',
           },
-          myAPYBoost: await apyBoost(
-            contract.blockchain,
-            contract.network,
-            totalBalance > 0 ? totalBalance : 10000,
-            new BN(contract.metric.aprYear ?? '0').toNumber(),
-          ),
+          apyBoost: {
+            blockchain: contract.blockchain,
+            network: contract.network,
+            balance: totalBalance > 0 ? totalBalance : 10000,
+            aprYear: new BN(contract.metric.aprYear ?? '0').toNumber(),
+          },
         };
       },
     },
@@ -621,6 +635,9 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
           userLink: {
             type: ContractUserLinkTypeEnum,
           },
+          risk: {
+            type: ContractRiskFactorEnum,
+          },
           automate: {
             type: new GraphQLInputObjectType({
               name: 'ContractListAutomateFilterInputType',
@@ -659,6 +676,7 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
         'aprWeekReal',
         'aprBoosted',
         'myStaked',
+        'riskFactor',
       ],
       [{ column: 'name', order: 'asc' }],
     ),
@@ -675,8 +693,13 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
       )
       .column(`${contractTableName}.*`)
       .column(`${contractBlockchainTableName}.*`)
+      .leftJoin(
+        metricContractRegistryTableName,
+        `${metricContractRegistryTableName}.contract`,
+        `${contractTableName}.id`,
+      )
       .where(function () {
-        const { id, protocol, hidden, deprecated, userLink, search } = filter;
+        const { id, protocol, hidden, deprecated, risk, userLink, search } = filter;
         if (id) {
           this.where(`${contractTableName}.id`, id);
         } else {
@@ -697,6 +720,14 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
           }
           if (typeof deprecated === 'boolean') {
             this.where('deprecated', deprecated);
+          }
+
+          if (typeof risk === 'string') {
+            this.where(
+              database.raw(
+                `COALESCE(${metricContractRegistryTableName}.data->>'risk', '${ContractRiskFactor.notCalculated}') = '${risk}'`,
+              ),
+            );
           }
           if (filter.automate !== undefined) {
             const { lpTokensManager, autorestake, autorestakeCandidate } = filter.automate;
@@ -820,6 +851,20 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
           .column(database.raw(`'0' AS "myStaked"`));
       }
     }
+
+    if (sortColumns.includes('riskFactor')) {
+      listSelect = listSelect.column(
+        database.raw(
+          `CASE COALESCE(${metricContractRegistryTableName}.data->>'risk', '${ContractRiskFactor.notCalculated}')
+              WHEN 'notCalculated' THEN 0
+              WHEN 'low' THEN 1
+              WHEN 'moderate' THEN 2
+              WHEN 'high' THEN 3
+          END AS "riskFactor"`,
+        ),
+      );
+    }
+
     if (sortColumns.includes('tvl')) {
       listSelect = listSelect.column(
         database.raw(
@@ -896,7 +941,14 @@ export const ContractDebankListQuery: GraphQLFieldConfig<any, Request> = {
     pagination: PaginationArgument('ContractDebankListPaginationInputType'),
   },
   resolve: async (root, { filter, sort, pagination }, { currentUser }) => {
-    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+    if (!currentUser) {
+      return {
+        list: [],
+        pagination: {
+          count: 0,
+        },
+      };
+    }
 
     const database = container.database();
     const select = container.model
@@ -1964,14 +2016,10 @@ export const ProtocolType: GraphQLObjectType = new GraphQLObjectType<Protocol, R
           myStaked: '0',
           myStakedChange: {
             day: '0',
-            week: '0',
-            month: '0',
           },
           myEarned: '0',
           myEarnedChange: {
             day: '0',
-            week: '0',
-            month: '0',
           },
           myAPYBoost: '0',
         };
@@ -1993,28 +2041,12 @@ export const ProtocolType: GraphQLObjectType = new GraphQLObjectType<Protocol, R
               Number(userMetric.stakingUSDDayBefore) !== 0
                 ? new BN(userMetric.stakingUSD).div(userMetric.stakingUSDDayBefore).toString(10)
                 : '0',
-            week:
-              Number(userMetric.stakingUSDWeekBefore) !== 0
-                ? new BN(userMetric.stakingUSD).div(userMetric.stakingUSDWeekBefore).toString(10)
-                : '0',
-            month:
-              Number(userMetric.stakingUSDMonthBefore) !== 0
-                ? new BN(userMetric.stakingUSD).div(userMetric.stakingUSDMonthBefore).toString(10)
-                : '0',
           },
           myEarned: userMetric.earnedUSD,
           myEarnedChange: {
             day:
               Number(userMetric.earnedUSDDayBefore) !== 0
                 ? new BN(userMetric.earnedUSD).div(userMetric.earnedUSDDayBefore).toString(10)
-                : '0',
-            week:
-              Number(userMetric.earnedUSDWeekBefore) !== 0
-                ? new BN(userMetric.earnedUSD).div(userMetric.earnedUSDWeekBefore).toString(10)
-                : '0',
-            month:
-              Number(userMetric.earnedUSDMonthBefore) !== 0
-                ? new BN(userMetric.earnedUSD).div(userMetric.earnedUSDMonthBefore).toString(10)
                 : '0',
           },
           myAPYBoost: await apyBoost(
@@ -2143,6 +2175,10 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
                 lpTokensManager: {
                   type: GraphQLBoolean,
                 },
+                autorestake: {
+                  type: GraphQLBoolean,
+                  description: 'Has autorestake automate',
+                },
               },
             }),
           },
@@ -2152,7 +2188,7 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
     },
     sort: SortArgument(
       'ProtocolListSortInputType',
-      ['id', 'name', 'createdAt'],
+      ['id', 'name', 'createdAt', 'tvl'],
       [{ column: 'name', order: 'asc' }],
     ),
     pagination: PaginationArgument('ProtocolListPaginationInputType'),
@@ -2221,11 +2257,33 @@ export const ProtocolListQuery: GraphQLFieldConfig<any, Request> = {
             0,
           );
         }
+        if (typeof automate.autorestake === 'boolean') {
+          this.where(
+            database.raw(`(
+              select count(${contractTableName}.id)
+              from ${contractTableName}
+              inner join ${contractBlockchainTableName} on ${contractBlockchainTableName}.id = ${contractTableName}.id
+              where ${contractTableName}.protocol = ${protocolTableName}.id
+              and ${contractBlockchainTableName}.automate->>'autorestakeAdapter' IS NOT NULL
+            )`),
+            automate.autorestake ? '>' : '=',
+            0,
+          );
+        }
       }
     });
 
     return {
-      list: await select.clone().orderBy(sort).limit(pagination.limit).offset(pagination.offset),
+      list: await select
+        .clone()
+        .orderBy(
+          sort.map((r: { column: string; order: 'asc' | 'desc' }) => ({
+            ...r,
+            column: r.column === 'tvl' ? database.raw(`(metric->>'tvl')::float`) : r.column,
+          })),
+        )
+        .limit(pagination.limit)
+        .offset(pagination.offset),
       pagination: {
         count: await select.clone().count().first(),
       },

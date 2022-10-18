@@ -88,6 +88,7 @@ export const LandingMediumPostsQuery: GraphQLFieldConfig<any, Request> = {
           .cache()
           .promises.setex('defihelper:landing:posts-collecting', 86400, JSON.stringify(postsList));
       } catch (e) {
+        // eslint-disable-next-line no-console
         console.error(e);
       }
 

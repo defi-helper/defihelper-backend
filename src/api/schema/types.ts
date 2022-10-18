@@ -1,5 +1,7 @@
 import dayjs from 'dayjs';
 import { validate as isUuid } from 'uuid';
+import BN from 'bignumber.js';
+import { utils as ethersUtils } from 'ethers';
 import * as Wallet from '@models/Wallet/Entity';
 import {
   GraphQLError,
@@ -135,6 +137,20 @@ export const DateTimeType = new GraphQLScalarType({
   },
 });
 
+export const BigNumberType = new GraphQLScalarType({
+  name: 'BigNumberType',
+  description: 'Big number',
+  parseValue: (value: string) => {
+    const number = new BN(value);
+    if (number.isNaN()) throw new GraphQLParseError('BigNumber', value);
+
+    return number;
+  },
+  serialize: (value: BN | string | number) => {
+    return BN.isBigNumber(value) ? value.toString(10) : value.toString();
+  },
+});
+
 export const UuidType = new GraphQLScalarType({
   name: 'UuidType',
   description: 'Identificator',
@@ -236,12 +252,6 @@ export const MetricChangeType = new GraphQLObjectType({
     day: {
       type: GraphQLNonNull(GraphQLString),
     },
-    week: {
-      type: GraphQLNonNull(GraphQLString),
-    },
-    month: {
-      type: GraphQLNonNull(GraphQLString),
-    },
   },
 });
 
@@ -263,4 +273,34 @@ export const WalletBlockchainTypeEnum = new GraphQLEnumType({
     (res, type) => ({ ...res, [type]: { value: type } }),
     {},
   ),
+});
+
+export const EthereumAddressType = new GraphQLScalarType({
+  name: 'EthereumAddressType',
+  description: 'Address of ethereum blockchain',
+  parseValue: (value: string) => {
+    if (!ethersUtils.isAddress(value)) {
+      throw new GraphQLParseError('EthereumAddressType', value);
+    }
+
+    return value;
+  },
+  serialize: (value: string) => {
+    return value;
+  },
+});
+
+export const EthereumTransactionHashType = new GraphQLScalarType({
+  name: 'EthereumTransactionHashType',
+  description: 'Address of ethereum transaction hash',
+  parseValue: (value: string) => {
+    if (!ethersUtils.isHexString(value, 32)) {
+      throw new GraphQLParseError('EthereumTransactionHashType', value);
+    }
+
+    return value;
+  },
+  serialize: (value: string) => {
+    return value;
+  },
 });

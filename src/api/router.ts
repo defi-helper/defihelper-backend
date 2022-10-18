@@ -23,6 +23,7 @@ import * as treasurySchemas from '@api/schema/treasury';
 import * as monitoringSchemas from '@api/schema/monitoring';
 import * as landingSchemas from '@api/schema/landing';
 import * as tradingSchemas from '@api/schema/trading';
+import * as smartTradeSchemas from '@api/schema/smartTrade';
 import Jimp from 'jimp';
 import { metricContractTableName } from '@models/Metric/Entity';
 import {
@@ -86,6 +87,7 @@ export function route({ express, server }: { express: Express; server: Server })
           automateContracts: automateSchemas.ContractListQuery,
           govToken: governanceSchemas.GovTokenQuery,
           restakeStrategy: restakeStrategySchemas.RestakeStrategyQuery,
+          restakeCalculator: restakeStrategySchemas.RestakeCalculatorQuery,
           treasury: treasurySchemas.TreasuryQuery,
           monitoringUsersRegisteringHistory:
             monitoringSchemas.MonitoringUsersRegisteringHistoryQuery,
@@ -98,6 +100,7 @@ export function route({ express, server }: { express: Express; server: Server })
             monitoringSchemas.MonitoringAutoRestakeAutomatesCreationHistoryQuery,
           monitoringProtocolEarningsHistory:
             monitoringSchemas.MonitoringProtocolEarningsHistoryQuery,
+          smartTradeOrders: smartTradeSchemas.OrderListQuery,
         },
       }),
       mutation: new GraphQLObjectType({
@@ -161,7 +164,12 @@ export function route({ express, server }: { express: Express; server: Server })
           automateContractCreate: automateSchemas.ContractCreateMutation,
           automateContractUpdate: automateSchemas.ContractUpdateMutation,
           automateContractDelete: automateSchemas.ContractDeleteMutation,
+          automateContractStopLossEnable: automateSchemas.ContractStopLossEnable,
+          automateContractStopLossDisable: automateSchemas.ContractStopLossDisable,
           tradingAuth: tradingSchemas.TradingAuthMutation,
+          smartTradeCancel: smartTradeSchemas.OrderCancelMutation,
+          smartTradeSwapOrderCreate: smartTradeSchemas.SwapOrderCreateMutation,
+          smartTradeSwapOrderUpdate: smartTradeSchemas.SwapOrderUpdateMutation,
         },
       }),
       subscription: new GraphQLObjectType<any, Request>({
@@ -172,6 +180,7 @@ export function route({ express, server }: { express: Express; server: Server })
           onTokenMetricUpdated: userSchemas.OnTokenMetricUpdated,
           onBillingTransferCreated: billingSchemas.OnTransferCreated,
           onBillingTransferUpdated: billingSchemas.OnTransferUpdated,
+          onUserContactActivated: notificationSchemas.OnUserContactActivated,
         },
       }),
     }),
@@ -318,11 +327,9 @@ export function route({ express, server }: { express: Express; server: Server })
     );
 
     const isDebank = protocol.adapter === 'debankByApiReadonly';
-    const maxBoostedApy = Math.round(Math.max(...calculatedApyList.map((v) => v.boosted)));
-    const avgInitialApy = Math.round(
-      (calculatedApyList.reduce((prev, curr) => new BN(prev).plus(curr.initial).toNumber(), 0) /
-        calculatedApyList.length) *
-        100,
+    const maxInitialApy = Math.round(Math.max(...calculatedApyList.map((v) => v.initial)) * 100);
+    const maxBoostedApy = Math.round(
+      Math.max(...calculatedApyList.map((v) => v.boosted)) + maxInitialApy,
     );
 
     try {
@@ -365,7 +372,7 @@ export function route({ express, server }: { express: Express; server: Server })
         withoutDfhFont,
         117,
         175,
-        `APY ${avgInitialApy > 10000 ? '>10000' : avgInitialApy.toFixed()}%`,
+        `APY ${maxInitialApy > 10000 ? '>10000' : maxInitialApy.toFixed()}%`,
       );
 
       // boosted apy
@@ -382,9 +389,9 @@ export function route({ express, server }: { express: Express; server: Server })
         117,
         660,
         `${
-          maxBoostedApy + avgInitialApy > 10000
+          maxBoostedApy + maxInitialApy > 10000
             ? '>10000'
-            : (maxBoostedApy + avgInitialApy).toFixed()
+            : (maxBoostedApy + maxInitialApy).toFixed()
         }%`,
       );
 

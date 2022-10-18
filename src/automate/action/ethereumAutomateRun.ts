@@ -55,21 +55,21 @@ export default async function (this: Action, params: Params) {
     protocol.adapter,
   );
   if (!automates) throw new Error('Automates adapters not found');
-  const adapter = automates[contract.adapter];
-  if (adapter === undefined) throw new Error('Automate adapter not found');
+  const adapterFactory = automates[contract.adapter];
+  if (adapterFactory === undefined) throw new Error('Automate adapter not found');
 
   const network = container.blockchain.ethereum.byNetwork(wallet.network);
+  const contracts = network.dfhContracts();
+  if (contracts === null) {
+    throw new Error('Contracts not deployed to target network');
+  }
   const provider = network.provider();
   const consumers = network.consumers();
-
-  const balanceAddress = network.dfhContracts()?.Balance.address;
-  if (!balanceAddress)
-    throw new Error(`Balance contract not found for "${wallet.network}" network`);
-  const balance = await container.blockchain.ethereum.contract(
-    balanceAddress,
-    balanceAbi,
-    provider,
-  );
+  const balanceAddress = contracts.BalanceUpgradable?.address ?? contracts.Balance?.address;
+  if (balanceAddress === undefined) {
+    throw new Error(`Balance contract not deployed on "${wallet.network}" network`);
+  }
+  const balance = container.blockchain.ethereum.contract(balanceAddress, balanceAbi, provider);
   const walletBalance: BN = await balance
     .netBalanceOf(wallet.address)
     .then((v: ethers.BigNumber) =>
@@ -117,25 +117,35 @@ export default async function (this: Action, params: Params) {
   }, Promise.resolve(null));
   if (consumer === null) throw new Error('Not free consumer');
 
-  const { run } = await adapter(consumer, contract.address);
+  const { run: adapter } = await adapterFactory(consumer, contract.address);
   try {
-    const tx = await run();
-    if (tx instanceof Error) throw tx;
+    const res = await adapter.methods.run();
+    if (res instanceof Error) throw res;
 
-    await container.model
-      .automateService()
-      .createTransaction<EthereumAutomateTransaction>(contract, consumer.address, {
+    const { tx } = res;
+    await Promise.all([
+      container.model
+        .automateService()
+        .createTransaction<EthereumAutomateTransaction>(contract, consumer.address, {
+          hash: tx.hash,
+          from: tx.from,
+          to: tx.to,
+          nonce: tx.nonce,
+        }),
+      container.amplitude().log('automation_fee_charged_successful', wallet.user, {
         hash: tx.hash,
-        from: tx.from,
-        to: tx.to,
-        nonce: tx.nonce,
-      });
+      }),
+    ]);
   } catch (e) {
     await container
       .semafor()
       .unlock(
         `defihelper:automate:consumer:${wallet.blockchain}:${wallet.network}:${consumer.address}`,
       );
+    container.amplitude().log('automation_fee_charged_unsuccessfull', wallet.user, {
+      network: wallet.network,
+      address: consumer.address,
+    });
     throw e;
   }
 }

@@ -48,7 +48,7 @@ function calcRestakeOptimal(
       cBalance += cEarned - fee;
       cEarned = 0;
     }
-    res.push({ t: tick, v: cBalance + cEarned });
+    res.push({ t: tick, v: cBalance + cEarned, restake: restake_days.includes(tick) });
     prevTick = tick;
   }
 
@@ -144,6 +144,12 @@ export async function optimalRestakeNearesDate(
   return dayjs().add(new BN(targetPoint).multipliedBy(86400).toNumber(), 'seconds');
 }
 
+export interface OptimalRestakePoint {
+  t: number;
+  v: number;
+  restake: boolean;
+}
+
 export async function optimalRestake(
   blockchain: Blockchain,
   network: string,
@@ -176,6 +182,14 @@ export async function optimalRestake(
   return calcRestakeOptimal(balance, 0, apd, fee, seq, optimalRes);
 }
 
+export function apyBoostAt(balance: number, optimalRestakePoints: OptimalRestakePoint[]) {
+  const lastPoint = optimalRestakePoints[optimalRestakePoints.length - 1];
+  if (!lastPoint) return '0';
+
+  const num = new BN(lastPoint.v).minus(balance).div(balance);
+  return num.isFinite() ? num.toString(10) : '0';
+}
+
 export async function apyBoost(
   blockchain: Blockchain,
   network: string,
@@ -184,10 +198,5 @@ export async function apyBoost(
 ): Promise<string> {
   if (balance <= 0) return '0';
   if (apy <= 0) return String(apy);
-  const optimalPoints = await optimalRestake(blockchain, network, balance, apy);
-  const lastPoint = optimalPoints[optimalPoints.length - 1];
-  if (!lastPoint) return '0';
-
-  const num = new BN(lastPoint.v).minus(balance).div(balance);
-  return num.isFinite() ? num.toString(10) : '0';
+  return apyBoostAt(balance, await optimalRestake(blockchain, network, balance, apy));
 }

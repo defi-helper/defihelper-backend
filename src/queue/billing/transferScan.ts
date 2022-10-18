@@ -3,10 +3,9 @@ import container from '@container';
 import dayjs from 'dayjs';
 import { Process } from '@models/Queue/Entity';
 import { Blockchain } from '@models/types';
-import { isKey } from '@services/types';
 import { ethers } from 'ethers';
 import { abi as balanceAbi } from '@defihelper/networks/abi/Balance.json';
-import contracts from '@defihelper/networks/contracts.json';
+import { TransferStatus } from '@models/Billing/Entity';
 
 const ethFeeDecimals = new BN(10).pow(18);
 
@@ -31,11 +30,11 @@ async function registerTransfer(
       const { timestamp } = await getBlock();
       const duplicate = duplicates.find(({ tx }) => transactionHash === tx);
       if (duplicate) {
-        if (duplicate.confirmed) return null;
+        if (duplicate.status !== TransferStatus.Pending) return null;
 
         return billingService.transferConfirm(
           duplicate,
-          new BN(args.amount.toString()).div(ethFeeDecimals).multipliedBy(k).toNumber(),
+          new BN(args.amount.toString()).div(ethFeeDecimals).multipliedBy(k),
           dayjs.unix(timestamp).toDate(),
         );
       }
@@ -44,7 +43,7 @@ async function registerTransfer(
         blockchain,
         network,
         args.recipient.toLowerCase(),
-        new BN(args.amount.toString()).div(ethFeeDecimals).multipliedBy(k).toNumber(),
+        new BN(args.amount.toString()).div(ethFeeDecimals).multipliedBy(k),
         transactionHash,
         true,
         dayjs.unix(timestamp).toDate(),
@@ -66,36 +65,52 @@ export default async (process: Process) => {
   if (blockchain !== 'ethereum') {
     throw new Error('Invalid blockchain');
   }
-  if (!isKey(contracts, network)) {
+  const blockchainContainer = container.blockchain[blockchain];
+  const networkContainer = blockchainContainer.byNetwork(network);
+  const contracts = networkContainer.dfhContracts();
+  if (contracts === null) {
     throw new Error('Contracts not deployed to target network');
   }
+  const balanceAddress = contracts.BalanceUpgradable?.address ?? contracts.Balance?.address;
+  if (balanceAddress === undefined) {
+    throw new Error('Balance contract not deployed on this network');
+  }
+  const provider = networkContainer.provider();
+  const balance = blockchainContainer.contract(balanceAddress, balanceAbi, provider);
 
-  const later = dayjs().add(1, 'minute').toDate();
-  const provider = container.blockchain[blockchain].byNetwork(network).provider();
-  const currentBlockNumber = parseInt((await provider.getBlockNumber()).toString(), 10) - lag;
+  const currentBlockNumber = await provider
+    .getBlockNumber()
+    .then((v) => v - lag)
+    .catch((e) => e);
+  if (typeof currentBlockNumber !== 'number') {
+    return process.laterAt(1, 'minutes').info(`${currentBlockNumber}`);
+  }
   if (currentBlockNumber < from) {
-    return process.later(later);
+    return process.laterAt(1, 'minutes');
   }
   const to = from + step > currentBlockNumber ? currentBlockNumber : from + step;
 
-  const networkContracts = contracts[network] as { [name: string]: { address: string } };
-  const balanceAddress = networkContracts.Balance.address;
-  const balance = container.blockchain[blockchain].contract(balanceAddress, balanceAbi, provider);
+  try {
+    await Promise.all([
+      registerTransfer(
+        blockchain,
+        network,
+        await balance.queryFilter(balance.filters.Deposit(), from, to),
+        1,
+      ),
+      registerTransfer(
+        blockchain,
+        network,
+        await balance.queryFilter(balance.filters.Refund(), from, to),
+        -1,
+      ),
+    ]);
+  } catch (e) {
+    if (currentBlockNumber - from > 100) {
+      throw new Error(`Task ${process.task.id}, lag: ${currentBlockNumber - from}, message: ${e}`);
+    }
+    return process.laterAt(1, 'minutes').info(`${e}`);
+  }
 
-  await Promise.all([
-    registerTransfer(
-      blockchain,
-      network,
-      await balance.queryFilter(balance.filters.Deposit(), from, to),
-      1,
-    ),
-    registerTransfer(
-      blockchain,
-      network,
-      await balance.queryFilter(balance.filters.Refund(), from, to),
-      -1,
-    ),
-  ]);
-
-  return process.param({ ...process.task.params, from: to + 1 }).later(later);
+  return process.param({ ...process.task.params, from: to + 1 }).laterAt(1, 'minutes');
 };

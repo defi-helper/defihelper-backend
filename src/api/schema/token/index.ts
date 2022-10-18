@@ -395,14 +395,6 @@ export const TokenAliasStakedStatisticsType = new GraphQLObjectType<
               Number(tokenMetric.usdDayBefore) !== 0
                 ? new BN(tokenMetric.usd).div(tokenMetric.usdDayBefore).toString(10)
                 : '0',
-            week:
-              Number(tokenMetric.usdWeekBefore) !== 0
-                ? new BN(tokenMetric.usd).div(tokenMetric.usdWeekBefore).toString(10)
-                : '0',
-            month:
-              Number(tokenMetric.usdMonthBefore) !== 0
-                ? new BN(tokenMetric.usd).div(tokenMetric.usdMonthBefore).toString(10)
-                : '0',
           },
           myPortfolioPercent: 0,
         };
@@ -519,14 +511,6 @@ export const TokenAliasType = new GraphQLObjectType<TokenAlias, Request>({
             day:
               Number(tokenMetric.usdDayBefore) !== 0
                 ? new BN(tokenMetric.usd).div(tokenMetric.usdDayBefore).toString(10)
-                : '0',
-            week:
-              Number(tokenMetric.usdWeekBefore) !== 0
-                ? new BN(tokenMetric.usd).div(tokenMetric.usdWeekBefore).toString(10)
-                : '0',
-            month:
-              Number(tokenMetric.usdMonthBefore) !== 0
-                ? new BN(tokenMetric.usd).div(tokenMetric.usdMonthBefore).toString(10)
                 : '0',
           },
           myPortfolioPercent: 0,

@@ -108,6 +108,9 @@ export class ModelContainer extends Container<typeof AppContainer> {
 
   readonly contractTable = Models.Protocol.Entity.contractTableFactory(this.parent.database);
 
+  readonly contractMigratableRemindersBulkTable =
+    Models.Protocol.Entity.contractMigratableRemindersBulkTableFactory(this.parent.database);
+
   readonly contractBlockchainTable = Models.Protocol.Entity.contractBlockchainTableFactory(
     this.parent.database,
   );
@@ -133,6 +136,7 @@ export class ModelContainer extends Container<typeof AppContainer> {
       new Models.Protocol.Service.ContractService(
         this.parent.database(),
         this.contractTable,
+        this.contractMigratableRemindersBulkTable,
         this.contractBlockchainTable,
         this.contractDebankTable,
         this.walletContractLinkTable,
@@ -192,6 +196,10 @@ export class ModelContainer extends Container<typeof AppContainer> {
     this.parent.database,
   );
 
+  readonly metricContractRegistryTable = Models.Metric.Entity.metricContractRegistryTableFactory(
+    this.parent.database,
+  );
+
   readonly metricWalletTaskTable = Models.Metric.Entity.metricWalletTaskTableFactory(
     this.parent.database,
   );
@@ -205,6 +213,10 @@ export class ModelContainer extends Container<typeof AppContainer> {
 
   readonly metricTokenTable = Models.Metric.Entity.metricTokenTableFactory(this.parent.database);
 
+  readonly metricUserCollectorTable = Models.Metric.Entity.userCollectorTableFactory(
+    this.parent.database,
+  );
+
   readonly metricService = singleton(
     () =>
       new Models.Metric.Service.MetricContractService(
@@ -215,10 +227,12 @@ export class ModelContainer extends Container<typeof AppContainer> {
         this.metricContractTaskTable,
         this.metricWalletTable,
         this.metricWalletRegistryTable,
+        this.metricContractRegistryTable,
         this.metricWalletTaskTable,
         this.metricWalletTokenTable,
         this.metricWalletTokenRegistryTable,
         this.metricTokenTable,
+        this.metricUserCollectorTable,
       ),
   );
 
@@ -295,6 +309,10 @@ export class ModelContainer extends Container<typeof AppContainer> {
     this.parent.database,
   );
 
+  readonly automateContractStopLossTable = Models.Automate.Entity.contractStopLossTableFactory(
+    this.parent.database,
+  );
+
   readonly automateTransactionTable = Models.Automate.Entity.transactionTableFactory(
     this.parent.database,
   );
@@ -307,8 +325,28 @@ export class ModelContainer extends Container<typeof AppContainer> {
         this.automateActionTable,
         this.automateTriggerCallHistoryTable,
         this.automateContractTable,
+        this.automateContractStopLossTable,
         this.automateTransactionTable,
         this.walletTable,
+      ),
+  );
+
+  readonly smartTradeOrderTable = Models.SmartTrade.Entity.smartTradeOrderTableFactory(
+    this.parent.database,
+  );
+
+  readonly smartTradeOrderTokenLinkTable =
+    Models.SmartTrade.Entity.smartTradeOrderTokenLinkTableFactory(this.parent.database);
+
+  readonly smartTradeOrderCallHistoryTable =
+    Models.SmartTrade.Entity.smartTradeOrderCallHistoryTableFactory(this.parent.database);
+
+  readonly smartTradeService = singleton(
+    () =>
+      new Models.SmartTrade.Service.SmartTradeService(
+        this.smartTradeOrderTable,
+        this.smartTradeOrderTokenLinkTable,
+        this.smartTradeOrderCallHistoryTable,
       ),
   );
 }

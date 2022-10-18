@@ -69,9 +69,13 @@ export type MetricContractField =
   | 'aprWeek'
   | 'aprMonth'
   | 'aprYear'
-  | 'uniqueWalletsCount';
+  | 'uniqueWalletsCount'
+  | 'risk';
 
-export type MetricContractAPRField = Exclude<MetricContractField, 'tvl' | 'uniqueWalletsCount'>;
+export type MetricContractAPRField = Exclude<
+  MetricContractField,
+  'tvl' | 'uniqueWalletsCount' | 'risk'
+>;
 
 export interface MetricContract extends Metric {
   contract: string;
@@ -172,6 +176,20 @@ export type MetricWalletTokenRegistryTable = ReturnType<
   ReturnType<typeof metricWalletTokenRegistryTableFactory>
 >;
 
+export interface MetricContractRegistry extends Registry {
+  contract: string;
+}
+
+export const metricContractRegistryTableName = 'metric_contract_registry';
+
+export const metricContractRegistryTableFactory = tableFactoryLegacy<MetricContractRegistry>(
+  metricContractRegistryTableName,
+);
+
+export type MetricContractRegistryTable = ReturnType<
+  ReturnType<typeof metricContractRegistryTableFactory>
+>;
+
 export interface MetricToken extends Metric {
   token: string;
 }
@@ -181,3 +199,23 @@ export const metricTokenTableName = 'metric_token';
 export const metricTokenTableFactory = tableFactoryLegacy<MetricToken>(metricTokenTableName);
 
 export type MetricTokenTable = ReturnType<ReturnType<typeof metricTokenTableFactory>>;
+
+export enum UserCollectorStatus {
+  Pending = 'pending',
+  Done = 'done',
+}
+
+export interface UserCollector {
+  id: string;
+  user: string;
+  data: { tasks: string[] };
+  status: UserCollectorStatus;
+  updatedAt: Date;
+  createdAt: Date;
+}
+
+export const userCollectorTableName = 'metric_user_collector';
+
+export const userCollectorTableFactory = tableFactoryLegacy<UserCollector>(userCollectorTableName);
+
+export type UserCollectorTable = ReturnType<ReturnType<typeof userCollectorTableFactory>>;

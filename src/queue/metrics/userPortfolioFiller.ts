@@ -33,11 +33,23 @@ export default async (process: Process) => {
     if (blockchain !== 'ethereum' || container.blockchain.ethereum.byNetwork(network).testnet) {
       return;
     }
-    queue.push('metricsWalletBalancesDeBankFiller', { id }, { priority: 9 });
-    queue.push('metricsWalletProtocolsBalancesDeBankFiller', { id }, { priority: 9 });
+    queue.push(
+      'metricsWalletBalancesDeBankFiller',
+      { id },
+      { topic: 'metricCurrent', priority: 9 },
+    );
+    queue.push(
+      'metricsWalletProtocolsBalancesDeBankFiller',
+      { id },
+      { topic: 'metricCurrent', priority: 9 },
+    );
   });
   walletsExchange.forEach(({ id }) =>
-    queue.push('metricsWalletBalancesCexUniversalFiller', { id }, { priority: 9 }),
+    queue.push(
+      'metricsWalletBalancesCexUniversalFiller',
+      { id },
+      { topic: 'metricCurrent', priority: 9 },
+    ),
   );
 
   return process.done();

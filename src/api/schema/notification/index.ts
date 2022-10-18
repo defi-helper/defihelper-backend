@@ -3,12 +3,13 @@ import {
   GraphQLEnumType,
   GraphQLFieldConfig,
   GraphQLInputObjectType,
+  GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
 } from 'graphql';
 import { Request } from 'express';
-import { AuthenticationError, UserInputError } from 'apollo-server-express';
+import { AuthenticationError, UserInputError, withFilter } from 'apollo-server-express';
 import { UserType } from '@api/schema/user';
 import container from '@container';
 import { ContactBroker, ContactStatus, UserContact } from '@models/Notification/Entity';
@@ -334,5 +335,39 @@ export const UserContactDeleteMutation: GraphQLFieldConfig<any, Request> = {
     await container.model.userContactService().delete(userContact);
 
     return true;
+  },
+};
+
+export const OnUserContactActivated: GraphQLFieldConfig<{ id: string }, Request> = {
+  type: GraphQLNonNull(UserContactType),
+  args: {
+    filter: {
+      type: new GraphQLInputObjectType({
+        name: 'OnUserContactActivatedFilterInputType',
+        fields: {
+          user: {
+            type: GraphQLList(GraphQLNonNull(UuidType)),
+          },
+        },
+      }),
+      defaultValue: {},
+    },
+  },
+  subscribe: withFilter(
+    () => container.cacheSubscriber('defihelper:channel:onUserContactActivated').asyncIterator(),
+    async ({ id }, { filter }) => {
+      const contact = await container.model.userContactTable().where('id', id).first();
+      if (!contact) return false;
+
+      let result = true;
+      if (Array.isArray(filter.user) && filter.user.length > 0) {
+        result = result && filter.user.includes(contact.user);
+      }
+
+      return result;
+    },
+  ),
+  resolve: ({ id }) => {
+    return container.model.userContactTable().where('id', id).first();
   },
 };

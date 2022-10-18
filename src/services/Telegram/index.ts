@@ -1,88 +1,84 @@
-import * as Mustache from 'mustache';
-import TelegramBot from 'node-telegram-bot-api';
-import container from '@container';
 import { Factory } from '@services/Container';
+import { Telegraf } from 'telegraf';
+import { I18nContainer, Locale } from '@services/I18n/container';
+import { TemplateContainer } from '@services/Template/container';
 import { Templates } from './templates';
 
 export type TelegramTemplate = keyof typeof Templates;
 
 export interface ITelegramService {
-  startHandler(): void;
+  send(template: TelegramTemplate, data: Object, chatId: number, locale?: Locale): Promise<void>;
 
-  send(template: TelegramTemplate, data: Object, chatId: number): Promise<void>;
+  // eslint-disable-next-line
+  getBot(): Telegraf | null;
 }
 
 class NullService implements ITelegramService {
-  // eslint-disable-next-line
-  startHandler() {}
+  constructor(
+    protected readonly template: TemplateContainer,
+    protected readonly i18n: I18nContainer,
+  ) {}
 
   // eslint-disable-next-line
-  async send() {}
+  async send(template: TelegramTemplate, data: Object, chatId: number, locale: Locale = 'enUS') {
+    console.info(
+      this.template.render(await Templates[template], {
+        ...data,
+        ...this.template.i18n(this.i18n.byLocale(locale)),
+      }),
+    );
+  }
+
+  // eslint-disable-next-line
+  getBot() {
+    return null;
+  }
 }
 
 export class TelegramService implements ITelegramService {
-  protected bot: TelegramBot;
+  protected bot: Telegraf;
 
-  constructor(token: string) {
-    this.bot = new TelegramBot(token);
+  private isLaunched: boolean = false;
+
+  constructor(
+    token: string,
+    protected readonly template: TemplateContainer,
+    protected readonly i18n: I18nContainer,
+  ) {
+    this.bot = new Telegraf(token);
   }
 
-  startHandler() {
-    this.bot.startPolling({ polling: true });
-    this.bot.on('error', async (error) => {
-      container.logger().error(`Error in TG. Message: Error: ${error.message}`);
-    });
+  getBot() {
+    if (!this.isLaunched) {
+      this.bot.launch();
+      this.isLaunched = true;
+    }
 
-    this.bot.on('message', async (message) => {
-      try {
-        if (message.text && message.text.indexOf('/start') > -1) {
-          const confirmationCode = message.text.replace('/start ', '');
-          const userContact = await container.model
-            .userContactTable()
-            .where('confirmationCode', confirmationCode)
-            .first();
-
-          if (!userContact) {
-            await this.bot.sendMessage(
-              message.chat.id,
-              'Please use https://app.defihelper.io to register',
-            );
-            return;
-          }
-
-          await container.model
-            .userContactService()
-            .activate(userContact, message.from?.username || '', {
-              chatId: message.chat.id.toString(),
-            });
-          const user = await container.model.userTable().where('id', userContact.user).first();
-
-          await container.model.queueService().push('sendTelegram', {
-            chatId: message.chat.id,
-            template: 'welcomeTemplate',
-            params: {
-              username: message?.from?.username,
-            },
-            locale: user?.locale || 'enUS',
-          });
-        }
-      } catch (error) {
-        container
-          .logger()
-          .error(`Error handling TG message. Message: ${JSON.stringify(message)}, error: ${error}`);
-      }
-    });
+    return this.bot;
   }
 
-  async send(template: TelegramTemplate, data: Object, chatId: number): Promise<void> {
-    const message = Mustache.render(await Templates[template], data);
+  async send(
+    template: TelegramTemplate,
+    data: Object,
+    chatId: number,
+    locale: Locale = 'enUS',
+  ): Promise<void> {
+    const message = this.template.render(await Templates[template], {
+      ...data,
+      ...this.template.i18n(this.i18n.byLocale(locale)),
+    });
 
-    await this.bot.sendMessage(chatId, message, {
+    await this.bot.telegram.sendMessage(chatId, message, {
       parse_mode: 'HTML',
     });
   }
 }
 
-export function telegramServiceFactory(token: string): Factory<ITelegramService> {
-  return () => (token ? new TelegramService(token) : new NullService());
+export function telegramServiceFactory(
+  token: string,
+  template: TemplateContainer,
+  i18n: I18nContainer,
+): Factory<ITelegramService> {
+  return () =>
+    token ? new TelegramService(token, template, i18n) : new NullService(template, i18n);
 }

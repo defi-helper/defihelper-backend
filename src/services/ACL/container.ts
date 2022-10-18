@@ -29,6 +29,7 @@ export class ACLContainer extends Container<typeof AppContainer> {
       automateAction: ['create', 'update-own', 'delete-own'],
       automateContract: ['create', 'update-own', 'delete-own'],
       integration: ['connect', 'disconnect'],
+      smartTradeOrder: ['list-own', 'create', 'update-own', 'cancel-own'],
     }),
   );
 
@@ -43,6 +44,7 @@ export class ACLContainer extends Container<typeof AppContainer> {
       token: ['update'],
       tokenAlias: ['create', 'update', 'delete'],
       monitoring: ['view'],
+      smartTradeOrder: ['list'],
     }),
   );
 
