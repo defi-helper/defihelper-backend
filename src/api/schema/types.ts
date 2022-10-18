@@ -1,6 +1,7 @@
 import dayjs from 'dayjs';
 import { validate as isUuid } from 'uuid';
-import { BigNumber as BN } from 'bignumber.js';
+import BN from 'bignumber.js';
+import { utils as ethersUtils } from 'ethers';
 import * as Wallet from '@models/Wallet/Entity';
 import {
   GraphQLError,
@@ -21,7 +22,6 @@ import container from '@container';
 import { Request } from 'express';
 import { ForbiddenError } from 'apollo-server-express';
 import { WalletExchangeType } from '@models/Wallet/Entity';
-import { ethers } from 'ethers';
 
 export class GraphQLParseError extends GraphQLError {
   constructor(type: string, value: any) {
@@ -147,7 +147,7 @@ export const BigNumberType = new GraphQLScalarType({
     return number;
   },
   serialize: (value: BN | string | number) => {
-    return value.toString();
+    return BN.isBigNumber(value) ? value.toString(10) : value.toString();
   },
 });
 
@@ -252,12 +252,6 @@ export const MetricChangeType = new GraphQLObjectType({
     day: {
       type: GraphQLNonNull(GraphQLString),
     },
-    week: {
-      type: GraphQLNonNull(GraphQLString),
-    },
-    month: {
-      type: GraphQLNonNull(GraphQLString),
-    },
   },
 });
 
@@ -285,7 +279,7 @@ export const EthereumAddressType = new GraphQLScalarType({
   name: 'EthereumAddressType',
   description: 'Address of ethereum blockchain',
   parseValue: (value: string) => {
-    if (!ethers.utils.isAddress(value)) {
+    if (!ethersUtils.isAddress(value)) {
       throw new GraphQLParseError('EthereumAddressType', value);
     }
 
@@ -300,7 +294,7 @@ export const EthereumTransactionHashType = new GraphQLScalarType({
   name: 'EthereumTransactionHashType',
   description: 'Address of ethereum transaction hash',
   parseValue: (value: string) => {
-    if (!ethers.utils.isHexString(value, 32)) {
+    if (!ethersUtils.isHexString(value, 32)) {
       throw new GraphQLParseError('EthereumTransactionHashType', value);
     }
 

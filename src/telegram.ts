@@ -19,19 +19,28 @@ if (!bot) {
 
 bot.start(async ({ message }) => {
   const confirmationCode = message.text.replace('/start ', '');
-  const userContact = await container.model
+  let userContact = await container.model
     .userContactTable()
     .where('confirmationCode', confirmationCode)
     .first();
 
   if (userContact && userContact.status !== ContactStatus.Active) {
-    await container.model.userContactService().activate(userContact, message.from?.username || '', {
-      chatId: message.chat.id.toString(),
-    });
+    userContact = await container.model
+      .userContactService()
+      .activate(userContact, message.from?.username || '', {
+        chatId: message.chat.id.toString(),
+      });
     const user = await container.model.userTable().where('id', userContact.user).first();
+    if (!user) return null;
+
     return container
       .telegram()
-      .send('welcomeTemplate', {}, message.chat.id, user?.locale || 'enUS');
+      .send(
+        'welcomeTemplate',
+        { username: userContact.address ?? userContact.name },
+        message.chat.id,
+        user.locale,
+      );
   }
 
   return container.telegram().send('welcomeNewWalletConnect', {}, message.chat.id, 'enUS');

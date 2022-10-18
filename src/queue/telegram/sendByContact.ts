@@ -39,13 +39,18 @@ export default async (process: Process) => {
       Number(contact.params.chatId),
     );
   } catch (error: any) {
-    if (error?.response?.statusCode === 403) {
+    if (error?.response?.error_code === 403) {
       await container.model.userContactService().deactivate(contact);
       return process.done().info('Target contact deactivated due to dialog blocking');
     }
 
     throw error;
   }
+
+  await container.model.queueService().push('amplitudeLogEvent', {
+    name: 'telegram_send_message_success',
+    user: user.id,
+  });
 
   return process.done();
 };

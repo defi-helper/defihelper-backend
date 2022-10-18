@@ -15,8 +15,13 @@ import {
 } from '@models/Protocol/Entity';
 import { TokenAliasLiquidity, TokenCreatedBy, Token, tokenTableName } from '@models/Token/Entity';
 import BN from 'bignumber.js';
-import { ProtocolListItem } from '@services/Debank';
-import { MetricWalletToken, metricWalletTokenTableName } from '@models/Metric/Entity';
+import { ProtocolListItem, TemporaryOutOfService } from '@services/Debank';
+import {
+  MetricWalletRegistry,
+  MetricWalletToken,
+  metricWalletTokenTableName,
+} from '@models/Metric/Entity';
+import dayjs from 'dayjs';
 
 interface Params {
   id: string;
@@ -30,6 +35,19 @@ const makePoolHashAddress = (tokens: { id: string; chain: string; protocolId: st
       .join(':'),
   );
 };
+
+const toucher = () => ({
+  values: new Map<string, string[]>(),
+  touch(key: string, value: string) {
+    const values = this.values.get(key) ?? [];
+    this.values.set(key, [...values, value]);
+  },
+  has(key: string, value: string) {
+    const values = this.values.get(key) ?? [];
+    return values.includes(value);
+  },
+});
+
 export default async (process: Process) => {
   const { id: walletId } = process.task.params as Params;
 
@@ -85,31 +103,60 @@ export default async (process: Process) => {
     };
   }, Promise.resolve({}));
 
+  const lastMetricsAcrossWallets = await container.model
+    .metricWalletRegistryTable()
+    .whereIn(
+      'wallet',
+      chainsWallets.map(({ id }) => id),
+    )
+    .whereNotNull('contract')
+    .then((rows) =>
+      rows.reduce<Record<string, MetricWalletRegistry>>(
+        (res, metric) => ({ ...res, [metric.wallet]: metric }),
+        {},
+      ),
+    );
+
   const protocolAdaptersMap = await container.model
     .protocolTable()
     .column('debankId', 'adapter')
     .then((protocols) => new Map(protocols.map(({ adapter, debankId }) => [debankId, adapter])));
-  const debankUserProtocolsList = await container
-    .debank()
-    .getProtocolListWallet(targetWallet.address)
-    .then((protocols) =>
-      protocols.reduce<ProtocolListItem[]>((result, protocol) => {
-        if (container.debank().chainResolver(protocol.chain) === undefined) {
-          return result;
-        }
-        const protocolNormalize = {
-          ...protocol,
-          id: protocol.id.replace(`${protocol.chain}_`, ''),
-        };
-        // Skip not debank protocols
-        const adapter = protocolAdaptersMap.get(protocolNormalize.id);
-        if (adapter !== undefined && adapter !== 'debankByApiReadonly') {
-          return result;
-        }
 
-        return [...result, protocolNormalize];
-      }, []),
-    );
+  let debankUserProtocolsListRaw: ProtocolListItem[];
+  try {
+    debankUserProtocolsListRaw = await container
+      .debank()
+      .getProtocolListWallet(targetWallet.address);
+  } catch (e) {
+    if (e instanceof TemporaryOutOfService) {
+      return process
+        .info('postponed due to temporarily service unavailability')
+        .later(dayjs().add(5, 'minute').toDate());
+    }
+
+    throw e;
+  }
+
+  const debankUserProtocolsList = debankUserProtocolsListRaw.reduce<ProtocolListItem[]>(
+    (result, protocol) => {
+      if (container.debank().chainResolver(protocol.chain) === undefined) {
+        return result;
+      }
+      const protocolNormalize = {
+        ...protocol,
+        id: protocol.id.replace(`${protocol.chain}_`, ''),
+      };
+      // Skip not debank protocols
+      const adapter = protocolAdaptersMap.get(protocolNormalize.id);
+      if (adapter !== undefined && adapter !== 'debankByApiReadonly') {
+        return result;
+      }
+
+      return [...result, protocolNormalize];
+    },
+    [],
+  );
+
   const existingProtocols = await container.model.protocolTable().whereIn(
     'debankId',
     debankUserProtocolsList.map(({ id }) => id),
@@ -269,7 +316,8 @@ export default async (process: Process) => {
     })),
   );
 
-  const touchedMetrics: { [walletId: string]: MetricWalletToken[] } = {};
+  const touchedWalletContracts = toucher();
+  const touchedTokenMetrics: { [walletId: string]: MetricWalletToken[] } = {};
   const appliedTokens: {
     [walletUuid: string]: {
       [contractUuid: string]: {
@@ -335,240 +383,275 @@ export default async (process: Process) => {
     };
   };
 
-  await Promise.all(
-    debankTokensList.map(async (token) => {
-      let tokenRecord = existingTokens.find(
-        (exstng) =>
-          exstng.address.toLowerCase() === token.id.toLowerCase() &&
-          exstng.network === container.debank().chainResolver(token.chain)?.numbered,
-      );
+  await debankTokensList.reduce<Promise<unknown>>(async (prev, token) => {
+    await prev;
 
-      if (!tokenRecord) {
-        let tokenRecordAlias = await container.model
-          .tokenAliasTable()
-          .where('name', 'ilike', token.name)
-          .first();
+    let tokenRecord = existingTokens.find(
+      (exstng) =>
+        exstng.address.toLowerCase() === token.id.toLowerCase() &&
+        exstng.network === container.debank().chainResolver(token.chain)?.numbered,
+    );
+    if (!tokenRecord) {
+      let tokenRecordAlias = await container.model
+        .tokenAliasTable()
+        .where('name', 'ilike', token.name)
+        .first();
 
-        if (!tokenRecordAlias) {
-          tokenRecordAlias = await container.model
-            .tokenAliasService()
-            .create(
-              token.name ?? '',
-              token.symbol ?? '',
-              TokenAliasLiquidity.Unstable,
-              token.logo_url || null,
-            );
-        }
-
-        try {
-          tokenRecord = await container.model
-            .tokenService()
-            .create(
-              tokenRecordAlias,
-              'ethereum',
-              container.debank().chainResolver(token.chain)?.numbered ?? '',
-              token.id.toLowerCase(),
-              token.name ?? '',
-              token.symbol ?? '',
-              token.decimals,
-              TokenCreatedBy.Scanner,
-            );
-        } catch (e: any) {
-          // uniq violation
-          if (e.code !== '23505') {
-            throw e;
-          }
-
-          tokenRecord = await container.model
-            .tokenTable()
-            .where('blockchain', 'ethereum')
-            .andWhere('network', container.debank().chainResolver(token.chain)?.numbered)
-            .andWhere('address', token.id.toLowerCase())
-            .first();
-
-          if (!tokenRecord) {
-            throw new Error('[2] can`t find token on fly, seems like a bug');
-          }
-        }
-      } else {
-        const tokenRecordAlias = await container.model
-          .tokenAliasTable()
-          .where('name', 'ilike', token.name)
-          .first();
-
-        if (tokenRecordAlias && token.logo_url && tokenRecordAlias.logoUrl !== token.logo_url) {
-          await container.model.tokenAliasService().update({
-            ...tokenRecordAlias,
-            logoUrl: token.logo_url,
-          });
-        }
+      if (!tokenRecordAlias) {
+        tokenRecordAlias = await container.model
+          .tokenAliasService()
+          .create(
+            token.name ?? '',
+            token.symbol ?? '',
+            TokenAliasLiquidity.Unstable,
+            token.logo_url || null,
+          );
       }
 
-      const walletByChain = chainsWallets.find(
-        (wallet) => wallet.network === container.debank().chainResolver(token.chain)?.numbered,
-      );
+      try {
+        tokenRecord = await container.model
+          .tokenService()
+          .create(
+            tokenRecordAlias,
+            'ethereum',
+            container.debank().chainResolver(token.chain)?.numbered ?? '',
+            token.id.toLowerCase(),
+            token.name ?? '',
+            token.symbol ?? '',
+            token.decimals,
+            TokenCreatedBy.Scanner,
+          );
+      } catch (e: any) {
+        // uniq violation
+        if (e.code !== '23505') {
+          throw e;
+        }
 
-      if (!walletByChain) {
+        tokenRecord = await container.model
+          .tokenTable()
+          .where('blockchain', 'ethereum')
+          .andWhere('network', container.debank().chainResolver(token.chain)?.numbered)
+          .andWhere('address', token.id.toLowerCase())
+          .first();
+
+        if (!tokenRecord) {
+          throw new Error('[2] can`t find token on fly, seems like a bug');
+        }
+      }
+    } else {
+      const tokenRecordAlias = await container.model
+        .tokenAliasTable()
+        .where('name', 'ilike', token.name)
+        .first();
+
+      if (tokenRecordAlias && token.logo_url && tokenRecordAlias.logoUrl !== token.logo_url) {
+        await container.model.tokenAliasService().update({
+          ...tokenRecordAlias,
+          logoUrl: token.logo_url,
+        });
+      }
+    }
+
+    const walletByChain = chainsWallets.find(
+      (wallet) => wallet.network === container.debank().chainResolver(token.chain)?.numbered,
+    );
+    if (!walletByChain) {
+      return null;
+    }
+
+    const contract = contracts.find((c) => c.address === token.protocolHashAddress);
+    if (!contract) {
+      throw new Error('Contract must be found');
+    }
+
+    await Promise.all([
+      contractService.tokenLink(contract, [
+        {
+          token: tokenRecord,
+          type:
+            token.type === 'reward' ? TokenContractLinkType.Reward : TokenContractLinkType.Stake,
+        },
+      ]),
+      contractService.walletLink(contract, walletByChain),
+    ]);
+
+    return applyTokenBalance(
+      walletByChain,
+      contract,
+      {
+        ...tokenRecord,
+        price: new BN(token.price),
+        amount: new BN(token.amount),
+      },
+      token.type === 'reward' ? 'earned' : 'staked',
+    );
+  }, Promise.resolve(null));
+
+  await Object.keys(appliedTokens).reduce<Promise<unknown>>(async (prev, walletIndex) => {
+    await prev;
+
+    const wallet = appliedTokens[walletIndex];
+    await Object.keys(wallet).reduce<Promise<unknown>>(async (prev2, contractIndex) => {
+      await prev2;
+
+      const contract = appliedTokens[walletIndex][contractIndex];
+      const walletSummary = Object.keys(contract).reduce<{
+        contractEntity?: Contract;
+        walletEntity?: Wallet;
+        earnedBalance: BN;
+        stakedBalance: BN;
+        earnedUSD: BN;
+        stakedUSD: BN;
+      }>(
+        (sum, tokenIndex) => {
+          const {
+            earnedBalance,
+            earnedUSD,
+            stakedBalance,
+            stakedUSD,
+            contractEntity,
+            walletEntity,
+          } = appliedTokens[walletIndex][contractIndex][tokenIndex];
+
+          return {
+            contractEntity,
+            walletEntity,
+            earnedBalance: sum.earnedBalance.plus(earnedBalance),
+            earnedUSD: sum.earnedUSD.plus(earnedUSD),
+            stakedBalance: sum.stakedBalance.plus(stakedBalance),
+            stakedUSD: sum.stakedUSD.plus(stakedUSD),
+          };
+        },
+        {
+          earnedBalance: new BN(0),
+          stakedBalance: new BN(0),
+          earnedUSD: new BN(0),
+          stakedUSD: new BN(0),
+        },
+      );
+      if (!walletSummary.contractEntity || !walletSummary.walletEntity) {
+        throw new Error('Wallet summary does not contain any contract or wallet entity.');
+      }
+
+      await walletMetrics.createWallet(
+        walletSummary.contractEntity,
+        walletSummary.walletEntity,
+        {
+          earned: walletSummary.earnedBalance.toString(10),
+          staking: walletSummary.stakedBalance.toString(10),
+          earnedUSD: walletSummary.earnedUSD.toString(10),
+          stakingUSD: walletSummary.stakedUSD.toString(10),
+        },
+        new Date(),
+      );
+      touchedWalletContracts.touch(walletSummary.walletEntity.id, walletSummary.contractEntity.id);
+
+      await Object.keys(contract).reduce<Promise<unknown>>(async (prev3, tokenIndex) => {
+        await prev3;
+
+        const contractSummary = appliedTokens[walletIndex][contractIndex][tokenIndex];
+        const mwt = await walletMetrics.createWalletToken(
+          contractSummary.contractEntity,
+          contractSummary.walletEntity,
+          contractSummary.tokenEntity,
+          {
+            usd: contractSummary.stakedUSD.plus(contractSummary.earnedUSD).toString(10),
+            balance: contractSummary.stakedBalance.plus(contractSummary.earnedBalance).toString(10),
+          },
+          new Date(),
+        );
+
+        if (!touchedTokenMetrics[contractSummary.walletEntity.id]) {
+          touchedTokenMetrics[contractSummary.walletEntity.id] = [];
+        }
+        touchedTokenMetrics[contractSummary.walletEntity.id].push(mwt);
+      }, Promise.resolve(null));
+    }, Promise.resolve(null));
+  }, Promise.resolve(null));
+
+  await Object.entries(lastTokenMetricsAcrossWallets).reduce<Promise<unknown>>(
+    async (prev, [lastMetricWalletId, metrics]) => {
+      await prev;
+
+      await metrics.reduce<Promise<unknown>>(async (prev2, metricEntry) => {
+        await prev2;
+
+        const touchedMetricsList = touchedTokenMetrics[lastMetricWalletId] ?? [];
+        if (
+          touchedMetricsList.some((exstng) => exstng.token === metricEntry.id) ||
+          metricEntry.balance === '0'
+        ) {
+          return null;
+        }
+
+        const foundTargetWallet = chainsWallets.find((w) => w.id === lastMetricWalletId);
+        if (!foundTargetWallet) {
+          throw new Error('Wallet not found');
+        }
+
+        const foundContract = await container.model
+          .contractTable()
+          .where('id', metricEntry.contract)
+          .first();
+        if (!foundContract) {
+          throw new Error('Contract not found');
+        }
+
+        return walletMetrics.createWalletToken(
+          foundContract,
+          foundTargetWallet,
+          metricEntry,
+          {
+            usd: '0',
+            balance: '0',
+          },
+          new Date(),
+        );
+      }, Promise.resolve(null));
+    },
+    Promise.resolve(null),
+  );
+
+  await Object.entries(lastMetricsAcrossWallets).reduce<Promise<unknown>>(
+    async (prev, [lastMetricWalletId, metricEntry]) => {
+      await prev;
+
+      if (
+        touchedWalletContracts.has(lastMetricWalletId, metricEntry.contract) ||
+        (metricEntry.data.staking === '0' && metricEntry.data.earned === '0')
+      ) {
         return null;
       }
 
-      const contract = contracts.find((c) => c.address === token.protocolHashAddress);
-      if (!contract) {
-        throw new Error('Contract must be found');
+      const foundTargetWallet = chainsWallets.find((w) => w.id === lastMetricWalletId);
+      if (!foundTargetWallet) {
+        throw new Error('Wallet not found');
       }
 
-      await Promise.all([
-        contractService.tokenLink(contract, [
-          {
-            token: tokenRecord,
-            type:
-              token.type === 'reward' ? TokenContractLinkType.Reward : TokenContractLinkType.Stake,
-          },
-        ]),
-        contractService.walletLink(contract, walletByChain),
-      ]);
+      const foundContract = await container.model
+        .contractTable()
+        .where('id', metricEntry.contract)
+        .first();
+      if (!foundContract) {
+        throw new Error('Contract not found');
+      }
 
-      return applyTokenBalance(
-        walletByChain,
-        contract,
+      return walletMetrics.createWallet(
+        foundContract,
+        foundTargetWallet,
         {
-          ...tokenRecord,
-          price: new BN(token.price),
-          amount: new BN(token.amount),
+          earned: '0',
+          staking: '0',
+          earnedUSD: '0',
+          stakingUSD: '0',
         },
-        token.type === 'reward' ? 'earned' : 'staked',
+        new Date(),
       );
-    }),
-  );
-
-  await Promise.all(
-    Object.keys(appliedTokens).map((walletIndex) => {
-      const wallet = appliedTokens[walletIndex];
-
-      return Promise.all(
-        Object.keys(wallet).map((contractIndex) => {
-          const contract = appliedTokens[walletIndex][contractIndex];
-
-          const walletSummary = Object.keys(contract).reduce<{
-            contractEntity?: Contract;
-            walletEntity?: Wallet;
-            earnedBalance: BN;
-            stakedBalance: BN;
-            earnedUSD: BN;
-            stakedUSD: BN;
-          }>(
-            (prev, tokenIndex) => {
-              const {
-                earnedBalance,
-                earnedUSD,
-                stakedBalance,
-                stakedUSD,
-                contractEntity,
-                walletEntity,
-              } = appliedTokens[walletIndex][contractIndex][tokenIndex];
-
-              return {
-                contractEntity,
-                walletEntity,
-                earnedBalance: prev.earnedBalance.plus(earnedBalance),
-                earnedUSD: prev.earnedUSD.plus(earnedUSD),
-                stakedBalance: prev.stakedBalance.plus(stakedBalance),
-                stakedUSD: prev.stakedUSD.plus(stakedUSD),
-              };
-            },
-            {
-              earnedBalance: new BN(0),
-              stakedBalance: new BN(0),
-              earnedUSD: new BN(0),
-              stakedUSD: new BN(0),
-            },
-          );
-
-          if (!walletSummary.contractEntity || !walletSummary.walletEntity) {
-            throw new Error('Wallet summary does not contain any contract or wallet entity.');
-          }
-
-          return Promise.all([
-            walletMetrics.createWallet(
-              walletSummary.contractEntity,
-              walletSummary.walletEntity,
-              {
-                earned: walletSummary.earnedBalance.toString(10),
-                staking: walletSummary.stakedBalance.toString(10),
-                earnedUSD: walletSummary.earnedUSD.toString(10),
-                stakingUSD: walletSummary.stakedUSD.toString(10),
-              },
-              new Date(),
-            ),
-            ...Object.keys(contract).map(async (tokenIndex) => {
-              const contractSummary = appliedTokens[walletIndex][contractIndex][tokenIndex];
-
-              const mwt = await walletMetrics.createWalletToken(
-                contractSummary.contractEntity,
-                contractSummary.walletEntity,
-                contractSummary.tokenEntity,
-                {
-                  usd: contractSummary.stakedUSD.plus(contractSummary.earnedUSD).toString(10),
-                  balance: contractSummary.stakedBalance
-                    .plus(contractSummary.earnedBalance)
-                    .toString(10),
-                },
-                new Date(),
-              );
-
-              if (!touchedMetrics[contractSummary.walletEntity.id]) {
-                touchedMetrics[contractSummary.walletEntity.id] = [];
-              }
-              touchedMetrics[contractSummary.walletEntity.id].push(mwt);
-
-              return mwt;
-            }),
-          ] as Promise<any>[]);
-        }),
-      );
-    }),
-  );
-
-  await Promise.all(
-    Object.entries(lastTokenMetricsAcrossWallets).map(([lastMetricWalletId, metrics]) => {
-      return Promise.all(
-        metrics.map(async (metricEntry) => {
-          const touchedMetricsList = touchedMetrics[lastMetricWalletId] ?? [];
-          if (
-            touchedMetricsList.some((exstng) => exstng.token === metricEntry.id) ||
-            metricEntry.balance === '0'
-          ) {
-            return null;
-          }
-
-          const foundTargetWallet = chainsWallets.find((w) => w.id === lastMetricWalletId);
-          if (!foundTargetWallet) {
-            throw new Error('Wallet not found');
-          }
-
-          const foundContract = await container.model
-            .contractTable()
-            .where('id', metricEntry.contract)
-            .first();
-          if (!foundContract) {
-            throw new Error('Contract not found');
-          }
-
-          return walletMetrics.createWalletToken(
-            foundContract,
-            foundTargetWallet,
-            metricEntry,
-            {
-              usd: '0',
-              balance: '0',
-            },
-            new Date(),
-          );
-        }),
-      );
-    }),
+    },
+    Promise.resolve(null),
   );
 
   await container.model.walletService().statisticsUpdated(targetWallet);
+
   return process.done();
 };

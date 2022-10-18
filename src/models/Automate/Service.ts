@@ -23,6 +23,9 @@ import {
   ConditionTable,
   ConditionType,
   Contract,
+  ContractStopLoss,
+  ContractStopLossStatus,
+  ContractStopLossTable,
   ContractTable,
   ContractType,
   ContractVerificationStatus,
@@ -90,12 +93,21 @@ export class AutomateService {
     }
   });
 
+  public readonly onStopLossEnabled = new Emitter<{ stopLoss: ContractStopLoss }>(
+    ({ stopLoss }) => {
+      container.model
+        .queueService()
+        .push('eventsAutomateContractStopLossEnabled', { id: stopLoss.id });
+    },
+  );
+
   constructor(
     readonly triggerTable: Factory<TriggerTable>,
     readonly conditionTable: Factory<ConditionTable>,
     readonly actionTable: Factory<ActionTable>,
     readonly triggerCallHistoryTable: Factory<TriggerCallHistoryTable>,
     readonly contractTable: Factory<ContractTable>,
+    readonly contractStopLossTable: Factory<ContractStopLossTable>,
     readonly transactionTable: Factory<TransactionTable>,
     readonly walletTable: Factory<WalletTable>,
   ) {}
@@ -289,6 +301,51 @@ export class AutomateService {
 
   async deleteContract(contract: Contract) {
     await this.contractTable().where({ id: contract.id }).delete();
+  }
+
+  async enableStopLoss(
+    contract: Contract,
+    path: string[],
+    amountOut: string,
+    amountOutMin: string,
+  ) {
+    await this.disableStopLoss(contract);
+    const created: ContractStopLoss = {
+      id: uuid(),
+      contract: contract.id,
+      stopLoss: {
+        path,
+        amountOut,
+        amountOutMin,
+        inToken: null,
+        outToken: null,
+      },
+      status: ContractStopLossStatus.Pending,
+      tx: '',
+      task: null,
+      rejectReason: '',
+      amountOut: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    await this.contractStopLossTable().insert(created);
+    this.onStopLossEnabled.emit({ stopLoss: created });
+
+    return created;
+  }
+
+  async disableStopLoss(contract: Contract) {
+    await this.contractStopLossTable().where('contract', contract.id).delete();
+  }
+
+  async updateStopLoss(stopLoss: ContractStopLoss) {
+    const updated: ContractStopLoss = {
+      ...stopLoss,
+      updatedAt: new Date(),
+    };
+    await this.contractStopLossTable().where('id', stopLoss.id).update(updated);
+
+    return updated;
   }
 
   async createTransaction<T extends AutomateTransactionData>(

@@ -33,6 +33,12 @@ export interface ProtocolListItem {
   }[];
 }
 
+export class TemporaryOutOfService extends Error {
+  constructor(m = 'debank api temporary out of service') {
+    super(m);
+  }
+}
+
 export class Debank {
   constructor(public readonly apiKey: string) {}
 
@@ -72,9 +78,11 @@ export class Debank {
 
     return axios
       .get(url, {
-        headers: {
-          AccessKey: paidWay ? this.apiKey : undefined,
-        },
+        headers: paidWay
+          ? {
+              AccessKey: this.apiKey,
+            }
+          : {},
       })
       .then(({ data }) => {
         if (data === null) {
@@ -84,7 +92,11 @@ export class Debank {
         return data;
       })
       .catch((e) => {
-        throw new Error(`[Debank]: ${url}; ${e}`);
+        if (!e.response) {
+          throw new TemporaryOutOfService();
+        }
+
+        throw new Error(`[Debank ${paidWay ? 'PAID' : 'NONPAID'}]: ${url}; ${e}`);
       });
   }
 
@@ -101,9 +113,13 @@ export class Debank {
   }
 
   async getTokensOnWallet(wallet: string) {
-    return this.apiRequest<(Token & { amount: number })[]>('user/token_list', {
-      id: wallet,
-    });
+    return this.apiRequest<(Token & { amount: number })[]>(
+      'user/all_token_list',
+      {
+        id: wallet,
+      },
+      true,
+    );
   }
 
   async getTokensOnWalletNetwork(wallet: string, chainId: string) {
@@ -112,11 +128,15 @@ export class Debank {
       throw new Error(`Unknown chain: ${chainId}`);
     }
 
-    return this.apiRequest<(Token & { amount: number })[]>('user/token_list', {
-      id: wallet,
-      chain_id: chain.named,
-      is_all: 'true',
-    });
+    return this.apiRequest<(Token & { amount: number })[]>(
+      'user/token_list',
+      {
+        id: wallet,
+        chain_id: chain.named,
+        is_all: 'true',
+      },
+      true,
+    );
   }
 
   async getProtocolListWallet(wallet: string) {

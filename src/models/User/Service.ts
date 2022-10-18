@@ -32,6 +32,7 @@ export class UserService {
       locale,
       referrer: codeRecord?.id ?? null,
       isPorfolioCollected: false,
+      isMetricsTracked: true,
       timezone,
       authAt: new Date(),
       lastSeenAt: new Date(),

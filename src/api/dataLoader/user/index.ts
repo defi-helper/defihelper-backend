@@ -61,12 +61,8 @@ export const userLastMetricLoader = () =>
     {
       stakingUSD: string;
       stakingUSDDayBefore: string;
-      stakingUSDWeekBefore: string;
-      stakingUSDMonthBefore: string;
       earnedUSD: string;
       earnedUSDDayBefore: string;
-      earnedUSDWeekBefore: string;
-      earnedUSDMonthBefore: string;
     }
   >(async (usersId) => {
     const map = await container.model
@@ -81,28 +77,12 @@ export const userLastMetricLoader = () =>
         `${metricWalletRegistryTableName}.data->>'stakingUSDDayBefore'`,
       ])
       .modify(QueryModify.sumMetric, [
-        'stakingUSDWeekBefore',
-        `${metricWalletRegistryTableName}.data->>'stakingUSDWeekBefore'`,
-      ])
-      .modify(QueryModify.sumMetric, [
-        'stakingUSDMonthBefore',
-        `${metricWalletRegistryTableName}.data->>'stakingUSDMonthBefore'`,
-      ])
-      .modify(QueryModify.sumMetric, [
         'earnedUSD',
         `${metricWalletRegistryTableName}.data->>'earnedUSD'`,
       ])
       .modify(QueryModify.sumMetric, [
         'earnedUSDDayBefore',
         `${metricWalletRegistryTableName}.data->>'earnedUSDDayBefore'`,
-      ])
-      .modify(QueryModify.sumMetric, [
-        'earnedUSDWeekBefore',
-        `${metricWalletRegistryTableName}.data->>'earnedUSDWeekBefore'`,
-      ])
-      .modify(QueryModify.sumMetric, [
-        'earnedUSDMonthBefore',
-        `${metricWalletRegistryTableName}.data->>'earnedUSDMonthBefore'`,
       ])
       .innerJoin(
         walletTableName,
@@ -118,40 +98,20 @@ export const userLastMetricLoader = () =>
             user: string;
             stakingUSD: string;
             stakingUSDDayBefore: string;
-            stakingUSDWeekBefore: string;
-            stakingUSDMonthBefore: string;
             earnedUSD: string;
             earnedUSDDayBefore: string;
-            earnedUSDWeekBefore: string;
-            earnedUSDMonthBefore: string;
           }>,
         ) =>
           new Map(
-            rows.map(
-              ({
-                user,
+            rows.map(({ user, stakingUSD, stakingUSDDayBefore, earnedUSD, earnedUSDDayBefore }) => [
+              user,
+              {
                 stakingUSD,
                 stakingUSDDayBefore,
-                stakingUSDWeekBefore,
-                stakingUSDMonthBefore,
                 earnedUSD,
                 earnedUSDDayBefore,
-                earnedUSDWeekBefore,
-                earnedUSDMonthBefore,
-              }) => [
-                user,
-                {
-                  stakingUSD,
-                  stakingUSDDayBefore,
-                  stakingUSDWeekBefore,
-                  stakingUSDMonthBefore,
-                  earnedUSD,
-                  earnedUSDDayBefore,
-                  earnedUSDWeekBefore,
-                  earnedUSDMonthBefore,
-                },
-              ],
-            ),
+              },
+            ]),
           ),
       );
 
@@ -160,12 +120,8 @@ export const userLastMetricLoader = () =>
         map.get(id) ?? {
           stakingUSD: '0',
           stakingUSDDayBefore: '0',
-          stakingUSDWeekBefore: '0',
-          stakingUSDMonthBefore: '0',
           earnedUSD: '0',
           earnedUSDDayBefore: '0',
-          earnedUSDWeekBefore: '0',
-          earnedUSDMonthBefore: '0',
         },
     );
   });
@@ -260,8 +216,6 @@ export const userTokenLastMetricLoader = ({
     {
       usd: string;
       usdDayBefore: string;
-      usdWeekBefore: string;
-      usdMonthBefore: string;
     }
   >(async (usersId) => {
     const select = container.model
@@ -271,14 +225,6 @@ export const userTokenLastMetricLoader = ({
       .modify(QueryModify.sumMetric, [
         'usdDayBefore',
         `${metricWalletTokenRegistryTableName}.data->>'usdDayBefore'`,
-      ])
-      .modify(QueryModify.sumMetric, [
-        'usdWeekBefore',
-        `${metricWalletTokenRegistryTableName}.data->>'usdWeekBefore'`,
-      ])
-      .modify(QueryModify.sumMetric, [
-        'usdMonthBefore',
-        `${metricWalletTokenRegistryTableName}.data->>'usdMonthBefore'`,
       ])
       .innerJoin(
         walletTableName,
@@ -319,18 +265,14 @@ export const userTokenLastMetricLoader = ({
           user: string;
           usd: string;
           usdDayBefore: string;
-          usdWeekBefore: string;
-          usdMonthBefore: string;
         }>,
       ) =>
         new Map(
-          rows.map(({ user, usd, usdDayBefore, usdWeekBefore, usdMonthBefore }) => [
+          rows.map(({ user, usd, usdDayBefore }) => [
             user,
             {
               usd,
               usdDayBefore,
-              usdWeekBefore,
-              usdMonthBefore,
             },
           ]),
         ),
@@ -341,8 +283,6 @@ export const userTokenLastMetricLoader = ({
         map.get(id) ?? {
           usd: '0',
           usdDayBefore: '0',
-          usdWeekBefore: '0',
-          usdMonthBefore: '0',
         },
     );
   });
@@ -368,12 +308,8 @@ export const walletLastMetricLoader = () =>
     {
       stakingUSD: string;
       stakingUSDDayBefore: string;
-      stakingUSDWeekBefore: string;
-      stakingUSDMonthBefore: string;
       earnedUSD: string;
       earnedUSDDayBefore: string;
-      earnedUSDWeekBefore: string;
-      earnedUSDMonthBefore: string;
     }
   >(async (walletsId) => {
     const map = await container.model
@@ -388,28 +324,12 @@ export const walletLastMetricLoader = () =>
         `${metricWalletRegistryTableName}.data->>'stakingUSDDayBefore'`,
       ])
       .modify(QueryModify.sumMetric, [
-        'stakingUSDWeekBefore',
-        `${metricWalletRegistryTableName}.data->>'stakingUSDWeekBefore'`,
-      ])
-      .modify(QueryModify.sumMetric, [
-        'stakingUSDMonthBefore',
-        `${metricWalletRegistryTableName}.data->>'stakingUSDMonthBefore'`,
-      ])
-      .modify(QueryModify.sumMetric, [
         'earnedUSD',
         `${metricWalletRegistryTableName}.data->>'earnedUSD'`,
       ])
       .modify(QueryModify.sumMetric, [
         'earnedUSDDayBefore',
         `${metricWalletRegistryTableName}.data->>'earnedUSDDayBefore'`,
-      ])
-      .modify(QueryModify.sumMetric, [
-        'earnedUSDWeekBefore',
-        `${metricWalletRegistryTableName}.data->>'earnedUSDWeekBefore'`,
-      ])
-      .modify(QueryModify.sumMetric, [
-        'earnedUSDMonthBefore',
-        `${metricWalletRegistryTableName}.data->>'earnedUSDMonthBefore'`,
       ])
       .whereIn(`${metricWalletRegistryTableName}.wallet`, walletsId)
       .groupBy(`${metricWalletRegistryTableName}.wallet`)
@@ -419,37 +339,19 @@ export const walletLastMetricLoader = () =>
             wallet: string;
             stakingUSD: string;
             stakingUSDDayBefore: string;
-            stakingUSDWeekBefore: string;
-            stakingUSDMonthBefore: string;
             earnedUSD: string;
             earnedUSDDayBefore: string;
-            earnedUSDWeekBefore: string;
-            earnedUSDMonthBefore: string;
           }>,
         ) =>
           new Map(
             rows.map(
-              ({
-                wallet,
-                stakingUSD,
-                stakingUSDDayBefore,
-                stakingUSDWeekBefore,
-                stakingUSDMonthBefore,
-                earnedUSD,
-                earnedUSDDayBefore,
-                earnedUSDWeekBefore,
-                earnedUSDMonthBefore,
-              }) => [
+              ({ wallet, stakingUSD, stakingUSDDayBefore, earnedUSD, earnedUSDDayBefore }) => [
                 wallet,
                 {
                   stakingUSD,
                   stakingUSDDayBefore,
-                  stakingUSDWeekBefore,
-                  stakingUSDMonthBefore,
                   earnedUSD,
                   earnedUSDDayBefore,
-                  earnedUSDWeekBefore,
-                  earnedUSDMonthBefore,
                 },
               ],
             ),
@@ -461,12 +363,8 @@ export const walletLastMetricLoader = () =>
         map.get(id) ?? {
           stakingUSD: '0',
           stakingUSDDayBefore: '0',
-          stakingUSDWeekBefore: '0',
-          stakingUSDMonthBefore: '0',
           earnedUSD: '0',
           earnedUSDDayBefore: '0',
-          earnedUSDWeekBefore: '0',
-          earnedUSDMonthBefore: '0',
         },
     );
   });
@@ -482,8 +380,6 @@ export const walletTokenLastMetricLoader = (filter: {
       balance: string;
       usd: string;
       usdDayBefore: string;
-      usdWeekBefore: string;
-      usdMonthBefore: string;
     }
   >(async (walletsId: ReadonlyArray<string>) => {
     const map = await container.model
@@ -493,14 +389,6 @@ export const walletTokenLastMetricLoader = (filter: {
       .modify(QueryModify.sumMetric, [
         'usdDayBefore',
         `${metricWalletTokenRegistryTableName}.data->>'usdDayBefore'`,
-      ])
-      .modify(QueryModify.sumMetric, [
-        'usdWeekBefore',
-        `${metricWalletTokenRegistryTableName}.data->>'usdWeekBefore'`,
-      ])
-      .modify(QueryModify.sumMetric, [
-        'usdMonthBefore',
-        `${metricWalletTokenRegistryTableName}.data->>'usdMonthBefore'`,
       ])
       .modify(QueryModify.sumMetric, [
         'balance',
@@ -538,20 +426,16 @@ export const walletTokenLastMetricLoader = (filter: {
             balance: string;
             usd: string;
             usdDayBefore: string;
-            usdWeekBefore: string;
-            usdMonthBefore: string;
           }>,
         ) =>
           new Map(
-            rows.map(({ wallet, balance, usd, usdDayBefore, usdWeekBefore, usdMonthBefore }) => [
+            rows.map(({ wallet, balance, usd, usdDayBefore }) => [
               wallet,
               {
                 wallet,
                 balance,
                 usd,
                 usdDayBefore,
-                usdWeekBefore,
-                usdMonthBefore,
               },
             ]),
           ),
@@ -563,8 +447,6 @@ export const walletTokenLastMetricLoader = (filter: {
           wallet: id,
           usd: '0',
           usdDayBefore: '0',
-          usdWeekBefore: '0',
-          usdMonthBefore: '0',
           balance: '0',
         },
     );

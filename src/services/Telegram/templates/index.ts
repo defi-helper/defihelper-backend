@@ -9,6 +9,7 @@ export const Templates = {
   portfolioMetrics: fs.promises.readFile(`${__dirname}/PortfolioMetrics.mustache`, 'utf8'),
   publicBetaStarted: fs.promises.readFile(`${__dirname}/PublicBetaStarted.mustache`, 'utf8'),
   walletConnectWelcome: fs.promises.readFile(`${__dirname}/WalletConnectWelcome.mustache`, 'utf8'),
+  demoCallInvite: fs.promises.readFile(`${__dirname}/DemoCallInvite.mustache`, 'utf8'),
   welcomeNewWalletConnect: fs.promises.readFile(
     `${__dirname}/WelcomeNewWalletConnect.mustache`,
     'utf8',

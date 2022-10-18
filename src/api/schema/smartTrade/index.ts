@@ -163,7 +163,7 @@ export const SwapHandlerCallDataType = new GraphQLObjectType<SwapCallData>({
         new BN(amountIn).div(`1e${tokenInDecimals}`),
     },
     boughtPrice: {
-      type: GraphQLNonNull(BigNumberType),
+      type: BigNumberType,
       resolve: ({ callData: { boughtPrice } }) => boughtPrice,
     },
     stopLoss: {
@@ -364,14 +364,56 @@ export const OrderListQuery: GraphQLFieldConfig<any, Request> = {
   ),
 };
 
-export const SwapOrderCallDataRouteInputType = new GraphQLInputObjectType({
-  name: 'SwapOrderCallDataRouteInputType',
+export const OrderCancelMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(OrderType),
+  args: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+    },
+  },
+  resolve: onlyAllowed('smartTradeOrder.cancel-own', async (root, { id }, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const order = await container.model.smartTradeOrderTable().where('id', id).first();
+    if (!order) throw new UserInputError('Order not found');
+
+    const ownerWallet = await container.model.walletTable().where('id', order.owner).first();
+    if (!ownerWallet) throw new UserInputError('Owner wallet not found');
+    if (ownerWallet.user !== currentUser.id) throw new UserInputError('Foreign order');
+
+    return container.model.smartTradeService().updateOrder({
+      ...order,
+      status: OrderStatus.Canceled,
+    });
+  }),
+};
+
+export const SwapOrderCallDataTakeProfitInputType = new GraphQLInputObjectType({
+  name: 'SwapOrderCallDataTakeProfitInputType',
   fields: {
     amountOut: {
       type: GraphQLNonNull(BigNumberType),
     },
     amountOutMin: {
       type: GraphQLNonNull(BigNumberType),
+    },
+    slippage: {
+      type: GraphQLNonNull(GraphQLFloat),
+    },
+  },
+});
+
+export const SwapOrderCallDataStopLossInputType = new GraphQLInputObjectType({
+  name: 'SwapOrderCallDataStopLossInputType',
+  fields: {
+    amountOut: {
+      type: GraphQLNonNull(BigNumberType),
+    },
+    amountOutMin: {
+      type: GraphQLNonNull(BigNumberType),
+    },
+    moving: {
+      type: GraphQLNonNull(GraphQLBoolean),
     },
     slippage: {
       type: GraphQLNonNull(GraphQLFloat),
@@ -421,14 +463,17 @@ export const SwapOrderCreateInputType = new GraphQLInputObjectType({
             amountIn: {
               type: GraphQLNonNull(BigNumberType),
             },
-            boughtPrice: {
+            amountOut: {
               type: GraphQLNonNull(BigNumberType),
             },
+            boughtPrice: {
+              type: BigNumberType,
+            },
             stopLoss: {
-              type: SwapOrderCallDataRouteInputType,
+              type: SwapOrderCallDataStopLossInputType,
             },
             takeProfit: {
-              type: SwapOrderCallDataRouteInputType,
+              type: SwapOrderCallDataTakeProfitInputType,
             },
             deadline: {
               type: GraphQLNonNull(GraphQLInt),
@@ -512,13 +557,16 @@ export const SwapOrderCreateMutation: GraphQLFieldConfig<any, Request> = {
           path: callData.path,
           tokenInDecimals: callData.tokenInDecimals,
           tokenOutDecimals: callData.tokenOutDecimals,
-          amountIn: callData.amountIn.toString(10),
-          boughtPrice: callData.boughtPrice.toString(10),
+          amountIn: callData.amountIn.toFixed(0),
+          boughtPrice: callData.boughtPrice ? callData.boughtPrice.toString(10) : null,
           routes: [
             callData.stopLoss
               ? {
                   amountOut: callData.stopLoss.amountOut.toFixed(0),
                   amountOutMin: callData.stopLoss.amountOutMin.toFixed(0),
+                  moving: callData.stopLoss.moving
+                    ? callData.amountOut.minus(callData.stopLoss.amountOut).toFixed(0)
+                    : null,
                   slippage: callData.stopLoss.slippage.toString(),
                   direction: 'lt',
                 }
@@ -527,6 +575,7 @@ export const SwapOrderCreateMutation: GraphQLFieldConfig<any, Request> = {
               ? {
                   amountOut: callData.takeProfit.amountOut.toFixed(0),
                   amountOutMin: callData.takeProfit.amountOutMin.toFixed(0),
+                  moving: null,
                   slippage: callData.takeProfit.slippage.toString(),
                   direction: 'gt',
                 }
@@ -555,4 +604,70 @@ export const SwapOrderCreateMutation: GraphQLFieldConfig<any, Request> = {
 
     return order;
   }),
+};
+
+export const SwapOrderUpdateInputType = new GraphQLInputObjectType({
+  name: 'SmartTradeSwapOrderUpdateInputType',
+  fields: {
+    callData: {
+      type: new GraphQLInputObjectType({
+        name: 'SmartTradeSwapOrderUpdateCallDataInputType',
+        fields: {
+          boughtPrice: {
+            type: BigNumberType,
+          },
+        },
+      }),
+    },
+  },
+});
+
+export const SwapOrderUpdateMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(OrderType),
+  args: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+    },
+    input: {
+      type: GraphQLNonNull(SwapOrderUpdateInputType),
+    },
+  },
+  resolve: onlyAllowed(
+    'smartTradeOrder.update-own',
+    async (root, { id, input }, { currentUser }) => {
+      if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+      const order = await container.model
+        .smartTradeOrderTable()
+        .where('id', id)
+        .first()
+        .then((v) => v as Order<SwapCallData> | undefined);
+      if (!order) {
+        throw new UserInputError('Order not found');
+      }
+      const ownerWallet = await container.model
+        .walletTable()
+        .innerJoin(
+          walletBlockchainTableName,
+          `${walletTableName}.id`,
+          `${walletBlockchainTableName}.id`,
+        )
+        .where(`${walletTableName}.id`, order.owner)
+        .first();
+      if (!ownerWallet) {
+        throw new UserInputError('Owner wallet not found');
+      }
+      if (currentUser.id !== ownerWallet.user) {
+        throw new UserInputError('Foreign order');
+      }
+
+      return container.model.smartTradeService().updateOrder({
+        ...order,
+        callData: {
+          ...order.callData,
+          boughtPrice: input.callData?.boughtPrice ?? order.callData.boughtPrice,
+        },
+      });
+    },
+  ),
 };

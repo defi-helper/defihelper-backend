@@ -70,14 +70,12 @@ export default async (process: Process) => {
 
   const totalNetWorth = new BN(totalStackedUSD).plus(totalEarnedUSD).plus(totalTokensUSD);
   const worthDayBefore = new BN(stakingUSDDayBefore).plus(earnedUSDDayBefore).plus(usdDayBefore);
-  const worthChange =
-    Number(stakingUSDDayBefore) !== 0
-      ? new BN(totalNetWorth).div(worthDayBefore).multipliedBy(100)
-      : new BN(0);
-  const earnedChange =
-    Number(earnedUSDDayBefore) !== 0
-      ? new BN(totalEarnedUSD).div(earnedUSDDayBefore).multipliedBy(100)
-      : new BN(0);
+  const worthChange = !worthDayBefore.eq(0)
+    ? new BN(totalNetWorth).div(worthDayBefore).minus(1).multipliedBy(100)
+    : new BN(0);
+  const earnedChange = !new BN(earnedUSDDayBefore).eq(0)
+    ? new BN(totalEarnedUSD).div(earnedUSDDayBefore).minus(1).multipliedBy(100)
+    : new BN(0);
 
   const templateParams = {
     name: user.name === '' ? 'My Portfolio' : user.name,
