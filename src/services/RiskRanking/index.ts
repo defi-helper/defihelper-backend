@@ -31,10 +31,14 @@ enum RequestType {
   GET = 'get',
 }
 
-export class RiskRanking {
+export interface IRiskRankingGateway {
+  getCoinInfo(coingeckoId: string): Promise<CoinInfo | null>;
+}
+
+export class RiskRankingGatewayPrototype {
   constructor(public readonly url: string) {}
 
-  private apiRequest<T>(
+  protected apiRequest<T>(
     type: RequestType,
     path: string,
     queryParams: Record<string, string>,
@@ -60,7 +64,9 @@ export class RiskRanking {
         throw new Error(`[Risk ranking]: ${url}; ${e}`);
       });
   }
+}
 
+export class RiskRanking extends RiskRankingGatewayPrototype {
   async getCoinInfo(coingeckoId: string) {
     const response = await this.apiRequest<CoinInfo | { status_code: number }>(
       RequestType.GET,
@@ -78,6 +84,13 @@ export class RiskRanking {
   }
 }
 
-export function riskRankingFactory(url: string): Factory<RiskRanking> {
-  return () => new RiskRanking(url);
+class NullService extends RiskRankingGatewayPrototype {
+  // eslint-disable-next-line
+  async getCoinInfo() {
+    return null;
+  }
+}
+
+export function riskRankingFactory(url: string): Factory<IRiskRankingGateway> {
+  return () => (url ? new RiskRanking(url) : new NullService(url));
 }
