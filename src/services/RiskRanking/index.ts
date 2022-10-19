@@ -31,7 +31,11 @@ enum RequestType {
   GET = 'get',
 }
 
-export class RiskRanking {
+export interface IRiskRankingGateway {
+  getCoinInfo(coingeckoId: string): Promise<CoinInfo | null>;
+}
+
+export class RiskRanking implements IRiskRankingGateway {
   constructor(public readonly url: string) {}
 
   private apiRequest<T>(
@@ -78,6 +82,13 @@ export class RiskRanking {
   }
 }
 
-export function riskRankingFactory(url: string): Factory<RiskRanking> {
-  return () => new RiskRanking(url);
+class NullService implements IRiskRankingGateway {
+  // eslint-disable-next-line
+  async getCoinInfo() {
+    return null;
+  }
+}
+
+export function riskRankingFactory(url: string): Factory<IRiskRankingGateway> {
+  return () => (url ? new RiskRanking(url) : new NullService());
 }
