@@ -181,8 +181,8 @@ export class MetricContractService {
         wallet: metric.wallet,
       })
       .whereBetween('date', [
-        dayjs(metric.date).add(-2, 'day').toDate(),
-        dayjs(metric.date).add(-1, 'day').toDate(),
+        dayjs(metric.date).add(-2, 'day').startOf('day').toDate(),
+        dayjs(metric.date).add(-1, 'day').startOf('day').toDate(),
       ])
       .first();
     const data = {
@@ -321,8 +321,8 @@ export class MetricContractService {
         token: metric.token,
       })
       .whereBetween('date', [
-        dayjs(metric.date).add(-2, 'day').toDate(),
-        dayjs(metric.date).add(-1, 'day').toDate(),
+        dayjs(metric.date).add(-2, 'day').startOf('day').toDate(),
+        dayjs(metric.date).add(-1, 'day').startOf('day').toDate(),
       ])
       .first();
 

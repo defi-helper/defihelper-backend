@@ -7,6 +7,7 @@ import {
   walletContractLinkTableName,
 } from '@models/Protocol/Entity';
 import { Process, TaskStatus } from '@models/Queue/Entity';
+import { tableName as userTableName } from '@models/User/Entity';
 import {
   walletBlockchainTableName,
   WalletBlockchainType,
@@ -56,13 +57,24 @@ async function createAdapterMetricsCollector(
   }, Promise.resolve([]));
 }
 
-async function createDebankMetricsCollector(walletsId: Array<{ id: string }>) {
+function createDebankBalanceMetricsCollector(walletsId: Array<{ id: string }>) {
   return walletsId.reduce<Promise<string[]>>(async (prev, { id }) => {
     const res = await prev;
 
     const task = await container.model
       .queueService()
-      .push('metricsWalletBalancesDeBankFiller', { id });
+      .push('metricsWalletBalancesDeBankFiller', { id }, { topic: 'metricCurrent' });
+    return [...res, task.id];
+  }, Promise.resolve([]));
+}
+
+async function createDebankContractMetricsCollector(walletsId: Array<{ id: string }>) {
+  return walletsId.reduce<Promise<string[]>>(async (prev, { id }) => {
+    const res = await prev;
+
+    const task = await container.model
+      .queueService()
+      .push('metricsWalletProtocolsBalancesDeBankFiller', { id }, { topic: 'metricCurrent' });
     return [...res, task.id];
   }, Promise.resolve([]));
 }
@@ -119,7 +131,7 @@ export default async (process: Process) => {
             .map(({ id }) => id),
         )
         .then(createAdapterMetricsCollector),
-      // Debank collector
+      // Debank balance collector
       container.model
         .walletTable()
         .column(`${walletTableName}.id`)
@@ -138,7 +150,24 @@ export default async (process: Process) => {
             .filter(({ testnet }) => !testnet)
             .map(({ id }) => id),
         )
-        .then(createDebankMetricsCollector),
+        .then(createDebankBalanceMetricsCollector),
+      // Debank contract collector
+      container.model
+        .walletTable()
+        .distinctOn(`${walletBlockchainTableName}.address`)
+        .column(`${walletBlockchainTableName}.id`)
+        .innerJoin(
+          walletBlockchainTableName,
+          `${walletBlockchainTableName}.id`,
+          `${walletTableName}.id`,
+        )
+        .innerJoin(userTableName, `${walletTableName}.user`, `${userTableName}.id`)
+        .where(`${walletTableName}.user`, userId)
+        .where(`${walletBlockchainTableName}.type`, WalletBlockchainType.Wallet)
+        .andWhere(`${walletBlockchainTableName}.blockchain`, 'ethereum')
+        .andWhere(`${userTableName}.isMetricsTracked`, true)
+        .whereNull(`${walletTableName}.deletedAt`)
+        .then(createDebankContractMetricsCollector),
     ]);
 
     const tasks = [...adapterTasksId, ...debankTasksId];
