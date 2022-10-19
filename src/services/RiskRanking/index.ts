@@ -35,10 +35,10 @@ export interface IRiskRankingGateway {
   getCoinInfo(coingeckoId: string): Promise<CoinInfo | null>;
 }
 
-class RiskRankingGatewayPrototype {
+export class RiskRanking implements IRiskRankingGateway {
   constructor(public readonly url: string) {}
 
-  protected apiRequest<T>(
+  private apiRequest<T>(
     type: RequestType,
     path: string,
     queryParams: Record<string, string>,
@@ -64,9 +64,7 @@ class RiskRankingGatewayPrototype {
         throw new Error(`[Risk ranking]: ${url}; ${e}`);
       });
   }
-}
 
-export class RiskRanking extends RiskRankingGatewayPrototype {
   async getCoinInfo(coingeckoId: string) {
     const response = await this.apiRequest<CoinInfo | { status_code: number }>(
       RequestType.GET,
@@ -84,7 +82,9 @@ export class RiskRanking extends RiskRankingGatewayPrototype {
   }
 }
 
-class NullService extends RiskRankingGatewayPrototype {
+class NullService implements IRiskRankingGateway {
+  constructor(public readonly url: string) {}
+
   // eslint-disable-next-line
   async getCoinInfo() {
     return null;
