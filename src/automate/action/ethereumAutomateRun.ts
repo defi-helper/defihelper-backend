@@ -135,6 +135,9 @@ export default async function (this: Action, params: Params) {
       container.amplitude().log('automation_fee_charged_successful', wallet.user, {
         hash: tx.hash,
       }),
+      container.model.queueService().push('automateNotifyExecutedRestake', {
+        contract: contract.id,
+      }),
     ]);
   } catch (e) {
     await container
