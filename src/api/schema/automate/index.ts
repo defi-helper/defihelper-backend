@@ -1548,6 +1548,74 @@ export const ContractDeleteMutation: GraphQLFieldConfig<any, Request> = {
   }),
 };
 
+export const ContractTriggerUpdateMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLList(GraphQLNonNull(TriggerType))),
+  args: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+    },
+    input: {
+      type: GraphQLNonNull(
+        new GraphQLInputObjectType({
+          name: 'AutomateContractTriggerUpdateInputType',
+          fields: {
+            active: {
+              type: GraphQLBoolean,
+              description: 'Is active',
+              defaultValue: true,
+            },
+          },
+        }),
+      ),
+    },
+  },
+  resolve: onlyAllowed(
+    'automateTrigger.update-own',
+    async (root, { id, input }, { currentUser }) => {
+      if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+      const contract = await container.model.automateContractTable().where('id', id).first();
+      if (!contract) throw new UserInputError('Contract not found');
+
+      const triggers = await container.model
+        .automateTriggerTable()
+        .distinct(`${Automate.triggerTableName}.*`)
+        .innerJoin(
+          Automate.actionTableName,
+          `${Automate.triggerTableName}.id`,
+          `${Automate.actionTableName}.trigger`,
+        )
+        .where(`${Automate.actionTableName}.type`, 'ethereumAutomateRun')
+        .where(
+          container.database().raw(`${Automate.actionTableName}.params->>'id' = ?`, [contract.id]),
+        )
+        .then((v) => v as Automate.Trigger[]);
+      const walletsMap = await container.model
+        .walletTable()
+        .whereIn(
+          'id',
+          triggers.map(({ wallet }: { wallet: string }) => wallet),
+        )
+        .then((rows) => new Map(rows.map((wallet) => [wallet.id, wallet])));
+
+      return triggers.reduce<Promise<Automate.Trigger[]>>(async (prev, trigger) => {
+        const res = await prev;
+
+        const wallet = walletsMap.get(trigger.wallet);
+        if (!wallet || wallet.user !== currentUser.id) return res;
+
+        return [
+          ...res,
+          await container.model.automateService().updateTrigger({
+            ...trigger,
+            active: typeof input.active === 'boolean' ? input.active : trigger.active,
+          }),
+        ];
+      }, Promise.resolve([]));
+    },
+  ),
+};
+
 export const ContractStopLossEnable: GraphQLFieldConfig<any, Request> = {
   type: GraphQLNonNull(GraphQLBoolean),
   args: {
