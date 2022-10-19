@@ -40,7 +40,7 @@ export class RiskRanking {
     queryParams: Record<string, string>,
   ): Promise<T> {
     const url = buildUrl(this.url, {
-      path: `/v1/${path}`,
+      path: `/${path}`,
       queryParams,
     });
 
@@ -64,7 +64,7 @@ export class RiskRanking {
   async getCoinInfo(coingeckoId: string) {
     const response = await this.apiRequest<CoinInfo | { status_code: number }>(
       RequestType.GET,
-      'get_coin_info',
+      'coin-data',
       {
         id: coingeckoId,
       },
