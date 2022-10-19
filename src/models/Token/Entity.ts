@@ -29,8 +29,9 @@ export enum TokenCreatedBy {
   Manually = 'manually',
   Scanner = 'scanner',
   Adapter = 'adapter',
+  WhatToFarm = 'whatToFarm',
   AutomateContractStopLoss = 'automateContractStopLoss',
-  SmartTrade = 'smartTrade',
+  SmartTrade = 'smartTrade'
 }
 
 export namespace PriceFeed {
@@ -48,6 +49,21 @@ export namespace PriceFeed {
       return false;
     }
     if (v.type !== 'coingeckoId') return false;
+
+    return true;
+  }
+
+  export function isUniswapRouterV2(v: any): v is CoingeckoId {
+    if (typeof v !== 'object' || v === null) return false;
+    if (
+      !Object.prototype.hasOwnProperty.call(v, 'type') ||
+      !Object.prototype.hasOwnProperty.call(v, 'route') ||
+      !Object.prototype.hasOwnProperty.call(v, 'routerAddress') ||
+      !Object.prototype.hasOwnProperty.call(v, 'outputDecimals')
+    ) {
+      return false;
+    }
+    if (v.type !== 'uniswapRouterV2') return false;
 
     return true;
   }
@@ -70,6 +86,13 @@ export namespace PriceFeed {
     address: string;
   }
 
+  export interface UniswapRouterV2 {
+    type: 'uniswapRouterV2';
+    route: string[];
+    routerAddress: string;
+    outputDecimals: number;
+  }
+
   export function isCoingeckoAddress(v: any): v is CoingeckoAddress {
     if (typeof v !== 'object' || v === null) return false;
     if (
@@ -85,7 +108,7 @@ export namespace PriceFeed {
     return true;
   }
 
-  export type PriceFeed = CoingeckoId | CoingeckoAddress;
+  export type PriceFeed = CoingeckoId | CoingeckoAddress | UniswapRouterV2;
 }
 
 export interface Token {
