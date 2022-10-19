@@ -35,7 +35,7 @@ export interface IRiskRankingGateway {
   getCoinInfo(coingeckoId: string): Promise<CoinInfo | null>;
 }
 
-export class RiskRankingGatewayPrototype {
+class RiskRankingGatewayPrototype {
   constructor(public readonly url: string) {}
 
   protected apiRequest<T>(
