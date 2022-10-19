@@ -80,6 +80,9 @@ export * as walletBalancesCentralizedExchangeBroker from './metrics/walletBalanc
 
 export * as notificationsDemoCallInvitationsBroker from './notifications/demoCallInvitationsBroker';
 
+export * as metricsTokenRiskRankingFiller from './metrics/tokenRiskRankingFiller';
+export * as metricsTokenRiskRankingBroker from './metrics/tokenRiskRankingBroker';
+
 /* protocol */
 export * as protocolContractsResolver from './protocol/resolveContracts';
 
