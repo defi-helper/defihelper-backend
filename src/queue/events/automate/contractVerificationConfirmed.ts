@@ -61,7 +61,13 @@ export default async (process: Process) => {
       '',
       `Automate contract ${contract.address.slice(0, 5)}...`,
     );
-  await container.model.contractService().walletLink(targetContract, contractWallet);
+  await Promise.all([
+    container.model.contractService().walletLink(targetContract, contractWallet),
+    container.model.automateService().updateContract({
+      ...contract,
+      contractWallet: contractWallet.id,
+    }),
+  ]);
 
   return process.done();
 };

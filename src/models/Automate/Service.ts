@@ -272,6 +272,7 @@ export class AutomateService {
       id: uuid(),
       type,
       wallet: blockchainWallet.id,
+      contractWallet: null,
       protocol: protocol.id,
       contract: contract?.id ?? null,
       address,
