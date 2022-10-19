@@ -163,7 +163,7 @@ export const SwapHandlerCallDataType = new GraphQLObjectType<SwapCallData>({
         new BN(amountIn).div(`1e${tokenInDecimals}`),
     },
     boughtPrice: {
-      type: BigNumberType,
+      type: GraphQLNonNull(BigNumberType),
       resolve: ({ callData: { boughtPrice } }) => boughtPrice,
     },
     stopLoss: {
@@ -558,7 +558,7 @@ export const SwapOrderCreateMutation: GraphQLFieldConfig<any, Request> = {
           tokenInDecimals: callData.tokenInDecimals,
           tokenOutDecimals: callData.tokenOutDecimals,
           amountIn: callData.amountIn.toFixed(0),
-          boughtPrice: callData.boughtPrice ? callData.boughtPrice.toString(10) : null,
+          boughtPrice: callData.boughtPrice.toString(10),
           routes: [
             callData.stopLoss
               ? {
