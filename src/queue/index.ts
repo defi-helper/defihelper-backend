@@ -36,6 +36,7 @@ export * as watcherResolveContractId from './scanner/resolveWatcherId';
 export * as notificationSend from './notifications/send';
 export * as contractResolveDeployBlockNumber from './contract/resolveDeployBlockNumber';
 export * as contractResolveAbi from './contract/resolveAbi';
+
 export * as billingBroker from './billing/broker';
 export * as billingTransferScan from './billing/transferScan';
 export * as billingClaimScan from './billing/claimScan';
@@ -121,6 +122,12 @@ export * as tokenInfoWaves from './token/wavesInfo';
 export * as resolveTokenAliasLiquidity from './token/resolveTokenAliasLiquidity';
 export * as tokensBridgesFromAdapters from './token/tokensBridgesFromAdapters';
 export * as tokensDeleteDuplicates from './token/deleteTokenDuplicates';
+
+export * as tokenResolveUniswapRoute from './token/uniswapRouteRevealer';
+export * as tokenResolveUniswapRouteBroker from './token/uniswapRouteRevealerBroker';
+
+export * as whatToFarmTokensIterator from './token/whatToFarmTokensIterator';
+
 export * as syncCoingeckoIdsBroker from './token/syncCoingeckoIdsBroker';
 export * as syncCoingeckoIdsFiller from './token/syncCoingeckoIdsFiller';
 

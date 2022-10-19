@@ -9,6 +9,7 @@ import { abi as erc1167ABI } from '@defihelper/networks/abi/ERC1167.json';
 import { abi as governorBravoABI } from '@defihelper/networks/abi/GovernorBravo.json';
 import { abi as governanceTokenABI } from '@defihelper/networks/abi/GovernanceToken.json';
 import { abi as treasuryABI } from '@defihelper/networks/abi/Treasury.json';
+import { abi as uniswapRouterABI } from '@defihelper/networks/abi/UniswapV2Router.json';
 import container from '@container';
 import automateABI from './abi/ethereum/automate.json';
 import masterChefV1ABI from './abi/ethereum/masterChefV1ABI.json';
@@ -217,6 +218,7 @@ export interface NativeTokenDetails {
   decimals: number;
   symbol: string;
   name: string;
+  wrapped: string | null;
 }
 
 export interface Config {
@@ -259,6 +261,7 @@ export class BlockchainContainer extends Container<Config> {
         decimals: 18,
         symbol: 'ETH',
         name: 'Ethereum',
+        wrapped: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
       },
       tokenPriceResolver: debankPriceFeed('1'),
       network: this.parent.eth,
@@ -280,6 +283,7 @@ export class BlockchainContainer extends Container<Config> {
         decimals: 18,
         symbol: 'ETH',
         name: 'Ethereum',
+        wrapped: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
       },
       tokenPriceResolver: debankPriceFeed('1'),
       network: this.parent.ethRopsten,
@@ -301,6 +305,7 @@ export class BlockchainContainer extends Container<Config> {
         decimals: 18,
         symbol: 'ETH',
         name: 'Ethereum',
+        wrapped: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
       },
       tokenPriceResolver: debankPriceFeed('1'),
       network: this.parent.ethRinkeby,
@@ -322,6 +327,7 @@ export class BlockchainContainer extends Container<Config> {
         decimals: 18,
         symbol: 'GoerliETH',
         name: 'Goerli Ethereum',
+        wrapped: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
       },
       tokenPriceResolver: debankPriceFeed('1'),
       network: this.parent.ethGoerli,
@@ -343,6 +349,7 @@ export class BlockchainContainer extends Container<Config> {
         decimals: 18,
         symbol: 'OETH',
         name: 'Optimism Ethereum',
+        wrapped: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // todo check me
       },
       tokenPriceResolver: debankPriceFeed('10'),
       rpcUrls: ['https://mainnet.optimism.io'],
@@ -365,6 +372,7 @@ export class BlockchainContainer extends Container<Config> {
         decimals: 8,
         symbol: 'CRO',
         name: 'Cronos',
+        wrapped: '0x5C7F8A570d578ED84E63fdFA7b1eE72dEae1AE23',
       },
       tokenPriceResolver: debankPriceFeed('25'),
       network: this.parent.cronos,
@@ -386,6 +394,7 @@ export class BlockchainContainer extends Container<Config> {
         decimals: 18,
         symbol: 'BNB',
         name: 'BNB',
+        wrapped: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
       },
       rpcUrls: [
         'https://bsc-dataseed.binance.org/',
@@ -412,6 +421,7 @@ export class BlockchainContainer extends Container<Config> {
         decimals: 18,
         symbol: 'MATIC',
         name: 'Polygon',
+        wrapped: '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270',
       },
       tokenPriceResolver: debankPriceFeed('137'),
       rpcUrls: ['https://rpc-mainnet.maticvigil.com/', 'https://rpc-mainnet.maticvigil.com/'],
@@ -434,6 +444,7 @@ export class BlockchainContainer extends Container<Config> {
         decimals: 18,
         symbol: 'FTM',
         name: 'Fantom',
+        wrapped: '0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83',
       },
       tokenPriceResolver: debankPriceFeed('250'),
       rpcUrls: ['https://rpc.ftm.tools'],
@@ -456,6 +467,7 @@ export class BlockchainContainer extends Container<Config> {
         decimals: 18,
         symbol: 'GLMR',
         name: 'Moonbeam',
+        wrapped: '0xAcc15dC74880C9944775448304B263D191c6077F',
       },
       tokenPriceResolver: debankPriceFeed('1284'),
       rpcUrls: ['https://rpc.api.moonbeam.network', 'https://rpc.api.moonbeam.network'],
@@ -478,6 +490,7 @@ export class BlockchainContainer extends Container<Config> {
         decimals: 18,
         symbol: 'MOVR',
         name: 'Moonriver',
+        wrapped: '0x98878B06940aE243284CA214f92Bb71a2b032B8A',
       },
       tokenPriceResolver: debankPriceFeed('1285'),
       rpcUrls: ['https://rpc.moonriver.moonbeam.network', 'https://rpc.moonriver.moonbeam.network'],
@@ -500,6 +513,7 @@ export class BlockchainContainer extends Container<Config> {
         decimals: 18,
         symbol: 'ETH',
         name: 'Ethereum',
+        wrapped: null,
       },
       tokenPriceResolver: debankPriceFeed('1'),
       network: this.parent.local,
@@ -521,6 +535,7 @@ export class BlockchainContainer extends Container<Config> {
         decimals: 18,
         symbol: 'ETH',
         name: 'Ethereum',
+        wrapped: '',
       },
       tokenPriceResolver: debankPriceFeed('42161'),
       rpcUrls: ['https://arb1.arbitrum.io/rpc'],
@@ -543,6 +558,7 @@ export class BlockchainContainer extends Container<Config> {
         decimals: 18,
         symbol: 'AVAX',
         name: 'Avalanche',
+        wrapped: '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7',
       },
       tokenPriceResolver: debankPriceFeed('43113'),
       network: this.parent.avalancheTestnet,
@@ -564,6 +580,7 @@ export class BlockchainContainer extends Container<Config> {
         decimals: 18,
         symbol: 'AVAX',
         name: 'Avalanche',
+        wrapped: '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7',
       },
       tokenPriceResolver: debankPriceFeed('43114'),
       rpcUrls: ['https://api.avax.network/ext/bc/C/rpc', 'https://api.avax.network/ext/bc/C/rpc'],
@@ -586,6 +603,7 @@ export class BlockchainContainer extends Container<Config> {
         decimals: 18,
         symbol: 'ETH',
         name: 'Ethereum',
+        wrapped: '0xC9BdeEd33CD01541e1eeD10f90519d2C06Fe3feB',
       },
       tokenPriceResolver: debankPriceFeed('1313161554'),
       network: this.parent.aurora,
@@ -609,6 +627,7 @@ export class BlockchainContainer extends Container<Config> {
         decimals: 18,
         symbol: 'ONE',
         name: 'Harmony',
+        wrapped: '0xcf664087a5bb0237a0bad6742852ec6c8d69a27a',
       },
       tokenPriceResolver: debankPriceFeed('1666600000'),
       rpcUrls: [
@@ -651,6 +670,7 @@ export class BlockchainContainer extends Container<Config> {
     governorBravoABI,
     governanceTokenABI,
     treasuryABI,
+    uniswapRouterABI,
     automateABI,
   };
 }

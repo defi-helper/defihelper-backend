@@ -105,6 +105,16 @@ export const PriceFeedInputType = new GraphQLInputObjectType({
         },
       }),
     },
+    uniswapRouterV2: {
+      type: new GraphQLInputObjectType({
+        name: 'TokenPriceFeedUniswapRouterV2InputType',
+        fields: {
+          route: { type: GraphQLNonNull(GraphQLList(GraphQLNonNull(GraphQLString))) },
+          routerAddress: { type: GraphQLNonNull(GraphQLString) },
+          outputDecimals: { type: GraphQLNonNull(GraphQLInt) },
+        },
+      }),
+    },
   },
 });
 
@@ -327,6 +337,15 @@ export const TokenUpdateMutation: GraphQLFieldConfig<any, Request> = {
           );
         }
         priceFeedInput = priceFeed.coingeckoAddress;
+      } else if (priceFeed.uniswapRouterV2) {
+        priceFeed.uniswapRouterV2.type = 'uniswapRouterV2';
+        if (!PriceFeed.isUniswapRouterV2(priceFeed.uniswapRouterV2)) {
+          throw new UserInputError(
+            `Invalid price feed "${JSON.stringify(priceFeed.uniswapRouterV2)}"`,
+          );
+        }
+
+        priceFeedInput = priceFeed.uniswapRouterV2;
       }
     }
 

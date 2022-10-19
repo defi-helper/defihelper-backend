@@ -147,6 +147,7 @@ export interface Contract {
   id: string;
   type: ContractType;
   wallet: string;
+  contractWallet: string | null;
   protocol: string;
   contract: string | null;
   address: string;

@@ -166,12 +166,12 @@ export const WalletMetricType = new GraphQLObjectType({
   },
 });
 
-export const WalletBlockchainType = new GraphQLObjectType<
+export const WalletBlockchainType: GraphQLObjectType = new GraphQLObjectType<
   Wallet.Wallet & Wallet.WalletBlockchain,
   Request
 >({
   name: 'WalletBlockchainType',
-  fields: {
+  fields: () => ({
     id: {
       type: GraphQLNonNull(UuidType),
       description: 'Identificator',
@@ -290,6 +290,12 @@ export const WalletBlockchainType = new GraphQLObjectType<
             count: await select.clone().clearSelect().count().first(),
           },
         };
+      },
+    },
+    automates: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(WalletBlockchainType))),
+      resolve: async (wallet, args, { dataLoader }) => {
+        return dataLoader.walletAutomates().load(wallet.id);
       },
     },
     triggersCount: {
@@ -636,7 +642,7 @@ export const WalletBlockchainType = new GraphQLObjectType<
       type: GraphQLNonNull(DateTimeType),
       description: 'Date of created wallet',
     },
-  },
+  }),
 });
 
 export const WalletExchangeTypeEnum = new GraphQLEnumType({

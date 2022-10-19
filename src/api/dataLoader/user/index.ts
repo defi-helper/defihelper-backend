@@ -17,7 +17,7 @@ import {
 } from '@models/Wallet/Entity';
 import DataLoader from 'dataloader';
 import { TokenAliasLiquidity, tokenAliasTableName, tokenTableName } from '@models/Token/Entity';
-import { triggerTableName } from '@models/Automate/Entity';
+import { contractTableName, triggerTableName } from '@models/Automate/Entity';
 
 export const userLoader = () =>
   new DataLoader<string, User | null>(async (usersId) => {
@@ -464,4 +464,31 @@ export const walletTriggersCountLoader = () =>
       .then((rows) => new Map(rows.map(({ wallet, count }) => [wallet, Number(count)])));
 
     return walletsId.map((id) => map.get(id) ?? 0);
+  });
+
+export const walletAutomatesLoader = () =>
+  new DataLoader<string, Array<Wallet & WalletBlockchain>>(async (walletsId) => {
+    const walletsMap = await container.model
+      .walletTable()
+      .innerJoin(
+        walletBlockchainTableName,
+        `${walletBlockchainTableName}.id`,
+        `${walletTableName}.id`,
+      )
+      .columns(`${walletTableName}.*`)
+      .columns(`${walletBlockchainTableName}.*`)
+      .column({ ownerWallet: `${contractTableName}.wallet` })
+      .innerJoin(contractTableName, `${walletTableName}.id`, `${contractTableName}.contractWallet`)
+      .whereIn(`${contractTableName}.wallet`, walletsId)
+      .whereNull(`${contractTableName}.archivedAt`)
+      .then((rows) =>
+        rows.reduce<Map<string, Array<Wallet & WalletBlockchain>>>(
+          (map, wallet: Wallet & WalletBlockchain & { ownerWallet: string }) => {
+            return map.set(wallet.ownerWallet, [...(map.get(wallet.ownerWallet) ?? []), wallet]);
+          },
+          new Map(),
+        ),
+      );
+
+    return walletsId.map((id) => walletsMap.get(id) ?? []);
   });
