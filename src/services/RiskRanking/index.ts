@@ -83,8 +83,6 @@ export class RiskRanking implements IRiskRankingGateway {
 }
 
 class NullService implements IRiskRankingGateway {
-  constructor(public readonly url: string) {}
-
   // eslint-disable-next-line
   async getCoinInfo() {
     return null;
@@ -92,5 +90,5 @@ class NullService implements IRiskRankingGateway {
 }
 
 export function riskRankingFactory(url: string): Factory<IRiskRankingGateway> {
-  return () => (url ? new RiskRanking(url) : new NullService(url));
+  return () => (url ? new RiskRanking(url) : new NullService());
 }
