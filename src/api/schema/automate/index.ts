@@ -1261,6 +1261,12 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
         return dataLoader.automateContractStopLoss().load(contract.id);
       },
     },
+    trigger: {
+      type: TriggerType,
+      resolve: (contract, args, { dataLoader }) => {
+        return dataLoader.automateContractTrigger().load(contract.id);
+      },
+    },
   },
 });
 
