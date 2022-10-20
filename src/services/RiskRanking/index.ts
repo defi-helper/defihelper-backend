@@ -7,12 +7,15 @@ export interface CoinInfo {
   name: string;
   volatility: {
     quantile_volatility_scoring: number;
+    ranking_volatility: 'green' | 'red' | 'yellow';
   };
   reliability: {
     quantile_reliability_scoring: number;
+    ranking_reliability: 'green' | 'red' | 'yellow';
   };
   profitability: {
     quantile_profitability_scoring: number;
+    ranking_profitability: 'green' | 'red' | 'yellow';
   };
   total: {
     ranking: 'green' | 'red' | 'yellow';

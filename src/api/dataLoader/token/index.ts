@@ -112,7 +112,11 @@ export const tokenLastMetricLoader = () =>
   new DataLoader<
     string,
     {
-      risk: MetricTokenRiskFactor;
+      totalRate: MetricTokenRiskFactor;
+      reliabilityRate: MetricTokenRiskFactor;
+      profitabilityRate: MetricTokenRiskFactor;
+      volatilityRate: MetricTokenRiskFactor;
+      total: number;
       reliability: number;
       volatility: number;
       profitability: number;
@@ -121,7 +125,10 @@ export const tokenLastMetricLoader = () =>
     const select = container.model
       .metricTokenRegistryTable()
       .column(`${metricTokenRegistryTableName}.id as token`)
-      .column(`${metricTokenRegistryTableName}.data->>'risk' as risk`)
+      .column(`${metricTokenRegistryTableName}.data->>'totalRate' as totalRate`)
+      .column(`${metricTokenRegistryTableName}.data->>'reliabilityRate' as reliabilityRate`)
+      .column(`${metricTokenRegistryTableName}.data->>'profitabilityRate' as profitabilityRate`)
+      .column(`${metricTokenRegistryTableName}.data->>'volatilityRate' as volatilityRate`)
       .column(
         `COALESCE(${metricTokenRegistryTableName}.data->>'reliability', '1')::float as reliability`,
       )
@@ -131,38 +138,63 @@ export const tokenLastMetricLoader = () =>
       .column(
         `COALESCE(${metricTokenRegistryTableName}.data->>'profitability', '1')::float as profitability`,
       )
+      .column(`COALESCE(${metricTokenRegistryTableName}.data->>'total', '1')::float as total`)
       .whereIn(`${metricTokenRegistryTableName}.token`, tokensIds);
 
     const map = await select.then(
       (
         rows: Array<{
           token: string;
-          risk: MetricTokenRiskFactor;
+          totalRate: MetricTokenRiskFactor;
+          reliabilityRate: MetricTokenRiskFactor;
+          profitabilityRate: MetricTokenRiskFactor;
+          volatilityRate: MetricTokenRiskFactor;
+          total: number;
           reliability: number;
           volatility: number;
           profitability: number;
         }>,
       ) =>
         new Map(
-          rows.map(({ token, risk, reliability, volatility, profitability }) => [
-            token,
-            {
-              risk,
+          rows.map(
+            ({
+              token,
+              totalRate,
+              reliabilityRate,
+              profitabilityRate,
+              volatilityRate,
               reliability,
               volatility,
               profitability,
-            },
-          ]),
+              total,
+            }) => [
+              token,
+              {
+                totalRate,
+                reliabilityRate,
+                profitabilityRate,
+                volatilityRate,
+                reliability,
+                volatility,
+                profitability,
+                total,
+              },
+            ],
+          ),
         ),
     );
 
     return tokensIds.map(
       (id) =>
         map.get(id) ?? {
-          risk: MetricTokenRiskFactor.notCalculated,
+          totalRate: MetricTokenRiskFactor.notCalculated,
+          reliabilityRate: MetricTokenRiskFactor.notCalculated,
+          profitabilityRate: MetricTokenRiskFactor.notCalculated,
+          volatilityRate: MetricTokenRiskFactor.notCalculated,
           reliability: 1,
           volatility: 1,
           profitability: 1,
+          total: 1,
         },
     );
   });
