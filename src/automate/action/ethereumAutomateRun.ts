@@ -137,6 +137,7 @@ export default async function (this: Action, params: Params) {
       }),
       container.model.queueService().push('automateNotifyExecutedRestake', {
         contract: contract.id,
+        amount: 1,
       }),
     ]);
   } catch (e) {
