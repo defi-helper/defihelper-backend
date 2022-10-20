@@ -7,6 +7,7 @@ import {
   GraphQLBoolean,
   GraphQLEnumType,
   GraphQLFieldConfig,
+  GraphQLFloat,
   GraphQLInputObjectType,
   GraphQLInt,
   GraphQLList,
@@ -15,6 +16,7 @@ import {
   GraphQLString,
   GraphQLUnionType,
 } from 'graphql';
+import { MetricTokenRiskFactor } from '@models/Metric/Entity';
 import {
   BlockchainEnum,
   BlockchainFilterInputType,
@@ -41,6 +43,14 @@ export const PriceFeedCoingeckoIdType = new GraphQLObjectType({
 export const PriceFeedCoingeckoPlatformEnum = new GraphQLEnumType({
   name: 'TokenPriceFeedCoingeckoPlatformEnum',
   values: Object.values(PriceFeed.CoingeckoPlatform).reduce(
+    (res, type) => ({ ...res, [type.replace(/-/g, '_')]: { value: type } }),
+    {},
+  ),
+});
+
+export const TokenRiskScoringEnum = new GraphQLEnumType({
+  name: 'TokenRiskScoringEnum',
+  values: Object.values(MetricTokenRiskFactor).reduce(
     (res, type) => ({ ...res, [type.replace(/-/g, '_')]: { value: type } }),
     {},
   ),
@@ -108,6 +118,24 @@ export const PriceFeedInputType = new GraphQLInputObjectType({
   },
 });
 
+export const TokenMetricType = new GraphQLObjectType({
+  name: 'TokenMetricType',
+  fields: {
+    risk: {
+      type: GraphQLNonNull(TokenRiskScoringEnum),
+    },
+    reliability: {
+      type: GraphQLNonNull(GraphQLFloat),
+    },
+    profitability: {
+      type: GraphQLNonNull(GraphQLFloat),
+    },
+    volatility: {
+      type: GraphQLNonNull(GraphQLFloat),
+    },
+  },
+});
+
 export const TokenType: GraphQLObjectType = new GraphQLObjectType<Token, Request>({
   name: 'TokenType',
   fields: () => ({
@@ -151,6 +179,19 @@ export const TokenType: GraphQLObjectType = new GraphQLObjectType<Token, Request
     },
     priceFeedNeeded: {
       type: GraphQLNonNull(GraphQLBoolean),
+    },
+
+    metric: {
+      type: GraphQLNonNull(TokenMetricType),
+      resolve: async (token, _, { dataLoader }) => {
+        const tokenMetric = await dataLoader.tokenLastMetric().load(token.id);
+        return {
+          risk: tokenMetric.risk,
+          volatility: tokenMetric.volatility,
+          profitability: tokenMetric.profitability,
+          reliability: tokenMetric.reliability,
+        };
+      },
     },
   }),
 });

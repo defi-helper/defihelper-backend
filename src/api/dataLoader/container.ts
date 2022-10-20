@@ -1,5 +1,5 @@
 import { Container, singleton, singletonParametric } from '@services/Container';
-import { automateContractStopLossLoader } from './automate';
+import { automateContractStopLossLoader, automateContractTriggerLoader } from './automate';
 import {
   contractLastMetricLoader,
   contractLoader,
@@ -10,7 +10,12 @@ import {
   protocolUserLastAPRLoader,
   protocolUserLastMetricLoader,
 } from './protocol';
-import { tokenAliasLoader, tokenAliasUserLastMetricLoader, tokenLoader } from './token';
+import {
+  tokenAliasLoader,
+  tokenAliasUserLastMetricLoader,
+  tokenLastMetricLoader,
+  tokenLoader,
+} from './token';
 import {
   userBlockchainLoader,
   userLastAPRLoader,
@@ -65,7 +70,11 @@ export class DataLoaderContainer extends Container<{}> {
 
   readonly tokenAliasUserLastMetric = singletonParametric(tokenAliasUserLastMetricLoader);
 
+  readonly tokenLastMetric = singleton(tokenLastMetricLoader);
+
   readonly token = singleton(tokenLoader);
 
   readonly automateContractStopLoss = singleton(automateContractStopLossLoader);
+
+  readonly automateContractTrigger = singleton(automateContractTriggerLoader);
 }

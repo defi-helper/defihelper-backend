@@ -15,9 +15,19 @@ export class Coingecko {
   };
 
   async findCoinByAddress(platformId: string, address: string) {
-    const res = await this.apiRequest<{ error: string } | { id: string }>(
-      `coins/${platformId}/contract/${address}`,
-    );
+    let res;
+    try {
+      res = await this.apiRequest<{ error: string } | { id: string }>(
+        `coins/${platformId}/contract/${address}`,
+      );
+    } catch (err) {
+      if (err.response.status === 404) {
+        return null;
+      }
+
+      throw err;
+    }
+
     if ('error' in res) {
       if (res.error === 'Could not find coin with the given id') {
         return null;

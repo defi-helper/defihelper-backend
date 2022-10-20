@@ -1,6 +1,27 @@
 import container from '@container';
-import { ContractStopLoss } from '@models/Automate/Entity';
+import {
+  actionTableName,
+  ContractStopLoss,
+  Trigger,
+  triggerTableName,
+} from '@models/Automate/Entity';
 import DataLoader from 'dataloader';
+
+export const automateContractTriggerLoader = () =>
+  new DataLoader<string, Trigger>(async (contractsId) => {
+    const map = await container.model
+      .automateTriggerTable()
+      .distinct(`${triggerTableName}.*`)
+      .column({ contract: container.database().raw(`${actionTableName}.params->>'id'`) })
+      .innerJoin(actionTableName, `${triggerTableName}.id`, `${actionTableName}.trigger`)
+      .where(`${actionTableName}.type`, 'ethereumAutomateRun')
+      .whereRaw(
+        `${actionTableName}.params->>'id' IN (${contractsId.map((id) => `'${id}'`).join(', ')})`,
+      )
+      .then((rows) => new Map(rows.map((trigger) => [trigger.contract, trigger])));
+
+    return contractsId.map((id) => map.get(id) ?? null);
+  });
 
 export const automateContractStopLossLoader = () =>
   new DataLoader<string, ContractStopLoss | null>(async (contractsId) => {

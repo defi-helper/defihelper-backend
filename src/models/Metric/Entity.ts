@@ -190,6 +190,26 @@ export type MetricContractRegistryTable = ReturnType<
   ReturnType<typeof metricContractRegistryTableFactory>
 >;
 
+export interface MetricTokenRegistry extends Registry {
+  token: string;
+}
+
+export const metricTokenRegistryTableName = 'metric_token_registry';
+
+export const metricTokenRegistryTableFactory = tableFactoryLegacy<MetricTokenRegistry>(
+  metricTokenRegistryTableName,
+);
+
+export type MetricTokenRegistryTable = ReturnType<
+  ReturnType<typeof metricTokenRegistryTableFactory>
+>;
+
+export enum MetricTokenRiskFactor {
+  notCalculated = 'notCalculated',
+  low = 'low',
+  moderate = 'moderate',
+  high = 'high',
+}
 export interface MetricToken extends Metric {
   token: string;
 }
