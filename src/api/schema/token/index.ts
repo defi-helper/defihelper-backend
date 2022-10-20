@@ -196,8 +196,7 @@ export const TokenType: GraphQLObjectType = new GraphQLObjectType<Token, Request
     metric: {
       type: GraphQLNonNull(TokenMetricType),
       resolve: async (token, _, { dataLoader }) => {
-        const tokenMetric = await dataLoader.tokenLastMetric().load(token.id);
-        return tokenMetric;
+        return dataLoader.tokenLastMetric().load(token.id);
       },
     },
   }),
