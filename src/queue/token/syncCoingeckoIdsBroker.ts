@@ -14,7 +14,7 @@ export default async (process: Process) => {
     )
     .andWhere('blockchain', 'ethereum');
 
-  const lag = 172800 / tokensCandidates.length; // 2 days
+  const lag = 86400 / tokensCandidates.length; // 1 day
   await tokensCandidates.reduce<Promise<dayjs.Dayjs>>(async (prev, token) => {
     const startAt = await prev;
 
