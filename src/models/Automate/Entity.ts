@@ -199,6 +199,22 @@ export const contractStopLossTableFactory =
 
 export type ContractStopLossTable = ReturnType<ReturnType<typeof contractStopLossTableFactory>>;
 
+export interface InvestHistory {
+  id: string;
+  contract: string;
+  wallet: string;
+  amount: string;
+  amountUSD: string;
+  refunded: boolean;
+  createdAt: Date;
+}
+
+export const investHistoryTableName = 'automate_invest_history';
+
+export const investHistoryTableFactory = tableFactoryLegacy<InvestHistory>(investHistoryTableName);
+
+export type InvestHistoryTable = ReturnType<ReturnType<typeof investHistoryTableFactory>>;
+
 export interface EthereumAutomateTransaction {
   hash: string | undefined;
   from: string | undefined;
