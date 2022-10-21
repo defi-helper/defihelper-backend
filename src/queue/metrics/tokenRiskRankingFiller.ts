@@ -1,12 +1,11 @@
 import container from '@container';
 import { MetricTokenRiskFactor } from '@models/Metric/Entity';
 import { Process } from '@models/Queue/Entity';
+import { RawRiskRank } from '@services/RiskRanking';
 
 export interface Params {
   id: string;
 }
-
-type RawRiskFactorEnum = 'green' | 'yellow' | 'red';
 
 export default async (process: Process) => {
   const { id } = process.task.params as Params;
@@ -20,7 +19,7 @@ export default async (process: Process) => {
     throw new Error('No coingeckoId found');
   }
 
-  const riskFactorSwitcher = (input: RawRiskFactorEnum) => {
+  const riskFactorSwitcher = (input: RawRiskRank) => {
     return (
       {
         green: MetricTokenRiskFactor.low,

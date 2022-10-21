@@ -2,23 +2,24 @@ import { Factory } from '@services/Container';
 import axios from 'axios';
 import buildUrl from 'build-url';
 
+export type RawRiskRank = 'green' | 'red' | 'yellow';
 export interface CoinInfo {
   id: string;
   name: string;
   volatility: {
     quantile_volatility_scoring: number;
-    ranking_volatility: 'green' | 'red' | 'yellow';
+    ranking_volatility: RawRiskRank;
   };
   reliability: {
     quantile_reliability_scoring: number;
-    ranking_reliability: 'green' | 'red' | 'yellow';
+    ranking_reliability: RawRiskRank;
   };
   profitability: {
     quantile_profitability_scoring: number;
-    ranking_profitability: 'green' | 'red' | 'yellow';
+    ranking_profitability: RawRiskRank;
   };
   total: {
-    ranking: 'green' | 'red' | 'yellow';
+    ranking: RawRiskRank;
     quantile_scoring: number;
   };
 }
