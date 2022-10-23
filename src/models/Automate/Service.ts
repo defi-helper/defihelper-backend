@@ -1,5 +1,6 @@
 import container from '@container';
 import dayjs from 'dayjs';
+import BN from 'bignumber.js';
 import { Emitter } from '@services/Event';
 import { Factory } from '@services/Container';
 import { v4 as uuid } from 'uuid';
@@ -29,6 +30,8 @@ import {
   ContractTable,
   ContractType,
   ContractVerificationStatus,
+  InvestHistory,
+  InvestHistoryTable,
   TransactionTable,
   Trigger,
   TriggerCallHistory,
@@ -108,6 +111,7 @@ export class AutomateService {
     readonly triggerCallHistoryTable: Factory<TriggerCallHistoryTable>,
     readonly contractTable: Factory<ContractTable>,
     readonly contractStopLossTable: Factory<ContractStopLossTable>,
+    readonly investHistoryTable: Factory<InvestHistoryTable>,
     readonly transactionTable: Factory<TransactionTable>,
     readonly walletTable: Factory<WalletTable>,
   ) {}
@@ -347,6 +351,29 @@ export class AutomateService {
     await this.contractStopLossTable().where('id', stopLoss.id).update(updated);
 
     return updated;
+  }
+
+  async createInvestHistory(contract: Contract, wallet: Wallet, amount: BN, amountUSD: BN) {
+    const created: InvestHistory = {
+      id: uuid(),
+      contract: contract.id,
+      wallet: wallet.id,
+      amount: amount.toPrecision(15, BN.ROUND_FLOOR),
+      amountUSD: amountUSD.toPrecision(15, BN.ROUND_FLOOR),
+      refunded: false,
+      createdAt: new Date(),
+    };
+    await this.investHistoryTable().insert(created);
+
+    return created;
+  }
+
+  refundInvestHistory(contract: Contract, wallet: Wallet) {
+    return this.investHistoryTable()
+      .update({ refunded: true })
+      .where('contract', contract.id)
+      .where('wallet', wallet.id)
+      .where('refunded', false);
   }
 
   async createTransaction<T extends AutomateTransactionData>(

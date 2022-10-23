@@ -32,3 +32,26 @@ export const automateContractStopLossLoader = () =>
 
     return contractsId.map((id) => map.get(id) ?? null);
   });
+
+export const automateInvestHistoryLoader = () =>
+  new DataLoader<string, { amount: string; amountUSD: string }>(async (contractsId) => {
+    const map = await container.model
+      .automateInvestHistoryTable()
+      .column('contract')
+      .sum({ amount: 'amount' })
+      .sum({ amountUSD: 'amountUSD' })
+      .whereIn('contract', contractsId)
+      .where('refunded', false)
+      .groupBy('contract')
+      .then(
+        (rows) =>
+          new Map(
+            rows.map(({ contract, amount, amountUSD }) => [
+              contract,
+              { amount: amount ?? '0', amountUSD: amountUSD ?? '0' },
+            ]),
+          ),
+      );
+
+    return contractsId.map((id) => map.get(id) ?? { amount: '0', amountUSD: '0' });
+  });

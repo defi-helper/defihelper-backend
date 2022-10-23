@@ -1,5 +1,9 @@
 import { Container, singleton, singletonParametric } from '@services/Container';
-import { automateContractStopLossLoader, automateContractTriggerLoader } from './automate';
+import {
+  automateContractStopLossLoader,
+  automateContractTriggerLoader,
+  automateInvestHistoryLoader,
+} from './automate';
 import {
   contractLastMetricLoader,
   contractLoader,
@@ -77,4 +81,6 @@ export class DataLoaderContainer extends Container<{}> {
   readonly automateContractStopLoss = singleton(automateContractStopLossLoader);
 
   readonly automateContractTrigger = singleton(automateContractTriggerLoader);
+
+  readonly automateInvestHistory = singleton(automateInvestHistoryLoader);
 }
