@@ -1212,6 +1212,7 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
           staked: '0',
           earned: '0',
           apyBoost: '0',
+          invest: '0',
         };
         if (
           !contract.contract ||
