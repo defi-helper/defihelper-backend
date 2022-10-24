@@ -21,6 +21,7 @@ import {
   walletExchangeTableName,
   walletTableName,
   walletBlockchainTableName,
+  WalletSuspenseReason,
 } from '@models/Wallet/Entity';
 import { Blockchain } from '@models/types';
 import BN from 'bignumber.js';
@@ -670,6 +671,10 @@ export const WalletExchangeType = new GraphQLObjectType<
     exchange: {
       type: GraphQLNonNull(WalletExchangeTypeEnum),
       description: 'Exchange type',
+    },
+    isExpired: {
+      type: GraphQLNonNull(GraphQLBoolean),
+      resolve: (wallet) => wallet.suspendReason === WalletSuspenseReason.CexUnableToAuthorize,
     },
     statisticsCollectedAt: {
       type: GraphQLNonNull(DateTimeType),
