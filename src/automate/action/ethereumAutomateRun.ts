@@ -117,6 +117,16 @@ export default async function (this: Action, params: Params) {
   }, Promise.resolve(null));
   if (consumer === null) throw new Error('Not free consumer');
 
+  const protocolAdapter = await container.blockchainAdapter.loadAdapter(protocol.adapter);
+  const contractAdapterFactory = protocolAdapter[contract.adapter];
+  if (typeof contractAdapterFactory !== 'function') throw new Error('Contract adapter not found');
+
+  const contractAdapterReader = await contractAdapterFactory(provider, contract.address, {
+    blockNumber: 'latest',
+  });
+
+  const earnedUsd = new BN(contractAdapterReader.metrics?.earnedUsd ?? '0');
+
   const { run: adapter } = await adapterFactory(consumer, contract.address);
   try {
     const res = await adapter.methods.run();
@@ -137,7 +147,7 @@ export default async function (this: Action, params: Params) {
       }),
       container.model.queueService().push('automateNotifyExecutedRestake', {
         contract: contract.id,
-        amount: 1,
+        amount: earnedUsd.toFixed(2),
       }),
     ]);
   } catch (e) {

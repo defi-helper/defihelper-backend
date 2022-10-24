@@ -6,7 +6,7 @@ import { Wallet, walletTableName } from '@models/Wallet/Entity';
 
 export interface Params {
   contract: string;
-  amount: number;
+  amount: string;
 }
 
 export default async (process: Process) => {
