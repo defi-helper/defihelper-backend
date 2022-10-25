@@ -47,7 +47,7 @@ export async function getEarnedAmount(
   }
 
   const walletMetrics = await contractAdapterReader.wallet(walletAddress);
-  return new BN(walletMetrics.metrics?.earnedUsd ?? '0');
+  return new BN(walletMetrics.metrics?.earnedUSD ?? '0');
 }
 
 export default async function (this: Action, params: Params) {
