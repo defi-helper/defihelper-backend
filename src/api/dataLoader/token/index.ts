@@ -9,6 +9,7 @@ import { contractBlockchainTableName, contractTableName } from '@models/Protocol
 import { TokenAlias, Token, tokenAliasTableName, tokenTableName } from '@models/Token/Entity';
 import { walletTableName } from '@models/Wallet/Entity';
 import DataLoader from 'dataloader';
+import BN from 'bignumber.js';
 
 export const tokenAliasLoader = () =>
   new DataLoader<string, TokenAlias | null>(async (tokensAliasId) => {
@@ -125,20 +126,7 @@ export const tokenLastMetricLoader = () =>
     const select = container.model
       .metricTokenRegistryTable()
       .column(`${metricTokenRegistryTableName}.id as token`)
-      .column(`${metricTokenRegistryTableName}.data->>'totalRate' as totalRate`)
-      .column(`${metricTokenRegistryTableName}.data->>'reliabilityRate' as reliabilityRate`)
-      .column(`${metricTokenRegistryTableName}.data->>'profitabilityRate' as profitabilityRate`)
-      .column(`${metricTokenRegistryTableName}.data->>'volatilityRate' as volatilityRate`)
-      .column(
-        `COALESCE(${metricTokenRegistryTableName}.data->>'reliability', '1')::float as reliability`,
-      )
-      .column(
-        `COALESCE(${metricTokenRegistryTableName}.data->>'volatility', '1')::float as volatility`,
-      )
-      .column(
-        `COALESCE(${metricTokenRegistryTableName}.data->>'profitability', '1')::float as profitability`,
-      )
-      .column(`COALESCE(${metricTokenRegistryTableName}.data->>'total', '1')::float as total`)
+      .column(`${metricTokenRegistryTableName}.data`)
       .whereIn(`${metricTokenRegistryTableName}.token`, tokensIds);
 
     const map = await select.then(
@@ -149,10 +137,10 @@ export const tokenLastMetricLoader = () =>
           reliabilityRate: MetricTokenRiskFactor;
           profitabilityRate: MetricTokenRiskFactor;
           volatilityRate: MetricTokenRiskFactor;
-          total: number;
-          reliability: number;
-          volatility: number;
-          profitability: number;
+          total: string;
+          reliability: string;
+          volatility: string;
+          profitability: string;
         }>,
       ) =>
         new Map(
@@ -174,10 +162,10 @@ export const tokenLastMetricLoader = () =>
                 reliabilityRate,
                 profitabilityRate,
                 volatilityRate,
-                reliability,
-                volatility,
-                profitability,
-                total,
+                reliability: new BN(reliability ?? 1).toNumber(),
+                volatility: new BN(volatility ?? 1).toNumber(),
+                profitability: new BN(profitability ?? 1).toNumber(),
+                total: new BN(total ?? 1).toNumber(),
               },
             ],
           ),
