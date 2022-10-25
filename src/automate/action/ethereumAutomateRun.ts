@@ -1,6 +1,7 @@
 import container from '@container';
 import {
   Action,
+  Contract,
   contractTableName,
   ContractVerificationStatus,
   EthereumAutomateTransaction,
@@ -12,6 +13,7 @@ import { ethers, Wallet } from 'ethers';
 import * as uuid from 'uuid';
 import { BigNumber as BN } from 'bignumber.js';
 import { abi as balanceAbi } from '@defihelper/networks/abi/Balance.json';
+import { Protocol } from '@models/Protocol/Entity';
 
 export interface Params {
   id: string;
@@ -24,6 +26,22 @@ export function paramsVerify(params: any): params is Params {
   }
 
   return true;
+}
+
+export async function getEarnedAmount(
+  provider: ethers.providers.JsonRpcProvider,
+  protocol: Protocol,
+  contract: Contract,
+) {
+  const protocolAdapter = await container.blockchainAdapter.loadAdapter(protocol.adapter);
+  const contractAdapterFactory = protocolAdapter[contract.adapter];
+  if (typeof contractAdapterFactory !== 'function') throw new Error('Contract adapter not found');
+
+  const contractAdapterReader = await contractAdapterFactory(provider, contract.address, {
+    blockNumber: 'latest',
+  });
+
+  return new BN(contractAdapterReader.metrics?.earnedUsd ?? '0');
 }
 
 export default async function (this: Action, params: Params) {
@@ -117,16 +135,7 @@ export default async function (this: Action, params: Params) {
   }, Promise.resolve(null));
   if (consumer === null) throw new Error('Not free consumer');
 
-  const protocolAdapter = await container.blockchainAdapter.loadAdapter(protocol.adapter);
-  const contractAdapterFactory = protocolAdapter[contract.adapter];
-  if (typeof contractAdapterFactory !== 'function') throw new Error('Contract adapter not found');
-
-  const contractAdapterReader = await contractAdapterFactory(provider, contract.address, {
-    blockNumber: 'latest',
-  });
-
-  const earnedUsd = new BN(contractAdapterReader.metrics?.earnedUsd ?? '0');
-
+  const earnedUsd = await getEarnedAmount(provider, protocol, contract).catch(() => new BN(0));
   const { run: adapter } = await adapterFactory(consumer, contract.address);
   try {
     const res = await adapter.methods.run();
