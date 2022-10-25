@@ -32,6 +32,7 @@ export async function getEarnedAmount(
   provider: ethers.providers.JsonRpcProvider,
   protocol: Protocol,
   contract: Contract,
+  walletAddress: string,
 ) {
   const protocolAdapter = await container.blockchainAdapter.loadAdapter(protocol.adapter);
   const contractAdapterFactory = protocolAdapter[contract.adapter];
@@ -41,7 +42,12 @@ export async function getEarnedAmount(
     blockNumber: 'latest',
   });
 
-  return new BN(contractAdapterReader.metrics?.earnedUsd ?? '0');
+  if (typeof contractAdapterReader.wallet !== 'function') {
+    throw new Error('Contract adapter wallet() interface not found');
+  }
+
+  const walletMetrics = await contractAdapterReader.wallet(walletAddress);
+  return new BN(walletMetrics.metrics?.earnedUsd ?? '0');
 }
 
 export default async function (this: Action, params: Params) {
@@ -135,7 +141,9 @@ export default async function (this: Action, params: Params) {
   }, Promise.resolve(null));
   if (consumer === null) throw new Error('Not free consumer');
 
-  const earnedUsd = await getEarnedAmount(provider, protocol, contract).catch(() => new BN(0));
+  const earnedUsd = await getEarnedAmount(provider, protocol, contract, wallet.address).catch(
+    () => new BN(0),
+  );
   const { run: adapter } = await adapterFactory(consumer, contract.address);
   try {
     const res = await adapter.methods.run();
@@ -154,10 +162,12 @@ export default async function (this: Action, params: Params) {
       container.amplitude().log('automation_fee_charged_successful', wallet.user, {
         hash: tx.hash,
       }),
-      container.model.queueService().push('automateNotifyExecutedRestake', {
-        contract: contract.id,
-        amount: earnedUsd.toFixed(2),
-      }),
+      !earnedUsd.isZero()
+        ? container.model.queueService().push('automateNotifyExecutedRestake', {
+            contract: contract.id,
+            amount: earnedUsd.toFixed(2),
+          })
+        : null,
     ]);
   } catch (e) {
     await container
