@@ -32,13 +32,19 @@ export async function getEarnedAmount(
   provider: ethers.providers.JsonRpcProvider,
   protocol: Protocol,
   contract: Contract,
-  walletAddress: string,
 ) {
+  const contractBlockchain = await container.model
+    .contractBlockchainTable()
+    .where('id', contract.contract)
+    .first();
+
+  if (!contractBlockchain) return new BN(0);
+
   const protocolAdapter = await container.blockchainAdapter.loadAdapter(protocol.adapter);
-  const contractAdapterFactory = protocolAdapter[contract.adapter];
+  const contractAdapterFactory = protocolAdapter[contractBlockchain.adapter];
   if (typeof contractAdapterFactory !== 'function') throw new Error('Contract adapter not found');
 
-  const contractAdapterReader = await contractAdapterFactory(provider, contract.address, {
+  const contractAdapterReader = await contractAdapterFactory(provider, contractBlockchain.address, {
     blockNumber: 'latest',
   });
 
@@ -46,8 +52,8 @@ export async function getEarnedAmount(
     throw new Error('Contract adapter wallet() interface not found');
   }
 
-  const walletMetrics = await contractAdapterReader.wallet(walletAddress);
-  return new BN(walletMetrics.metrics?.earnedUSD ?? '0');
+  const walletMetrics = await contractAdapterReader.wallet(contract.address);
+  return new BN(walletMetrics.metrics?.earnedUSD ?? 0);
 }
 
 export default async function (this: Action, params: Params) {
@@ -141,9 +147,7 @@ export default async function (this: Action, params: Params) {
   }, Promise.resolve(null));
   if (consumer === null) throw new Error('Not free consumer');
 
-  const earnedUsd = await getEarnedAmount(provider, protocol, contract, wallet.address).catch(
-    () => new BN(0),
-  );
+  const earnedUsd = await getEarnedAmount(provider, protocol, contract).catch(() => new BN(0));
   const { run: adapter } = await adapterFactory(consumer, contract.address);
   try {
     const res = await adapter.methods.run();
