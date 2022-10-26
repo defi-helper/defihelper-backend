@@ -1094,7 +1094,11 @@ export const UserType = new GraphQLObjectType<User, Request>({
         if (cacheKey === null) {
           container.model
             .queueService()
-            .push('metricsUserPortfolioFiller', { id: user.id }, { priority: 9 });
+            .push(
+              'metricsUserPortfolioFiller',
+              { userId: user.id, priority: 9, notify: false },
+              { priority: 9 },
+            );
           container.cache().promises.setex(
             `defihelper:portfolio-preload:${user.id}`,
             3600, // 1 hour
