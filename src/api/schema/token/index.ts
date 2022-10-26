@@ -121,8 +121,20 @@ export const PriceFeedInputType = new GraphQLInputObjectType({
 export const TokenMetricType = new GraphQLObjectType({
   name: 'TokenMetricType',
   fields: {
-    risk: {
+    totalRate: {
       type: GraphQLNonNull(TokenRiskScoringEnum),
+    },
+    reliabilityRate: {
+      type: GraphQLNonNull(TokenRiskScoringEnum),
+    },
+    profitabilityRate: {
+      type: GraphQLNonNull(TokenRiskScoringEnum),
+    },
+    volatilityRate: {
+      type: GraphQLNonNull(TokenRiskScoringEnum),
+    },
+    total: {
+      type: GraphQLNonNull(GraphQLFloat),
     },
     reliability: {
       type: GraphQLNonNull(GraphQLFloat),
@@ -184,13 +196,7 @@ export const TokenType: GraphQLObjectType = new GraphQLObjectType<Token, Request
     metric: {
       type: GraphQLNonNull(TokenMetricType),
       resolve: async (token, _, { dataLoader }) => {
-        const tokenMetric = await dataLoader.tokenLastMetric().load(token.id);
-        return {
-          risk: tokenMetric.risk,
-          volatility: tokenMetric.volatility,
-          profitability: tokenMetric.profitability,
-          reliability: tokenMetric.reliability,
-        };
+        return dataLoader.tokenLastMetric().load(token.id);
       },
     },
   }),
