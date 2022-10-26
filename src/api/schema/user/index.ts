@@ -37,6 +37,7 @@ import {
   metricWalletTableName,
   metricWalletTokenRegistryTableName,
   metricWalletTokenTableName,
+  UserCollectorStatus,
 } from '@models/Metric/Entity';
 import {
   TokenAlias,
@@ -1092,13 +1093,21 @@ export const UserType = new GraphQLObjectType<User, Request>({
           .catch(() => null);
 
         if (cacheKey === null) {
-          container.model
-            .queueService()
-            .push(
-              'metricsUserPortfolioFiller',
-              { userId: user.id, priority: 9, notify: false },
-              { priority: 9 },
-            );
+          const collector = await container.model
+            .metricUserCollectorTable()
+            .where('user', user.id)
+            .where('status', UserCollectorStatus.Pending)
+            .first();
+          // Skip if the collection of metrics is already in progress
+          if (!collector) {
+            container.model
+              .queueService()
+              .push(
+                'metricsUserPortfolioFiller',
+                { userId: user.id, priority: 9, notify: false },
+                { priority: 9 },
+              );
+          }
           container.cache().promises.setex(
             `defihelper:portfolio-preload:${user.id}`,
             3600, // 1 hour
