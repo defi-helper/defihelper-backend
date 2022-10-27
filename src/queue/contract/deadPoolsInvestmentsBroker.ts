@@ -18,8 +18,8 @@ export default async (process: Process) => {
           `COALESCE(${contractBlockchainTableName}.metric->>'aprYear', '0')::float as "currentApy"`,
         ),
     )
-    .column(`${contractTableName}.name as "contractName"`)
-    .column(`${walletTableName}.user as "userId"`)
+    .column(`${contractTableName}.name as contractName`)
+    .column(`${walletTableName}.user as userId`)
     .innerJoin(walletTableName, `${walletTableName}.id`, `${Automate.contractTableName}.wallet`)
     .leftJoin(
       contractTableName,
