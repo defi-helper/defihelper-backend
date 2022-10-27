@@ -1,6 +1,8 @@
 import container from '@container';
 import * as Automate from '@models/Automate/Entity';
-import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
+import { metricContractRegistryTableName } from '@models/Metric/Entity';
+import { ContactBroker, ContactStatus } from '@models/Notification/Entity';
+import { contractTableName } from '@models/Protocol/Entity';
 import { Process } from '@models/Queue/Entity';
 import { walletTableName } from '@models/Wallet/Entity';
 import BN from 'bignumber.js';
@@ -15,31 +17,36 @@ export default async (process: Process) => {
       container
         .database()
         .raw(
-          `COALESCE(${contractBlockchainTableName}.metric->>'aprYear', '0')::float as "currentApy"`,
+          `COALESCE(${metricContractRegistryTableName}.data->>'aprYear', '0')::float as "currentApy"`,
         ),
     )
     .column(`${contractTableName}.name as contractName`)
     .column(`${walletTableName}.user as userId`)
     .innerJoin(walletTableName, `${walletTableName}.id`, `${Automate.contractTableName}.wallet`)
-    .leftJoin(
+
+    .innerJoin(
       contractTableName,
       `${contractTableName}.id`,
       `${Automate.contractTableName}.contract`,
     )
-    .leftJoin(
-      contractBlockchainTableName,
+    .innerJoin(
+      metricContractRegistryTableName,
+      `${metricContractRegistryTableName}.contract`,
       `${contractTableName}.id`,
-      `${contractBlockchainTableName}.id`,
     )
     .whereNull(`${Automate.contractTableName}.archivedAt`)
     .andWhereRaw(
-      `COALESCE("${contractBlockchainTableName}".metric->>'aprYear', '0')::float < 0.01`,
+      `COALESCE("${metricContractRegistryTableName}".data->>'aprYear', '0')::float < 0.01`,
     );
 
-  const contacts = await container.model.userContactTable().whereIn(
-    'user',
-    deadInvestmentsList.map((v) => v.userId),
-  );
+  const contacts = await container.model
+    .userContactTable()
+    .whereIn(
+      'user',
+      deadInvestmentsList.map((v) => v.userId),
+    )
+    .andWhere('status', ContactStatus.Active)
+    .andWhere('broker', ContactBroker.Telegram);
 
   const lag = 10800 / deadInvestmentsList.length; // 3hrs
   await deadInvestmentsList.reduce<Promise<dayjs.Dayjs>>(async (prev, investment) => {
