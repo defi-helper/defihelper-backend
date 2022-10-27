@@ -5,6 +5,10 @@ export const Templates = {
   eventTemplate: fs.promises.readFile(`${__dirname}/Event.mustache`, 'utf8'),
   welcomeTemplate: fs.promises.readFile(`${__dirname}/Welcome.mustache`, 'utf8'),
   goodNews: fs.promises.readFile(`${__dirname}/GoodNews.mustache`, 'utf8'),
+  deadInvestmentWarning: fs.promises.readFile(
+    `${__dirname}/DeadInvestmentWarning.mustache`,
+    'utf8',
+  ),
   triggerTemplate: fs.promises.readFile(`${__dirname}/Trigger.mustache`, 'utf8'),
   portfolioMetrics: fs.promises.readFile(`${__dirname}/PortfolioMetrics.mustache`, 'utf8'),
   publicBetaStarted: fs.promises.readFile(`${__dirname}/PublicBetaStarted.mustache`, 'utf8'),
