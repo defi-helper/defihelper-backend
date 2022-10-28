@@ -143,7 +143,7 @@ export default async function (
     const gasLimit = new BN(estimateGas).multipliedBy(1.1).toFixed(0);
     const gasPrice = await provider.getGasPrice().then((v) => v.toString());
     const gasFee = new BN(gasLimit).multipliedBy(gasPrice).toFixed(0);
-    const protocolFee = await smartTradeRouter.fee();
+    const protocolFee = await smartTradeRouter.fee().then((v: ethers.BigNumber) => v.toString());
     const feeBalance = await balance
       .netBalanceOf(ownerWallet.address)
       .then((v: ethers.BigNumber) => v.toString());
