@@ -49,6 +49,7 @@ export class SmartTradeService {
     callDataRaw: string,
     callData: CallData,
     status: OrderStatus,
+    active: boolean,
     tx: string,
     confirmed: boolean,
   ) {
@@ -60,6 +61,7 @@ export class SmartTradeService {
       callDataRaw,
       ...callData,
       status,
+      active,
       tx,
       confirmed,
       statusTask: null,
