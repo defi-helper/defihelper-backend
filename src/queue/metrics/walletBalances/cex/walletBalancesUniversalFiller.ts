@@ -7,7 +7,7 @@ import {
   walletTableName,
 } from '@models/Wallet/Entity';
 import BN from 'bignumber.js';
-import { MetricWalletToken, metricWalletTokenTableName } from '@models/Metric/Entity';
+import { MetricWalletToken, metricWalletTokenRegistryTableName } from '@models/Metric/Entity';
 import { Token, tokenTableName } from '@models/Token/Entity';
 
 interface Params {
@@ -39,16 +39,24 @@ export default async (process: Process) => {
 
   const database = container.database();
   const walletTokenBalances = await container.model
-    .metricWalletTokenTable()
-    .distinctOn(`${metricWalletTokenTableName}.wallet`, `${metricWalletTokenTableName}.token`)
+    .metricWalletTokenRegistryTable()
     .column(`${tokenTableName}.symbol AS token`)
-    .column(database.raw(`(${metricWalletTokenTableName}.data->>'balance')::numeric AS balance`))
-    .innerJoin(tokenTableName, `${metricWalletTokenTableName}.token`, `${tokenTableName}.id`)
-    .where(`${metricWalletTokenTableName}.wallet`, exchangeWallet.id)
-    .orderBy(`${metricWalletTokenTableName}.wallet`)
-    .orderBy(`${metricWalletTokenTableName}.token`)
-    .orderBy(`${metricWalletTokenTableName}.date`, 'DESC')
-    .then((rows) => new Map(rows.map(({ token, balance }) => [token, balance])));
+    .column(
+      database.raw(`(${metricWalletTokenRegistryTableName}.data->>'balance')::numeric AS balance`),
+    )
+    .innerJoin(
+      tokenTableName,
+      `${metricWalletTokenRegistryTableName}.token`,
+      `${tokenTableName}.id`,
+    )
+    .where(`${metricWalletTokenRegistryTableName}.wallet`, exchangeWallet.id)
+    .then((rows) =>
+      rows.reduce((map, { token, balance }) => {
+        const prev = map.get(token) ?? '0';
+        map.set(token, new BN(prev).plus(balance).toString(10));
+        return map;
+      }, new Map()),
+    );
 
   let assetsOnBalance: { amount: BN; symbol: string; amountUsd: BN }[];
   try {

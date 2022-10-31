@@ -3,7 +3,7 @@ import { Process } from '@models/Queue/Entity';
 import { TokenAliasLiquidity, TokenCreatedBy, tokenTableName } from '@models/Token/Entity';
 import BN from 'bignumber.js';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
-import { MetricWalletToken, metricWalletTokenTableName } from '@models/Metric/Entity';
+import { MetricWalletToken, metricWalletTokenRegistryTableName } from '@models/Metric/Entity';
 
 interface Params {
   id: string;
@@ -57,16 +57,18 @@ export default async (process: Process) => {
 
   const database = container.database();
   const lastTokenMetrics = await container.model
-    .metricWalletTokenTable()
-    .distinctOn(`${metricWalletTokenTableName}.wallet`, `${metricWalletTokenTableName}.token`)
+    .metricWalletTokenRegistryTable()
     .column(`${tokenTableName}.*`)
-    .column(database.raw(`(${metricWalletTokenTableName}.data->>'balance')::numeric AS balance`))
-    .innerJoin(tokenTableName, `${metricWalletTokenTableName}.token`, `${tokenTableName}.id`)
-    .where(`${metricWalletTokenTableName}.wallet`, blockchainWallet.id)
-    .whereNull(`${metricWalletTokenTableName}.contract`)
-    .orderBy(`${metricWalletTokenTableName}.wallet`)
-    .orderBy(`${metricWalletTokenTableName}.token`)
-    .orderBy(`${metricWalletTokenTableName}.date`, 'DESC');
+    .column(
+      database.raw(`(${metricWalletTokenRegistryTableName}.data->>'balance')::numeric AS balance`),
+    )
+    .innerJoin(
+      tokenTableName,
+      `${metricWalletTokenRegistryTableName}.token`,
+      `${tokenTableName}.id`,
+    )
+    .where(`${metricWalletTokenRegistryTableName}.wallet`, blockchainWallet.id)
+    .whereNull(`${metricWalletTokenRegistryTableName}.contract`);
 
   const createdMetrics = await debankUserTokenList.reduce<Promise<MetricWalletToken[]>>(
     async (prev, tokenAsset) => {
