@@ -123,6 +123,8 @@ export default async function (
   }, null);
   log.ex({ routeIndex }).send();
   if (routeIndex === null) return null;
+  const currentRoute = routes[routeIndex];
+  if (currentRoute === null) return null;
 
   const freeConsumer = await useEthereumFreeConsumer(ownerWallet.network);
   log.ex({ consumer: freeConsumer?.consumer.address }).send();
@@ -155,6 +157,7 @@ export default async function (
 
     const callOptions = await smartTradeHandler.callOptionsEncode({
       route: routeIndex,
+      amountOutMin: currentRoute.amountOutMin,
       deadline: dayjs().add(order.callData.deadline, 'seconds').unix(),
     });
     log.ex({ callOptions }).send();
@@ -164,7 +167,7 @@ export default async function (
     const gasLimit = new BN(estimateGas).multipliedBy(1.1).toFixed(0);
     const gasPrice = await provider.getGasPrice().then((v) => v.toString());
     const gasFee = new BN(gasLimit).multipliedBy(gasPrice).toFixed(0);
-    const protocolFee = await smartTradeRouter.fee();
+    const protocolFee = await smartTradeRouter.fee().then((v: ethers.BigNumber) => v.toString());
     const feeBalance = await balance
       .netBalanceOf(ownerWallet.address)
       .then((v: ethers.BigNumber) => v.toString());
