@@ -4,6 +4,7 @@ import { Locale } from '@services/I18n/container';
 export enum Role {
   Demo = 'demo',
   User = 'user',
+  UserST = 'userST',
   Admin = 'admin',
 }
 
