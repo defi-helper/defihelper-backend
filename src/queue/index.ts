@@ -83,6 +83,9 @@ export * as notificationsDemoCallInvitationsBroker from './notifications/demoCal
 export * as metricsTokenRiskRankingFiller from './metrics/tokenRiskRankingFiller';
 export * as metricsTokenRiskRankingBroker from './metrics/tokenRiskRankingBroker';
 
+export * as metricsPoolRiskRankingFiller from './metrics/poolRiskRankingFiller';
+export * as metricsPoolRiskRankingBroker from './metrics/poolRiskRankingBroker';
+
 /* protocol */
 export * as protocolContractsResolver from './protocol/resolveContracts';
 
