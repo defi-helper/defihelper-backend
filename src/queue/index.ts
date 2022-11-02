@@ -53,6 +53,8 @@ export * as automateContractStopLossTx from './automate/contractStopLossTx';
 export * as automateTriggerByTime from './automate/trigger/byTime';
 export * as riskCalculationBroker from './contract/riskCalculationBroker';
 export * as riskCalculationFiller from './contract/riskCalculationFiller';
+
+export * as deadPoolsInvestmentsBroker from './contract/deadPoolsInvestmentsBroker';
 export * as automateNotifyExecutedRestake from './automate/notifyExecutedRestake';
 
 /* billing */
