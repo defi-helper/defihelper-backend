@@ -27,6 +27,10 @@ export interface CoinInfo {
 export interface PoolRisking {
   score: number;
   ranking_score: RawRiskRank;
+  volatility_quantile: number;
+  reliability_quantile: number;
+  profitability_quantile: number;
+  total_quantile: number;
 }
 
 export class TemporaryOutOfService extends Error {

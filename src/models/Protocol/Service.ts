@@ -50,6 +50,7 @@ export class ProtocolService {
     hidden: boolean = false,
     metric: { tvl?: string } = {},
     debankId: string | null = null,
+    governanceToken: string | null = null,
   ) {
     const created = {
       id: uuid(),
@@ -63,6 +64,7 @@ export class ProtocolService {
       hidden,
       metric,
       debankId,
+      governanceToken,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

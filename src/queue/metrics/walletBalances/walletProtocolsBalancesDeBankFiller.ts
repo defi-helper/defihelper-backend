@@ -210,6 +210,7 @@ export default async (process: Process) => {
             true,
             { tvl: protocol.tvl.toString(10) },
             protocol.id,
+            null,
           );
       }),
     )),

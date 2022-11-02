@@ -54,14 +54,28 @@ export default async (process: Process) => {
     return process.done().info('nothing found');
   }
 
+  const verifyPercentile = (n: number) => {
+    if (n < 0 || n > 1) {
+      throw new Error(`Expected volatility quantile 0.0-1.0, got ${n}`);
+    }
+
+    return n.toString(10);
+  };
+
   const totalRate = resolvedRisk.ranking_score;
-  const totalQuantile = 1; // fixme
+  const totalQuantile = verifyPercentile(resolvedRisk.total_quantile);
+  const profitabilityQuantile = verifyPercentile(resolvedRisk.profitability_quantile);
+  const reliabilityQuantile = verifyPercentile(resolvedRisk.reliability_quantile);
+  const volatilityQuantile = verifyPercentile(resolvedRisk.volatility_quantile);
 
   await container.model.metricService().createContract(
     contract,
     {
       totalRate: riskFactorSwitcher(totalRate),
-      totalQuantile: totalQuantile.toString(10),
+      totalQuantile,
+      profitabilityQuantile,
+      reliabilityQuantile,
+      volatilityQuantile,
     },
     new Date(),
   );
