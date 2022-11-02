@@ -22,7 +22,7 @@ export default async (process: Process) => {
         `${tokenTableName}.id`,
       )
       .where('contract', id)
-      .andWhereNot(`coingeckoId`, null)
+      .andWhereNot('coingeckoId', null)
       .andWhere('type', 'stake'),
   ]);
 
