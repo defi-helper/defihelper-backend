@@ -152,6 +152,7 @@ export function route({ express, server }: { express: Express; server: Server })
           productUpdate: storeSchemas.ProductUpdateMutation,
           productDelete: storeSchemas.ProductDeleteMutation,
           billingTransferCreate: billingSchemas.AddTransferMutation,
+          zapFeePayCreate: billingSchemas.ZAPFeePayCreateMutation,
           automateTriggerCreate: automateSchemas.TriggerCreateMutation,
           automateTriggerUpdate: automateSchemas.TriggerUpdateMutation,
           automateTriggerDelete: automateSchemas.TriggerDeleteMutation,
