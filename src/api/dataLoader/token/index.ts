@@ -1,9 +1,15 @@
 import container from '@container';
-import { metricWalletTokenRegistryTableName, QueryModify } from '@models/Metric/Entity';
+import {
+  metricTokenRegistryTableName,
+  MetricTokenRiskFactor,
+  metricWalletTokenRegistryTableName,
+  QueryModify,
+} from '@models/Metric/Entity';
 import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
 import { TokenAlias, Token, tokenAliasTableName, tokenTableName } from '@models/Token/Entity';
 import { walletTableName } from '@models/Wallet/Entity';
 import DataLoader from 'dataloader';
+import BN from 'bignumber.js';
 
 export const tokenAliasLoader = () =>
   new DataLoader<string, TokenAlias | null>(async (tokensAliasId) => {
@@ -99,6 +105,84 @@ export const tokenAliasUserLastMetricLoader = ({
           usd: '0',
           balance: '0',
           usdDayBefore: '0',
+        },
+    );
+  });
+
+export const tokenLastMetricLoader = () =>
+  new DataLoader<
+    string,
+    {
+      totalRate: MetricTokenRiskFactor;
+      reliabilityRate: MetricTokenRiskFactor;
+      profitabilityRate: MetricTokenRiskFactor;
+      volatilityRate: MetricTokenRiskFactor;
+      total: number;
+      reliability: number;
+      volatility: number;
+      profitability: number;
+    }
+  >(async (tokensIds) => {
+    const select = container.model
+      .metricTokenRegistryTable()
+      .column(`${metricTokenRegistryTableName}.id as token`)
+      .column(`${metricTokenRegistryTableName}.data`)
+      .whereIn(`${metricTokenRegistryTableName}.token`, tokensIds);
+
+    const map = await select.then(
+      (
+        rows: Array<{
+          token: string;
+          totalRate: MetricTokenRiskFactor;
+          reliabilityRate: MetricTokenRiskFactor;
+          profitabilityRate: MetricTokenRiskFactor;
+          volatilityRate: MetricTokenRiskFactor;
+          total: string;
+          reliability: string;
+          volatility: string;
+          profitability: string;
+        }>,
+      ) =>
+        new Map(
+          rows.map(
+            ({
+              token,
+              totalRate,
+              reliabilityRate,
+              profitabilityRate,
+              volatilityRate,
+              reliability,
+              volatility,
+              profitability,
+              total,
+            }) => [
+              token,
+              {
+                totalRate,
+                reliabilityRate,
+                profitabilityRate,
+                volatilityRate,
+                reliability: new BN(reliability ?? 1).toNumber(),
+                volatility: new BN(volatility ?? 1).toNumber(),
+                profitability: new BN(profitability ?? 1).toNumber(),
+                total: new BN(total ?? 1).toNumber(),
+              },
+            ],
+          ),
+        ),
+    );
+
+    return tokensIds.map(
+      (id) =>
+        map.get(id) ?? {
+          totalRate: MetricTokenRiskFactor.notCalculated,
+          reliabilityRate: MetricTokenRiskFactor.notCalculated,
+          profitabilityRate: MetricTokenRiskFactor.notCalculated,
+          volatilityRate: MetricTokenRiskFactor.notCalculated,
+          reliability: 1,
+          volatility: 1,
+          profitability: 1,
+          total: 1,
         },
     );
   });

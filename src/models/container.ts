@@ -219,6 +219,10 @@ export class ModelContainer extends Container<typeof AppContainer> {
 
   readonly metricTokenTable = Models.Metric.Entity.metricTokenTableFactory(this.parent.database);
 
+  readonly metricTokenRegistryTable = Models.Metric.Entity.metricTokenRegistryTableFactory(
+    this.parent.database,
+  );
+
   readonly metricUserCollectorTable = Models.Metric.Entity.userCollectorTableFactory(
     this.parent.database,
   );
@@ -234,6 +238,7 @@ export class ModelContainer extends Container<typeof AppContainer> {
         this.metricWalletTable,
         this.metricWalletRegistryTable,
         this.metricContractRegistryTable,
+        this.metricTokenRegistryTable,
         this.metricWalletTaskTable,
         this.metricWalletTokenTable,
         this.metricWalletTokenRegistryTable,
@@ -323,6 +328,10 @@ export class ModelContainer extends Container<typeof AppContainer> {
     this.parent.database,
   );
 
+  readonly automateInvestHistoryTable = Models.Automate.Entity.investHistoryTableFactory(
+    this.parent.database,
+  );
+
   readonly automateTransactionTable = Models.Automate.Entity.transactionTableFactory(
     this.parent.database,
   );
@@ -336,6 +345,7 @@ export class ModelContainer extends Container<typeof AppContainer> {
         this.automateTriggerCallHistoryTable,
         this.automateContractTable,
         this.automateContractStopLossTable,
+        this.automateInvestHistoryTable,
         this.automateTransactionTable,
         this.walletTable,
       ),

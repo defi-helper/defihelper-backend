@@ -19,7 +19,7 @@ import { ProtocolListItem, TemporaryOutOfService } from '@services/Debank';
 import {
   MetricWalletRegistry,
   MetricWalletToken,
-  metricWalletTokenTableName,
+  metricWalletTokenRegistryTableName,
 } from '@models/Metric/Entity';
 import dayjs from 'dayjs';
 
@@ -87,19 +87,21 @@ export default async (process: Process) => {
     return {
       ...(await prev),
       [curr.id]: await container.model
-        .metricWalletTokenTable()
-        .distinctOn(`${metricWalletTokenTableName}.wallet`, `${metricWalletTokenTableName}.token`)
+        .metricWalletTokenRegistryTable()
         .column(`${tokenTableName}.*`)
         .column(
-          database.raw(`(${metricWalletTokenTableName}.data->>'balance')::numeric AS balance`),
+          database.raw(
+            `(${metricWalletTokenRegistryTableName}.data->>'balance')::numeric AS balance`,
+          ),
         )
-        .column(`${metricWalletTokenTableName}.contract`)
-        .innerJoin(tokenTableName, `${metricWalletTokenTableName}.token`, `${tokenTableName}.id`)
-        .whereNotNull(`${metricWalletTokenTableName}.contract`)
-        .andWhere(`${metricWalletTokenTableName}.wallet`, curr.id)
-        .orderBy(`${metricWalletTokenTableName}.wallet`)
-        .orderBy(`${metricWalletTokenTableName}.token`)
-        .orderBy(`${metricWalletTokenTableName}.date`, 'DESC'),
+        .column(`${metricWalletTokenRegistryTableName}.contract`)
+        .innerJoin(
+          tokenTableName,
+          `${metricWalletTokenRegistryTableName}.token`,
+          `${tokenTableName}.id`,
+        )
+        .where(`${metricWalletTokenRegistryTableName}.wallet`, curr.id)
+        .whereNotNull(`${metricWalletTokenRegistryTableName}.contract`),
     };
   }, Promise.resolve({}));
 

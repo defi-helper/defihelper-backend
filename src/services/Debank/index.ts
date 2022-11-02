@@ -106,10 +106,14 @@ export class Debank {
       throw new Error(`Unknown chain: ${chainId}`);
     }
 
-    return this.apiRequest<Token>('token', {
-      id: address === '0x0000000000000000000000000000000000000000' ? chain.named : address,
-      chain_id: chain.named,
-    });
+    return this.apiRequest<Token>(
+      'token',
+      {
+        id: address === '0x0000000000000000000000000000000000000000' ? chain.named : address,
+        chain_id: chain.named,
+      },
+      true,
+    );
   }
 
   async getTokensOnWallet(wallet: string) {

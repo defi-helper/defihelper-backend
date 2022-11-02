@@ -34,6 +34,7 @@ import {
   UserCollectorTable,
   UserCollector,
   UserCollectorStatus,
+  MetricTokenRegistryTable,
 } from './Entity';
 
 export class MetricContractService {
@@ -75,6 +76,7 @@ export class MetricContractService {
     readonly metricWalletTable: Factory<MetricWalletTable>,
     readonly metricWalletRegistryTable: Factory<MetricWalletRegistryTable>,
     readonly metricContractRegistryTable: Factory<MetricContractRegistryTable>,
+    readonly metricTokenRegistryTable: Factory<MetricTokenRegistryTable>,
     readonly metricWalletTaskTable: Factory<MetricWalletTaskTable>,
     readonly metricWalletTokenTable: Factory<MetricWalletTokenTable>,
     readonly metricWalletTokenRegistryTable: Factory<MetricWalletTokenRegistryTable>,
@@ -181,8 +183,8 @@ export class MetricContractService {
         wallet: metric.wallet,
       })
       .whereBetween('date', [
-        dayjs(metric.date).add(-2, 'day').toDate(),
-        dayjs(metric.date).add(-1, 'day').toDate(),
+        dayjs(metric.date).add(-2, 'day').startOf('day').toDate(),
+        dayjs(metric.date).add(-1, 'day').startOf('day').toDate(),
       ])
       .first();
     const data = {
@@ -245,6 +247,39 @@ export class MetricContractService {
     }
     if (duplicate.date < metric.date) {
       return this.metricContractRegistryTable()
+        .update({
+          data: {
+            ...duplicate.data,
+            ...metric.data,
+          },
+          date: metric.date,
+        })
+        .where('id', duplicate.id)
+        .transacting(trx);
+    }
+    return null;
+  }
+
+  async updateTokenRegistry(metric: MetricToken, trx: Knex.Transaction<any, any>) {
+    const duplicate = await this.metricTokenRegistryTable()
+      .where({
+        token: metric.token,
+      })
+      .first();
+    if (!duplicate) {
+      return this.metricTokenRegistryTable()
+        .insert({
+          id: uuid(),
+          token: metric.token,
+          data: metric.data,
+          date: metric.date,
+        })
+        .onConflict(['token'])
+        .ignore()
+        .transacting(trx);
+    }
+    if (duplicate.date < metric.date) {
+      return this.metricTokenRegistryTable()
         .update({
           data: {
             ...duplicate.data,
@@ -321,8 +356,8 @@ export class MetricContractService {
         token: metric.token,
       })
       .whereBetween('date', [
-        dayjs(metric.date).add(-2, 'day').toDate(),
-        dayjs(metric.date).add(-1, 'day').toDate(),
+        dayjs(metric.date).add(-2, 'day').startOf('day').toDate(),
+        dayjs(metric.date).add(-1, 'day').startOf('day').toDate(),
       ])
       .first();
 
@@ -375,7 +410,13 @@ export class MetricContractService {
       date,
       createdAt: new Date(),
     };
-    await this.metricTokenTable().insert(created);
+
+    await this.database().transaction((trx) =>
+      Promise.all([
+        this.metricTokenTable().insert(created).transacting(trx),
+        this.updateTokenRegistry(created, trx),
+      ]),
+    );
 
     return created;
   }

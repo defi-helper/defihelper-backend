@@ -28,10 +28,13 @@ export class ACLContainer extends Container<typeof AppContainer> {
       automateCondition: ['create', 'update-own', 'delete-own'],
       automateAction: ['create', 'update-own', 'delete-own'],
       automateContract: ['create', 'update-own', 'delete-own'],
+      automateInvestHistory: ['create', 'refund'],
       integration: ['connect', 'disconnect'],
       smartTradeOrder: ['list-own', 'create', 'update-own', 'cancel-own'],
     }),
   );
+
+  readonly userST = singleton(() => ACL.expand(this.user(), {}));
 
   readonly admin = singleton(() =>
     ACL.expand(this.user(), {

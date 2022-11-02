@@ -1,5 +1,9 @@
 import { Container, singleton, singletonParametric } from '@services/Container';
-import { automateContractStopLossLoader } from './automate';
+import {
+  automateContractStopLossLoader,
+  automateContractTriggerLoader,
+  automateInvestHistoryLoader,
+} from './automate';
 import {
   contractLastMetricLoader,
   contractLoader,
@@ -11,7 +15,13 @@ import {
   protocolUserLastMetricLoader,
 } from './protocol';
 import { tagContractLoader } from './tag';
-import { tokenAliasLoader, tokenAliasUserLastMetricLoader, tokenLoader } from './token';
+import {
+  tokenAliasLoader,
+  tokenAliasUserLastMetricLoader,
+  tokenLastMetricLoader,
+  tokenLoader,
+} from './token';
+
 import {
   userBlockchainLoader,
   userLastAPRLoader,
@@ -22,6 +32,7 @@ import {
   walletLoader,
   walletTokenLastMetricLoader,
   walletTriggersCountLoader,
+  walletAutomatesLoader,
 } from './user';
 
 export class DataLoaderContainer extends Container<{}> {
@@ -61,11 +72,19 @@ export class DataLoaderContainer extends Container<{}> {
 
   readonly walletTriggersCount = singleton(walletTriggersCountLoader);
 
+  readonly walletAutomates = singleton(walletAutomatesLoader);
+
   readonly tokenAlias = singleton(tokenAliasLoader);
 
   readonly tokenAliasUserLastMetric = singletonParametric(tokenAliasUserLastMetricLoader);
 
+  readonly tokenLastMetric = singleton(tokenLastMetricLoader);
+
   readonly token = singleton(tokenLoader);
 
   readonly automateContractStopLoss = singleton(automateContractStopLossLoader);
+
+  readonly automateContractTrigger = singleton(automateContractTriggerLoader);
+
+  readonly automateInvestHistory = singleton(automateInvestHistoryLoader);
 }

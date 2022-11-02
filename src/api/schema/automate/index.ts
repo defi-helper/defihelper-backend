@@ -1040,6 +1040,9 @@ export const ContractTypeEnum = new GraphQLEnumType({
 export const ContractMetricType = new GraphQLObjectType({
   name: 'AutomateContractMetricType',
   fields: {
+    invest: {
+      type: GraphQLNonNull(GraphQLString),
+    },
     staked: {
       type: GraphQLNonNull(GraphQLString),
     },
@@ -1048,6 +1051,9 @@ export const ContractMetricType = new GraphQLObjectType({
     },
     apyBoost: {
       type: GraphQLNonNull(GraphQLString),
+      resolve: ({ apyBoost: { blockchain, network, balance, aprYear } }) => {
+        return apyBoost(blockchain, network, balance, aprYear);
+      },
     },
   },
 });
@@ -1206,6 +1212,7 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
           staked: '0',
           earned: '0',
           apyBoost: '0',
+          invest: '0',
         };
         if (
           !contract.contract ||
@@ -1239,15 +1246,17 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
         const totalBalance = new BN(walletMetric.stakingUSD)
           .plus(walletMetric.earnedUSD)
           .toNumber();
+        const invest = await dataLoader.automateInvestHistory().load(contract.id);
         return {
+          invest: invest.amountUSD,
           staked: walletMetric.stakingUSD,
           earned: walletMetric.earnedUSD,
-          apyBoost: await apyBoost(
-            staking.blockchain,
-            staking.network,
-            totalBalance > 0 ? totalBalance : 10000,
-            new BN(staking.metric.aprYear ?? '0').toNumber(),
-          ),
+          apyBoost: {
+            blockchain: staking.blockchain,
+            network: staking.network,
+            balance: totalBalance > 0 ? totalBalance : 10000,
+            aprYear: new BN(staking.metric.aprYear ?? '0').toNumber(),
+          },
         };
       },
     },
@@ -1259,6 +1268,12 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
       type: ContractStopLossType,
       resolve: (contract, args, { dataLoader }) => {
         return dataLoader.automateContractStopLoss().load(contract.id);
+      },
+    },
+    trigger: {
+      type: TriggerType,
+      resolve: (contract, args, { dataLoader }) => {
+        return dataLoader.automateContractTrigger().load(contract.id);
       },
     },
   },
@@ -1548,6 +1563,74 @@ export const ContractDeleteMutation: GraphQLFieldConfig<any, Request> = {
   }),
 };
 
+export const ContractTriggerUpdateMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLList(GraphQLNonNull(TriggerType))),
+  args: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+    },
+    input: {
+      type: GraphQLNonNull(
+        new GraphQLInputObjectType({
+          name: 'AutomateContractTriggerUpdateInputType',
+          fields: {
+            active: {
+              type: GraphQLBoolean,
+              description: 'Is active',
+              defaultValue: true,
+            },
+          },
+        }),
+      ),
+    },
+  },
+  resolve: onlyAllowed(
+    'automateTrigger.update-own',
+    async (root, { id, input }, { currentUser }) => {
+      if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+      const contract = await container.model.automateContractTable().where('id', id).first();
+      if (!contract) throw new UserInputError('Contract not found');
+
+      const triggers = await container.model
+        .automateTriggerTable()
+        .distinct(`${Automate.triggerTableName}.*`)
+        .innerJoin(
+          Automate.actionTableName,
+          `${Automate.triggerTableName}.id`,
+          `${Automate.actionTableName}.trigger`,
+        )
+        .where(`${Automate.actionTableName}.type`, 'ethereumAutomateRun')
+        .where(
+          container.database().raw(`${Automate.actionTableName}.params->>'id' = ?`, [contract.id]),
+        )
+        .then((v) => v as Automate.Trigger[]);
+      const walletsMap = await container.model
+        .walletTable()
+        .whereIn(
+          'id',
+          triggers.map(({ wallet }: { wallet: string }) => wallet),
+        )
+        .then((rows) => new Map(rows.map((wallet) => [wallet.id, wallet])));
+
+      return triggers.reduce<Promise<Automate.Trigger[]>>(async (prev, trigger) => {
+        const res = await prev;
+
+        const wallet = walletsMap.get(trigger.wallet);
+        if (!wallet || wallet.user !== currentUser.id) return res;
+
+        return [
+          ...res,
+          await container.model.automateService().updateTrigger({
+            ...trigger,
+            active: typeof input.active === 'boolean' ? input.active : trigger.active,
+          }),
+        ];
+      }, Promise.resolve([]));
+    },
+  ),
+};
+
 export const ContractStopLossEnable: GraphQLFieldConfig<any, Request> = {
   type: GraphQLNonNull(GraphQLBoolean),
   args: {
@@ -1630,6 +1713,137 @@ export const ContractStopLossDisable: GraphQLFieldConfig<any, Request> = {
     }
 
     await container.model.automateService().disableStopLoss(contract);
+
+    return true;
+  }),
+};
+
+export const InvestHistoryType = new GraphQLObjectType({
+  name: 'AutomateInvestHistoryType',
+  fields: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+      description: 'Identificator',
+    },
+    amount: {
+      type: GraphQLNonNull(BigNumberType),
+    },
+    amountUSD: {
+      type: GraphQLNonNull(BigNumberType),
+    },
+    createdAt: {
+      type: GraphQLNonNull(DateTimeType),
+    },
+  },
+});
+
+export const InvestCreateMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(InvestHistoryType),
+  args: {
+    input: {
+      type: GraphQLNonNull(
+        new GraphQLInputObjectType({
+          name: 'AutomateInvestCreateInputType',
+          fields: {
+            contract: {
+              type: GraphQLNonNull(UuidType),
+              description: 'Automate contract',
+            },
+            wallet: {
+              type: GraphQLNonNull(UuidType),
+              description: 'Investor wallet',
+            },
+            amount: {
+              type: GraphQLNonNull(BigNumberType),
+            },
+            amountUSD: {
+              type: GraphQLNonNull(BigNumberType),
+            },
+          },
+        }),
+      ),
+    },
+  },
+  resolve: onlyAllowed('automateInvestHistory.create', async (root, { input }, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const contract = await container.model
+      .automateContractTable()
+      .where('id', input.contract)
+      .first();
+    if (!contract) {
+      throw new UserInputError('Contract not found');
+    }
+    const ownerWallet = await container.model.walletTable().where('id', contract.wallet).first();
+    if (!ownerWallet) {
+      throw new UserInputError('Owner wallet not found');
+    }
+    if (ownerWallet.user !== currentUser.id) {
+      throw new UserInputError('Foreign owner wallet');
+    }
+
+    const wallet = await container.model.walletTable().where('id', input.wallet).first();
+    if (!wallet) {
+      throw new UserInputError('Wallet not found');
+    }
+    if (wallet.user !== currentUser.id) {
+      throw new UserInputError('Foreign wallet');
+    }
+
+    return container.model
+      .automateService()
+      .createInvestHistory(contract, wallet, input.amount, input.amountUSD);
+  }),
+};
+
+export const InvestRefundMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLBoolean),
+  args: {
+    input: {
+      type: GraphQLNonNull(
+        new GraphQLInputObjectType({
+          name: 'AutomateInvestRefundInputType',
+          fields: {
+            contract: {
+              type: GraphQLNonNull(UuidType),
+              description: 'Automate contract',
+            },
+            wallet: {
+              type: GraphQLNonNull(UuidType),
+              description: 'Investor wallet',
+            },
+          },
+        }),
+      ),
+    },
+  },
+  resolve: onlyAllowed('automateInvestHistory.refund', async (root, { input }, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const contract = await container.model
+      .automateContractTable()
+      .where('id', input.contract)
+      .first();
+    if (!contract) {
+      throw new UserInputError('Contract not found');
+    }
+    const ownerWallet = await container.model.walletTable().where('id', contract.wallet).first();
+    if (!ownerWallet) {
+      throw new UserInputError('Owner wallet not found');
+    }
+    if (ownerWallet.user !== currentUser.id) {
+      throw new UserInputError('Foreign owner wallet');
+    }
+
+    const wallet = await container.model.walletTable().where('id', input.wallet).first();
+    if (!wallet) {
+      throw new UserInputError('Wallet not found');
+    }
+    if (wallet.user !== currentUser.id) {
+      throw new UserInputError('Foreign wallet');
+    }
+
+    await container.model.automateService().refundInvestHistory(contract, wallet);
 
     return true;
   }),

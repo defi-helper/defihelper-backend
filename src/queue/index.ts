@@ -54,6 +54,9 @@ export * as automateTriggerByTime from './automate/trigger/byTime';
 export * as riskCalculationBroker from './contract/riskCalculationBroker';
 export * as riskCalculationFiller from './contract/riskCalculationFiller';
 
+export * as deadPoolsInvestmentsBroker from './contract/deadPoolsInvestmentsBroker';
+export * as automateNotifyExecutedRestake from './automate/notifyExecutedRestake';
+
 /* billing */
 export * as emptyWalletsBroker from './billing/emptyWalletsBroker';
 export * as eventsBillingTransferTxCreated from './events/billing/transferTxCreated';
@@ -79,6 +82,9 @@ export * as metricsWalletBalancesCexUniversalFiller from './metrics/walletBalanc
 export * as walletBalancesCentralizedExchangeBroker from './metrics/walletBalances/cex/walletBalancesCentralizedExchangeBroker';
 
 export * as notificationsDemoCallInvitationsBroker from './notifications/demoCallInvitationsBroker';
+
+export * as metricsTokenRiskRankingFiller from './metrics/tokenRiskRankingFiller';
+export * as metricsTokenRiskRankingBroker from './metrics/tokenRiskRankingBroker';
 
 /* protocol */
 export * as protocolContractsResolver from './protocol/resolveContracts';
@@ -121,6 +127,8 @@ export * as tokensBridgesFromAdapters from './token/tokensBridgesFromAdapters';
 export * as tokensDeleteDuplicates from './token/deleteTokenDuplicates';
 
 export * as tokenResolveUniswapRoute from './token/uniswapRouteRevealer';
+export * as tokenResolveUniswapRouteBroker from './token/uniswapRouteRevealerBroker';
+
 export * as whatToFarmTokensIterator from './token/whatToFarmTokensIterator';
 
 export * as syncCoingeckoIdsBroker from './token/syncCoingeckoIdsBroker';
