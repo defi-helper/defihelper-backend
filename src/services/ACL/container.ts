@@ -34,6 +34,8 @@ export class ACLContainer extends Container<typeof AppContainer> {
     }),
   );
 
+  readonly userST = singleton(() => ACL.expand(this.user(), {}));
+
   readonly admin = singleton(() =>
     ACL.expand(this.user(), {
       wallet: ['add'],

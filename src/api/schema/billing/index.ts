@@ -827,3 +827,68 @@ export const OnTransferUpdated: GraphQLFieldConfig<{ id: string }, Request> = {
     return container.model.billingTransferTable().where('id', id).first();
   },
 };
+
+export const ZAPFeePayCreateMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLBoolean),
+  args: {
+    input: {
+      type: GraphQLNonNull(
+        new GraphQLInputObjectType({
+          name: 'ZAPFeePayCreateInputType',
+          fields: {
+            type: {
+              type: GraphQLNonNull(
+                new GraphQLEnumType({
+                  name: 'ZAPFeePayCreateTypeEnum',
+                  values: {
+                    Buy: { value: 'buy' },
+                    Sell: { value: 'sell' },
+                  },
+                }),
+              ),
+            },
+            wallet: {
+              type: GraphQLNonNull(UuidType),
+            },
+            fee: {
+              type: GraphQLNonNull(BigNumberType),
+            },
+            feeUSD: {
+              type: GraphQLNonNull(BigNumberType),
+            },
+            tx: {
+              type: GraphQLNonNull(GraphQLString),
+            },
+          },
+        }),
+      ),
+    },
+  },
+  resolve: async (root, { input }, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const { type, wallet, fee, feeUSD, tx } = input;
+    const walletBlockchain = await container.model
+      .walletTable()
+      .innerJoin(
+        walletBlockchainTableName,
+        `${walletTableName}.id`,
+        `${walletBlockchainTableName}.id`,
+      )
+      .where(`${walletTableName}.id`, wallet)
+      .first();
+    if (!walletBlockchain) {
+      throw new UserInputError('Wallet not found');
+    }
+
+    await container.amplitude().log('ZAP', currentUser.id, {
+      type,
+      wallet,
+      fee: fee.toString(10),
+      feeUSD: feeUSD.toString(10),
+      tx,
+    });
+
+    return true;
+  },
+};

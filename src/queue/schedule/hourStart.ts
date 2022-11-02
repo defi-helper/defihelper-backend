@@ -7,7 +7,6 @@ export default async (process: Process) => {
   await Promise.all([
     queue.push('automateTriggerByTime', { type: TriggerType.EveryHour }),
     queue.push('billingBroker', {}),
-    queue.push('walletBalancesCentralizedExchangeBroker'),
     queue.push('treasuryStatsCache', {}),
     queue.push('logStuckQueueTask', {}),
   ]);

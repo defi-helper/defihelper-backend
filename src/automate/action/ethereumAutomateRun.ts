@@ -1,6 +1,7 @@
 import container from '@container';
 import {
   Action,
+  Contract,
   contractTableName,
   ContractVerificationStatus,
   EthereumAutomateTransaction,
@@ -12,6 +13,7 @@ import { ethers, Wallet } from 'ethers';
 import * as uuid from 'uuid';
 import { BigNumber as BN } from 'bignumber.js';
 import { abi as balanceAbi } from '@defihelper/networks/abi/Balance.json';
+import { Protocol } from '@models/Protocol/Entity';
 
 export interface Params {
   id: string;
@@ -24,6 +26,34 @@ export function paramsVerify(params: any): params is Params {
   }
 
   return true;
+}
+
+export async function getEarnedAmount(
+  provider: ethers.providers.JsonRpcProvider,
+  protocol: Protocol,
+  contract: Contract,
+) {
+  const contractBlockchain = await container.model
+    .contractBlockchainTable()
+    .where('id', contract.contract)
+    .first();
+
+  if (!contractBlockchain) return new BN(0);
+
+  const protocolAdapter = await container.blockchainAdapter.loadAdapter(protocol.adapter);
+  const contractAdapterFactory = protocolAdapter[contractBlockchain.adapter];
+  if (typeof contractAdapterFactory !== 'function') throw new Error('Contract adapter not found');
+
+  const contractAdapterReader = await contractAdapterFactory(provider, contractBlockchain.address, {
+    blockNumber: 'latest',
+  });
+
+  if (typeof contractAdapterReader.wallet !== 'function') {
+    throw new Error('Contract adapter wallet() interface not found');
+  }
+
+  const walletMetrics = await contractAdapterReader.wallet(contract.address);
+  return new BN(walletMetrics.metrics?.earnedUSD ?? 0);
 }
 
 export default async function (this: Action, params: Params) {
@@ -117,6 +147,7 @@ export default async function (this: Action, params: Params) {
   }, Promise.resolve(null));
   if (consumer === null) throw new Error('Not free consumer');
 
+  const earnedUsd = await getEarnedAmount(provider, protocol, contract).catch(() => new BN(0));
   const { run: adapter } = await adapterFactory(consumer, contract.address);
   try {
     const res = await adapter.methods.run();
@@ -135,6 +166,12 @@ export default async function (this: Action, params: Params) {
       container.amplitude().log('automation_fee_charged_successful', wallet.user, {
         hash: tx.hash,
       }),
+      !earnedUsd.isZero()
+        ? container.model.queueService().push('automateNotifyExecutedRestake', {
+            contract: contract.id,
+            amount: earnedUsd.toFixed(2),
+          })
+        : null,
     ]);
   } catch (e) {
     await container

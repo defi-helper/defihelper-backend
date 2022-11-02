@@ -21,6 +21,7 @@ import {
   walletExchangeTableName,
   walletTableName,
   walletBlockchainTableName,
+  WalletSuspenseReason,
 } from '@models/Wallet/Entity';
 import { Blockchain } from '@models/types';
 import BN from 'bignumber.js';
@@ -36,6 +37,7 @@ import {
   metricWalletTableName,
   metricWalletTokenRegistryTableName,
   metricWalletTokenTableName,
+  UserCollectorStatus,
 } from '@models/Metric/Entity';
 import {
   TokenAlias,
@@ -671,6 +673,10 @@ export const WalletExchangeType = new GraphQLObjectType<
       type: GraphQLNonNull(WalletExchangeTypeEnum),
       description: 'Exchange type',
     },
+    isExpired: {
+      type: GraphQLNonNull(GraphQLBoolean),
+      resolve: (wallet) => wallet.suspendReason === WalletSuspenseReason.CexUnableToAuthorize,
+    },
     statisticsCollectedAt: {
       type: GraphQLNonNull(DateTimeType),
       description: 'Statistics collected',
@@ -979,17 +985,10 @@ export const UserBlockchainType = new GraphQLObjectType<{
 
 export const RoleType = new GraphQLEnumType({
   name: 'UserRoleEnum',
-  values: {
-    [Role.User]: {
-      description: 'User',
-    },
-    [Role.Admin]: {
-      description: 'Administrator',
-    },
-    [Role.Demo]: {
-      description: 'Demo',
-    },
-  },
+  values: Object.values(Role).reduce(
+    (res, locale) => ({ ...res, [locale]: { value: locale } }),
+    {},
+  ),
 });
 
 export const LocaleEnum = new GraphQLEnumType({
@@ -1087,9 +1086,21 @@ export const UserType = new GraphQLObjectType<User, Request>({
           .catch(() => null);
 
         if (cacheKey === null) {
-          container.model
-            .queueService()
-            .push('metricsUserPortfolioFiller', { id: user.id }, { priority: 9 });
+          const collector = await container.model
+            .metricUserCollectorTable()
+            .where('user', user.id)
+            .where('status', UserCollectorStatus.Pending)
+            .first();
+          // Skip if the collection of metrics is already in progress
+          if (!collector) {
+            container.model
+              .queueService()
+              .push(
+                'metricsUserPortfolioFiller',
+                { userId: user.id, priority: 9, notify: false },
+                { priority: 9 },
+              );
+          }
           container.cache().promises.setex(
             `defihelper:portfolio-preload:${user.id}`,
             3600, // 1 hour

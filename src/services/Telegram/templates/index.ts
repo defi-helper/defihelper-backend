@@ -1,6 +1,7 @@
 import fs from 'fs';
 
 export const Templates = {
+  automateRestakeDone: fs.promises.readFile(`${__dirname}/AutomateRestakeDone.mustache`, 'utf8'),
   log: fs.promises.readFile(`${__dirname}/Log.mustache`, 'utf8'),
   eventTemplate: fs.promises.readFile(`${__dirname}/Event.mustache`, 'utf8'),
   welcomeTemplate: fs.promises.readFile(`${__dirname}/Welcome.mustache`, 'utf8'),
