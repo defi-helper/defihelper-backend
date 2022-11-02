@@ -13,6 +13,8 @@ import {
   ContractBlockchainType,
 } from '@models/Protocol/Entity';
 import { apyBoost } from '@services/RestakeStrategy';
+import BigNumber from 'bignumber.js';
+import { TagType, TagPreservedName, TagTvlType } from '@models/Tag/Entity';
 
 async function getOrCreateToken(contract: Contract & ContractBlockchainType, address: string) {
   const addressNormalize = contract.blockchain === 'ethereum' ? address.toLowerCase() : address;
@@ -165,6 +167,31 @@ export async function contractMetrics(process: Process) {
         TokenContractLinkType.Reward,
         null,
       );
+    }
+
+    const tvl = new BigNumber(contractAdapterData.metrics.tvl ?? '0');
+    let choosenTag: TagTvlType['name'] | undefined;
+
+    await container.model.contractService().unlinkAllTagsByType(contract, TagType.Tvl);
+
+    if (tvl.gte(100_000_000)) {
+      choosenTag = TagPreservedName.TvlHundredMillion;
+    } else if (tvl.gte(10_000_000)) {
+      choosenTag = TagPreservedName.TvlTenMillion;
+    } else if (tvl.gte(1_000_000)) {
+      choosenTag = TagPreservedName.TvlOneMillion;
+    } else if (tvl.gte(100_000)) {
+      choosenTag = TagPreservedName.TvlHundredThousand;
+    }
+
+    if (choosenTag) {
+      await container.model
+        .tagService()
+        .createPreserved({
+          type: TagType.Tvl,
+          name: choosenTag,
+        })
+        .then((tag) => container.model.contractService().linkTag(contract, tag));
     }
   }
 

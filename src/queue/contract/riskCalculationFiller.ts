@@ -5,6 +5,7 @@ import {
   contractTableName,
 } from '@models/Protocol/Entity';
 import { Process } from '@models/Queue/Entity';
+import { TagPreservedName, TagRiskType, TagType } from '@models/Tag/Entity';
 import { LogJsonMessage } from '@services/Log';
 import BigNumber from 'bignumber.js';
 
@@ -62,6 +63,31 @@ export default async (process: Process) => {
   }
   if (currentApy.gte(100)) {
     riskLevel = ContractRiskFactor.high;
+  }
+
+  await container.model.contractService().unlinkAllTagsByType(contract, TagType.Risk);
+  const appliedTag: {
+    [risk: string]: TagRiskType;
+  } = {
+    [ContractRiskFactor.low]: {
+      type: TagType.Risk,
+      name: TagPreservedName.RiskLow,
+    },
+    [ContractRiskFactor.moderate]: {
+      type: TagType.Risk,
+      name: TagPreservedName.RiskModerate,
+    },
+    [ContractRiskFactor.high]: {
+      type: TagType.Risk,
+      name: TagPreservedName.RiskHigh,
+    },
+  };
+
+  if (appliedTag[riskLevel] !== undefined) {
+    await container.model
+      .tagService()
+      .createPreserved(appliedTag[riskLevel])
+      .then((tag) => container.model.contractService().linkTag(contract, tag));
   }
 
   log.ex({ contract: contract.id, riskLevel }).send();

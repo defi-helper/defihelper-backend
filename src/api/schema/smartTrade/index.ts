@@ -467,7 +467,7 @@ export const SwapOrderCreateInputType = new GraphQLInputObjectType({
               type: GraphQLNonNull(BigNumberType),
             },
             boughtPrice: {
-              type: BigNumberType,
+              type: GraphQLNonNull(BigNumberType),
             },
             stopLoss: {
               type: SwapOrderCallDataStopLossInputType,
@@ -558,7 +558,7 @@ export const SwapOrderCreateMutation: GraphQLFieldConfig<any, Request> = {
           tokenInDecimals: callData.tokenInDecimals,
           tokenOutDecimals: callData.tokenOutDecimals,
           amountIn: callData.amountIn.toFixed(0),
-          boughtPrice: callData.boughtPrice ? callData.boughtPrice.toString(10) : null,
+          boughtPrice: callData.boughtPrice.toString(10),
           routes: [
             callData.stopLoss
               ? {

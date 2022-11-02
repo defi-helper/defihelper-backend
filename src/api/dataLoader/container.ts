@@ -14,12 +14,14 @@ import {
   protocolUserLastAPRLoader,
   protocolUserLastMetricLoader,
 } from './protocol';
+import { tagContractLoader } from './tag';
 import {
   tokenAliasLoader,
   tokenAliasUserLastMetricLoader,
   tokenLastMetricLoader,
   tokenLoader,
 } from './token';
+
 import {
   userBlockchainLoader,
   userLastAPRLoader,
@@ -35,6 +37,8 @@ import {
 
 export class DataLoaderContainer extends Container<{}> {
   readonly protocol = singleton(protocolLoader);
+
+  readonly tag = singleton(tagContractLoader);
 
   readonly protocolFavorites = singletonParametric(protocolFavoritesLoader);
 

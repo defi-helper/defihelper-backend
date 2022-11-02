@@ -24,6 +24,7 @@ import * as monitoringSchemas from '@api/schema/monitoring';
 import * as landingSchemas from '@api/schema/landing';
 import * as tradingSchemas from '@api/schema/trading';
 import * as smartTradeSchemas from '@api/schema/smartTrade';
+import * as tagSchemas from '@api/schema/tag';
 import Jimp from 'jimp';
 import { metricContractTableName } from '@models/Metric/Entity';
 import {
@@ -101,6 +102,7 @@ export function route({ express, server }: { express: Express; server: Server })
           monitoringProtocolEarningsHistory:
             monitoringSchemas.MonitoringProtocolEarningsHistoryQuery,
           smartTradeOrders: smartTradeSchemas.OrderListQuery,
+          tags: tagSchemas.TagsListQuery,
         },
       }),
       mutation: new GraphQLObjectType({
