@@ -71,6 +71,7 @@ export type Order<T extends CallData = CallData> = {
   status: OrderStatus;
   tx: string;
   confirmed: boolean;
+  claim: boolean;
   statusTask: string | null;
   watcherListenerId: string | null;
   checkTaskId: string | null;
