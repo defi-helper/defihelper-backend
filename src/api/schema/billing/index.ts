@@ -28,6 +28,7 @@ import {
   GraphQLFieldConfig,
 } from 'graphql';
 import BN from 'bignumber.js';
+import { OrderStatus } from '@models/SmartTrade/Entity';
 import {
   BigNumberType,
   BlockchainEnum,
@@ -306,7 +307,13 @@ export const WalletBillingType = new GraphQLObjectType<Wallet & WalletBlockchain
     balance: {
       type: GraphQLNonNull(WalletBalanceType),
       resolve: async (wallet) => {
-        const [transferSum, unconfirmedTransferSum, billSum, activeAutomates] = await Promise.all([
+        const [
+          transferSum,
+          unconfirmedTransferSum,
+          billSum,
+          activeAutomates,
+          activeSmartTradeOrders,
+        ] = await Promise.all([
           container.model
             .billingTransferTable()
             .sum('amount')
@@ -345,13 +352,24 @@ export const WalletBillingType = new GraphQLObjectType<Wallet & WalletBlockchain
             })
             .count()
             .first(),
+          container.model
+            .smartTradeOrderTable()
+            .where('owner', wallet.id)
+            .where('status', OrderStatus.Pending)
+            .where('confirmed', true)
+            .count()
+            .first(),
         ]);
         const balance = new BN(transferSum?.sum || 0);
         const unconfirmedBalance = new BN(unconfirmedTransferSum?.sum || 0);
         const claim = new BN(billSum?.sum || 0);
         const activeAutomatesCount = activeAutomates?.count || 0;
+        const activeSmartTradeOrdersCount = activeSmartTradeOrders?.count || 0;
 
-        if (wallet.blockchain !== 'ethereum' || activeAutomatesCount < 1) {
+        if (
+          wallet.blockchain !== 'ethereum' ||
+          (activeAutomatesCount < 1 && activeSmartTradeOrdersCount < 1)
+        ) {
           return {
             balance,
             claim,
