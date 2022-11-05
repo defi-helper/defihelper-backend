@@ -101,6 +101,7 @@ export function route({ express, server }: { express: Express; server: Server })
             monitoringSchemas.MonitoringAutoRestakeAutomatesCreationHistoryQuery,
           monitoringProtocolEarningsHistory:
             monitoringSchemas.MonitoringProtocolEarningsHistoryQuery,
+          monitoringTelegramContactsHistory: monitoringSchemas.MonitoringTelegramContactsQuery,
           smartTradeOrders: smartTradeSchemas.OrderListQuery,
           tags: tagSchemas.TagsListQuery,
         },
