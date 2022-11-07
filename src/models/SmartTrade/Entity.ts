@@ -20,12 +20,19 @@ export interface MockCallData {
   };
 }
 
+export type Direction = 'gt' | 'lt';
+
 export interface SwapCallDataRoute {
   amountOut: string;
   amountOutMin: string;
   slippage: string;
   moving: string | null;
-  direction: 'gt' | 'lt';
+  direction: Direction;
+}
+
+export interface SwapCallDataActivate {
+  amountOut: string;
+  direction: Direction;
 }
 
 export interface SwapCallData {
@@ -39,6 +46,7 @@ export interface SwapCallData {
     amountIn: string;
     boughtPrice: string | null;
     routes: Array<SwapCallDataRoute | null>;
+    activate: SwapCallDataActivate | null;
     deadline: number;
   };
 }
@@ -69,6 +77,7 @@ export type Order<T extends CallData = CallData> = {
   handler: string;
   callDataRaw: string;
   status: OrderStatus;
+  active: boolean;
   tx: string;
   confirmed: boolean;
   claim: boolean;

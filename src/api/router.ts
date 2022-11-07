@@ -101,6 +101,7 @@ export function route({ express, server }: { express: Express; server: Server })
             monitoringSchemas.MonitoringAutoRestakeAutomatesCreationHistoryQuery,
           monitoringProtocolEarningsHistory:
             monitoringSchemas.MonitoringProtocolEarningsHistoryQuery,
+          monitoringTelegramContactsHistory: monitoringSchemas.MonitoringTelegramContactsQuery,
           smartTradeOrders: smartTradeSchemas.OrderListQuery,
           tags: tagSchemas.TagsListQuery,
         },
@@ -188,6 +189,7 @@ export function route({ express, server }: { express: Express; server: Server })
           onBillingTransferCreated: billingSchemas.OnTransferCreated,
           onBillingTransferUpdated: billingSchemas.OnTransferUpdated,
           onUserContactActivated: notificationSchemas.OnUserContactActivated,
+          onSmartTradeOrderUpdated: smartTradeSchemas.OnOrderUpdated,
         },
       }),
     }),
