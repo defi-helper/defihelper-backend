@@ -11,6 +11,22 @@ import { BigNumber as BN } from 'bignumber.js';
 import { Order, SwapCallData } from '../Entity';
 import UniswapRouterABI from '../data/uniswapRouterABI.json';
 
+async function activateOrder(order: Order<SwapCallData>, actualAmountout: string) {
+  if (order.active) return order;
+
+  const { amountOut, direction } = order.callData.activate ?? {};
+  if (
+    direction === undefined ||
+    amountOut === undefined ||
+    (direction === 'lt' && new BN(actualAmountout).lt(amountOut)) ||
+    (direction === 'gt' && new BN(actualAmountout).gt(amountOut))
+  ) {
+    return container.model.smartTradeService().updateOrder({ ...order, active: true });
+  }
+
+  return order;
+}
+
 export default async function (
   order: Order<SwapCallData>,
 ): Promise<ethers.ContractTransaction | Error | null> {
@@ -56,9 +72,16 @@ export default async function (
         amountOut: route?.amountOut,
         amountOutMin: route?.amountOutMin,
       })),
+      activate: JSON.stringify(order.callData.activate),
       actualAmountOut: actualAmountOut.toString(10),
     })
     .send();
+
+  const { active } = await activateOrder(order, actualAmountOut);
+  log.ex({ active }).send();
+  if (!active) {
+    return null;
+  }
 
   const routes = order.callData.routes.map((route) => {
     if (route === null) return route;
@@ -77,6 +100,7 @@ export default async function (
   });
   await container.model.smartTradeService().updateOrder({
     ...order,
+    active,
     callData: {
       ...order.callData,
       routes,

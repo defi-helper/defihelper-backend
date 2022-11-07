@@ -147,6 +147,20 @@ export const SwapHandlerCallDataRouteType = new GraphQLObjectType({
   },
 });
 
+export const SwapOrderCallDataDirectionEnum = new GraphQLEnumType({
+  name: 'SwapOrderCallDataDirectionEnum',
+  values: {
+    gt: {
+      value: 'gt',
+      description: 'great',
+    },
+    lt: {
+      value: 'lt',
+      description: 'less',
+    },
+  },
+});
+
 export const SwapHandlerCallDataType = new GraphQLObjectType<SwapCallData>({
   name: 'SmartTradeSwapHandlerCallDataType',
   fields: {
@@ -192,6 +206,26 @@ export const SwapHandlerCallDataType = new GraphQLObjectType<SwapCallData>({
           decimals: tokenOutDecimals,
         };
       },
+    },
+    activate: {
+      type: new GraphQLObjectType({
+        name: 'SmartTradeSwapHandlerCallDataActivateType',
+        fields: {
+          amountOut: {
+            type: GraphQLNonNull(BigNumberType),
+          },
+          direction: {
+            type: GraphQLNonNull(SwapOrderCallDataDirectionEnum),
+          },
+        },
+      }),
+      resolve: ({ callData: { tokenOutDecimals, activate } }) =>
+        activate
+          ? {
+              amountOut: new BN(activate.amountOut).div(`1e${tokenOutDecimals}`),
+              direction: activate.direction,
+            }
+          : null,
     },
     deadline: {
       type: GraphQLNonNull(GraphQLInt),
@@ -244,6 +278,9 @@ export const OrderType = new GraphQLObjectType<Order, Request>({
     status: {
       type: GraphQLNonNull(OrderStatusEnum),
       description: 'Status',
+    },
+    active: {
+      type: GraphQLNonNull(GraphQLBoolean),
     },
     tx: {
       type: GraphQLNonNull(EthereumTransactionHashType),
@@ -422,6 +459,18 @@ export const SwapOrderCallDataStopLossInputType = new GraphQLInputObjectType({
   },
 });
 
+export const SwapOrderCallDataActivateInputType = new GraphQLInputObjectType({
+  name: 'SwapOrderCallDataActivateInputType',
+  fields: {
+    amountOut: {
+      type: GraphQLNonNull(BigNumberType),
+    },
+    direction: {
+      type: GraphQLNonNull(SwapOrderCallDataDirectionEnum),
+    },
+  },
+});
+
 export const SwapOrderCreateInputType = new GraphQLInputObjectType({
   name: 'SmartTradeSwapOrderCreateInputType',
   fields: {
@@ -475,6 +524,9 @@ export const SwapOrderCreateInputType = new GraphQLInputObjectType({
             },
             takeProfit: {
               type: SwapOrderCallDataTakeProfitInputType,
+            },
+            activate: {
+              type: SwapOrderCallDataActivateInputType,
             },
             deadline: {
               type: GraphQLNonNull(GraphQLInt),
@@ -582,10 +634,12 @@ export const SwapOrderCreateMutation: GraphQLFieldConfig<any, Request> = {
                 }
               : null,
           ],
+          activate: callData.activate,
           deadline: callData.deadline,
         },
       },
       OrderStatus.Pending,
+      callData.activate === null || callData.activate === undefined,
       tx,
       false,
     );
