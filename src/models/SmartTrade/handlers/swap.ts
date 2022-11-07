@@ -148,7 +148,7 @@ export default async function (
     );
 
     const routerBalance: string = await smartTradeRouter
-      .balanceOf(ownerWallet.address, order.callData.path[0])
+      .balanceOf(order.number, order.callData.path[0])
       .then((v: ethers.BigNumber) => v.toString());
     log.ex({ routerBalance }).send();
     if (new BN(order.callData.amountIn).gt(routerBalance)) {

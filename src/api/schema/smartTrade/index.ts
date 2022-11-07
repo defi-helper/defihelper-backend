@@ -279,6 +279,9 @@ export const OrderType = new GraphQLObjectType<Order, Request>({
       type: GraphQLNonNull(OrderStatusEnum),
       description: 'Status',
     },
+    claim: {
+      type: GraphQLNonNull(GraphQLBoolean),
+    },
     active: {
       type: GraphQLNonNull(GraphQLBoolean),
     },
@@ -422,6 +425,31 @@ export const OrderCancelMutation: GraphQLFieldConfig<any, Request> = {
     return container.model.smartTradeService().updateOrder({
       ...order,
       status: OrderStatus.Canceled,
+      claim: true,
+    });
+  }),
+};
+
+export const OrderClaimMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(OrderType),
+  args: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+    },
+  },
+  resolve: onlyAllowed('smartTradeOrder.claim-own', async (root, { id }, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const order = await container.model.smartTradeOrderTable().where('id', id).first();
+    if (!order) throw new UserInputError('Order not found');
+
+    const ownerWallet = await container.model.walletTable().where('id', order.owner).first();
+    if (!ownerWallet) throw new UserInputError('Owner wallet not found');
+    if (ownerWallet.user !== currentUser.id) throw new UserInputError('Foreign order');
+
+    return container.model.smartTradeService().updateOrder({
+      ...order,
+      claim: true,
     });
   }),
 };

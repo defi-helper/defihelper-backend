@@ -80,6 +80,7 @@ export type Order<T extends CallData = CallData> = {
   active: boolean;
   tx: string;
   confirmed: boolean;
+  claim: boolean;
   statusTask: string | null;
   watcherListenerId: string | null;
   checkTaskId: string | null;

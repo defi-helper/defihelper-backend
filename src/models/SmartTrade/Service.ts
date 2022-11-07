@@ -76,6 +76,7 @@ export class SmartTradeService {
       active,
       tx,
       confirmed,
+      claim: false,
       statusTask: null,
       watcherListenerId: null,
       checkTaskId: null,

@@ -175,6 +175,7 @@ export function route({ express, server }: { express: Express; server: Server })
           automateContractTriggerUpdate: automateSchemas.ContractTriggerUpdateMutation,
           tradingAuth: tradingSchemas.TradingAuthMutation,
           smartTradeCancel: smartTradeSchemas.OrderCancelMutation,
+          smartTradeClaim: smartTradeSchemas.OrderClaimMutation,
           smartTradeSwapOrderCreate: smartTradeSchemas.SwapOrderCreateMutation,
           smartTradeSwapOrderUpdate: smartTradeSchemas.SwapOrderUpdateMutation,
         },
