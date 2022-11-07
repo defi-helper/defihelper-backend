@@ -15,6 +15,7 @@ import { Request } from 'express';
 import { AuthenticationError, ForbiddenError, UserInputError } from 'apollo-server-errors';
 import { BigNumber as BN } from 'bignumber.js';
 import container from '@container';
+import { withFilter } from 'graphql-subscriptions';
 import {
   CallData,
   HandlerType,
@@ -670,4 +671,41 @@ export const SwapOrderUpdateMutation: GraphQLFieldConfig<any, Request> = {
       });
     },
   ),
+};
+
+export const OnOrderUpdated: GraphQLFieldConfig<
+  { id: string; owner: string; type: string; status: OrderStatus },
+  Request
+> = {
+  type: GraphQLNonNull(OrderType),
+  args: {
+    filter: {
+      type: new GraphQLInputObjectType({
+        name: 'OnOrderStatusChangedFilterInputType',
+        fields: {
+          user: {
+            type: GraphQLNonNull(UuidType),
+          },
+        },
+      }),
+      defaultValue: {},
+    },
+  },
+  subscribe: withFilter(
+    () =>
+      container
+        .cacheSubscriber('defihelper:channel:onSmartTradeOrderStatusChanged')
+        .asyncIterator(),
+    async ({ owner }, { filter }) => {
+      if (!filter.user) {
+        return false;
+      }
+
+      const wallet = await container.model.walletTable().where({ id: owner }).first();
+      return wallet !== undefined && filter.user === wallet.user;
+    },
+  ),
+  resolve: ({ id }) => {
+    return container.model.smartTradeOrderTable().where('id', id).first();
+  },
 };

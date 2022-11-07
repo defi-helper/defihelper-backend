@@ -30,6 +30,18 @@ export class SmartTradeService {
     container.model.queueService().push('eventsSmartTradeOrderConfirmed', { id: order.id });
   });
 
+  public readonly onOrderUpdated = new Emitter<Readonly<Order>>((order) => {
+    container.cache().publish(
+      'defihelper:channel:onSmartTradeOrderStatusChanged',
+      JSON.stringify({
+        id: order.id,
+        owner: order.owner,
+        type: order.type,
+        status: order.status,
+      }),
+    );
+  });
+
   public readonly onOrderCallTxCreated = new Emitter<
     Readonly<{ order: Order; call: OrderCallHistory }>
   >(({ call }) => {
@@ -83,6 +95,7 @@ export class SmartTradeService {
       updatedAt: new Date(),
     };
     await this.orderTable().where('id', order.id).update(updated);
+    this.onOrderUpdated.emit(updated);
 
     return updated;
   }
