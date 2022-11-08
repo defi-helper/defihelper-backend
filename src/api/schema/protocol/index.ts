@@ -66,7 +66,7 @@ import {
   WalletBlockchainTypeEnum,
   MetricChangeType,
 } from '../types';
-import { TokenType } from '../token';
+import { TokenMetricType, TokenType } from '../token';
 import { TagType } from '../tag';
 
 export const ContractRiskFactorEnum = new GraphQLEnumType({
@@ -1618,6 +1618,9 @@ export const ProtocolMetricType = new GraphQLObjectType({
     myMinUpdatedAt: {
       type: DateTimeType,
     },
+    risk: {
+      type: TokenMetricType,
+    },
   },
 });
 
@@ -2037,6 +2040,9 @@ export const ProtocolType: GraphQLObjectType = new GraphQLObjectType<Protocol, R
             day: '0',
           },
           myAPYBoost: '0',
+          risk: protocol.governanceToken
+            ? await dataLoader.tokenLastMetric().load(protocol.governanceToken)
+            : null,
         };
         if (!currentUser) return metric;
 

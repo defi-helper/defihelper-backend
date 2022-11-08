@@ -21,6 +21,7 @@ export interface Protocol {
   description: string;
   icon: string | null;
   link: string | null;
+  governanceToken: string | null;
   links: ProtocolLinkMap;
   debankId: string | null;
   hidden: boolean;
