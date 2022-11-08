@@ -67,6 +67,7 @@ import {
   MetricChangeType,
 } from '../types';
 import { TokenMetricType, TokenType } from '../token';
+import { TagType } from '../tag';
 
 export const ContractRiskFactorEnum = new GraphQLEnumType({
   name: 'ContractRiskFactorEnum',
@@ -457,6 +458,10 @@ export const ContractType: GraphQLObjectType = new GraphQLObjectType<
       type: GraphQLNonNull(ContractTokenLinkType),
       resolve: (contract) => contract,
     },
+    tags: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(TagType))),
+      resolve: async (contract, _, { dataLoader }) => dataLoader.tag().load(contract.id),
+    },
     createdAt: {
       type: GraphQLNonNull(DateTimeType),
       description: 'Date of created account',
@@ -623,6 +628,9 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
           protocol: {
             type: GraphQLList(GraphQLNonNull(UuidType)),
           },
+          tag: {
+            type: GraphQLList(GraphQLNonNull(UuidType)),
+          },
           blockchain: {
             type: BlockchainFilterInputType,
           },
@@ -699,7 +707,7 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
         `${contractTableName}.id`,
       )
       .where(function () {
-        const { id, protocol, hidden, deprecated, risk, userLink, search } = filter;
+        const { id, protocol, hidden, deprecated, risk, userLink, search, tag } = filter;
         if (id) {
           this.where(`${contractTableName}.id`, id);
         } else {
@@ -720,6 +728,13 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
           }
           if (typeof deprecated === 'boolean') {
             this.where('deprecated', deprecated);
+          }
+
+          if (Array.isArray(tag) && tag.length > 0) {
+            this.whereIn(
+              `${contractTableName}.id`,
+              container.model.tagContractLinkTable().column('contract').whereIn('tag', tag),
+            );
           }
 
           if (typeof risk === 'string') {

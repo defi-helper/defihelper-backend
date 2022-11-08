@@ -62,6 +62,7 @@ export default async (process: Process) => {
   await container.model.smartTradeService().updateOrder({
     ...order,
     status: currentStatus,
+    claim: currentStatus === OrderStatus.Canceled ? true : order.claim,
   });
 
   return process.done();

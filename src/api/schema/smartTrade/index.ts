@@ -15,6 +15,7 @@ import { Request } from 'express';
 import { AuthenticationError, ForbiddenError, UserInputError } from 'apollo-server-errors';
 import { BigNumber as BN } from 'bignumber.js';
 import container from '@container';
+import { withFilter } from 'graphql-subscriptions';
 import {
   CallData,
   HandlerType,
@@ -146,6 +147,20 @@ export const SwapHandlerCallDataRouteType = new GraphQLObjectType({
   },
 });
 
+export const SwapOrderCallDataDirectionEnum = new GraphQLEnumType({
+  name: 'SwapOrderCallDataDirectionEnum',
+  values: {
+    gt: {
+      value: 'gt',
+      description: 'great',
+    },
+    lt: {
+      value: 'lt',
+      description: 'less',
+    },
+  },
+});
+
 export const SwapHandlerCallDataType = new GraphQLObjectType<SwapCallData>({
   name: 'SmartTradeSwapHandlerCallDataType',
   fields: {
@@ -191,6 +206,26 @@ export const SwapHandlerCallDataType = new GraphQLObjectType<SwapCallData>({
           decimals: tokenOutDecimals,
         };
       },
+    },
+    activate: {
+      type: new GraphQLObjectType({
+        name: 'SmartTradeSwapHandlerCallDataActivateType',
+        fields: {
+          amountOut: {
+            type: GraphQLNonNull(BigNumberType),
+          },
+          direction: {
+            type: GraphQLNonNull(SwapOrderCallDataDirectionEnum),
+          },
+        },
+      }),
+      resolve: ({ callData: { tokenOutDecimals, activate } }) =>
+        activate
+          ? {
+              amountOut: new BN(activate.amountOut).div(`1e${tokenOutDecimals}`),
+              direction: activate.direction,
+            }
+          : null,
     },
     deadline: {
       type: GraphQLNonNull(GraphQLInt),
@@ -243,6 +278,12 @@ export const OrderType = new GraphQLObjectType<Order, Request>({
     status: {
       type: GraphQLNonNull(OrderStatusEnum),
       description: 'Status',
+    },
+    claim: {
+      type: GraphQLNonNull(GraphQLBoolean),
+    },
+    active: {
+      type: GraphQLNonNull(GraphQLBoolean),
     },
     tx: {
       type: GraphQLNonNull(EthereumTransactionHashType),
@@ -384,6 +425,31 @@ export const OrderCancelMutation: GraphQLFieldConfig<any, Request> = {
     return container.model.smartTradeService().updateOrder({
       ...order,
       status: OrderStatus.Canceled,
+      claim: true,
+    });
+  }),
+};
+
+export const OrderClaimMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(OrderType),
+  args: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+    },
+  },
+  resolve: onlyAllowed('smartTradeOrder.claim-own', async (root, { id }, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const order = await container.model.smartTradeOrderTable().where('id', id).first();
+    if (!order) throw new UserInputError('Order not found');
+
+    const ownerWallet = await container.model.walletTable().where('id', order.owner).first();
+    if (!ownerWallet) throw new UserInputError('Owner wallet not found');
+    if (ownerWallet.user !== currentUser.id) throw new UserInputError('Foreign order');
+
+    return container.model.smartTradeService().updateOrder({
+      ...order,
+      claim: true,
     });
   }),
 };
@@ -417,6 +483,18 @@ export const SwapOrderCallDataStopLossInputType = new GraphQLInputObjectType({
     },
     slippage: {
       type: GraphQLNonNull(GraphQLFloat),
+    },
+  },
+});
+
+export const SwapOrderCallDataActivateInputType = new GraphQLInputObjectType({
+  name: 'SwapOrderCallDataActivateInputType',
+  fields: {
+    amountOut: {
+      type: GraphQLNonNull(BigNumberType),
+    },
+    direction: {
+      type: GraphQLNonNull(SwapOrderCallDataDirectionEnum),
     },
   },
 });
@@ -474,6 +552,9 @@ export const SwapOrderCreateInputType = new GraphQLInputObjectType({
             },
             takeProfit: {
               type: SwapOrderCallDataTakeProfitInputType,
+            },
+            activate: {
+              type: SwapOrderCallDataActivateInputType,
             },
             deadline: {
               type: GraphQLNonNull(GraphQLInt),
@@ -581,10 +662,12 @@ export const SwapOrderCreateMutation: GraphQLFieldConfig<any, Request> = {
                 }
               : null,
           ],
+          activate: callData.activate,
           deadline: callData.deadline,
         },
       },
       OrderStatus.Pending,
+      callData.activate === null || callData.activate === undefined,
       tx,
       false,
     );
@@ -670,4 +753,41 @@ export const SwapOrderUpdateMutation: GraphQLFieldConfig<any, Request> = {
       });
     },
   ),
+};
+
+export const OnOrderUpdated: GraphQLFieldConfig<
+  { id: string; owner: string; type: string; status: OrderStatus },
+  Request
+> = {
+  type: GraphQLNonNull(OrderType),
+  args: {
+    filter: {
+      type: new GraphQLInputObjectType({
+        name: 'OnOrderStatusChangedFilterInputType',
+        fields: {
+          user: {
+            type: GraphQLNonNull(UuidType),
+          },
+        },
+      }),
+      defaultValue: {},
+    },
+  },
+  subscribe: withFilter(
+    () =>
+      container
+        .cacheSubscriber('defihelper:channel:onSmartTradeOrderStatusChanged')
+        .asyncIterator(),
+    async ({ owner }, { filter }) => {
+      if (!filter.user) {
+        return false;
+      }
+
+      const wallet = await container.model.walletTable().where({ id: owner }).first();
+      return wallet !== undefined && filter.user === wallet.user;
+    },
+  ),
+  resolve: ({ id }) => {
+    return container.model.smartTradeOrderTable().where('id', id).first();
+  },
 };

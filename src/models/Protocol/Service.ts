@@ -7,6 +7,7 @@ import { Factory } from '@services/Container';
 import { Emitter } from '@services/Event';
 import { v4 as uuid } from 'uuid';
 import Knex from 'knex';
+import { Tag, TagTable, TagType } from '@models/Tag/Entity';
 import {
   Protocol,
   ProtocolTable,
@@ -31,6 +32,8 @@ import {
   UserContractLinkType,
   ContractMigratableRemindersBulkTable,
   ContractMigratableRemindersBulk,
+  TagContractLinkTable,
+  TagContractLink,
 } from './Entity';
 
 export class ProtocolService {
@@ -161,7 +164,48 @@ export class ContractService {
     readonly walletLinkTable: Factory<WalletContractLinkTable>,
     readonly tokenLinkTable: Factory<TokenContractLinkTable>,
     readonly userLinkTable: Factory<UserContractLinkTable>,
+    readonly tagLinkTable: Factory<TagContractLinkTable>,
+    readonly tagTable: Factory<TagTable>,
   ) {}
+
+  async linkTag(contract: Contract, tag: Tag) {
+    const existing = await this.tagLinkTable()
+      .where({
+        contract: contract.id,
+        tag: tag.id,
+      })
+      .first();
+
+    if (existing) {
+      return existing;
+    }
+
+    const created: TagContractLink = {
+      id: uuid(),
+      tag: tag.id,
+      contract: contract.id,
+      createdAt: new Date(),
+    };
+    await this.tagLinkTable().insert(created);
+
+    return created;
+  }
+
+  async unlinkTag(contract: Contract, tag: Tag) {
+    await this.tagLinkTable()
+      .where({
+        contract: contract.id,
+        tag: tag.id,
+      })
+      .delete();
+  }
+
+  async unlinkAllTagsByType(contract: Contract, type: TagType) {
+    await this.tagLinkTable()
+      .whereIn('tag', this.tagTable().where('type', type))
+      .where('contract', contract.id)
+      .delete();
+  }
 
   async scheduleMigrationReminder(
     contract: Contract,

@@ -15,3 +15,4 @@ export * as Governance from './Governance';
 export * as Automate from './Automate';
 export * as ReferrerCode from './ReferrerCode';
 export * as SmartTrade from './SmartTrade';
+export * as Tag from './Tag';
