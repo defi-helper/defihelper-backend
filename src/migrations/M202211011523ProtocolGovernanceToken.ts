@@ -9,6 +9,6 @@ export default async (schema: SchemaBuilder) => {
       .foreign('governanceToken')
       .references(`${tokenTableName}.id`)
       .onUpdate('CASCADE')
-      .onDelete('CASCADE');
+      .onDelete('SET NULL');
   });
 };
