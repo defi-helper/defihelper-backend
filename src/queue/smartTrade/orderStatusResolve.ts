@@ -58,6 +58,9 @@ export default async (process: Process) => {
   if (currentStatus === OrderStatus.Pending) {
     return process.later(dayjs().add(5, 'minutes').toDate());
   }
+  if (currentStatus === OrderStatus.Succeeded) {
+    await container.model.queueService().push('smartTradeBalancesFiller', { id: order.id });
+  }
 
   await container.model.smartTradeService().updateOrder({
     ...order,

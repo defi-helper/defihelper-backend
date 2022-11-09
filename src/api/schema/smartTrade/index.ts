@@ -30,7 +30,7 @@ import {
   OrderTokenLink,
 } from '@models/SmartTrade/Entity';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
-import { TokenCreatedBy } from '@models/Token/Entity';
+import { Token, TokenCreatedBy } from '@models/Token/Entity';
 import {
   UuidType,
   DateTimeType,
@@ -98,6 +98,18 @@ export const OrderStatusEnum = new GraphQLEnumType({
     (res, type) => ({ ...res, [type]: { value: type } }),
     {},
   ),
+});
+
+export const OrderBalanceType = new GraphQLObjectType({
+  name: 'SmartTradeOrderBalanceType',
+  fields: {
+    token: {
+      type: GraphQLNonNull(TokenType),
+    },
+    balance: {
+      type: GraphQLNonNull(BigNumberType),
+    },
+  },
 });
 
 export const OrderHandlerTypeEnum = new GraphQLEnumType({
@@ -305,6 +317,26 @@ export const OrderType = new GraphQLObjectType<Order, Request>({
         return container.model.smartTradeOrderTokenLinkTable().where('order', order.id);
       },
     },
+    balances: {
+      type: GraphQLNonNull(GraphQLList(GraphQLNonNull(OrderBalanceType))),
+      resolve: (order, args, { dataLoader }) => {
+        return Object.entries(order.balances).reduce<
+          Promise<Array<{ token: Token; balance: string }>>
+        >(async (prev, [tokenId, balance]) => {
+          const res = await prev;
+          const token = await dataLoader.token().load(tokenId);
+          if (!token) return res;
+
+          return [
+            ...res,
+            {
+              token,
+              balance,
+            },
+          ];
+        }, Promise.resolve([]));
+      },
+    },
     confirmed: {
       type: GraphQLNonNull(GraphQLBoolean),
       description: 'Is order confirmed on blockchain',
@@ -422,6 +454,7 @@ export const OrderCancelMutation: GraphQLFieldConfig<any, Request> = {
     if (!ownerWallet) throw new UserInputError('Owner wallet not found');
     if (ownerWallet.user !== currentUser.id) throw new UserInputError('Foreign order');
 
+    await container.model.queueService().push('smartTradeBalancesFiller', { id: order.id });
     return container.model.smartTradeService().updateOrder({
       ...order,
       status: OrderStatus.Canceled,
@@ -447,6 +480,7 @@ export const OrderClaimMutation: GraphQLFieldConfig<any, Request> = {
     if (!ownerWallet) throw new UserInputError('Owner wallet not found');
     if (ownerWallet.user !== currentUser.id) throw new UserInputError('Foreign order');
 
+    await container.model.queueService().push('smartTradeBalancesFiller', { id: order.id });
     return container.model.smartTradeService().updateOrder({
       ...order,
       claim: true,

@@ -127,6 +127,27 @@ export class TokenService {
     return created;
   }
 
+  async getOrCreate(
+    blockchain: Blockchain,
+    network: string,
+    address: string,
+    createdBy: TokenCreatedBy,
+  ) {
+    const addressNormalize = blockchain === 'ethereum' ? address.toLowerCase() : address;
+    const token = await this.tokenTable()
+      .where({
+        blockchain,
+        network,
+        address: addressNormalize,
+      })
+      .first();
+    if (token) return token;
+
+    return container.model
+      .tokenService()
+      .create(null, blockchain, network, addressNormalize, '', '', 0, createdBy);
+  }
+
   async update(token: Token) {
     const updated = {
       ...token,
