@@ -24,6 +24,7 @@ import * as monitoringSchemas from '@api/schema/monitoring';
 import * as landingSchemas from '@api/schema/landing';
 import * as tradingSchemas from '@api/schema/trading';
 import * as smartTradeSchemas from '@api/schema/smartTrade';
+import * as tagSchemas from '@api/schema/tag';
 import Jimp from 'jimp';
 import { metricContractTableName } from '@models/Metric/Entity';
 import {
@@ -100,7 +101,9 @@ export function route({ express, server }: { express: Express; server: Server })
             monitoringSchemas.MonitoringAutoRestakeAutomatesCreationHistoryQuery,
           monitoringProtocolEarningsHistory:
             monitoringSchemas.MonitoringProtocolEarningsHistoryQuery,
+          monitoringTelegramContactsHistory: monitoringSchemas.MonitoringTelegramContactsQuery,
           smartTradeOrders: smartTradeSchemas.OrderListQuery,
+          tags: tagSchemas.TagsListQuery,
         },
       }),
       mutation: new GraphQLObjectType({
@@ -152,6 +155,7 @@ export function route({ express, server }: { express: Express; server: Server })
           productUpdate: storeSchemas.ProductUpdateMutation,
           productDelete: storeSchemas.ProductDeleteMutation,
           billingTransferCreate: billingSchemas.AddTransferMutation,
+          zapFeePayCreate: billingSchemas.ZAPFeePayCreateMutation,
           automateTriggerCreate: automateSchemas.TriggerCreateMutation,
           automateTriggerUpdate: automateSchemas.TriggerUpdateMutation,
           automateTriggerDelete: automateSchemas.TriggerDeleteMutation,
@@ -171,6 +175,7 @@ export function route({ express, server }: { express: Express; server: Server })
           automateContractTriggerUpdate: automateSchemas.ContractTriggerUpdateMutation,
           tradingAuth: tradingSchemas.TradingAuthMutation,
           smartTradeCancel: smartTradeSchemas.OrderCancelMutation,
+          smartTradeClaim: smartTradeSchemas.OrderClaimMutation,
           smartTradeSwapOrderCreate: smartTradeSchemas.SwapOrderCreateMutation,
           smartTradeSwapOrderUpdate: smartTradeSchemas.SwapOrderUpdateMutation,
         },
@@ -184,6 +189,7 @@ export function route({ express, server }: { express: Express; server: Server })
           onBillingTransferCreated: billingSchemas.OnTransferCreated,
           onBillingTransferUpdated: billingSchemas.OnTransferUpdated,
           onUserContactActivated: notificationSchemas.OnUserContactActivated,
+          onSmartTradeOrderUpdated: smartTradeSchemas.OnOrderUpdated,
         },
       }),
     }),

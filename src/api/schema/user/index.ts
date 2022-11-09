@@ -985,17 +985,10 @@ export const UserBlockchainType = new GraphQLObjectType<{
 
 export const RoleType = new GraphQLEnumType({
   name: 'UserRoleEnum',
-  values: {
-    [Role.User]: {
-      description: 'User',
-    },
-    [Role.Admin]: {
-      description: 'Administrator',
-    },
-    [Role.Demo]: {
-      description: 'Demo',
-    },
-  },
+  values: Object.values(Role).reduce(
+    (res, locale) => ({ ...res, [locale]: { value: locale } }),
+    {},
+  ),
 });
 
 export const LocaleEnum = new GraphQLEnumType({

@@ -20,6 +20,7 @@ import {
 import { billTableName } from '@models/Billing/Entity';
 import { AuthenticationError } from 'apollo-server-express';
 import { walletTableName } from '@models/Wallet/Entity';
+import { ContactBroker, ContactStatus, userContactTableName } from '@models/Notification/Entity';
 import { DateTimeType, onlyAllowed } from '../types';
 
 export const MonitoringStatisticsPointType = new GraphQLObjectType({
@@ -168,6 +169,34 @@ export const MonitoringProtocolEarningsHistoryQuery: GraphQLFieldConfig<any, Req
       .column(database.raw('coalesce(sum("protocolFee"), 0) as number'))
       .column(database.raw(`date_trunc('day', "${billTableName}"."createdAt") "date"`))
       .where('network', network)
+      .orderBy('date')
+      .groupBy('date');
+
+    return rows.reduce<{ date: Date; number: number }[]>(
+      (prev, cur) => [
+        ...prev,
+        {
+          ...cur,
+          number: new BigNumber(cur.number).plus(prev.pop()?.number ?? 0).toNumber(),
+        },
+      ],
+      [],
+    );
+  }),
+};
+
+export const MonitoringTelegramContactsQuery: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLList(GraphQLNonNull(MonitoringStatisticsEarningsPointType))),
+  resolve: onlyAllowed('monitoring.view', async (root, _, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const database = container.database();
+    const rows: { date: Date; number: number }[] = await container.model
+      .userContactTable()
+      .column(database.raw('coalesce(count(distinct id), 0) as number'))
+      .column(database.raw(`date_trunc('day', "${userContactTableName}"."createdAt") "date"`))
+      .where('broker', ContactBroker.Telegram)
+      .andWhere('status', ContactStatus.Active)
       .orderBy('date')
       .groupBy('date');
 

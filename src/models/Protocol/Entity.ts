@@ -21,6 +21,7 @@ export interface Protocol {
   description: string;
   icon: string | null;
   link: string | null;
+  governanceToken: string | null;
   links: ProtocolLinkMap;
   debankId: string | null;
   hidden: boolean;
@@ -149,6 +150,17 @@ export const walletContractLinkTableName = 'protocol_contract_wallet_link';
 export const walletContractLinkTableFactory = typedTableFactory(walletContractLinkTableName);
 export type WalletContractLinkTable = ReturnType<ReturnType<typeof walletContractLinkTableFactory>>;
 
+export interface TagContractLink {
+  id: string;
+  contract: string;
+  tag: string;
+  createdAt: Date;
+}
+
+export const tagContractLinkTableName = 'protocol_contract_tag_link';
+export const tagContractLinkTableFactory = typedTableFactory(tagContractLinkTableName);
+export type TagContractLinkTable = ReturnType<ReturnType<typeof tagContractLinkTableFactory>>;
+
 export enum MetadataType {
   EthereumContractAbi = 'ethereumContractAbi',
 }
@@ -208,6 +220,7 @@ export type UserContractLinkTable = ReturnType<ReturnType<typeof userContractLin
 
 declare module 'knex/types/tables' {
   interface Tables {
+    [tagContractLinkTableName]: TagContractLink;
     [protocolTableName]: Protocol;
     [metadataTableName]: Metadata;
     [contractTableName]: Contract;

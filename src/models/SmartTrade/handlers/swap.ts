@@ -11,6 +11,22 @@ import { BigNumber as BN } from 'bignumber.js';
 import { Order, SwapCallData } from '../Entity';
 import UniswapRouterABI from '../data/uniswapRouterABI.json';
 
+async function activateOrder(order: Order<SwapCallData>, actualAmountout: string) {
+  if (order.active) return order;
+
+  const { amountOut, direction } = order.callData.activate ?? {};
+  if (
+    direction === undefined ||
+    amountOut === undefined ||
+    (direction === 'lt' && new BN(actualAmountout).lt(amountOut)) ||
+    (direction === 'gt' && new BN(actualAmountout).gt(amountOut))
+  ) {
+    return container.model.smartTradeService().updateOrder({ ...order, active: true });
+  }
+
+  return order;
+}
+
 export default async function (
   order: Order<SwapCallData>,
 ): Promise<ethers.ContractTransaction | Error | null> {
@@ -56,9 +72,16 @@ export default async function (
         amountOut: route?.amountOut,
         amountOutMin: route?.amountOutMin,
       })),
+      activate: JSON.stringify(order.callData.activate),
       actualAmountOut: actualAmountOut.toString(10),
     })
     .send();
+
+  const { active } = await activateOrder(order, actualAmountOut);
+  log.ex({ active }).send();
+  if (!active) {
+    return null;
+  }
 
   const routes = order.callData.routes.map((route) => {
     if (route === null) return route;
@@ -77,6 +100,7 @@ export default async function (
   });
   await container.model.smartTradeService().updateOrder({
     ...order,
+    active,
     callData: {
       ...order.callData,
       routes,
@@ -99,6 +123,8 @@ export default async function (
   }, null);
   log.ex({ routeIndex }).send();
   if (routeIndex === null) return null;
+  const currentRoute = routes[routeIndex];
+  if (currentRoute === null) return null;
 
   const freeConsumer = await useEthereumFreeConsumer(ownerWallet.network);
   log.ex({ consumer: freeConsumer?.consumer.address }).send();
@@ -122,7 +148,7 @@ export default async function (
     );
 
     const routerBalance: string = await smartTradeRouter
-      .balanceOf(ownerWallet.address, order.callData.path[0])
+      .balanceOf(order.number, order.callData.path[0])
       .then((v: ethers.BigNumber) => v.toString());
     log.ex({ routerBalance }).send();
     if (new BN(order.callData.amountIn).gt(routerBalance)) {
@@ -131,6 +157,7 @@ export default async function (
 
     const callOptions = await smartTradeHandler.callOptionsEncode({
       route: routeIndex,
+      amountOutMin: currentRoute.amountOutMin,
       deadline: dayjs().add(order.callData.deadline, 'seconds').unix(),
     });
     log.ex({ callOptions }).send();
@@ -140,7 +167,7 @@ export default async function (
     const gasLimit = new BN(estimateGas).multipliedBy(1.1).toFixed(0);
     const gasPrice = await provider.getGasPrice().then((v) => v.toString());
     const gasFee = new BN(gasLimit).multipliedBy(gasPrice).toFixed(0);
-    const protocolFee = await smartTradeRouter.fee();
+    const protocolFee = await smartTradeRouter.fee().then((v: ethers.BigNumber) => v.toString());
     const feeBalance = await balance
       .netBalanceOf(ownerWallet.address)
       .then((v: ethers.BigNumber) => v.toString());

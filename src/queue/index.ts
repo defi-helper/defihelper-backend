@@ -54,6 +54,9 @@ export * as automateTriggerByTime from './automate/trigger/byTime';
 export * as riskCalculationBroker from './contract/riskCalculationBroker';
 export * as riskCalculationFiller from './contract/riskCalculationFiller';
 
+export * as deadPoolsInvestmentsBroker from './contract/deadPoolsInvestmentsBroker';
+export * as automateNotifyExecutedRestake from './automate/notifyExecutedRestake';
+
 /* billing */
 export * as emptyWalletsBroker from './billing/emptyWalletsBroker';
 export * as eventsBillingTransferTxCreated from './events/billing/transferTxCreated';
@@ -82,6 +85,9 @@ export * as notificationsDemoCallInvitationsBroker from './notifications/demoCal
 
 export * as metricsTokenRiskRankingFiller from './metrics/tokenRiskRankingFiller';
 export * as metricsTokenRiskRankingBroker from './metrics/tokenRiskRankingBroker';
+
+export * as metricsPoolRiskRankingFiller from './metrics/poolRiskRankingFiller';
+export * as metricsPoolRiskRankingBroker from './metrics/poolRiskRankingBroker';
 
 /* protocol */
 export * as protocolContractsResolver from './protocol/resolveContracts';
