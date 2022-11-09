@@ -5,6 +5,7 @@ import dayjs from 'dayjs';
 import { userNotificationTableName, UserNotificationType } from '@models/UserNotification/Entity';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 import { triggerTableName } from '@models/Automate/Entity';
+import { userContactTableName } from '@models/Notification/Entity';
 
 export default async (process: Process) => {
   const database = container.database();
@@ -20,10 +21,11 @@ export default async (process: Process) => {
       `${walletBlockchainTableName}.id`,
     )
     .innerJoin(triggerTableName, `${walletTableName}.id`, `${triggerTableName}.wallet`)
+    .innerJoin(userContactTableName, `${userTableName}.id`, `${userContactTableName}.user`)
     .innerJoin(
       userNotificationTableName,
-      `${userTableName}.id`,
-      `${userNotificationTableName}.user`,
+      `${userContactTableName}.id`,
+      `${userNotificationTableName}.contact`,
     )
     .where(`${triggerTableName}.active`, true)
     .whereNull(`${walletTableName}.deletedAt`)
