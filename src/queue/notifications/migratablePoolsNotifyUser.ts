@@ -65,7 +65,7 @@ export default async (process: Process) => {
           10000,
           currentApy.toNumber(),
         ).then((v) => new BN(v));
-        if (boostedApy.minus(currentApy).lte(1)) {
+        if (boostedApy.multipliedBy(100).minus(currentApy.multipliedBy(100)).lte(1)) {
           return res;
         }
 
@@ -73,7 +73,7 @@ export default async (process: Process) => {
         return [
           ...res,
           {
-            currentApy: currentApy.toFixed(2),
+            currentApy: currentApy.multipliedBy(100).toFixed(2),
             boostedApy: boostedApy.multipliedBy(100).toFixed(2),
             name: contract.name,
             id: contract.id,
