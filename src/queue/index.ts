@@ -113,6 +113,7 @@ export * as eventsWalletChangeOwner from './events/walletChangeOwner';
 export * as eventsAutomateContractVerificationConfirmed from './events/automate/contractVerificationConfirmed';
 export * as eventsAutomateContractStopLossEnabled from './events/automate/contractStopLossEnabled';
 export * as followContractEvent from './scanner/followContractEvent';
+export * as eventsNotificationsContactActivated from './events/notifications/contactActivated';
 
 /* wallets */
 export * as findWalletContracts from './wallet/findContracts';

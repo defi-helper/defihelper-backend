@@ -71,11 +71,18 @@ export class UserContactService {
     },
   );
 
-  public readonly onActivated = new Emitter<{ contact: UserContact }>(({ contact }) => {
-    container
-      .cache()
-      .publish('defihelper:channel:onUserContactActivated', JSON.stringify({ id: contact.id }));
-  });
+  public readonly onActivated = new Emitter<{ contact: UserContact }>(({ contact }) =>
+    Promise.all([
+      container
+        .cache()
+        .publish('defihelper:channel:onUserContactActivated', JSON.stringify({ id: contact.id })),
+      contact.broker === ContactBroker.Telegram
+        ? container.model.queueService().push('eventsNotificationsContactActivated', {
+            id: contact.id,
+          })
+        : null,
+    ]),
+  );
 
   async create(
     broker: ContactBroker,

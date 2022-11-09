@@ -11,7 +11,11 @@ export default async (process: Process) => {
   const { priority, notify } = process.task.params as Params;
 
   const queue = container.model.queueService();
-  const ids = await container.model.userTable().column('id').orderBy('id');
+  const ids = await container.model
+    .userTable()
+    .where('isMetricsTracked', true)
+    .column('id')
+    .orderBy('id');
 
   const lag = 86400 / ids.length;
   await ids.reduce<Promise<dayjs.Dayjs>>(async (prev, { id: userId }) => {
