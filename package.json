@@ -29,7 +29,7 @@
     "@amplitude/node": "^1.10.0",
     "@amplitude/types": "^1.10.0",
     "@defihelper/ethers-multicall": "^0.3.3",
-    "@defihelper/networks": "1.0.39-claim",
+    "@defihelper/networks": "^1.0.40",
     "@types/amqplib": "^0.8.2",
     "@types/callback-to-async-iterator": "^1.1.4",
     "@types/command-line-args": "^5.0.0",
