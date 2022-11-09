@@ -34,7 +34,7 @@ export default async (process: Process) => {
       )
       .innerJoin(userTableName, `${userTableName}.id`, `${walletTableName}.user`)
       .whereRaw(
-        `date < CURRENT_DATE  - interval '2 days' and coalesce(data->>'stakingUSD', '0')::numeric > 0`,
+        `date < CURRENT_DATE  - interval '2 days' and coalesce(data->>'balance', '0')::numeric > 0`,
       )
       .andWhere('isMetricsTracked', true)
       .first()
