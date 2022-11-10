@@ -191,7 +191,7 @@ export async function contractMetrics(process: Process) {
           type: TagType.Tvl,
           name: choosenTag,
         })
-        .then((tag) => container.model.contractService().linkTag(contract, tag));
+        .then(async (tag) => container.model.contractService().linkTag(contract, tag));
     }
   }
 

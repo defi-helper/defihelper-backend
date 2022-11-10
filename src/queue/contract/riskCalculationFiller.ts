@@ -87,7 +87,7 @@ export default async (process: Process) => {
     await container.model
       .tagService()
       .createPreserved(appliedTag[riskLevel])
-      .then((tag) => container.model.contractService().linkTag(contract, tag));
+      .then(async (tag) => container.model.contractService().linkTag(contract, tag));
   }
 
   log.ex({ contract: contract.id, riskLevel }).send();

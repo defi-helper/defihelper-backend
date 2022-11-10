@@ -2,6 +2,7 @@ import container from '@container';
 import { MetricTokenRiskFactor } from '@models/Metric/Entity';
 import { tokenContractLinkTableName } from '@models/Protocol/Entity';
 import { Process } from '@models/Queue/Entity';
+import { TagRiskType, TagType, TagPreservedName } from '@models/Tag/Entity';
 import { tokenTableName } from '@models/Token/Entity';
 import { RawRiskRank } from '@services/RiskRanking';
 
@@ -67,6 +68,19 @@ export default async (process: Process) => {
   const profitabilityQuantile = verifyPercentile(resolvedRisk.profitability_quantile);
   const reliabilityQuantile = verifyPercentile(resolvedRisk.reliability_quantile);
   const volatilityQuantile = verifyPercentile(resolvedRisk.volatility_quantile);
+
+  await container.model.contractService().unlinkAllTagsByType(contract, TagType.Risk);
+  await container.model
+    .tagService()
+    .createPreserved({
+      name: {
+        green: TagPreservedName.RiskLow,
+        yellow: TagPreservedName.RiskModerate,
+        red: TagPreservedName.RiskHigh,
+      }[totalRate],
+      type: TagType.Risk,
+    } as TagRiskType)
+    .then(async (tag) => container.model.contractService().linkTag(contract, tag));
 
   await container.model.metricService().createContract(
     contract,
