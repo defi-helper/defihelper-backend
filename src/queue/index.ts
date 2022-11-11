@@ -63,6 +63,7 @@ export * as eventsBillingTransferTxCreated from './events/billing/transferTxCrea
 
 /* metrics */
 export * as metricsGarbageCollector from './metrics/garbageCollector';
+export * as metricsNotifyLostChains from './metrics/notifyLostMetricChains';
 
 export * as metricsUserBroker from './metrics/userBroker';
 export * as metricsTrackingConditionsBroker from './metrics/userMetricsTrackingConditionsBroker';
@@ -113,6 +114,7 @@ export * as eventsWalletChangeOwner from './events/walletChangeOwner';
 export * as eventsAutomateContractVerificationConfirmed from './events/automate/contractVerificationConfirmed';
 export * as eventsAutomateContractStopLossEnabled from './events/automate/contractStopLossEnabled';
 export * as followContractEvent from './scanner/followContractEvent';
+export * as eventsNotificationsContactActivated from './events/notifications/contactActivated';
 
 /* wallets */
 export * as findWalletContracts from './wallet/findContracts';
@@ -153,5 +155,6 @@ export * as smartTradeOrderStatusResolve from './smartTrade/orderStatusResolve';
 export * as smartTradeOrderConfirm from './smartTrade/orderConfirm';
 export * as smartTradeOrderCheckBroker from './smartTrade/orderCheckBroker';
 export * as smartTradeOrderCheck from './smartTrade/orderCheck';
+export * as smartTradeBalancesFiller from './smartTrade/orderBalancesFiller';
 export * as eventsSmartTradeOrderConfirmed from './events/smartTrade/orderConfirmed';
 export * as eventsSmartTradeOrderCallTxCreated from './events/smartTrade/orderCallTxCreated';

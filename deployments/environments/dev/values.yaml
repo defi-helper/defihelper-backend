@@ -117,10 +117,10 @@ broker:
         graceperiod: 3600
         resources:
           requests:
-            memory: 128Mi
+            memory: 192Mi
             cpu: 50m
           limits:
-            memory: 128Mi
+            memory: 512Mi
             cpu: 100m
       history:
         name: history

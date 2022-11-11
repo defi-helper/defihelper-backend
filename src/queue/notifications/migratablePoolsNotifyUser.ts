@@ -65,15 +65,12 @@ export default async (process: Process) => {
           10000,
           currentApy.toNumber(),
         ).then((v) => new BN(v));
-        if (boostedApy.minus(currentApy).lte(1)) {
-          return res;
-        }
 
         await container.model.contractService().doneMigrationReminder(contract, wallet);
         return [
           ...res,
           {
-            currentApy: currentApy.toFixed(2),
+            currentApy: currentApy.multipliedBy(100).toFixed(2),
             boostedApy: boostedApy.multipliedBy(100).toFixed(2),
             name: contract.name,
             id: contract.id,

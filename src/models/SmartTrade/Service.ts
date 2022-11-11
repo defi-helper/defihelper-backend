@@ -72,6 +72,7 @@ export class SmartTradeService {
       handler,
       callDataRaw,
       ...callData,
+      balances: {},
       status,
       active,
       tx,

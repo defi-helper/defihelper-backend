@@ -190,7 +190,6 @@ export default async (process: Process) => {
         .where(`${walletTableName}.user`, userId)
         .where(`${walletBlockchainTableName}.type`, WalletBlockchainType.Wallet)
         .andWhere(`${walletBlockchainTableName}.blockchain`, 'ethereum')
-        .andWhere(`${userTableName}.isMetricsTracked`, true)
         .whereNull(`${walletTableName}.deletedAt`)
         .then(createDebankContractMetricsCollector.bind(null, priority)),
       // Centralized exchange collector
