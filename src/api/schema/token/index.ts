@@ -661,7 +661,7 @@ export const TokenAliasListQuery: GraphQLFieldConfig<any, Request> = {
             type: TokenAliasLiquidityEnum,
           },
           symbol: {
-            type: GraphQLString,
+            type: GraphQLList(GraphQLNonNull(GraphQLString)),
           },
           hasLogo: {
             type: GraphQLBoolean,
@@ -698,8 +698,8 @@ export const TokenAliasListQuery: GraphQLFieldConfig<any, Request> = {
       if (filter.liquidity !== undefined) {
         this.andWhere('liquidity', filter.liquidity);
       }
-      if (filter.symbol !== undefined) {
-        this.andWhere('symbol', filter.symbol);
+      if (Array.isArray(filter.symbol) && filter.symbol.length > 0) {
+        this.whereIn('symbol', filter.symbol);
       }
       if (filter.hasLogo !== undefined && filter.hasLogo === true) {
         this.andWhereNot('logoUrl', null);
