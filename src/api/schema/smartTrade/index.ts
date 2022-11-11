@@ -156,6 +156,9 @@ export const SwapHandlerCallDataRouteType = new GraphQLObjectType({
     slippage: {
       type: GraphQLNonNull(GraphQLFloat),
     },
+    moving: {
+      type: GraphQLNonNull(GraphQLBoolean),
+    },
   },
 });
 
@@ -203,6 +206,7 @@ export const SwapHandlerCallDataType = new GraphQLObjectType<SwapCallData>({
           amountOutMin: routes[0].amountOutMin,
           slippage: routes[0].slippage,
           decimals: tokenOutDecimals,
+          moving: routes[0].moving !== null,
         };
       },
     },
@@ -216,6 +220,7 @@ export const SwapHandlerCallDataType = new GraphQLObjectType<SwapCallData>({
           amountOutMin: routes[1].amountOutMin,
           slippage: routes[1].slippage,
           decimals: tokenOutDecimals,
+          moving: false,
         };
       },
     },
