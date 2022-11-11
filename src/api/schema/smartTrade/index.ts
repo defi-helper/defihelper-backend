@@ -379,7 +379,7 @@ export const OrderListQuery: GraphQLFieldConfig<any, Request> = {
     },
     sort: SortArgument(
       'SmartTradeOrderListSortInputType',
-      ['id', 'createdAt'],
+      ['id', 'createdAt', 'updatedAt'],
       [{ column: 'createdAt', order: 'asc' }],
     ),
     pagination: PaginationArgument('SmartTradeOrderListPaginationInputType'),
