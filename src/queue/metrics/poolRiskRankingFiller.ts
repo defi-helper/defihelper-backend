@@ -80,7 +80,7 @@ export default async (process: Process) => {
       }[totalRate],
       type: TagType.Risk,
     } as TagRiskType)
-    .then(async (tag) => container.model.contractService().linkTag(contract, tag));
+    .then((tag) => container.model.contractService().linkTag(contract, tag));
 
   await container.model.metricService().createContract(
     contract,
