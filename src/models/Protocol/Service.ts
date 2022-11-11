@@ -202,7 +202,7 @@ export class ContractService {
 
   async unlinkAllTagsByType(contract: Contract, type: TagType) {
     await this.tagLinkTable()
-      .whereIn('tag', this.tagTable().where('type', type))
+      .whereIn('tag', this.tagTable().column('id').where('type', type))
       .where('contract', contract.id)
       .delete();
   }
