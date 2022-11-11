@@ -70,12 +70,17 @@ export function orderStatusResolve(statusRaw: OrderStatusRaw) {
   }[statusRaw];
 }
 
+export interface OrderBalances {
+  [tokenId: string]: string;
+}
+
 export type Order<T extends CallData = CallData> = {
   id: string;
   number: string;
   owner: string;
   handler: string;
   callDataRaw: string;
+  balances: OrderBalances;
   status: OrderStatus;
   active: boolean;
   tx: string;
