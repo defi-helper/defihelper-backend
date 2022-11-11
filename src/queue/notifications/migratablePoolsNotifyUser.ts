@@ -70,7 +70,7 @@ export default async (process: Process) => {
         return [
           ...res,
           {
-            currentApy: currentApy.toFixed(2),
+            currentApy: currentApy.multipliedBy(100).toFixed(2),
             boostedApy: boostedApy.multipliedBy(100).toFixed(2),
             name: contract.name,
             id: contract.id,
