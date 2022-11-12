@@ -21,7 +21,7 @@ export default {
     'Your portfolio: total stacked ${{totalStackedUSD}}, total earned ${{totalEarnedUSD}}':
       'Your portfolio: total stacked ${{totalStackedUSD}}, total earned ${{totalEarnedUSD}}',
     'Your automate on wallet {{visualizedWalletAddress}} may be paused in short while due to insufficient funds':
-      "This should say 'your automation in wallet {{visualizedWalletAddress}} may/will be paused soon, due to insufficient funds",
+      'Your automation in wallet {{visualizedWalletAddress}} will be paused soon, due to insufficient funds. Top up your DeFiHelper balance https://app.defihelper.io/settings',
     "DeFiHelper's public beta now available. Get your APY boost right now on https://app.defihelper.io!":
       "DeFiHelper's public beta now available. Get your APY boost right now on https://app.defihelper.io!",
     '[{{name}}]: Tracked Balance ${{totalNetWorth}} ({{percentageTracked}}%), Total unclaimed ${{totalEarnedUSD}} ({{percentageTracked}}%) on {{time}}':

@@ -53,6 +53,7 @@ export default async (process: Process) => {
     throw new Error('Owner wallet not found');
   }
 
+  await container.model.queueService().push('smartTradeBalancesFiller', { id: order.id });
   if (order.statusTask === null) {
     order = await container.model.smartTradeService().updateOrder({
       ...order,
