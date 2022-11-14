@@ -6,6 +6,7 @@ import { formatApolloErrors } from 'apollo-server-errors';
 import { json } from 'body-parser';
 import cors from 'cors';
 import { GraphQLNonNull, GraphQLObjectType, GraphQLSchema, GraphQLString } from 'graphql';
+import { DataLoaderContainer } from '@api/dataLoader/container';
 import * as middlewares from '@api/middlewares';
 import * as configSchemas from '@api/schema/config';
 import * as notificationSchemas from '@api/schema/notification';
@@ -196,7 +197,17 @@ export function route({ express, server }: { express: Express; server: Server })
     subscriptions: '/api',
     playground: true,
     introspection: true,
-    context: ({ req }) => req,
+    context: ({ req, connection }) => {
+      if (req) {
+        return req;
+      }
+      if (connection) {
+        return {
+          dataLoader: new DataLoaderContainer({}),
+        };
+      }
+      return {};
+    },
     formatError: (err) => {
       container.model
         .logService()
