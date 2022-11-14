@@ -1,7 +1,7 @@
 import BN from 'bignumber.js';
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
-import { HandlerType } from '@models/SmartTrade/Entity';
+import { HandlerType, OrderStatus } from '@models/SmartTrade/Entity';
 import { TokenCreatedBy } from '@models/Token/Entity';
 import ethersMulticall from '@defihelper/ethers-multicall';
 import contracts from '@defihelper/networks/contracts.json';
@@ -63,14 +63,35 @@ export default async (process: Process) => {
   const balances = await multicall.all(
     tokens.map((token) => smartTradeRouter.balanceOf(order.number, token.address)),
   );
+  const balancesMap = tokens.reduce<Record<string, { balance: string; address: string }>>(
+    (prev, token, i) => ({
+      ...prev,
+      [token.id]: {
+        balance: new BN(balances[i]?.toString() ?? '0').div(`1e${token.decimals}`).toString(10),
+        address: token.address,
+      },
+    }),
+    {},
+  );
+
+  const outTokenBalance =
+    Object.values(balancesMap).find(
+      ({ address }) => address.toLowerCase() === path[path.length - 1].toLowerCase(),
+    )?.balance ?? '0';
 
   await container.model.smartTradeService().updateOrder({
     ...order,
-    balances: tokens.reduce(
-      (prev, token, i) => ({
-        ...prev,
-        [token.id]: new BN(balances[i]?.toString() ?? '0').div(`1e${token.decimals}`).toString(10),
-      }),
+    callData: {
+      ...order.callData,
+      swapPrice:
+        order.status === OrderStatus.Succeeded
+          ? new BN(outTokenBalance)
+              .div(new BN(order.callData.amountIn).div(`1e${order.callData.tokenInDecimals}`))
+              .toString(10)
+          : null,
+    },
+    balances: Object.entries(balancesMap).reduce(
+      (res, [tokenId, { balance: b }]) => ({ ...res, [tokenId]: b }),
       {},
     ),
   });
