@@ -120,7 +120,7 @@ export const OrderHandlerTypeEnum = new GraphQLEnumType({
   ),
 });
 
-export const MockHandlerCallDataType = new GraphQLObjectType<MockCallData>({
+export const MockHandlerCallDataType = new GraphQLObjectType<Order<MockCallData>>({
   name: 'SmartTradeMockHandlerCallDataType',
   fields: {
     tokenIn: {
@@ -176,7 +176,7 @@ export const SwapOrderCallDataDirectionEnum = new GraphQLEnumType({
   },
 });
 
-export const SwapHandlerCallDataType = new GraphQLObjectType<SwapCallData>({
+export const SwapHandlerCallDataType = new GraphQLObjectType<Order<SwapCallData>>({
   name: 'SmartTradeSwapHandlerCallDataType',
   fields: {
     exchange: {
@@ -195,6 +195,10 @@ export const SwapHandlerCallDataType = new GraphQLObjectType<SwapCallData>({
     boughtPrice: {
       type: BigNumberType,
       resolve: ({ callData: { boughtPrice } }) => boughtPrice,
+    },
+    swapPrice: {
+      type: BigNumberType,
+      resolve: ({ callData: { swapPrice } }) => swapPrice,
     },
     stopLoss: {
       type: SwapHandlerCallDataRouteType,
@@ -290,7 +294,7 @@ export const OrderType = new GraphQLObjectType<Order, Request>({
     callData: {
       type: GraphQLNonNull(CallDataType),
       description: 'Handler call data',
-      resolve: (order) => ({ type: order.type, callData: order.callData }),
+      resolve: (order) => order,
     },
     status: {
       type: GraphQLNonNull(OrderStatusEnum),
@@ -685,6 +689,7 @@ export const SwapOrderCreateMutation: GraphQLFieldConfig<any, Request> = {
           tokenOutDecimals: callData.tokenOutDecimals,
           amountIn: callData.amountIn.toFixed(0),
           boughtPrice: callData.boughtPrice ? callData.boughtPrice.toString(10) : null,
+          swapPrice: null,
           routes: [
             callData.stopLoss
               ? {
