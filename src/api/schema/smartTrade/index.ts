@@ -378,6 +378,9 @@ export const OrderListQuery: GraphQLFieldConfig<any, Request> = {
           confirmed: {
             type: GraphQLBoolean,
           },
+          claim: {
+            type: GraphQLBoolean,
+          },
         },
       }),
       defaultValue: {},
@@ -403,7 +406,7 @@ export const OrderListQuery: GraphQLFieldConfig<any, Request> = {
           `${walletTableName}.id`,
         )
         .where(function () {
-          const { my, owner, network, status, type, confirmed } = filter;
+          const { my, owner, network, status, type, confirmed, claim } = filter;
           if (typeof my === 'boolean' && my === true) {
             this.where(`${walletTableName}.user`, currentUser.id);
           }
@@ -418,6 +421,9 @@ export const OrderListQuery: GraphQLFieldConfig<any, Request> = {
           }
           if (typeof confirmed === 'boolean') {
             this.where(`${smartTradeOrderTableName}.confirmed`, confirmed);
+          }
+          if (typeof claim === 'boolean') {
+            this.where(`${smartTradeOrderTableName}.claim`, claim);
           }
           if (Array.isArray(type) && type.length > 0) {
             this.whereIn(`${smartTradeOrderTableName}.type`, type);
