@@ -6,6 +6,8 @@ import dayjs from 'dayjs';
 export default async (process: Process) => {
   const queue = container.model.queueService();
   await Promise.all([
+    queue.push('metricsNotifyLostChains'),
+    queue.push('deadPoolsInvestmentsBroker'),
     queue.push('metricsTrackingConditionsBroker'),
     queue.push('systemGarbageCollector', {}),
     queue.push('logGarbageCollector', {}),
