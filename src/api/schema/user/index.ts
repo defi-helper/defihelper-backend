@@ -37,6 +37,7 @@ import {
   metricWalletTableName,
   metricWalletTokenRegistryTableName,
   metricWalletTokenTableName,
+  RegistryPeriod,
   UserCollectorStatus,
 } from '@models/Metric/Entity';
 import {
@@ -336,6 +337,7 @@ export const WalletBlockchainType: GraphQLObjectType = new GraphQLObjectType<
           )
           .innerJoin(tokenAliasTableName, `${tokenAliasTableName}.id`, `${tokenTableName}.alias`)
           .where(function () {
+            this.where(`${metricWalletTokenRegistryTableName}.period`, RegistryPeriod.Latest);
             this.where(`${metricWalletTokenRegistryTableName}.wallet`, wallet.id);
             if (Array.isArray(filter.liquidity) && filter.liquidity.length > 0) {
               this.whereIn(`${tokenAliasTableName}.liquidity`, filter.liquidity);
@@ -711,6 +713,7 @@ export const WalletExchangeType = new GraphQLObjectType<
           )
           .innerJoin(tokenAliasTableName, `${tokenAliasTableName}.id`, `${tokenTableName}.alias`)
           .where(function () {
+            this.where(`${metricWalletTokenRegistryTableName}.period`, RegistryPeriod.Latest);
             this.where(`${metricWalletTokenRegistryTableName}.wallet`, wallet.id);
             if (Array.isArray(filter.liquidity) && filter.liquidity.length > 0) {
               this.whereIn(`${tokenAliasTableName}.liquidity`, filter.liquidity);
@@ -1176,6 +1179,7 @@ export const UserType = new GraphQLObjectType<User, Request>({
             `${metricWalletTokenRegistryTableName}.contract`,
           )
           .where(function () {
+            this.where(`${metricWalletTokenRegistryTableName}.period`, RegistryPeriod.Latest);
             this.where(`${protocolContractTableName}.protocol`, filter.protocol);
             this.where(`${walletTableName}.user`, user.id);
             this.whereNull(`${walletTableName}.deletedAt`);
@@ -1224,11 +1228,10 @@ export const UserType = new GraphQLObjectType<User, Request>({
           .tokenAliasTable()
           .column(`${tokenAliasTableName}.*`)
           .innerJoin(tokenTableName, `${tokenAliasTableName}.id`, `${tokenTableName}.alias`)
-          .innerJoin(
-            metricWalletTokenRegistryTableName,
-            `${metricWalletTokenRegistryTableName}.token`,
-            `${tokenTableName}.id`,
-          )
+          .innerJoin(metricWalletTokenRegistryTableName, function () {
+            this.on(`${metricWalletTokenRegistryTableName}.token`, `${tokenTableName}.id`);
+            this.onIn(`${metricWalletTokenRegistryTableName}.period`, [RegistryPeriod.Latest]);
+          })
           .innerJoin(
             walletTableName,
             `${walletTableName}.id`,

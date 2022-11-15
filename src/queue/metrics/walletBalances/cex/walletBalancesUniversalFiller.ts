@@ -7,7 +7,11 @@ import {
   walletTableName,
 } from '@models/Wallet/Entity';
 import BN from 'bignumber.js';
-import { MetricWalletToken, metricWalletTokenRegistryTableName } from '@models/Metric/Entity';
+import {
+  MetricWalletToken,
+  metricWalletTokenRegistryTableName,
+  RegistryPeriod,
+} from '@models/Metric/Entity';
 import { Token, tokenTableName } from '@models/Token/Entity';
 
 interface Params {
@@ -49,6 +53,7 @@ export default async (process: Process) => {
       `${metricWalletTokenRegistryTableName}.token`,
       `${tokenTableName}.id`,
     )
+    .where(`${metricWalletTokenRegistryTableName}.period`, RegistryPeriod.Latest)
     .where(`${metricWalletTokenRegistryTableName}.wallet`, exchangeWallet.id)
     .then((rows) =>
       rows.reduce((map, { token, balance }) => {

@@ -1,6 +1,6 @@
 import container from '@container';
 import * as Automate from '@models/Automate/Entity';
-import { metricContractRegistryTableName } from '@models/Metric/Entity';
+import { metricContractRegistryTableName, RegistryPeriod } from '@models/Metric/Entity';
 import { ContactBroker, ContactStatus } from '@models/Notification/Entity';
 import { contractTableName } from '@models/Protocol/Entity';
 import { Process } from '@models/Queue/Entity';
@@ -23,17 +23,15 @@ export default async (process: Process) => {
     .column(`${contractTableName}.name as contractName`)
     .column(`${walletTableName}.user as userId`)
     .innerJoin(walletTableName, `${walletTableName}.id`, `${Automate.contractTableName}.wallet`)
-
     .innerJoin(
       contractTableName,
       `${contractTableName}.id`,
       `${Automate.contractTableName}.contract`,
     )
-    .innerJoin(
-      metricContractRegistryTableName,
-      `${metricContractRegistryTableName}.contract`,
-      `${contractTableName}.id`,
-    )
+    .leftJoin(metricContractRegistryTableName, function () {
+      this.on(`${metricContractRegistryTableName}.contract`, '=', `${contractTableName}.id`);
+      this.onIn(`${metricContractRegistryTableName}.period`, [RegistryPeriod.Latest]);
+    })
     .whereNull(`${Automate.contractTableName}.archivedAt`)
     .andWhereRaw(
       `COALESCE("${metricContractRegistryTableName}".data->>'aprYear', '0')::float < 0.01`,

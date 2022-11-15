@@ -1,6 +1,6 @@
 import { Process } from '@models/Queue/Entity';
 import container from '@container';
-import { metricWalletRegistryTableName, QueryModify } from '@models/Metric/Entity';
+import { metricWalletRegistryTableName, QueryModify, RegistryPeriod } from '@models/Metric/Entity';
 import {
   walletTableName,
   walletBlockchainTableName,
@@ -30,6 +30,7 @@ export default async (process: Process) => {
       `${walletBlockchainTableName}.id`,
       `${walletTableName}.id`,
     )
+    .where(`${metricWalletRegistryTableName}.period`, RegistryPeriod.Latest)
     .where(`${walletBlockchainTableName}.type`, WalletBlockchainType.Wallet)
     .andWhereRaw(`COALESCE(${metricWalletRegistryTableName}.data->>'stakingUSD', '0')::numeric > 0`)
     .andWhere(`${walletTableName}.deletedAt`, null)
@@ -76,6 +77,7 @@ export default async (process: Process) => {
                 `${walletBlockchainTableName}.id`,
                 `${walletTableName}.id`,
               )
+              .where(`${metricWalletRegistryTableName}.period`, RegistryPeriod.Latest)
               .where(`${walletTableName}.id`, curr.wallet)
               .where(`${walletBlockchainTableName}.type`, WalletBlockchainType.Wallet)
               .groupBy(`${metricWalletRegistryTableName}.contract`)

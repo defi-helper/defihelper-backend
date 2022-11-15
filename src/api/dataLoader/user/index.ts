@@ -6,6 +6,7 @@ import {
   metricWalletRegistryTableName,
   metricWalletTokenRegistryTableName,
   QueryModify,
+  RegistryPeriod,
 } from '@models/Metric/Entity';
 import { User } from '@models/User/Entity';
 import { walletContractLinkTableName } from '@models/Protocol/Entity';
@@ -89,6 +90,7 @@ export const userLastMetricLoader = () =>
         `${walletTableName}.id`,
         `${metricWalletRegistryTableName}.wallet`,
       )
+      .where(`${metricWalletRegistryTableName}.period`, RegistryPeriod.Latest)
       .whereIn(`${walletTableName}.user`, usersId)
       .whereNull(`${walletTableName}.deletedAt`)
       .groupBy('user')
@@ -168,6 +170,7 @@ export const userLastAPRLoader = ({ metric }: { metric: MetricContractAPRField }
         `${walletTableName}.id`,
         `${metricWalletRegistryTableName}.wallet`,
       )
+      .where(`${metricWalletRegistryTableName}.period`, RegistryPeriod.Latest)
       .whereIn(`${walletTableName}.user`, usersId)
       .whereNull(`${walletTableName}.deletedAt`)
       .groupBy('user', 'contract')
@@ -232,6 +235,7 @@ export const userTokenLastMetricLoader = ({
         `${metricWalletTokenRegistryTableName}.wallet`,
       )
       .where(function () {
+        this.where(`${metricWalletTokenRegistryTableName}.period`, RegistryPeriod.Latest);
         this.whereIn(`${walletTableName}.user`, usersId);
         this.whereNull(`${walletTableName}.deletedAt`);
         if (typeof contract === 'object') {
@@ -331,6 +335,7 @@ export const walletLastMetricLoader = () =>
         'earnedUSDDayBefore',
         `${metricWalletRegistryTableName}.data->>'earnedUSDDayBefore'`,
       ])
+      .where(`${metricWalletRegistryTableName}.period`, RegistryPeriod.Latest)
       .whereIn(`${metricWalletRegistryTableName}.wallet`, walletsId)
       .groupBy(`${metricWalletRegistryTableName}.wallet`)
       .then(
@@ -401,6 +406,7 @@ export const walletTokenLastMetricLoader = (filter: {
       )
       .innerJoin(tokenAliasTableName, `${tokenTableName}.alias`, `${tokenAliasTableName}.id`)
       .where(function () {
+        this.where(`${metricWalletTokenRegistryTableName}.period`, RegistryPeriod.Latest);
         this.whereIn(`${metricWalletTokenRegistryTableName}.wallet`, walletsId);
         if (Array.isArray(filter.contract)) {
           if (filter.contract.length > 0) {

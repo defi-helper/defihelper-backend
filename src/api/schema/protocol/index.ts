@@ -39,6 +39,7 @@ import {
   metricProtocolTableName,
   metricWalletRegistryTableName,
   metricWalletTableName,
+  RegistryPeriod,
 } from '@models/Metric/Entity';
 import {
   walletBlockchainTableName,
@@ -701,11 +702,10 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
       )
       .column(`${contractTableName}.*`)
       .column(`${contractBlockchainTableName}.*`)
-      .leftJoin(
-        metricContractRegistryTableName,
-        `${metricContractRegistryTableName}.contract`,
-        `${contractTableName}.id`,
-      )
+      .leftJoin(metricContractRegistryTableName, function () {
+        this.on(`${metricContractRegistryTableName}.contract`, '=', `${contractTableName}.id`);
+        this.onIn(`${metricContractRegistryTableName}.period`, [RegistryPeriod.Latest]);
+      })
       .where(function () {
         const { id, protocol, hidden, deprecated, risk, userLink, search, tag } = filter;
         if (id) {
@@ -782,6 +782,7 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
                       `${walletBlockchainTableName}.id`,
                       `${walletTableName}.id`,
                     )
+                    .where(`${metricWalletRegistryTableName}.period`, RegistryPeriod.Latest)
                     .where(`${walletTableName}.user`, currentUser.id)
                     .where(`${walletBlockchainTableName}.type`, WalletBlockchainType.Wallet)
                     .whereNotIn(
@@ -847,6 +848,7 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
                 `${metricWalletRegistryTableName}.contract`,
               )
               .where(function () {
+                this.where(`${metricWalletRegistryTableName}.period`, RegistryPeriod.Latest);
                 this.where(`${walletTableName}.user`, currentUser.id);
                 if (uuid.validate(String(root?.id))) {
                   this.where(`${contractTableName}.protocol`, root.id);
@@ -1001,6 +1003,7 @@ export const ContractDebankListQuery: GraphQLFieldConfig<any, Request> = {
             `${metricWalletRegistryTableName}.contract`,
           )
           .where(function () {
+            this.where(`${metricWalletRegistryTableName}.period`, RegistryPeriod.Latest);
             this.where(`${walletTableName}.user`, currentUser.id);
             if (uuid.validate(String(root?.id))) {
               this.where(`${contractTableName}.protocol`, root.id);

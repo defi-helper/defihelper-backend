@@ -35,6 +35,7 @@ import {
   UserCollector,
   UserCollectorStatus,
   MetricTokenRegistryTable,
+  RegistryPeriod,
 } from './Entity';
 
 export class MetricContractService {
@@ -196,6 +197,7 @@ export class MetricContractService {
       .where({
         contract: metric.contract,
         wallet: metric.wallet,
+        period: RegistryPeriod.Latest,
       })
       .first();
     if (!duplicate) {
@@ -205,10 +207,9 @@ export class MetricContractService {
           contract: metric.contract,
           wallet: metric.wallet,
           data,
+          period: RegistryPeriod.Latest,
           date: metric.date,
         })
-        .onConflict(['contract', 'wallet'])
-        .ignore()
         .transacting(trx);
     }
     if (duplicate.date < metric.date) {
@@ -231,6 +232,7 @@ export class MetricContractService {
     const duplicate = await this.metricContractRegistryTable()
       .where({
         contract: metric.contract,
+        period: RegistryPeriod.Latest,
       })
       .first();
     if (!duplicate) {
@@ -239,10 +241,9 @@ export class MetricContractService {
           id: uuid(),
           contract: metric.contract,
           data: metric.data,
+          period: RegistryPeriod.Latest,
           date: metric.date,
         })
-        .onConflict(['contract'])
-        .ignore()
         .transacting(trx);
     }
     if (duplicate.date < metric.date) {
@@ -264,6 +265,7 @@ export class MetricContractService {
     const duplicate = await this.metricTokenRegistryTable()
       .where({
         token: metric.token,
+        period: RegistryPeriod.Latest,
       })
       .first();
     if (!duplicate) {
@@ -272,10 +274,9 @@ export class MetricContractService {
           id: uuid(),
           token: metric.token,
           data: metric.data,
+          period: RegistryPeriod.Latest,
           date: metric.date,
         })
-        .onConflict(['token'])
-        .ignore()
         .transacting(trx);
     }
     if (duplicate.date < metric.date) {
@@ -370,6 +371,7 @@ export class MetricContractService {
         contract: metric.contract,
         wallet: metric.wallet,
         token: metric.token,
+        period: RegistryPeriod.Latest,
       })
       .first();
     if (!duplicate) {
@@ -380,10 +382,9 @@ export class MetricContractService {
           wallet: metric.wallet,
           token: metric.token,
           data,
+          period: RegistryPeriod.Latest,
           date: metric.date,
         })
-        .onConflict(['contract', 'wallet', 'token'])
-        .ignore()
         .transacting(trx);
     }
     if (duplicate.date < metric.date) {

@@ -13,6 +13,7 @@ import {
   metricContractTableName,
   metricWalletRegistryTableName,
   QueryModify,
+  RegistryPeriod,
 } from '@models/Metric/Entity';
 import {
   walletBlockchainTableName,
@@ -181,6 +182,7 @@ export const protocolUserLastMetricLoader = ({ userId }: { userId: string }) =>
         `${walletTableName}.id`,
         `${metricWalletRegistryTableName}.wallet`,
       )
+      .where(`${metricWalletRegistryTableName}.period`, RegistryPeriod.Latest)
       .whereIn(`${contractTableName}.protocol`, protocolsId)
       .where(`${walletTableName}.user`, userId)
       .whereNull(`${walletTableName}.deletedAt`)
@@ -299,6 +301,7 @@ export const protocolUserLastAPRLoader = ({
               `${walletTableName}.id`,
               `${metricWalletRegistryTableName}.wallet`,
             )
+            .where(`${metricWalletRegistryTableName}.period`, RegistryPeriod.Latest)
             .whereIn(`${contractTableName}.protocol`, protocolsId)
             .andWhere(`${walletTableName}.user`, userId)
             .whereNull(`${walletTableName}.deletedAt`)
@@ -416,6 +419,7 @@ export const contractUserLastMetricLoader = ({
         `${walletBlockchainTableName}.id`,
       )
       .where(function () {
+        this.where(`${metricWalletRegistryTableName}.period`, RegistryPeriod.Latest);
         this.where(`${walletTableName}.user`, userId);
         this.whereNull(`${walletTableName}.deletedAt`);
         this.whereIn(`${walletBlockchainTableName}.type`, walletType);

@@ -4,6 +4,7 @@ import {
   MetricTokenRiskFactor,
   metricWalletTokenRegistryTableName,
   QueryModify,
+  RegistryPeriod,
 } from '@models/Metric/Entity';
 import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
 import { TokenAlias, Token, tokenAliasTableName, tokenTableName } from '@models/Token/Entity';
@@ -59,6 +60,7 @@ export const tokenAliasUserLastMetricLoader = ({
         `${metricWalletTokenRegistryTableName}.token`,
       )
       .innerJoin(tokenAliasTableName, `${tokenAliasTableName}.id`, `${tokenTableName}.alias`)
+      .where(`${metricWalletTokenRegistryTableName}.period`, RegistryPeriod.Latest)
       .where(`${walletTableName}.user`, user)
       .whereNull(`${walletTableName}.deletedAt`)
       .whereIn(`${tokenAliasTableName}.id`, tokenAliasIds)
@@ -127,6 +129,7 @@ export const tokenLastMetricLoader = () =>
       .metricTokenRegistryTable()
       .column(`${metricTokenRegistryTableName}.id as token`)
       .column(`${metricTokenRegistryTableName}.data`)
+      .where(`${metricTokenRegistryTableName}.period`, RegistryPeriod.Latest)
       .whereIn(`${metricTokenRegistryTableName}.token`, tokensIds);
 
     const map = await select.then(

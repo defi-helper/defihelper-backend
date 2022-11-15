@@ -13,9 +13,17 @@ export interface Metric {
   createdAt: Date;
 }
 
+export enum RegistryPeriod {
+  Latest = 'latest',
+  Day = 'day',
+  Week = 'week',
+  Month = 'month',
+}
+
 export interface Registry {
   id: string;
   data: MetricMap;
+  period: RegistryPeriod;
   date: Date;
 }
 
