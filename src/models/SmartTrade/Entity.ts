@@ -45,6 +45,7 @@ export interface SwapCallData {
     tokenOutDecimals: number;
     amountIn: string;
     boughtPrice: string | null;
+    swapPrice: string | null;
     routes: Array<SwapCallDataRoute | null>;
     activate: SwapCallDataActivate | null;
     deadline: number;

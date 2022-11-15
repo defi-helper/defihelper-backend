@@ -120,7 +120,7 @@ export const OrderHandlerTypeEnum = new GraphQLEnumType({
   ),
 });
 
-export const MockHandlerCallDataType = new GraphQLObjectType<MockCallData>({
+export const MockHandlerCallDataType = new GraphQLObjectType<Order<MockCallData>>({
   name: 'SmartTradeMockHandlerCallDataType',
   fields: {
     tokenIn: {
@@ -156,6 +156,9 @@ export const SwapHandlerCallDataRouteType = new GraphQLObjectType({
     slippage: {
       type: GraphQLNonNull(GraphQLFloat),
     },
+    moving: {
+      type: GraphQLNonNull(GraphQLBoolean),
+    },
   },
 });
 
@@ -173,7 +176,7 @@ export const SwapOrderCallDataDirectionEnum = new GraphQLEnumType({
   },
 });
 
-export const SwapHandlerCallDataType = new GraphQLObjectType<SwapCallData>({
+export const SwapHandlerCallDataType = new GraphQLObjectType<Order<SwapCallData>>({
   name: 'SmartTradeSwapHandlerCallDataType',
   fields: {
     exchange: {
@@ -193,6 +196,10 @@ export const SwapHandlerCallDataType = new GraphQLObjectType<SwapCallData>({
       type: BigNumberType,
       resolve: ({ callData: { boughtPrice } }) => boughtPrice,
     },
+    swapPrice: {
+      type: BigNumberType,
+      resolve: ({ callData: { swapPrice } }) => swapPrice,
+    },
     stopLoss: {
       type: SwapHandlerCallDataRouteType,
       resolve: ({ callData: { routes, tokenOutDecimals } }) => {
@@ -203,6 +210,7 @@ export const SwapHandlerCallDataType = new GraphQLObjectType<SwapCallData>({
           amountOutMin: routes[0].amountOutMin,
           slippage: routes[0].slippage,
           decimals: tokenOutDecimals,
+          moving: routes[0].moving !== null,
         };
       },
     },
@@ -216,6 +224,7 @@ export const SwapHandlerCallDataType = new GraphQLObjectType<SwapCallData>({
           amountOutMin: routes[1].amountOutMin,
           slippage: routes[1].slippage,
           decimals: tokenOutDecimals,
+          moving: false,
         };
       },
     },
@@ -285,7 +294,7 @@ export const OrderType = new GraphQLObjectType<Order, Request>({
     callData: {
       type: GraphQLNonNull(CallDataType),
       description: 'Handler call data',
-      resolve: (order) => ({ type: order.type, callData: order.callData }),
+      resolve: (order) => order,
     },
     status: {
       type: GraphQLNonNull(OrderStatusEnum),
@@ -373,13 +382,16 @@ export const OrderListQuery: GraphQLFieldConfig<any, Request> = {
           confirmed: {
             type: GraphQLBoolean,
           },
+          claim: {
+            type: GraphQLBoolean,
+          },
         },
       }),
       defaultValue: {},
     },
     sort: SortArgument(
       'SmartTradeOrderListSortInputType',
-      ['id', 'createdAt'],
+      ['id', 'createdAt', 'updatedAt'],
       [{ column: 'createdAt', order: 'asc' }],
     ),
     pagination: PaginationArgument('SmartTradeOrderListPaginationInputType'),
@@ -398,7 +410,7 @@ export const OrderListQuery: GraphQLFieldConfig<any, Request> = {
           `${walletTableName}.id`,
         )
         .where(function () {
-          const { my, owner, network, status, type, confirmed } = filter;
+          const { my, owner, network, status, type, confirmed, claim } = filter;
           if (typeof my === 'boolean' && my === true) {
             this.where(`${walletTableName}.user`, currentUser.id);
           }
@@ -413,6 +425,9 @@ export const OrderListQuery: GraphQLFieldConfig<any, Request> = {
           }
           if (typeof confirmed === 'boolean') {
             this.where(`${smartTradeOrderTableName}.confirmed`, confirmed);
+          }
+          if (typeof claim === 'boolean') {
+            this.where(`${smartTradeOrderTableName}.claim`, claim);
           }
           if (Array.isArray(type) && type.length > 0) {
             this.whereIn(`${smartTradeOrderTableName}.type`, type);
@@ -674,6 +689,7 @@ export const SwapOrderCreateMutation: GraphQLFieldConfig<any, Request> = {
           tokenOutDecimals: callData.tokenOutDecimals,
           amountIn: callData.amountIn.toFixed(0),
           boughtPrice: callData.boughtPrice ? callData.boughtPrice.toString(10) : null,
+          swapPrice: null,
           routes: [
             callData.stopLoss
               ? {

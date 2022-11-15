@@ -42,7 +42,10 @@ export class EmailService {
     const html = Mustache.render(await Templates[template], data);
 
     const email = {
-      from: this.from,
+      from: {
+        name: 'DeFiHelper service',
+        address: this.from,
+      },
       to,
       subject,
       html,
