@@ -90,6 +90,8 @@ export * as metricsTokenRiskRankingBroker from './metrics/tokenRiskRankingBroker
 export * as metricsPoolRiskRankingFiller from './metrics/poolRiskRankingFiller';
 export * as metricsPoolRiskRankingBroker from './metrics/poolRiskRankingBroker';
 
+export * as metricsRegistryDayPeriod from './metrics/registry/dayPeriod';
+
 /* protocol */
 export * as protocolContractsResolver from './protocol/resolveContracts';
 

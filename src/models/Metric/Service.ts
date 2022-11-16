@@ -36,6 +36,7 @@ import {
   UserCollectorStatus,
   MetricTokenRegistryTable,
   RegistryPeriod,
+  MetricContractRegistry,
 } from './Entity';
 
 export class MetricContractService {
@@ -130,6 +131,29 @@ export class MetricContractService {
     this.onContractCreated.emit(created);
 
     return created;
+  }
+
+  async createContractRegistry(
+    contractId: string,
+    data: MetricMap,
+    period: RegistryPeriod,
+    date: Date,
+    trx: Knex.Transaction<any, any>,
+  ) {
+    const created: MetricContractRegistry = {
+      id: uuid(),
+      contract: contractId,
+      data,
+      period,
+      date,
+    };
+    await this.metricContractRegistryTable().insert(created).transacting(trx);
+
+    return created;
+  }
+
+  cleanContractRegistry(period: RegistryPeriod, date: Date, trx: Knex.Transaction<any, any>) {
+    return this.metricContractRegistryTable().where({ period, date }).delete().transacting(trx);
   }
 
   async setContractTask(contract: Contract, task: Task) {
