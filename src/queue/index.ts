@@ -90,7 +90,11 @@ export * as metricsTokenRiskRankingBroker from './metrics/tokenRiskRankingBroker
 export * as metricsPoolRiskRankingFiller from './metrics/poolRiskRankingFiller';
 export * as metricsPoolRiskRankingBroker from './metrics/poolRiskRankingBroker';
 
-export * as metricsRegistryDayPeriod from './metrics/registry/dayPeriod';
+export * as metricsRegistryPeriodBroker from './metrics/registry/period/broker';
+export * as metricsContractRegistryPeriodFiller from './metrics/registry/period/contractFiller';
+export * as metricsTokenRegistryPeriodFiller from './metrics/registry/period/tokenFiller';
+export * as metricsWalletRegistryPeriodFiller from './metrics/registry/period/walletFiller';
+export * as metricsWalletTokenRegistryPeriodFiller from './metrics/registry/period/walletTokenFiller';
 
 /* protocol */
 export * as protocolContractsResolver from './protocol/resolveContracts';

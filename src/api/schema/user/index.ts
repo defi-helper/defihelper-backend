@@ -34,9 +34,8 @@ import {
   TokenAliasType,
 } from '@api/schema/token';
 import {
-  metricWalletTableName,
+  metricWalletRegistryTableName,
   metricWalletTokenRegistryTableName,
-  metricWalletTokenTableName,
   RegistryPeriod,
   UserCollectorStatus,
 } from '@models/Metric/Entity';
@@ -399,32 +398,28 @@ export const WalletBlockchainType: GraphQLObjectType = new GraphQLObjectType<
       resolve: async (wallet, { metric, group, filter, sort, pagination }) => {
         const database = container.database();
         const select = container.model
-          .metricWalletTable()
-          .distinctOn(
-            `${metricWalletTableName}.wallet`,
-            `${metricWalletTableName}.contract`,
-            'date',
+          .metricWalletRegistryTable()
+          .column(
+            database.raw(`(${metricWalletRegistryTableName}.data->>'${metric}')::numeric AS value`),
           )
-          .column(database.raw(`(${metricWalletTableName}.data->>'${metric}')::numeric AS value`))
-          .column(database.raw(`DATE_TRUNC('${group}', ${metricWalletTableName}.date) AS "date"`))
+          .column('date')
           .where(function () {
-            this.where(`${metricWalletTableName}.wallet`, wallet.id).andWhere(
-              database.raw(`${metricWalletTableName}.data->>'${metric}' IS NOT NULL`),
+            this.where(`${metricWalletRegistryTableName}.period`, group);
+            this.where(`${metricWalletRegistryTableName}.wallet`, wallet.id);
+            this.where(
+              database.raw(`${metricWalletRegistryTableName}.data->>'${metric}' IS NOT NULL`),
             );
             if (Array.isArray(filter.contract) && filter.contract.length > 0) {
-              this.whereIn(`${metricWalletTableName}.contract`, filter.contract);
+              this.whereIn(`${metricWalletRegistryTableName}.contract`, filter.contract);
             }
             if (filter.dateAfter) {
-              this.andWhere(`${metricWalletTableName}.date`, '>=', filter.dateAfter.toDate());
+              this.where(`${metricWalletRegistryTableName}.date`, '>=', filter.dateAfter.toDate());
             }
             if (filter.dateBefore) {
-              this.andWhere(`${metricWalletTableName}.date`, '<', filter.dateBefore.toDate());
+              this.where(`${metricWalletRegistryTableName}.date`, '<', filter.dateBefore.toDate());
             }
           })
-          .orderBy(`${metricWalletTableName}.wallet`)
-          .orderBy(`${metricWalletTableName}.contract`)
-          .orderBy('date')
-          .orderBy(`${metricWalletTableName}.date`, 'DESC');
+          .orderBy(`${metricWalletRegistryTableName}.date`, 'DESC');
 
         return container
           .database()
@@ -486,54 +481,55 @@ export const WalletBlockchainType: GraphQLObjectType = new GraphQLObjectType<
       resolve: async (wallet, { metric, group, filter, sort, pagination }) => {
         const database = container.database();
         const select = container.model
-          .metricWalletTokenTable()
-          .distinctOn(
-            `${metricWalletTokenTableName}.wallet`,
-            `${metricWalletTokenTableName}.token`,
-            'date',
-          )
+          .metricWalletTokenRegistryTable()
           .column(
-            database.raw(`(${metricWalletTokenTableName}.data->>'${metric}')::numeric AS value`),
+            database.raw(
+              `(${metricWalletTokenRegistryTableName}.data->>'${metric}')::numeric AS value`,
+            ),
           )
-          .column(
-            database.raw(`DATE_TRUNC('${group}', ${metricWalletTokenTableName}.date) AS "date"`),
-          )
+          .column('date')
           .innerJoin(
             walletTableName,
             `${walletTableName}.id`,
-            `${metricWalletTokenTableName}.wallet`,
+            `${metricWalletTokenRegistryTableName}.wallet`,
           )
           .where(function () {
-            this.where(`${metricWalletTokenTableName}.wallet`, wallet.id)
-              .whereNull(`${walletTableName}.deletedAt`)
-              .andWhere(
-                database.raw(`${metricWalletTokenTableName}.data->>'${metric}' IS NOT NULL`),
-              );
+            this.where(`${metricWalletTokenRegistryTableName}.period`, group);
+            this.where(`${metricWalletTokenRegistryTableName}.wallet`, wallet.id);
+            this.whereNull(`${walletTableName}.deletedAt`);
+            this.where(
+              database.raw(`${metricWalletTokenRegistryTableName}.data->>'${metric}' IS NOT NULL`),
+            );
             if (Array.isArray(filter.contract)) {
               if (filter.contract.length > 0) {
-                this.whereIn(`${metricWalletTokenTableName}.contract`, filter.contract);
+                this.whereIn(`${metricWalletTokenRegistryTableName}.contract`, filter.contract);
               } else {
-                this.whereNull(`${metricWalletTokenTableName}.contract`);
+                this.whereNull(`${metricWalletTokenRegistryTableName}.contract`);
               }
             }
             if (filter.dateAfter) {
-              this.andWhere(`${metricWalletTokenTableName}.date`, '>=', filter.dateAfter.toDate());
+              this.where(
+                `${metricWalletTokenRegistryTableName}.date`,
+                '>=',
+                filter.dateAfter.toDate(),
+              );
             }
             if (filter.dateBefore) {
-              this.andWhere(`${metricWalletTokenTableName}.date`, '<', filter.dateBefore.toDate());
+              this.where(
+                `${metricWalletTokenRegistryTableName}.date`,
+                '<',
+                filter.dateBefore.toDate(),
+              );
             }
           })
-          .orderBy(`${metricWalletTokenTableName}.wallet`)
-          .orderBy(`${metricWalletTokenTableName}.token`)
-          .orderBy('date')
-          .orderBy(`${metricWalletTokenTableName}.date`, 'DESC');
+          .orderBy(`${metricWalletTokenRegistryTableName}.date`, 'DESC');
         if (filter) {
           if (filter.tokenAlias) {
             select
               .innerJoin(
                 tokenTableName,
                 `${tokenTableName}.id`,
-                `${metricWalletTokenTableName}.token`,
+                `${metricWalletTokenRegistryTableName}.token`,
               )
               .innerJoin(
                 tokenAliasTableName,
@@ -898,56 +894,57 @@ export const UserBlockchainType = new GraphQLObjectType<{
       ) => {
         const database = container.database();
         let select = container.model
-          .metricWalletTokenTable()
-          .distinctOn(
-            `${metricWalletTokenTableName}.wallet`,
-            `${metricWalletTokenTableName}.token`,
-            'date',
-          )
+          .metricWalletTokenRegistryTable()
           .column(
-            database.raw(`(${metricWalletTokenTableName}.data->>'${metric}')::numeric AS value`),
+            database.raw(
+              `(${metricWalletTokenRegistryTableName}.data->>'${metric}')::numeric AS value`,
+            ),
           )
-          .column(
-            database.raw(`DATE_TRUNC('${group}', ${metricWalletTokenTableName}.date) AS "date"`),
-          )
+          .column('date')
           .innerJoin(
             walletTableName,
             `${walletTableName}.id`,
-            `${metricWalletTokenTableName}.wallet`,
+            `${metricWalletTokenRegistryTableName}.wallet`,
           )
           .where(function () {
-            this.where(`${walletTableName}.user`, user.id)
-              .andWhere(`${walletBlockchainTableName}.blockchain`, blockchain)
-              .andWhere(`${walletBlockchainTableName}.network`, network)
-              .whereNull(`${walletTableName}.deletedAt`)
-              .andWhere(
-                database.raw(`${metricWalletTokenTableName}.data->>'${metric}' IS NOT NULL`),
-              );
+            this.where(`${metricWalletTokenRegistryTableName}.period`, group);
+            this.where(`${walletTableName}.user`, user.id);
+            this.where(`${walletBlockchainTableName}.blockchain`, blockchain);
+            this.where(`${walletBlockchainTableName}.network`, network);
+            this.whereNull(`${walletTableName}.deletedAt`);
+            this.where(
+              database.raw(`${metricWalletTokenRegistryTableName}.data->>'${metric}' IS NOT NULL`),
+            );
             if (Array.isArray(filter.contract)) {
               if (filter.contract.length > 0) {
-                this.whereIn(`${metricWalletTokenTableName}.contract`, filter.contract);
+                this.whereIn(`${metricWalletTokenRegistryTableName}.contract`, filter.contract);
               } else {
-                this.whereNull(`${metricWalletTokenTableName}.contract`);
+                this.whereNull(`${metricWalletTokenRegistryTableName}.contract`);
               }
             }
             if (filter.dateAfter) {
-              this.andWhere(`${metricWalletTokenTableName}.date`, '>=', filter.dateAfter.toDate());
+              this.andWhere(
+                `${metricWalletTokenRegistryTableName}.date`,
+                '>=',
+                filter.dateAfter.toDate(),
+              );
             }
             if (filter.dateBefore) {
-              this.andWhere(`${metricWalletTokenTableName}.date`, '<', filter.dateBefore.toDate());
+              this.andWhere(
+                `${metricWalletTokenRegistryTableName}.date`,
+                '<',
+                filter.dateBefore.toDate(),
+              );
             }
           })
-          .orderBy(`${metricWalletTokenTableName}.wallet`)
-          .orderBy(`${metricWalletTokenTableName}.token`)
-          .orderBy('date')
-          .orderBy(`${metricWalletTokenTableName}.date`, 'DESC');
+          .orderBy(`${metricWalletTokenRegistryTableName}.date`, 'DESC');
         if (filter) {
           if (filter.tokenAlias) {
             select = select
               .innerJoin(
                 tokenTableName,
                 `${tokenTableName}.id`,
-                `${metricWalletTokenTableName}.token`,
+                `${metricWalletTokenRegistryTableName}.token`,
               )
               .innerJoin(
                 tokenAliasTableName,
@@ -1478,43 +1475,44 @@ export const UserType = new GraphQLObjectType<User, Request>({
       resolve: async (user, { metric, group, filter, sort, pagination }) => {
         const database = container.database();
         const select = container.model
-          .metricWalletTable()
-          .distinctOn(
-            `${metricWalletTableName}.wallet`,
-            `${metricWalletTableName}.contract`,
-            'date',
+          .metricWalletRegistryTable()
+          .column(
+            database.raw(`(${metricWalletRegistryTableName}.data->>'${metric}')::numeric AS value`),
           )
-          .column(database.raw(`(${metricWalletTableName}.data->>'${metric}')::numeric AS value`))
-          .column(database.raw(`DATE_TRUNC('${group}', ${metricWalletTableName}.date) AS "date"`))
-          .innerJoin(walletTableName, `${walletTableName}.id`, `${metricWalletTableName}.wallet`)
+          .column('date')
+          .innerJoin(
+            walletTableName,
+            `${walletTableName}.id`,
+            `${metricWalletRegistryTableName}.wallet`,
+          )
           .where(function () {
-            this.where(`${walletTableName}.user`, user.id)
-              .whereNull(`${walletTableName}.deletedAt`)
-              .andWhere(database.raw(`${metricWalletTableName}.data->>'${metric}' IS NOT NULL`));
+            this.where(`${metricWalletRegistryTableName}.period`, group);
+            this.where(`${walletTableName}.user`, user.id);
+            this.whereNull(`${walletTableName}.deletedAt`);
+            this.where(
+              database.raw(`${metricWalletRegistryTableName}.data->>'${metric}' IS NOT NULL`),
+            );
             if (filter.blockchain) {
               const { protocol, network } = filter.blockchain;
-              this.andWhere(`${walletBlockchainTableName}.blockchain`, protocol);
+              this.where(`${walletBlockchainTableName}.blockchain`, protocol);
               if (network !== undefined) {
-                this.andWhere(`${walletBlockchainTableName}.network`, network);
+                this.where(`${walletBlockchainTableName}.network`, network);
               }
             }
             if (Array.isArray(filter.wallet) && filter.wallet.length > 0) {
-              this.whereIn(`${metricWalletTableName}.wallet`, filter.wallet);
+              this.whereIn(`${metricWalletRegistryTableName}.wallet`, filter.wallet);
             }
             if (Array.isArray(filter.contract) && filter.contract.length > 0) {
-              this.whereIn(`${metricWalletTableName}.contract`, filter.contract);
+              this.whereIn(`${metricWalletRegistryTableName}.contract`, filter.contract);
             }
             if (filter.dateAfter) {
-              this.andWhere(`${metricWalletTableName}.date`, '>=', filter.dateAfter.toDate());
+              this.where(`${metricWalletRegistryTableName}.date`, '>=', filter.dateAfter.toDate());
             }
             if (filter.dateBefore) {
-              this.andWhere(`${metricWalletTableName}.date`, '<', filter.dateBefore.toDate());
+              this.where(`${metricWalletRegistryTableName}.date`, '<', filter.dateBefore.toDate());
             }
           })
-          .orderBy(`${metricWalletTableName}.wallet`)
-          .orderBy(`${metricWalletTableName}.contract`)
-          .orderBy('date')
-          .orderBy(`${metricWalletTableName}.date`, 'DESC');
+          .orderBy(`${metricWalletRegistryTableName}.date`, 'DESC');
 
         return container
           .database()
@@ -1583,63 +1581,66 @@ export const UserType = new GraphQLObjectType<User, Request>({
       resolve: async (user, { metric, group, filter, sort, pagination }) => {
         const database = container.database();
         const select = container.model
-          .metricWalletTokenTable()
-          .distinctOn(
-            `${metricWalletTokenTableName}.wallet`,
-            `${metricWalletTokenTableName}.contract`,
-            `${metricWalletTokenTableName}.token`,
-            'date',
-          )
+          .metricWalletTokenRegistryTable()
           .column(
-            database.raw(`(${metricWalletTokenTableName}.data->>'${metric}')::numeric AS value`),
+            database.raw(
+              `(${metricWalletTokenRegistryTableName}.data->>'${metric}')::numeric AS value`,
+            ),
           )
-          .column(
-            database.raw(`DATE_TRUNC('${group}', ${metricWalletTokenTableName}.date) AS "date"`),
-          )
+          .column('date')
           .column(`${tokenAliasTableName}.id AS tokenAliasId`)
           .column(`${tokenAliasTableName}.liquidity AS tokenAliasLiquidity`)
           .innerJoin(
             walletTableName,
             `${walletTableName}.id`,
-            `${metricWalletTokenTableName}.wallet`,
+            `${metricWalletTokenRegistryTableName}.wallet`,
           )
-          .innerJoin(tokenTableName, `${tokenTableName}.id`, `${metricWalletTokenTableName}.token`)
+          .innerJoin(
+            tokenTableName,
+            `${tokenTableName}.id`,
+            `${metricWalletTokenRegistryTableName}.token`,
+          )
           .innerJoin(tokenAliasTableName, `${tokenAliasTableName}.id`, `${tokenTableName}.alias`)
           .where(function () {
-            this.where(`${walletTableName}.user`, user.id)
-              .whereNull(`${walletTableName}.deletedAt`)
-              .andWhere(
-                database.raw(`${metricWalletTokenTableName}.data->>'${metric}' IS NOT NULL`),
-              );
+            this.where(`${metricWalletTokenRegistryTableName}.period`, group);
+            this.where(`${walletTableName}.user`, user.id);
+            this.whereNull(`${walletTableName}.deletedAt`);
+            this.where(
+              database.raw(`${metricWalletTokenRegistryTableName}.data->>'${metric}' IS NOT NULL`),
+            );
             if (filter.blockchain) {
               const { protocol, network } = filter.blockchain;
-              this.andWhere(`${walletBlockchainTableName}.blockchain`, protocol);
+              this.where(`${walletBlockchainTableName}.blockchain`, protocol);
               if (network !== undefined) {
-                this.andWhere(`${walletBlockchainTableName}.network`, network);
+                this.where(`${walletBlockchainTableName}.network`, network);
               }
             }
             if (Array.isArray(filter.wallet) && filter.wallet.length > 0) {
-              this.whereIn(`${metricWalletTokenTableName}.wallet`, filter.wallet);
+              this.whereIn(`${metricWalletTokenRegistryTableName}.wallet`, filter.wallet);
             }
             if (Array.isArray(filter.contract)) {
               if (filter.contract.length > 0) {
-                this.whereIn(`${metricWalletTokenTableName}.contract`, filter.contract);
+                this.whereIn(`${metricWalletTokenRegistryTableName}.contract`, filter.contract);
               } else {
-                this.whereNull(`${metricWalletTokenTableName}.contract`);
+                this.whereNull(`${metricWalletTokenRegistryTableName}.contract`);
               }
             }
             if (filter.dateAfter) {
-              this.andWhere(`${metricWalletTokenTableName}.date`, '>=', filter.dateAfter.toDate());
+              this.where(
+                `${metricWalletTokenRegistryTableName}.date`,
+                '>=',
+                filter.dateAfter.toDate(),
+              );
             }
             if (filter.dateBefore) {
-              this.andWhere(`${metricWalletTokenTableName}.date`, '<', filter.dateBefore.toDate());
+              this.where(
+                `${metricWalletTokenRegistryTableName}.date`,
+                '<',
+                filter.dateBefore.toDate(),
+              );
             }
           })
-          .orderBy(`${metricWalletTokenTableName}.wallet`)
-          .orderBy(`${metricWalletTokenTableName}.contract`)
-          .orderBy(`${metricWalletTokenTableName}.token`)
-          .orderBy('date')
-          .orderBy(`${metricWalletTokenTableName}.date`, 'DESC');
+          .orderBy(`${metricWalletTokenRegistryTableName}.date`, 'DESC');
 
         return container
           .database()

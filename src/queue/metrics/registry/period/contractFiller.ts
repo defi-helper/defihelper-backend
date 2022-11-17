@@ -5,13 +5,13 @@ import dayjs from 'dayjs';
 
 interface Params {
   date: string;
+  period: 'day' | 'week' | 'month';
 }
 
 export default async (process: Process) => {
-  const { date } = process.task.params as Params;
-  const fromDate = dayjs(date).startOf('day').toDate();
-  const toDate = dayjs(date).add(1, 'day').startOf('day').toDate();
-  const period: [Date, Date] = [fromDate, toDate];
+  const { date, period } = process.task.params as Params;
+  const fromDate = dayjs(date).startOf(period).toDate();
+  const toDate = dayjs(date).add(1, period).startOf(period).toDate();
 
   const db = container.database();
   const [tvlData, uniqWalletsData] = await Promise.all([
@@ -22,10 +22,10 @@ export default async (process: Process) => {
         Array<{
           contract: string;
           tvl: string;
-          aprDay: string | null;
-          aprWeek: string | null;
-          aprMonth: string | null;
-          aprYear: string | null;
+          aprDay: string;
+          aprWeek: string;
+          aprMonth: string;
+          aprYear: string;
         }>
       >([
         'contract',
@@ -35,10 +35,11 @@ export default async (process: Process) => {
         db.raw(`data->>'aprMonth' as "aprMonth"`),
         db.raw(`data->>'aprYear' as "aprYear"`),
       ])
-      .whereBetween('date', period)
+      .whereBetween('date', [fromDate, toDate])
       .whereRaw(`data->>'tvl' IS NOT NULL`)
       .orderBy('contract')
-      .orderBy('date', 'desc'),
+      .orderBy('date', 'desc')
+      .then((rows) => new Map(rows.map((row) => [row.contract, row]))),
     container.model
       .metricContractTable()
       .distinctOn('contract')
@@ -46,7 +47,7 @@ export default async (process: Process) => {
         'contract',
         db.raw(`data->>'uniqueWalletsCount' as "uniqueWalletsCount"`),
       ])
-      .whereBetween('date', period)
+      .whereBetween('date', [fromDate, toDate])
       .whereRaw(`data->>'uniqueWalletsCount' IS NOT NULL`)
       .orderBy('contract')
       .orderBy('date', 'desc')
@@ -54,22 +55,28 @@ export default async (process: Process) => {
   ]);
 
   const metricsService = container.model.metricService();
-  container.database().transaction((trx) =>
+  await container.database().transaction((trx) =>
     Promise.all([
-      metricsService.cleanContractRegistry(RegistryPeriod.Day, fromDate, trx),
-      tvlData.reduce<Promise<unknown>>(async (prev, data) => {
+      metricsService.cleanContractRegistry(period as RegistryPeriod, fromDate, trx),
+      Array.from(new Set([...tvlData.keys(), ...uniqWalletsData.keys()]).values()).reduce<
+        Promise<unknown>
+      >(async (prev, contract) => {
         await prev;
+
+        const tvl = tvlData.get(contract);
+        const wallet = uniqWalletsData.get(contract);
+
         return metricsService.createContractRegistry(
-          data.contract,
+          contract,
           {
-            tvl: data.tvl,
-            aprDay: data.aprDay ?? '0',
-            aprWeek: data.aprWeek ?? '0',
-            aprMonth: data.aprMonth ?? '0',
-            aprYear: data.aprYear ?? '0',
-            uniqueWalletsCount: uniqWalletsData.get(data.contract)?.uniqueWalletsCount ?? '0',
+            tvl: tvl?.tvl,
+            aprDay: tvl?.aprDay,
+            aprWeek: tvl?.aprWeek,
+            aprMonth: tvl?.aprMonth,
+            aprYear: tvl?.aprYear,
+            uniqueWalletsCount: wallet?.uniqueWalletsCount,
           },
-          RegistryPeriod.Day,
+          period as RegistryPeriod,
           fromDate,
           trx,
         );

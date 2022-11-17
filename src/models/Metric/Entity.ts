@@ -3,7 +3,7 @@ import { tableFactoryLegacy } from '@services/Database';
 import Knex from 'knex';
 
 export interface MetricMap {
-  [k: string]: string;
+  [k: string]: string | undefined;
 }
 
 export interface Metric {

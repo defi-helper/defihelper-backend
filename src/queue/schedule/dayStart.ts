@@ -6,6 +6,10 @@ import dayjs from 'dayjs';
 export default async (process: Process) => {
   const queue = container.model.queueService();
   await Promise.all([
+    queue.push('metricsRegistryPeriodBroker', {
+      date: dayjs().add(-1, 'day').startOf('day').toString(),
+      period: 'day',
+    }),
     queue.push('metricsNotifyLostChains'),
     queue.push('metricsTrackingConditionsBroker'),
     queue.push('systemGarbageCollector', {}),

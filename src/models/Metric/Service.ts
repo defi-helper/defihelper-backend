@@ -37,6 +37,9 @@ import {
   MetricTokenRegistryTable,
   RegistryPeriod,
   MetricContractRegistry,
+  MetricTokenRegistry,
+  MetricWalletRegistry,
+  MetricWalletTokenRegistry,
 } from './Entity';
 
 export class MetricContractService {
@@ -198,6 +201,31 @@ export class MetricContractService {
     this.onWalletCreated.emit(created);
 
     return created;
+  }
+
+  async createWalletRegistry(
+    contractId: string,
+    walletId: string,
+    data: MetricMap,
+    period: RegistryPeriod,
+    date: Date,
+    trx: Knex.Transaction<any, any>,
+  ) {
+    const created: MetricWalletRegistry = {
+      id: uuid(),
+      contract: contractId,
+      wallet: walletId,
+      data,
+      period,
+      date,
+    };
+    await this.metricWalletRegistryTable().insert(created).transacting(trx);
+
+    return created;
+  }
+
+  cleanWalletRegistry(period: RegistryPeriod, date: Date, trx: Knex.Transaction<any, any>) {
+    return this.metricWalletRegistryTable().where({ period, date }).delete().transacting(trx);
   }
 
   async updateWalletRegistry(metric: MetricWallet, trx: Knex.Transaction<any, any>) {
@@ -372,6 +400,33 @@ export class MetricContractService {
     return created;
   }
 
+  async createWalletTokenRegistry(
+    contractId: string | null,
+    walletId: string,
+    tokenId: string,
+    data: MetricMap,
+    period: RegistryPeriod,
+    date: Date,
+    trx: Knex.Transaction<any, any>,
+  ) {
+    const created: MetricWalletTokenRegistry = {
+      id: uuid(),
+      contract: contractId,
+      wallet: walletId,
+      token: tokenId,
+      data,
+      period,
+      date,
+    };
+    await this.metricWalletTokenRegistryTable().insert(created).transacting(trx);
+
+    return created;
+  }
+
+  cleanWalletTokenRegistry(period: RegistryPeriod, date: Date, trx: Knex.Transaction<any, any>) {
+    return this.metricWalletTokenRegistryTable().where({ period, date }).delete().transacting(trx);
+  }
+
   async updateWalletTokenRegistry(metric: MetricWalletToken, trx: Knex.Transaction<any, any>) {
     const dayBefore = await this.metricWalletTokenTable()
       .modify(QueryModify.lastValue, ['contract', 'wallet', 'token'])
@@ -444,6 +499,29 @@ export class MetricContractService {
     );
 
     return created;
+  }
+
+  async createTokenRegistry(
+    tokenId: string,
+    data: MetricMap,
+    period: RegistryPeriod,
+    date: Date,
+    trx: Knex.Transaction<any, any>,
+  ) {
+    const created: MetricTokenRegistry = {
+      id: uuid(),
+      token: tokenId,
+      data,
+      period,
+      date,
+    };
+    await this.metricTokenRegistryTable().insert(created).transacting(trx);
+
+    return created;
+  }
+
+  cleanTokenRegistry(period: RegistryPeriod, date: Date, trx: Knex.Transaction<any, any>) {
+    return this.metricTokenRegistryTable().where({ period, date }).delete().transacting(trx);
   }
 
   async createUserCollector(userId: string, tasks: string[]) {
