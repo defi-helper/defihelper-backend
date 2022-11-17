@@ -209,15 +209,15 @@ export const protocolUserLastMetricLoader = ({ userId }: { userId: string }) =>
       select
         .clone()
         .modify(QueryModify.sumMetric, [
-          'stakingUSD',
-          `${metricWalletRegistryTableName}.data->>'stakingUSDDayBefore'`,
+          'stakingUSDDayBefore',
+          `${metricWalletRegistryTableName}.data->>'stakingUSD'`,
         ])
         .modify(QueryModify.sumMetric, [
-          'earnedUSD',
-          `${metricWalletRegistryTableName}.data->>'earnedUSDDayBefore'`,
+          'earnedUSDDayBefore',
+          `${metricWalletRegistryTableName}.data->>'earnedUSD'`,
         ])
         .where(`${metricWalletRegistryTableName}.period`, RegistryPeriod.Day)
-        .whereBetween(`${metricWalletRegistryTableName}.period`, [
+        .whereBetween(`${metricWalletRegistryTableName}.date`, [
           dayjs().add(-1, 'day').startOf('day').toDate(),
           dayjs().startOf('day').toDate(),
         ])
@@ -461,14 +461,14 @@ export const contractUserLastMetricLoader = ({
         .clone()
         .modify(QueryModify.sumMetric, [
           'stakingUSDDayBefore',
-          `${metricWalletRegistryTableName}.data->>'stakingUSDDayBefore'`,
+          `${metricWalletRegistryTableName}.data->>'stakingUSD'`,
         ])
         .modify(QueryModify.sumMetric, [
           'earnedUSDDayBefore',
-          `${metricWalletRegistryTableName}.data->>'earnedUSDDayBefore'`,
+          `${metricWalletRegistryTableName}.data->>'earnedUSD'`,
         ])
         .where(`${metricWalletRegistryTableName}.period`, RegistryPeriod.Day)
-        .whereBetween(`${metricWalletRegistryTableName}.period`, [
+        .whereBetween(`${metricWalletRegistryTableName}.date`, [
           dayjs().add(-1, 'day').startOf('day').toDate(),
           dayjs().startOf('day').toDate(),
         ])

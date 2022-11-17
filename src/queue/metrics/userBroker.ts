@@ -17,7 +17,7 @@ export default async (process: Process) => {
     .column('id')
     .orderBy('id');
 
-  const lag = 86400 / ids.length;
+  const lag = 79200 / ids.length; // 22 hours
   await ids.reduce<Promise<dayjs.Dayjs>>(async (prev, { id: userId }) => {
     const startAt = await prev;
 

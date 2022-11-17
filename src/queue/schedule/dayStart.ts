@@ -22,7 +22,11 @@ export default async (process: Process) => {
     queue.push('metricsProtocolLinksPostBroker', {}),
     queue.push('metricsGarbageCollector', {}),
     queue.push('metricsContractScannerBroker', {}),
-    queue.push('metricsUserBroker', { priority: 5, notify: true }),
+    queue.push(
+      'metricsUserBroker',
+      { priority: 5, notify: true },
+      { startAt: dayjs().add(30, 'minutes').toDate() },
+    ),
     queue.push('notificationAutomateWalletsNotEnoughFundsBroker', {}),
     queue.push('metricsContractAprWeekRealBroker', {}),
     queue.push('metricsWalletBalancesWavesBroker', {}),

@@ -119,7 +119,7 @@ export const userLastMetricLoader = () =>
           `${metricWalletRegistryTableName}.data->>'earnedUSD'`,
         ])
         .where(`${metricWalletRegistryTableName}.period`, RegistryPeriod.Day)
-        .whereBetween(`${metricWalletRegistryTableName}.period`, [
+        .whereBetween(`${metricWalletRegistryTableName}.date`, [
           dayjs().add(-1, 'day').startOf('day').toDate(),
           dayjs().startOf('day').toDate(),
         ])
@@ -308,7 +308,7 @@ export const userTokenLastMetricLoader = ({
           `${metricWalletTokenRegistryTableName}.data->>'usdDayBefore'`,
         ])
         .where(`${metricWalletTokenRegistryTableName}.period`, RegistryPeriod.Day)
-        .whereBetween(`${metricWalletRegistryTableName}.period`, [
+        .whereBetween(`${metricWalletTokenRegistryTableName}.date`, [
           dayjs().add(-1, 'day').startOf('day').toDate(),
           dayjs().startOf('day').toDate(),
         ])
@@ -398,14 +398,14 @@ export const walletLastMetricLoader = () =>
         .clone()
         .modify(QueryModify.sumMetric, [
           'stakingUSDDayBefore',
-          `${metricWalletRegistryTableName}.data->>'stakingUSDDayBefore'`,
+          `${metricWalletRegistryTableName}.data->>'stakingUSD'`,
         ])
         .modify(QueryModify.sumMetric, [
           'earnedUSDDayBefore',
-          `${metricWalletRegistryTableName}.data->>'earnedUSDDayBefore'`,
+          `${metricWalletRegistryTableName}.data->>'earnedUSD'`,
         ])
         .where(`${metricWalletRegistryTableName}.period`, RegistryPeriod.Day)
-        .whereBetween(`${metricWalletRegistryTableName}.period`, [
+        .whereBetween(`${metricWalletRegistryTableName}.date`, [
           dayjs().add(-1, 'day').startOf('day').toDate(),
           dayjs().startOf('day').toDate(),
         ])
@@ -519,10 +519,10 @@ export const walletTokenLastMetricLoader = (filter: {
         .clone()
         .modify(QueryModify.sumMetric, [
           'usdDayBefore',
-          `${metricWalletTokenRegistryTableName}.data->>'usdDayBefore'`,
+          `${metricWalletTokenRegistryTableName}.data->>'usd'`,
         ])
         .where(`${metricWalletTokenRegistryTableName}.period`, RegistryPeriod.Day)
-        .whereBetween(`${metricWalletTokenRegistryTableName}.period`, [
+        .whereBetween(`${metricWalletTokenRegistryTableName}.date`, [
           dayjs().add(-1, 'day').startOf('day').toDate(),
           dayjs().startOf('day').toDate(),
         ])
