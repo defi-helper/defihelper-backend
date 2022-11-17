@@ -11,6 +11,7 @@ import { TokenAlias, Token, tokenAliasTableName, tokenTableName } from '@models/
 import { walletTableName } from '@models/Wallet/Entity';
 import DataLoader from 'dataloader';
 import BN from 'bignumber.js';
+import dayjs from 'dayjs';
 
 export const tokenAliasLoader = () =>
   new DataLoader<string, TokenAlias | null>(async (tokensAliasId) => {
@@ -40,15 +41,6 @@ export const tokenAliasUserLastMetricLoader = ({
     const select = container.model
       .metricWalletTokenRegistryTable()
       .column(`${tokenAliasTableName}.id as alias`)
-      .modify(QueryModify.sumMetric, [
-        'balance',
-        `${metricWalletTokenRegistryTableName}.data->>'balance'`,
-      ])
-      .modify(QueryModify.sumMetric, ['usd', `${metricWalletTokenRegistryTableName}.data->>'usd'`])
-      .modify(QueryModify.sumMetric, [
-        'usdDayBefore',
-        `${metricWalletTokenRegistryTableName}.data->>'usdDayBefore'`,
-      ])
       .innerJoin(
         walletTableName,
         `${walletTableName}.id`,
@@ -60,7 +52,6 @@ export const tokenAliasUserLastMetricLoader = ({
         `${metricWalletTokenRegistryTableName}.token`,
       )
       .innerJoin(tokenAliasTableName, `${tokenAliasTableName}.id`, `${tokenTableName}.alias`)
-      .where(`${metricWalletTokenRegistryTableName}.period`, RegistryPeriod.Latest)
       .where(`${walletTableName}.user`, user)
       .whereNull(`${walletTableName}.deletedAt`)
       .whereIn(`${tokenAliasTableName}.id`, tokenAliasIds)
@@ -80,35 +71,58 @@ export const tokenAliasUserLastMetricLoader = ({
         .where(`${contractTableName}.protocol`, protocol);
     }
 
-    const map = await select.then(
-      (
-        rows: Array<{
-          alias: string;
-          balance: string;
-          usd: string;
-          usdDayBefore: string;
-        }>,
-      ) =>
-        new Map(
-          rows.map(({ alias, usd, balance, usdDayBefore }) => [
-            alias,
-            {
-              usd,
-              usdDayBefore,
-              balance,
-            },
-          ]),
+    const [latestMap, dayBeforeMap] = await Promise.all([
+      select
+        .clone()
+        .modify(QueryModify.sumMetric, [
+          'balance',
+          `${metricWalletTokenRegistryTableName}.data->>'balance'`,
+        ])
+        .modify(QueryModify.sumMetric, [
+          'usd',
+          `${metricWalletTokenRegistryTableName}.data->>'usd'`,
+        ])
+        .where(`${metricWalletTokenRegistryTableName}.period`, RegistryPeriod.Latest)
+        .then(
+          (
+            rows: Array<{
+              alias: string;
+              balance: string;
+              usd: string;
+            }>,
+          ) => new Map(rows.map(({ alias, usd, balance }) => [alias, { usd, balance }])),
         ),
-    );
+      select
+        .clone()
+        .modify(QueryModify.sumMetric, [
+          'usdDayBefore',
+          `${metricWalletTokenRegistryTableName}.data->>'usdDayBefore'`,
+        ])
+        .where(`${metricWalletTokenRegistryTableName}.period`, RegistryPeriod.Day)
+        .whereBetween(`${metricWalletTokenRegistryTableName}.period`, [
+          dayjs().add(-1, 'day').startOf('day').toDate(),
+          dayjs().startOf('day').toDate(),
+        ])
+        .then(
+          (
+            rows: Array<{
+              alias: string;
+              usdDayBefore: string;
+            }>,
+          ) => new Map(rows.map(({ alias, usdDayBefore }) => [alias, { usdDayBefore }])),
+        ),
+    ]);
 
-    return tokenAliasIds.map(
-      (id) =>
-        map.get(id) ?? {
-          usd: '0',
-          balance: '0',
-          usdDayBefore: '0',
-        },
-    );
+    return tokenAliasIds.map((id) => {
+      const latest = latestMap.get(id) ?? {
+        balance: '0',
+        usd: '0',
+      };
+      const dayBefore = dayBeforeMap.get(id) ?? {
+        usdDayBefore: '0',
+      };
+      return { ...latest, ...dayBefore };
+    });
   });
 
 export const tokenLastMetricLoader = () =>

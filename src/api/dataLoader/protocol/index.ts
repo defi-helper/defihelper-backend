@@ -22,6 +22,7 @@ import {
 } from '@models/Wallet/Entity';
 import BN from 'bignumber.js';
 import DataLoader from 'dataloader';
+import dayjs from 'dayjs';
 
 class Cache {
   public readonly cache = container.cache();
@@ -152,26 +153,9 @@ export const protocolUserLastMetricLoader = ({ userId }: { userId: string }) =>
       minUpdatedAt: string | null;
     }
   >(async (protocolsId) => {
-    const map = await container.model
+    const select = container.model
       .metricWalletRegistryTable()
       .column(`${contractTableName}.protocol`)
-      .modify(QueryModify.sumMetric, [
-        'stakingUSD',
-        `${metricWalletRegistryTableName}.data->>'stakingUSD'`,
-      ])
-      .modify(QueryModify.sumMetric, [
-        'stakingUSDDayBefore',
-        `${metricWalletRegistryTableName}.data->>'stakingUSDDayBefore'`,
-      ])
-      .modify(QueryModify.sumMetric, [
-        'earnedUSD',
-        `${metricWalletRegistryTableName}.data->>'earnedUSD'`,
-      ])
-      .modify(QueryModify.sumMetric, [
-        'earnedUSDDayBefore',
-        `${metricWalletRegistryTableName}.data->>'earnedUSDDayBefore'`,
-      ])
-      .min(`${metricWalletRegistryTableName}.date AS minUpdatedAt`)
       .innerJoin(
         contractTableName,
         `${contractTableName}.id`,
@@ -182,57 +166,93 @@ export const protocolUserLastMetricLoader = ({ userId }: { userId: string }) =>
         `${walletTableName}.id`,
         `${metricWalletRegistryTableName}.wallet`,
       )
-      .where(`${metricWalletRegistryTableName}.period`, RegistryPeriod.Latest)
       .whereIn(`${contractTableName}.protocol`, protocolsId)
       .where(`${walletTableName}.user`, userId)
       .whereNull(`${walletTableName}.deletedAt`)
       .where(`${contractTableName}.deprecated`, false)
       .where(`${contractTableName}.hidden`, false)
-      .groupBy(`${contractTableName}.protocol`)
-      .then(
-        (
-          rows: Array<{
-            protocol: string;
-            stakingUSD: string;
-            stakingUSDDayBefore: string;
-            earnedUSD: string;
-            earnedUSDDayBefore: string;
-            minUpdatedAt: Date | null;
-          }>,
-        ) =>
-          new Map(
-            rows.map(
-              ({
-                protocol,
-                stakingUSD,
-                stakingUSDDayBefore,
-                earnedUSD,
-                earnedUSDDayBefore,
-                minUpdatedAt,
-              }) => [
+      .groupBy(`${contractTableName}.protocol`);
+
+    const [latestMap, dayBeforeMap] = await Promise.all([
+      select
+        .clone()
+        .modify(QueryModify.sumMetric, [
+          'stakingUSD',
+          `${metricWalletRegistryTableName}.data->>'stakingUSD'`,
+        ])
+        .modify(QueryModify.sumMetric, [
+          'earnedUSD',
+          `${metricWalletRegistryTableName}.data->>'earnedUSD'`,
+        ])
+        .min(`${metricWalletRegistryTableName}.date AS minUpdatedAt`)
+        .where(`${metricWalletRegistryTableName}.period`, RegistryPeriod.Latest)
+        .then(
+          (
+            rows: Array<{
+              protocol: string;
+              stakingUSD: string;
+              earnedUSD: string;
+              minUpdatedAt: Date | null;
+            }>,
+          ) =>
+            new Map(
+              rows.map(({ protocol, stakingUSD, earnedUSD, minUpdatedAt }) => [
                 protocol,
                 {
                   stakingUSD,
-                  stakingUSDDayBefore,
                   earnedUSD,
-                  earnedUSDDayBefore,
                   minUpdatedAt: minUpdatedAt ? minUpdatedAt.toISOString() : null,
                 },
-              ],
+              ]),
             ),
-          ),
-      );
+        ),
+      select
+        .clone()
+        .modify(QueryModify.sumMetric, [
+          'stakingUSD',
+          `${metricWalletRegistryTableName}.data->>'stakingUSDDayBefore'`,
+        ])
+        .modify(QueryModify.sumMetric, [
+          'earnedUSD',
+          `${metricWalletRegistryTableName}.data->>'earnedUSDDayBefore'`,
+        ])
+        .where(`${metricWalletRegistryTableName}.period`, RegistryPeriod.Day)
+        .whereBetween(`${metricWalletRegistryTableName}.period`, [
+          dayjs().add(-1, 'day').startOf('day').toDate(),
+          dayjs().startOf('day').toDate(),
+        ])
+        .then(
+          (
+            rows: Array<{
+              protocol: string;
+              stakingUSDDayBefore: string;
+              earnedUSDDayBefore: string;
+            }>,
+          ) =>
+            new Map(
+              rows.map(({ protocol, stakingUSDDayBefore, earnedUSDDayBefore }) => [
+                protocol,
+                {
+                  stakingUSDDayBefore,
+                  earnedUSDDayBefore,
+                },
+              ]),
+            ),
+        ),
+    ]);
 
-    return protocolsId.map(
-      (id) =>
-        map.get(id) ?? {
-          stakingUSD: '0',
-          stakingUSDDayBefore: '0',
-          earnedUSD: '0',
-          earnedUSDDayBefore: '0',
-          minUpdatedAt: null,
-        },
-    );
+    return protocolsId.map((id) => {
+      const latest = latestMap.get(id) ?? {
+        stakingUSD: '0',
+        earnedUSD: '0',
+        minUpdatedAt: null,
+      };
+      const dayBefore = dayBeforeMap.get(id) ?? {
+        stakingUSDDayBefore: '0',
+        earnedUSDDayBefore: '0',
+      };
+      return { ...latest, ...dayBefore };
+    });
   });
 
 export const protocolUserLastAPRLoader = ({
@@ -389,25 +409,9 @@ export const contractUserLastMetricLoader = ({
       earnedUSDDayBefore: string;
     }
   >(async (contractsId) => {
-    const map = await container.model
+    const select = container.model
       .metricWalletRegistryTable()
       .column(`${metricWalletRegistryTableName}.contract`)
-      .modify(QueryModify.sumMetric, [
-        'stakingUSD',
-        `${metricWalletRegistryTableName}.data->>'stakingUSD'`,
-      ])
-      .modify(QueryModify.sumMetric, [
-        'stakingUSDDayBefore',
-        `${metricWalletRegistryTableName}.data->>'stakingUSDDayBefore'`,
-      ])
-      .modify(QueryModify.sumMetric, [
-        'earnedUSD',
-        `${metricWalletRegistryTableName}.data->>'earnedUSD'`,
-      ])
-      .modify(QueryModify.sumMetric, [
-        'earnedUSDDayBefore',
-        `${metricWalletRegistryTableName}.data->>'earnedUSDDayBefore'`,
-      ])
       .innerJoin(
         walletTableName,
         `${walletTableName}.id`,
@@ -418,45 +422,86 @@ export const contractUserLastMetricLoader = ({
         `${walletTableName}.id`,
         `${walletBlockchainTableName}.id`,
       )
-      .where(function () {
-        this.where(`${metricWalletRegistryTableName}.period`, RegistryPeriod.Latest);
-        this.where(`${walletTableName}.user`, userId);
-        this.whereNull(`${walletTableName}.deletedAt`);
-        this.whereIn(`${walletBlockchainTableName}.type`, walletType);
-      })
-      .groupBy(`${metricWalletRegistryTableName}.contract`)
-      .then(
-        (
-          rows: Array<{
-            contract: string;
-            stakingUSD: string;
-            stakingUSDDayBefore: string;
-            earnedUSD: string;
-            earnedUSDDayBefore: string;
-          }>,
-        ) =>
-          new Map(
-            rows.map(
-              ({ contract, stakingUSD, stakingUSDDayBefore, earnedUSD, earnedUSDDayBefore }) => [
+      .where(`${walletTableName}.user`, userId)
+      .whereNull(`${walletTableName}.deletedAt`)
+      .whereIn(`${walletBlockchainTableName}.type`, walletType)
+      .groupBy(`${metricWalletRegistryTableName}.contract`);
+
+    const [latestMap, dayBeforeMap] = await Promise.all([
+      select
+        .clone()
+        .modify(QueryModify.sumMetric, [
+          'stakingUSD',
+          `${metricWalletRegistryTableName}.data->>'stakingUSD'`,
+        ])
+        .modify(QueryModify.sumMetric, [
+          'earnedUSD',
+          `${metricWalletRegistryTableName}.data->>'earnedUSD'`,
+        ])
+        .where(`${metricWalletRegistryTableName}.period`, RegistryPeriod.Latest)
+        .then(
+          (
+            rows: Array<{
+              contract: string;
+              stakingUSD: string;
+              earnedUSD: string;
+            }>,
+          ) =>
+            new Map(
+              rows.map(({ contract, stakingUSD, earnedUSD }) => [
                 contract,
                 {
                   stakingUSD,
-                  stakingUSDDayBefore,
                   earnedUSD,
+                },
+              ]),
+            ),
+        ),
+      select
+        .clone()
+        .modify(QueryModify.sumMetric, [
+          'stakingUSDDayBefore',
+          `${metricWalletRegistryTableName}.data->>'stakingUSDDayBefore'`,
+        ])
+        .modify(QueryModify.sumMetric, [
+          'earnedUSDDayBefore',
+          `${metricWalletRegistryTableName}.data->>'earnedUSDDayBefore'`,
+        ])
+        .where(`${metricWalletRegistryTableName}.period`, RegistryPeriod.Day)
+        .whereBetween(`${metricWalletRegistryTableName}.period`, [
+          dayjs().add(-1, 'day').startOf('day').toDate(),
+          dayjs().startOf('day').toDate(),
+        ])
+        .then(
+          (
+            rows: Array<{
+              contract: string;
+              stakingUSDDayBefore: string;
+              earnedUSDDayBefore: string;
+            }>,
+          ) =>
+            new Map(
+              rows.map(({ contract, stakingUSDDayBefore, earnedUSDDayBefore }) => [
+                contract,
+                {
+                  stakingUSDDayBefore,
                   earnedUSDDayBefore,
                 },
-              ],
+              ]),
             ),
-          ),
-      );
+        ),
+    ]);
 
-    return contractsId.map(
-      (id) =>
-        map.get(id) ?? {
-          stakingUSD: '0',
-          stakingUSDDayBefore: '0',
-          earnedUSD: '0',
-          earnedUSDDayBefore: '0',
-        },
-    );
+    return contractsId.map((id) => {
+      const latest = latestMap.get(id) ?? {
+        stakingUSD: '0',
+        earnedUSD: '0',
+        minUpdatedAt: null,
+      };
+      const dayBefore = dayBeforeMap.get(id) ?? {
+        stakingUSDDayBefore: '0',
+        earnedUSDDayBefore: '0',
+      };
+      return { ...latest, ...dayBefore };
+    });
   });
