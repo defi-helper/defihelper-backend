@@ -6,6 +6,10 @@ import dayjs from 'dayjs';
 export default async (process: Process) => {
   const queue = container.model.queueService();
   await Promise.all([
+    queue.push('metricsRegistryPeriodBroker', {
+      date: dayjs().add(-1, 'day').startOf('day').toString(),
+      period: 'day',
+    }),
     queue.push('metricsNotifyLostChains'),
     queue.push('deadPoolsInvestmentsBroker'),
     queue.push('metricsTrackingConditionsBroker'),
@@ -19,7 +23,11 @@ export default async (process: Process) => {
     queue.push('metricsProtocolLinksPostBroker', {}),
     queue.push('metricsGarbageCollector', {}),
     queue.push('metricsContractScannerBroker', {}),
-    queue.push('metricsUserBroker', { priority: 5, notify: true }),
+    queue.push(
+      'metricsUserBroker',
+      { priority: 5, notify: true },
+      { startAt: dayjs().add(30, 'minutes').toDate() },
+    ),
     queue.push('notificationAutomateWalletsNotEnoughFundsBroker', {}),
     queue.push('metricsContractAprWeekRealBroker', {}),
     queue.push('metricsWalletBalancesWavesBroker', {}),

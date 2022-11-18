@@ -3,7 +3,11 @@ import { Process } from '@models/Queue/Entity';
 import { TokenAliasLiquidity, TokenCreatedBy, tokenTableName } from '@models/Token/Entity';
 import BN from 'bignumber.js';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
-import { MetricWalletToken, metricWalletTokenRegistryTableName } from '@models/Metric/Entity';
+import {
+  MetricWalletToken,
+  metricWalletTokenRegistryTableName,
+  RegistryPeriod,
+} from '@models/Metric/Entity';
 
 interface Params {
   id: string;
@@ -67,6 +71,7 @@ export default async (process: Process) => {
       `${metricWalletTokenRegistryTableName}.token`,
       `${tokenTableName}.id`,
     )
+    .where(`${metricWalletTokenRegistryTableName}.period`, RegistryPeriod.Latest)
     .where(`${metricWalletTokenRegistryTableName}.wallet`, blockchainWallet.id)
     .whereNull(`${metricWalletTokenRegistryTableName}.contract`);
 

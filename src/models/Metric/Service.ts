@@ -1,7 +1,6 @@
 import container from '@container';
 import Knex from 'knex';
 import { v4 as uuid } from 'uuid';
-import dayjs from 'dayjs';
 import { Blockchain } from '@models/types';
 import { Emitter } from '@services/Event';
 import { Protocol, Contract } from '@models/Protocol/Entity';
@@ -29,12 +28,16 @@ import {
   MetricWalletTokenTable,
   MetricWalletRegistryTable,
   MetricWalletTokenRegistryTable,
-  QueryModify,
   MetricContractRegistryTable,
   UserCollectorTable,
   UserCollector,
   UserCollectorStatus,
   MetricTokenRegistryTable,
+  RegistryPeriod,
+  MetricContractRegistry,
+  MetricTokenRegistry,
+  MetricWalletRegistry,
+  MetricWalletTokenRegistry,
 } from './Entity';
 
 export class MetricContractService {
@@ -131,6 +134,29 @@ export class MetricContractService {
     return created;
   }
 
+  async createContractRegistry(
+    contractId: string,
+    data: MetricMap,
+    period: RegistryPeriod,
+    date: Date,
+    trx: Knex.Transaction<any, any>,
+  ) {
+    const created: MetricContractRegistry = {
+      id: uuid(),
+      contract: contractId,
+      data,
+      period,
+      date,
+    };
+    await this.metricContractRegistryTable().insert(created).transacting(trx);
+
+    return created;
+  }
+
+  cleanContractRegistry(period: RegistryPeriod, date: Date, trx: Knex.Transaction<any, any>) {
+    return this.metricContractRegistryTable().where({ period, date }).delete().transacting(trx);
+  }
+
   async setContractTask(contract: Contract, task: Task) {
     const duplicate = await this.metricContractTaskTable().where('contract', contract.id).first();
     if (duplicate) {
@@ -175,27 +201,37 @@ export class MetricContractService {
     return created;
   }
 
-  async updateWalletRegistry(metric: MetricWallet, trx: Knex.Transaction<any, any>) {
-    const dayBefore = await this.metricWalletTable()
-      .modify(QueryModify.lastValue, ['contract', 'wallet'])
-      .where({
-        contract: metric.contract,
-        wallet: metric.wallet,
-      })
-      .whereBetween('date', [
-        dayjs(metric.date).add(-2, 'day').startOf('day').toDate(),
-        dayjs(metric.date).add(-1, 'day').startOf('day').toDate(),
-      ])
-      .first();
-    const data = {
-      ...metric.data,
-      stakingUSDDayBefore: dayBefore?.data.stakingUSD ?? '0',
-      earnedUSDDayBefore: dayBefore?.data.earnedUSD ?? '0',
+  async createWalletRegistry(
+    contractId: string,
+    walletId: string,
+    data: MetricMap,
+    period: RegistryPeriod,
+    date: Date,
+    trx: Knex.Transaction<any, any>,
+  ) {
+    const created: MetricWalletRegistry = {
+      id: uuid(),
+      contract: contractId,
+      wallet: walletId,
+      data,
+      period,
+      date,
     };
+    await this.metricWalletRegistryTable().insert(created).transacting(trx);
+
+    return created;
+  }
+
+  cleanWalletRegistry(period: RegistryPeriod, date: Date, trx: Knex.Transaction<any, any>) {
+    return this.metricWalletRegistryTable().where({ period, date }).delete().transacting(trx);
+  }
+
+  async updateWalletRegistry(metric: MetricWallet, trx: Knex.Transaction<any, any>) {
     const duplicate = await this.metricWalletRegistryTable()
       .where({
         contract: metric.contract,
         wallet: metric.wallet,
+        period: RegistryPeriod.Latest,
       })
       .first();
     if (!duplicate) {
@@ -204,11 +240,10 @@ export class MetricContractService {
           id: uuid(),
           contract: metric.contract,
           wallet: metric.wallet,
-          data,
+          data: metric.data,
+          period: RegistryPeriod.Latest,
           date: metric.date,
         })
-        .onConflict(['contract', 'wallet'])
-        .ignore()
         .transacting(trx);
     }
     if (duplicate.date < metric.date) {
@@ -216,7 +251,6 @@ export class MetricContractService {
         .update({
           data: {
             ...duplicate.data,
-            ...data,
             ...metric.data,
           },
           date: metric.date,
@@ -231,6 +265,7 @@ export class MetricContractService {
     const duplicate = await this.metricContractRegistryTable()
       .where({
         contract: metric.contract,
+        period: RegistryPeriod.Latest,
       })
       .first();
     if (!duplicate) {
@@ -239,10 +274,9 @@ export class MetricContractService {
           id: uuid(),
           contract: metric.contract,
           data: metric.data,
+          period: RegistryPeriod.Latest,
           date: metric.date,
         })
-        .onConflict(['contract'])
-        .ignore()
         .transacting(trx);
     }
     if (duplicate.date < metric.date) {
@@ -264,6 +298,7 @@ export class MetricContractService {
     const duplicate = await this.metricTokenRegistryTable()
       .where({
         token: metric.token,
+        period: RegistryPeriod.Latest,
       })
       .first();
     if (!duplicate) {
@@ -272,10 +307,9 @@ export class MetricContractService {
           id: uuid(),
           token: metric.token,
           data: metric.data,
+          period: RegistryPeriod.Latest,
           date: metric.date,
         })
-        .onConflict(['token'])
-        .ignore()
         .transacting(trx);
     }
     if (duplicate.date < metric.date) {
@@ -347,29 +381,40 @@ export class MetricContractService {
     return created;
   }
 
-  async updateWalletTokenRegistry(metric: MetricWalletToken, trx: Knex.Transaction<any, any>) {
-    const dayBefore = await this.metricWalletTokenTable()
-      .modify(QueryModify.lastValue, ['contract', 'wallet', 'token'])
-      .where({
-        contract: metric.contract,
-        wallet: metric.wallet,
-        token: metric.token,
-      })
-      .whereBetween('date', [
-        dayjs(metric.date).add(-2, 'day').startOf('day').toDate(),
-        dayjs(metric.date).add(-1, 'day').startOf('day').toDate(),
-      ])
-      .first();
-
-    const data = {
-      ...metric.data,
-      usdDayBefore: dayBefore?.data.usd ?? '0',
+  async createWalletTokenRegistry(
+    contractId: string | null,
+    walletId: string,
+    tokenId: string,
+    data: MetricMap,
+    period: RegistryPeriod,
+    date: Date,
+    trx: Knex.Transaction<any, any>,
+  ) {
+    const created: MetricWalletTokenRegistry = {
+      id: uuid(),
+      contract: contractId,
+      wallet: walletId,
+      token: tokenId,
+      data,
+      period,
+      date,
     };
+    await this.metricWalletTokenRegistryTable().insert(created).transacting(trx);
+
+    return created;
+  }
+
+  cleanWalletTokenRegistry(period: RegistryPeriod, date: Date, trx: Knex.Transaction<any, any>) {
+    return this.metricWalletTokenRegistryTable().where({ period, date }).delete().transacting(trx);
+  }
+
+  async updateWalletTokenRegistry(metric: MetricWalletToken, trx: Knex.Transaction<any, any>) {
     const duplicate = await this.metricWalletTokenRegistryTable()
       .where({
         contract: metric.contract,
         wallet: metric.wallet,
         token: metric.token,
+        period: RegistryPeriod.Latest,
       })
       .first();
     if (!duplicate) {
@@ -379,11 +424,10 @@ export class MetricContractService {
           contract: metric.contract,
           wallet: metric.wallet,
           token: metric.token,
-          data,
+          data: metric.data,
+          period: RegistryPeriod.Latest,
           date: metric.date,
         })
-        .onConflict(['contract', 'wallet', 'token'])
-        .ignore()
         .transacting(trx);
     }
     if (duplicate.date < metric.date) {
@@ -391,7 +435,6 @@ export class MetricContractService {
         .update({
           data: {
             ...duplicate.data,
-            ...data,
             ...metric.data,
           },
           date: metric.date,
@@ -419,6 +462,29 @@ export class MetricContractService {
     );
 
     return created;
+  }
+
+  async createTokenRegistry(
+    tokenId: string,
+    data: MetricMap,
+    period: RegistryPeriod,
+    date: Date,
+    trx: Knex.Transaction<any, any>,
+  ) {
+    const created: MetricTokenRegistry = {
+      id: uuid(),
+      token: tokenId,
+      data,
+      period,
+      date,
+    };
+    await this.metricTokenRegistryTable().insert(created).transacting(trx);
+
+    return created;
+  }
+
+  cleanTokenRegistry(period: RegistryPeriod, date: Date, trx: Knex.Transaction<any, any>) {
+    return this.metricTokenRegistryTable().where({ period, date }).delete().transacting(trx);
   }
 
   async createUserCollector(userId: string, tasks: string[]) {

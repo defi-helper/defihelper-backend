@@ -1,5 +1,5 @@
 import container from '@container';
-import { metricWalletTokenRegistryTableName } from '@models/Metric/Entity';
+import { metricWalletTokenRegistryTableName, RegistryPeriod } from '@models/Metric/Entity';
 import { Process } from '@models/Queue/Entity';
 import { TokenAliasLiquidity, tokenAliasTableName, tokenTableName } from '@models/Token/Entity';
 import { Role } from '@models/User/Entity';
@@ -26,6 +26,7 @@ export default async (process: Process) => {
       )
       .innerJoin(tokenAliasTableName, `${tokenTableName}.alias`, `${tokenAliasTableName}.id`)
       .where(function () {
+        this.where(`${metricWalletTokenRegistryTableName}.period`, RegistryPeriod.Latest);
         this.whereIn(`${tokenAliasTableName}.liquidity`, [
           TokenAliasLiquidity.Stable,
           TokenAliasLiquidity.Unstable,
