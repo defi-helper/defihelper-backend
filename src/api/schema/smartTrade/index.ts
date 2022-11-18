@@ -214,6 +214,20 @@ export const SwapHandlerCallDataType = new GraphQLObjectType<Order<SwapCallData>
         };
       },
     },
+    stopLoss2: {
+      type: SwapHandlerCallDataRouteType,
+      resolve: ({ callData: { routes, tokenOutDecimals } }) => {
+        if (routes[2] === null) return null;
+
+        return {
+          amountOut: routes[2].amountOut,
+          amountOutMin: routes[2].amountOutMin,
+          slippage: routes[2].slippage,
+          decimals: tokenOutDecimals,
+          moving: routes[2].moving !== null,
+        };
+      },
+    },
     takeProfit: {
       type: SwapHandlerCallDataRouteType,
       resolve: ({ callData: { routes, tokenOutDecimals } }) => {
@@ -599,6 +613,9 @@ export const SwapOrderCreateInputType = new GraphQLInputObjectType({
             stopLoss: {
               type: SwapOrderCallDataStopLossInputType,
             },
+            stopLoss2: {
+              type: SwapOrderCallDataStopLossInputType,
+            },
             takeProfit: {
               type: SwapOrderCallDataTakeProfitInputType,
             },
@@ -709,6 +726,17 @@ export const SwapOrderCreateMutation: GraphQLFieldConfig<any, Request> = {
                   moving: null,
                   slippage: callData.takeProfit.slippage.toString(),
                   direction: 'gt',
+                }
+              : null,
+            callData.stopLoss2
+              ? {
+                  amountOut: callData.stopLoss2.amountOut.toFixed(0),
+                  amountOutMin: callData.stopLoss2.amountOutMin.toFixed(0),
+                  moving: callData.stopLoss2.moving
+                    ? callData.amountOut.minus(callData.stopLoss2.amountOut).toFixed(0)
+                    : null,
+                  slippage: callData.stopLoss2.slippage.toString(),
+                  direction: 'lt',
                 }
               : null,
           ],
