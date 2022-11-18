@@ -31,7 +31,7 @@ export enum TokenCreatedBy {
   Adapter = 'adapter',
   WhatToFarm = 'whatToFarm',
   AutomateContractStopLoss = 'automateContractStopLoss',
-  SmartTrade = 'smartTrade'
+  SmartTrade = 'smartTrade',
 }
 
 export namespace PriceFeed {
