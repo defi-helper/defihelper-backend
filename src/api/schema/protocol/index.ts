@@ -35,10 +35,10 @@ import {
 import { apyBoost } from '@services/RestakeStrategy';
 import {
   metricContractRegistryTableName,
-  metricContractTableName,
   metricProtocolTableName,
   metricWalletRegistryTableName,
   metricWalletTableName,
+  RegistryPeriod,
 } from '@models/Metric/Entity';
 import {
   walletBlockchainTableName,
@@ -210,28 +210,33 @@ export const ContractTokenLinkType = new GraphQLObjectType<
   },
 });
 
-const metricChartResolver = async (contract: Contract, input: any) => {
+const contractMetricChartResolver = async (contract: Contract, input: any) => {
   const { metric, group, filter, sort, pagination } = input;
   const database = container.database();
   const select = container.model
-    .metricContractTable()
-    .distinctOn('date')
-    .column(database.raw(`(${metricContractTableName}.data->>'${metric}')::numeric AS value`))
-    .column(database.raw(`DATE_TRUNC('${group}', ${metricContractTableName}.date) AS "date"`))
-    .innerJoin(contractTableName, `${contractTableName}.id`, `${metricContractTableName}.contract`)
+    .metricContractRegistryTable()
+    .column(
+      database.raw(`(${metricContractRegistryTableName}.data->>'${metric}')::numeric AS value`),
+    )
+    .column('date')
+    .innerJoin(
+      contractTableName,
+      `${contractTableName}.id`,
+      `${metricContractRegistryTableName}.contract`,
+    )
     .where(function () {
-      this.where(`${metricContractTableName}.contract`, contract.id)
-        .andWhere(database.raw(`${metricContractTableName}.data->>'${metric}' IS NOT NULL`))
-        .where(`${contractTableName}.hidden`, false);
+      this.where(`${metricContractRegistryTableName}.period`, group);
+      this.where(`${metricContractRegistryTableName}.contract`, contract.id);
+      this.where(database.raw(`${metricContractRegistryTableName}.data->>'${metric}' IS NOT NULL`));
+      this.where(`${contractTableName}.hidden`, false);
       if (filter.dateAfter) {
-        this.andWhere(`${metricContractTableName}.date`, '>=', filter.dateAfter.toDate());
+        this.where(`${metricContractRegistryTableName}.date`, '>=', filter.dateAfter.toDate());
       }
       if (filter.dateBefore) {
-        this.andWhere(`${metricContractTableName}.date`, '<', filter.dateBefore.toDate());
+        this.where(`${metricContractRegistryTableName}.date`, '<', filter.dateBefore.toDate());
       }
     })
-    .orderBy('date')
-    .orderBy(`${metricContractTableName}.date`, 'DESC');
+    .orderBy(`${metricContractRegistryTableName}.date`, 'DESC');
 
   return container
     .database()
@@ -348,7 +353,7 @@ export const ContractType: GraphQLObjectType = new GraphQLObjectType<
         ),
         pagination: PaginationArgument('ContractMetricChartPaginationInputType'),
       },
-      resolve: metricChartResolver,
+      resolve: contractMetricChartResolver,
     },
     metric: {
       type: GraphQLNonNull(ContractMetricType),
@@ -545,7 +550,7 @@ export const ContractDebankType: GraphQLObjectType = new GraphQLObjectType<
         ),
         pagination: PaginationArgument('ContractDebankMetricChartPaginationInputType'),
       },
-      resolve: metricChartResolver,
+      resolve: contractMetricChartResolver,
     },
     metric: {
       type: GraphQLNonNull(ContractMetricType),
@@ -701,11 +706,10 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
       )
       .column(`${contractTableName}.*`)
       .column(`${contractBlockchainTableName}.*`)
-      .leftJoin(
-        metricContractRegistryTableName,
-        `${metricContractRegistryTableName}.contract`,
-        `${contractTableName}.id`,
-      )
+      .leftJoin(metricContractRegistryTableName, function () {
+        this.on(`${metricContractRegistryTableName}.contract`, '=', `${contractTableName}.id`);
+        this.onIn(`${metricContractRegistryTableName}.period`, [RegistryPeriod.Latest]);
+      })
       .where(function () {
         const { id, protocol, hidden, deprecated, risk, userLink, search, tag } = filter;
         if (id) {
@@ -782,6 +786,7 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
                       `${walletBlockchainTableName}.id`,
                       `${walletTableName}.id`,
                     )
+                    .where(`${metricWalletRegistryTableName}.period`, RegistryPeriod.Latest)
                     .where(`${walletTableName}.user`, currentUser.id)
                     .where(`${walletBlockchainTableName}.type`, WalletBlockchainType.Wallet)
                     .whereNotIn(
@@ -847,6 +852,7 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
                 `${metricWalletRegistryTableName}.contract`,
               )
               .where(function () {
+                this.where(`${metricWalletRegistryTableName}.period`, RegistryPeriod.Latest);
                 this.where(`${walletTableName}.user`, currentUser.id);
                 if (uuid.validate(String(root?.id))) {
                   this.where(`${contractTableName}.protocol`, root.id);
@@ -1001,6 +1007,7 @@ export const ContractDebankListQuery: GraphQLFieldConfig<any, Request> = {
             `${metricWalletRegistryTableName}.contract`,
           )
           .where(function () {
+            this.where(`${metricWalletRegistryTableName}.period`, RegistryPeriod.Latest);
             this.where(`${walletTableName}.user`, currentUser.id);
             if (uuid.validate(String(root?.id))) {
               this.where(`${contractTableName}.protocol`, root.id);
@@ -1862,16 +1869,17 @@ export const ProtocolType: GraphQLObjectType = new GraphQLObjectType<Protocol, R
         pagination: PaginationArgument('ProtocolMetricChartContractsPaginationInputType'),
       },
       resolve: async (protocol, { metric, group, filter, sort, pagination }) => {
-        const database = container.database();
+        const db = container.database();
         const select = container.model
-          .metricContractTable()
-          .distinctOn(`${metricContractTableName}.contract`, 'date')
-          .column(database.raw(`(${metricContractTableName}.data->>'${metric}')::numeric AS value`))
-          .column(database.raw(`DATE_TRUNC('${group}', ${metricContractTableName}.date) AS "date"`))
+          .metricContractRegistryTable()
+          .column(
+            db.raw(`(${metricContractRegistryTableName}.data->>'${metric}')::numeric AS value`),
+          )
+          .column('date')
           .innerJoin(
             contractTableName,
             `${contractTableName}.id`,
-            `${metricContractTableName}.contract`,
+            `${metricContractRegistryTableName}.contract`,
           )
           .innerJoin(
             contractBlockchainTableName,
@@ -1879,9 +1887,9 @@ export const ProtocolType: GraphQLObjectType = new GraphQLObjectType<Protocol, R
             `${contractBlockchainTableName}.id`,
           )
           .where(function () {
-            this.where(`${contractTableName}.protocol`, protocol.id).andWhere(
-              database.raw(`${metricContractTableName}.data->>'${metric}' IS NOT NULL`),
-            );
+            this.where(`${metricContractRegistryTableName}.period`, group);
+            this.where(`${contractTableName}.protocol`, protocol.id);
+            this.where(db.raw(`${metricContractRegistryTableName}.data->>'${metric}' IS NOT NULL`));
             if (filter.blockchain) {
               const { protocol: blockchain, network } = filter.blockchain;
               this.andWhere(`${contractBlockchainTableName}.blockchain`, blockchain);
@@ -1890,15 +1898,21 @@ export const ProtocolType: GraphQLObjectType = new GraphQLObjectType<Protocol, R
               }
             }
             if (filter.dateAfter) {
-              this.andWhere(`${metricContractTableName}.date`, '>=', filter.dateAfter.toDate());
+              this.where(
+                `${metricContractRegistryTableName}.date`,
+                '>=',
+                filter.dateAfter.toDate(),
+              );
             }
             if (filter.dateBefore) {
-              this.andWhere(`${metricContractTableName}.date`, '<', filter.dateBefore.toDate());
+              this.where(
+                `${metricContractRegistryTableName}.date`,
+                '<',
+                filter.dateBefore.toDate(),
+              );
             }
           })
-          .orderBy(`${metricContractTableName}.contract`)
-          .orderBy('date')
-          .orderBy(`${metricContractTableName}.date`, 'DESC');
+          .orderBy(`${metricContractRegistryTableName}.date`, 'DESC');
 
         return container
           .database()

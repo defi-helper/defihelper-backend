@@ -20,6 +20,7 @@ import {
 } from '@services/RestakeStrategy';
 import container from '@container';
 import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
+import { RegistryPeriod } from '@models/Metric/Entity';
 import { BigNumberType, BlockchainEnum, DateTimeType, UuidType } from '../types';
 
 export const PointType = new GraphQLObjectType<Point>({
@@ -137,6 +138,7 @@ export const RestakeCalculatorQuery: GraphQLFieldConfig<any, Request> = {
     const metric = await container.model
       .metricContractRegistryTable()
       .where('contract', contract.id)
+      .where('period', RegistryPeriod.Latest)
       .first();
     if (!metric) return nullValue;
     if (!metric.data.aprYear) return nullValue;

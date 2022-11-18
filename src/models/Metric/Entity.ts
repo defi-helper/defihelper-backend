@@ -3,7 +3,7 @@ import { tableFactoryLegacy } from '@services/Database';
 import Knex from 'knex';
 
 export interface MetricMap {
-  [k: string]: string;
+  [k: string]: string | undefined;
 }
 
 export interface Metric {
@@ -13,9 +13,17 @@ export interface Metric {
   createdAt: Date;
 }
 
+export enum RegistryPeriod {
+  Latest = 'latest',
+  Day = 'day',
+  Week = 'week',
+  Month = 'month',
+}
+
 export interface Registry {
   id: string;
   data: MetricMap;
+  period: RegistryPeriod;
   date: Date;
 }
 

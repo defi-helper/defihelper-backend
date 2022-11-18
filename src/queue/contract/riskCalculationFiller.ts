@@ -1,4 +1,5 @@
 import container from '@container';
+import { RegistryPeriod } from '@models/Metric/Entity';
 import {
   contractBlockchainTableName,
   ContractRiskFactor,
@@ -32,6 +33,7 @@ export default async (process: Process) => {
   const lastMetric = await container.model
     .metricContractRegistryTable()
     .where('contract', contract.id)
+    .where('period', RegistryPeriod.Latest)
     .first();
 
   if (!lastMetric) {

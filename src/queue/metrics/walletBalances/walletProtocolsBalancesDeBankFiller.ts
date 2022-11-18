@@ -20,6 +20,7 @@ import {
   MetricWalletRegistry,
   MetricWalletToken,
   metricWalletTokenRegistryTableName,
+  RegistryPeriod,
 } from '@models/Metric/Entity';
 import dayjs from 'dayjs';
 
@@ -100,6 +101,7 @@ export default async (process: Process) => {
           `${metricWalletTokenRegistryTableName}.token`,
           `${tokenTableName}.id`,
         )
+        .where(`${metricWalletTokenRegistryTableName}.period`, RegistryPeriod.Latest)
         .where(`${metricWalletTokenRegistryTableName}.wallet`, curr.id)
         .whereNotNull(`${metricWalletTokenRegistryTableName}.contract`),
     };
@@ -107,6 +109,7 @@ export default async (process: Process) => {
 
   const lastMetricsAcrossWallets = await container.model
     .metricWalletRegistryTable()
+    .where('period', RegistryPeriod.Latest)
     .whereIn(
       'wallet',
       chainsWallets.map(({ id }) => id),

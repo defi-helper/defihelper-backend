@@ -2,6 +2,7 @@ import container from '@container';
 import {
   metricWalletRegistryTableName,
   metricWalletTokenRegistryTableName,
+  RegistryPeriod,
 } from '@models/Metric/Entity';
 import { Process } from '@models/Queue/Entity';
 import { walletTableName } from '@models/Wallet/Entity';
@@ -18,6 +19,7 @@ export default async (process: Process) => {
         `${walletTableName}.id`,
       )
       .innerJoin(userTableName, `${userTableName}.id`, `${walletTableName}.user`)
+      .where(`${metricWalletRegistryTableName}.period`, RegistryPeriod.Latest)
       .whereRaw(
         `date < CURRENT_DATE  - interval '2 days' and coalesce(data->>'stakingUSD', '0')::numeric > 0`,
       )
@@ -33,6 +35,7 @@ export default async (process: Process) => {
         `${walletTableName}.id`,
       )
       .innerJoin(userTableName, `${userTableName}.id`, `${walletTableName}.user`)
+      .where(`${metricWalletTokenRegistryTableName}.period`, RegistryPeriod.Latest)
       .whereRaw(
         `date < CURRENT_DATE  - interval '2 days' and coalesce(data->>'balance', '0')::numeric > 0`,
       )
