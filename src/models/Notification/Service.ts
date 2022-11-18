@@ -53,6 +53,17 @@ export class NotificationService {
 }
 
 export class UserContactService {
+  static normalizeAddress(broker: ContactBroker, rawAddress: string) {
+    let address = rawAddress;
+    if (broker === ContactBroker.Telegram) {
+      address = address.indexOf('@') === 0 ? address.slice(1) : address;
+    } else {
+      address = address.toLowerCase();
+    }
+
+    return address;
+  }
+
   constructor(readonly table: Factory<UserContactTable>) {}
 
   public readonly onCreated = new Emitter<{ user: User; contact: UserContact }>(
@@ -90,12 +101,7 @@ export class UserContactService {
     user: User,
     name: string,
   ): Promise<UserContact> {
-    let address = rawAddress;
-    if (broker === ContactBroker.Telegram) {
-      address = address.indexOf('@') === -1 ? address.slice(1) : address;
-    } else {
-      address = address.toLowerCase();
-    }
+    const address = UserContactService.normalizeAddress(broker, rawAddress);
 
     const duplicates = await this.table().where({
       user: user.id,
@@ -121,6 +127,34 @@ export class UserContactService {
     await this.table().insert(created);
 
     this.onCreated.emit({ user, contact: created });
+
+    return created;
+  }
+
+  async createActive(broker: ContactBroker, rawAddress: string, user: User, name: string) {
+    const address = UserContactService.normalizeAddress(broker, rawAddress);
+
+    const duplicates = await this.table().where({
+      user: user.id,
+      broker,
+      address,
+    });
+    if (duplicates.length > 0) {
+      return duplicates[0];
+    }
+
+    const created: UserContact = {
+      id: uuid(),
+      user: user.id,
+      broker,
+      address,
+      name,
+      status: ContactStatus.Active,
+      confirmationCode: '',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    await this.table().insert(created);
 
     return created;
   }
