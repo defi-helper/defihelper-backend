@@ -159,6 +159,7 @@ export default async function (
       route: routeIndex,
       amountOutMin: currentRoute.amountOutMin,
       deadline: dayjs().add(order.callData.deadline, 'seconds').unix(),
+      emergency: false,
     });
     log.ex({ callOptions }).send();
     const estimateGas = await smartTradeRouter.estimateGas
