@@ -79,7 +79,7 @@ export default async (process: Process) => {
       ({ address }) => address.toLowerCase() === path[path.length - 1].toLowerCase(),
     )?.balance ?? '0';
 
-  await container.model.smartTradeService().updateOrder({
+  const updated = {
     ...order,
     callData: {
       ...order.callData,
@@ -94,7 +94,15 @@ export default async (process: Process) => {
       (res, [tokenId, { balance: b }]) => ({ ...res, [tokenId]: b }),
       {},
     ),
-  });
+  };
+  await container.model
+    .smartTradeOrderTable()
+    .update({
+      callData: order.callData,
+      balances: order.balances,
+    })
+    .where('id', order.id);
+  container.model.smartTradeService().onOrderUpdated.emit(updated);
 
   return process.done();
 };
