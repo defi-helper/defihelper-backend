@@ -39,7 +39,7 @@ export default async (process: Process) => {
   }
 
   const queue = container.model.queueService();
-  const order = await container.model.smartTradeOrderTable().where('id', id).first();
+  let order = await container.model.smartTradeOrderTable().where('id', id).first();
   if (!order) {
     throw new Error(`Order "${id}" not found`);
   }
@@ -62,7 +62,7 @@ export default async (process: Process) => {
       .push('smartTradeOrderStatusResolve', { id: order.id })
       .then((task) => task.id);
     log.ex({ statusTask }).send();
-    await container.model.smartTradeService().updateOrder({ ...order, statusTask });
+    order = await container.model.smartTradeService().updateOrder({ ...order, statusTask });
   }
   if (order.watcherListenerId === null) {
     await registerWatcher(order, ownerWallet);
