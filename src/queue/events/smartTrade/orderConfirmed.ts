@@ -31,9 +31,8 @@ export default async (process: Process) => {
       log.ex({ listenerId: listener.id }).send();
 
       return container.model
-        .smartTradeOrderTable()
-        .update({ watcherListenerId: listener.id, updatedAt: new Date() })
-        .where('id', order.id);
+        .smartTradeService()
+        .updateOrder({ ...order, watcherListenerId: listener.id });
     }
 
     return null;
@@ -63,10 +62,7 @@ export default async (process: Process) => {
       .push('smartTradeOrderStatusResolve', { id: order.id })
       .then((task) => task.id);
     log.ex({ statusTask }).send();
-    await container.model
-      .smartTradeOrderTable()
-      .update({ statusTask, updatedAt: new Date() })
-      .where('id', order.id);
+    await container.model.smartTradeService().updateOrder({ ...order, statusTask });
   }
   if (order.watcherListenerId === null) {
     await registerWatcher(order, ownerWallet);
