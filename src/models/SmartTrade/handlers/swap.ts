@@ -12,7 +12,7 @@ import { Order, SwapCallData } from '../Entity';
 import UniswapRouterABI from '../data/uniswapRouterABI.json';
 
 async function activateOrder(order: Order<SwapCallData>, actualAmountout: string) {
-  if (order.active) return order;
+  if (order.active) return true;
 
   const { amountOut, direction } = order.callData.activate ?? {};
   if (
@@ -21,10 +21,11 @@ async function activateOrder(order: Order<SwapCallData>, actualAmountout: string
     (direction === 'lt' && new BN(actualAmountout).lt(amountOut)) ||
     (direction === 'gt' && new BN(actualAmountout).gt(amountOut))
   ) {
-    return container.model.smartTradeService().updateOrder({ ...order, active: true });
+    await container.model.smartTradeOrderTable().update({ active: true }).where('id', order.id);
+    return true;
   }
 
-  return order;
+  return false;
 }
 
 export default async function (
@@ -77,7 +78,7 @@ export default async function (
     })
     .send();
 
-  const { active } = await activateOrder(order, actualAmountOut);
+  const active = await activateOrder(order, actualAmountOut);
   log.ex({ active }).send();
   if (!active) {
     return null;
@@ -98,14 +99,15 @@ export default async function (
 
     return route;
   });
-  await container.model.smartTradeService().updateOrder({
-    ...order,
-    active,
-    callData: {
-      ...order.callData,
-      routes,
-    },
-  });
+  await container.model
+    .smartTradeOrderTable()
+    .update({
+      callData: {
+        ...order.callData,
+        routes,
+      },
+    })
+    .where('id', order.id);
 
   const routeIndex = routes.reduce<number | null>((prev, route, index) => {
     if (prev !== null || route === null) return prev;
