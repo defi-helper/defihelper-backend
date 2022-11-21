@@ -8,25 +8,7 @@ import {
   walletBlockchainTableName,
   walletTableName,
 } from '@models/Wallet/Entity';
-
-async function registerWatcher(order: Order, ownerWallet: Wallet & WalletBlockchain) {
-  if (order.status !== OrderStatus.Pending) return order;
-
-  if (order.type === HandlerType.SwapHandler) {
-    const scanner = container.scanner();
-    const listener = await scanner.registerListener(
-      await scanner.registerContract(ownerWallet.network, order.callData.pair, UniswapPairABI),
-      'Sync',
-      { promptly: {} },
-    );
-    return container.model.smartTradeService().updateOrder({
-      ...order,
-      watcherListenerId: listener.id,
-    });
-  }
-
-  return order;
-}
+import { LogJsonMessage } from '@services/Log';
 
 interface Params {
   id: string;
@@ -34,9 +16,31 @@ interface Params {
 
 export default async (process: Process) => {
   const { id } = process.task.params as Params;
+  const log = LogJsonMessage.debug({ source: 'smartTradeOrderConfirmed', orderId: id });
+
+  async function registerWatcher(order: Order, ownerWallet: Wallet & WalletBlockchain) {
+    if (order.status !== OrderStatus.Pending) return null;
+
+    if (order.type === HandlerType.SwapHandler) {
+      const scanner = container.scanner();
+      const listener = await scanner.registerListener(
+        await scanner.registerContract(ownerWallet.network, order.callData.pair, UniswapPairABI),
+        'Sync',
+        { promptly: {} },
+      );
+      log.ex({ listenerId: listener.id }).send();
+
+      return container.model
+        .smartTradeOrderTable()
+        .update({ watcherListenerId: listener.id, updatedAt: new Date() })
+        .where('id', order.id);
+    }
+
+    return null;
+  }
 
   const queue = container.model.queueService();
-  let order = await container.model.smartTradeOrderTable().where('id', id).first();
+  const order = await container.model.smartTradeOrderTable().where('id', id).first();
   if (!order) {
     throw new Error(`Order "${id}" not found`);
   }
@@ -55,15 +59,17 @@ export default async (process: Process) => {
 
   await container.model.queueService().push('smartTradeBalancesFiller', { id: order.id });
   if (order.statusTask === null) {
-    order = await container.model.smartTradeService().updateOrder({
-      ...order,
-      statusTask: await queue
-        .push('smartTradeOrderStatusResolve', { id: order.id })
-        .then((task) => task.id),
-    });
+    const statusTask = await queue
+      .push('smartTradeOrderStatusResolve', { id: order.id })
+      .then((task) => task.id);
+    log.ex({ statusTask }).send();
+    await container.model
+      .smartTradeOrderTable()
+      .update({ statusTask, updatedAt: new Date() })
+      .where('id', order.id);
   }
   if (order.watcherListenerId === null) {
-    order = await registerWatcher(order, ownerWallet);
+    await registerWatcher(order, ownerWallet);
   }
 
   return process.done();
