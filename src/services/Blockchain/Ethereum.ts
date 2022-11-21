@@ -23,7 +23,7 @@ function providerFactory(url: URL) {
       url: `${url.protocol}//${url.hostname}${url.pathname}`,
       user: url.username ? url.username : undefined,
       password: url.password ? url.password : undefined,
-      timeout: 60000,
+      timeout: 600000,
     });
 }
 
