@@ -305,7 +305,7 @@ export const userTokenLastMetricLoader = ({
         .clone()
         .modify(QueryModify.sumMetric, [
           'usdDayBefore',
-          `${metricWalletTokenRegistryTableName}.data->>'usdDayBefore'`,
+          `${metricWalletTokenRegistryTableName}.data->>'usd'`,
         ])
         .where(`${metricWalletTokenRegistryTableName}.period`, RegistryPeriod.Day)
         .whereBetween(`${metricWalletTokenRegistryTableName}.date`, [
