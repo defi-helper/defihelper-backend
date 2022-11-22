@@ -1673,13 +1673,15 @@ export const UserType = new GraphQLObjectType<User, Request>({
     metric: {
       type: GraphQLNonNull(UserMetricType),
       resolve: async (user, args, { dataLoader }) => {
-        const walletMetric = await dataLoader.userMetric().load(user.id);
-        const tokenMetric = await dataLoader
-          .userTokenMetric({
-            contract: null,
-            tokenAlias: { liquidity: [TokenAliasLiquidity.Stable, TokenAliasLiquidity.Unstable] },
-          })
-          .load(user.id);
+        const [walletMetric, tokenMetric] = await Promise.all([
+          dataLoader.userMetric().load(user.id),
+          dataLoader
+            .userTokenMetric({
+              contract: null,
+              tokenAlias: { liquidity: [TokenAliasLiquidity.Stable, TokenAliasLiquidity.Unstable] },
+            })
+            .load(user.id),
+        ]);
         const worth = new BN(walletMetric.stakingUSD)
           .plus(walletMetric.earnedUSD)
           .plus(tokenMetric.usd);
@@ -1711,7 +1713,9 @@ export const UserType = new GraphQLObjectType<User, Request>({
           },
           worth: worth.toString(10),
           worthChange: {
-            day: worthDayBefore.gt(0) ? worth.div(worthDayBefore).toString(10) : '0',
+            day: worthDayBefore.gt(0)
+              ? worth.minus(worthDayBefore).div(worthDayBefore).toString(10)
+              : '0',
           },
           apy: await dataLoader.userAPRMetric({ metric: 'aprYear' }).load(user.id),
         };
