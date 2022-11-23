@@ -83,7 +83,8 @@ export default async (process: Process) => {
 
   const swapPrice =
     order.status === OrderStatus.Succeeded
-      ? new BN(outTokenBalance)
+      ? order.callData.swapPrice ??
+        new BN(outTokenBalance)
           .div(new BN(order.callData.amountIn).div(`1e${order.callData.tokenInDecimals}`))
           .toString(10)
       : null;
