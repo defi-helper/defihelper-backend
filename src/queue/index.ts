@@ -157,7 +157,7 @@ export * as treasuryStatsCache from './treasury/cache';
 export * as sendTelegramNews from './sendTelegramNews';
 
 /* smart trade */
-export * as smartTradeOrderStatusResolve from './smartTrade/orderStatusResolve';
+export * as smartTradeOrderStatusResolve from './null';
 export * as smartTradeOrderConfirm from './smartTrade/orderConfirm';
 export * as smartTradeOrderCheckBroker from './smartTrade/orderCheckBroker';
 export * as smartTradeOrderCheck from './smartTrade/orderCheck';

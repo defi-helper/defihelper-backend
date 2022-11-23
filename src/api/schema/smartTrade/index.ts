@@ -484,8 +484,7 @@ export const OrderCancelMutation: GraphQLFieldConfig<any, Request> = {
     if (ownerWallet.user !== currentUser.id) throw new UserInputError('Foreign order');
 
     await container.model.queueService().push('smartTradeBalancesFiller', { id: order.id });
-    return container.model.smartTradeService().updateOrder({
-      ...order,
+    return container.model.smartTradeService().updateOrder(order, {
       status: OrderStatus.Canceled,
       claim: true,
     });
@@ -510,8 +509,7 @@ export const OrderClaimMutation: GraphQLFieldConfig<any, Request> = {
     if (ownerWallet.user !== currentUser.id) throw new UserInputError('Foreign order');
 
     await container.model.queueService().push('smartTradeBalancesFiller', { id: order.id });
-    return container.model.smartTradeService().updateOrder({
-      ...order,
+    return container.model.smartTradeService().updateOrder(order, {
       claim: true,
     });
   }),
@@ -822,8 +820,7 @@ export const SwapOrderUpdateMutation: GraphQLFieldConfig<any, Request> = {
         throw new UserInputError('Foreign order');
       }
 
-      return container.model.smartTradeService().updateOrder({
-        ...order,
+      return container.model.smartTradeService().updateOrder(order, {
         callData: {
           ...order.callData,
           boughtPrice: input.callData?.boughtPrice ?? order.callData.boughtPrice,
