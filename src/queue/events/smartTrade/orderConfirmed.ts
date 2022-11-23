@@ -33,7 +33,7 @@ export default async (process: Process) => {
   await Promise.all([
     container.model.queueService().push('smartTradeBalancesFiller', { id: order.id }),
     (async () => {
-      if (order.watcherListenerId === null) return null;
+      if (order.watcherListenerId !== null) return null;
 
       if (order.type === HandlerType.SwapHandler) {
         const scanner = container.scanner();
