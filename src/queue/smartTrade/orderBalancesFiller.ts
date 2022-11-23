@@ -93,17 +93,13 @@ export default async (process: Process) => {
   );
   log.ex({ swapPrice, orderBalances }).send();
 
-  await container.model
-    .smartTradeOrderTable()
-    .update({
-      callData: {
-        ...order.callData,
-        swapPrice,
-      },
-      balances: orderBalances,
-    })
-    .where('id', order.id);
-  container.model.smartTradeService().onOrderUpdated.emit(order);
+  await container.model.smartTradeService().updateOrder(order, {
+    callData: {
+      ...order.callData,
+      swapPrice,
+    },
+    balances: orderBalances,
+  });
 
   return process.done();
 };
