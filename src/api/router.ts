@@ -531,22 +531,27 @@ export function route({ express, server }: { express: Express; server: Server })
       tokens = [`${tokens}`];
     }
 
-    request.get(
-      'https://whattofarm.io/ext-api/v1/get-actual-price',
-      {
-        headers: {
-          'accept': 'application/json',
-          'content-type': 'application/json',
-          'authorization': req.headers.authorization,
+    try {
+      request.get(
+        'https://whattofarm.io/ext-api/v1/get-actual-price',
+        {
+          headers: {
+            'accept': 'application/json',
+            'content-type': 'application/json',
+            'authorization': req.headers.authorization,
+          },
+          body: `[${tokens.map((v) => `"${v}"`).join(',')}]`,
         },
-        body: `[${tokens.map((v) => `"${v}"`).join(',')}]`,
-      },
-      (err, response, body) => {
-        if (err) return res.status(500).send(err);
+        (err, response, body) => {
+          if (err) return res.status(500).send(err);
 
-        return res.json(JSON.parse(body));
-      },
-    );
+          return res.json(JSON.parse(body));
+        },
+      );
+      return null;
+    } catch (e) {
+      return res.status(500).send(`${e}`);
+    }
   });
   express.get('/', (_, res) => res.status(200).send(''));
 }
