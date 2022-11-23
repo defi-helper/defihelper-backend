@@ -21,7 +21,7 @@ async function activateOrder(order: Order<SwapCallData>, actualAmountout: string
     (direction === 'lt' && new BN(actualAmountout).lt(amountOut)) ||
     (direction === 'gt' && new BN(actualAmountout).gt(amountOut))
   ) {
-    return container.model.smartTradeService().updateOrder({ ...order, active: true });
+    return container.model.smartTradeService().updateOrder(order, { active: true });
   }
 
   return order;
@@ -98,8 +98,7 @@ export default async function (
 
     return route;
   });
-  await container.model.smartTradeService().updateOrder({
-    ...order,
+  await container.model.smartTradeService().updateOrder(order, {
     active,
     callData: {
       ...order.callData,

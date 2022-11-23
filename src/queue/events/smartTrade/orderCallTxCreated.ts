@@ -44,19 +44,16 @@ export default async (process: Process) => {
     const receipt = await provider.waitForTransaction(call.tx, 1, 10000);
     if (receipt.status === 1) {
       await Promise.all([
-        smartTradeService.updateCall({
-          ...call,
+        smartTradeService.updateCall(call, {
           status: OrderCallStatus.Succeeded,
         }),
-        smartTradeService.updateOrder({
-          ...order,
+        smartTradeService.updateOrder(order, {
           status: OrderStatus.Succeeded,
         }),
         container.model.queueService().push('smartTradeBalancesFiller', { id: order.id }),
       ]);
     } else if (receipt.status === 0) {
-      await smartTradeService.updateCall({
-        ...call,
+      await smartTradeService.updateCall(call, {
         status: OrderCallStatus.Error,
         error: 'revert',
       });
@@ -65,8 +62,7 @@ export default async (process: Process) => {
     if (e instanceof Error && e.message.includes('timeout exceeded')) {
       return process.later(dayjs().add(10, 'seconds').toDate());
     }
-    await smartTradeService.updateCall({
-      ...call,
+    await smartTradeService.updateCall(call, {
       status: OrderCallStatus.Error,
       error: `${e}`,
     });

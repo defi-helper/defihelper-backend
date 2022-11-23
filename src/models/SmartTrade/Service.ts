@@ -93,12 +93,13 @@ export class SmartTradeService {
     return created;
   }
 
-  async updateOrder(order: Order) {
+  async updateOrder(order: Order, state: Partial<Order<any>>) {
+    await this.orderTable().where('id', order.id).update(state);
+
     const updated: Order = {
       ...order,
-      updatedAt: new Date(),
+      ...state,
     };
-    await this.orderTable().where('id', order.id).update(updated);
     this.onOrderUpdated.emit(updated);
 
     return updated;
@@ -107,8 +108,7 @@ export class SmartTradeService {
   async confirm(order: Order) {
     if (order.confirmed) return order;
 
-    const updated = await this.updateOrder({
-      ...order,
+    const updated = await this.updateOrder(order, {
       confirmed: true,
     });
     this.onOrderConfirmed.emit(updated);
@@ -142,35 +142,42 @@ export class SmartTradeService {
       });
     }
 
+    const [created] = await Promise.all([
+      this.createCall(order, tx.hash),
+      this.updateOrder(order, {
+        status: OrderStatus.Processed,
+      }),
+    ]);
+
+    return created;
+  }
+
+  async createCall(order: Order, tx: string) {
     const created: OrderCallHistory = {
       id: uuid(),
       order: order.id,
-      tx: tx.hash,
+      tx,
       error: '',
       status: OrderCallStatus.Pending,
       updatedAt: new Date(),
       createdAt: new Date(),
     };
-    await Promise.all([
-      this.updateOrder({
-        ...order,
-        status: OrderStatus.Processed,
-      }),
-      this.orderCallHistoryTable().insert(created),
-    ]);
+    await this.orderCallHistoryTable().insert(created);
     this.onOrderCallTxCreated.emit({ order, call: created });
 
     return created;
   }
 
-  async updateCall(call: OrderCallHistory) {
-    const updated: OrderCallHistory = {
-      ...call,
-      updatedAt: new Date(),
-    };
-    await this.orderCallHistoryTable().where('id', call.id).update(updated);
+  async updateCall(
+    call: OrderCallHistory,
+    state: Partial<OrderCallHistory>,
+  ): Promise<OrderCallHistory> {
+    await this.orderCallHistoryTable().where('id', call.id).update(state);
 
-    return updated;
+    return {
+      ...call,
+      ...state,
+    };
   }
 
   async tokenLink(order: Order, links: Array<{ token: Token; type: OrderTokenLinkType }>) {
