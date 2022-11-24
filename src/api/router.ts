@@ -5,7 +5,6 @@ import { ApolloServer } from 'apollo-server-express';
 import { formatApolloErrors } from 'apollo-server-errors';
 import { json } from 'body-parser';
 import cors from 'cors';
-import * as request from 'request';
 import { GraphQLNonNull, GraphQLObjectType, GraphQLSchema, GraphQLString } from 'graphql';
 import { DataLoaderContainer } from '@api/dataLoader/container';
 import * as middlewares from '@api/middlewares';
@@ -524,34 +523,6 @@ export function route({ express, server }: { express: Express; server: Server })
       .createOrUpdate(MetadataType.EthereumContractAbi, abi, 'ethereum', network, address);
 
     return res.json(abi);
-  });
-  express.route('/get-actual-price').get((req, res) => {
-    let tokens = req.query.token ?? '';
-    if (!Array.isArray(tokens)) {
-      tokens = [`${tokens}`];
-    }
-
-    try {
-      request.get(
-        'https://whattofarm.io/ext-api/v1/get-actual-price',
-        {
-          headers: {
-            'accept': 'application/json',
-            'content-type': 'application/json',
-            'authorization': req.headers.authorization,
-          },
-          body: `[${tokens.map((v) => `"${v}"`).join(',')}]`,
-        },
-        (err, response, body) => {
-          if (err) return res.status(500).send(err);
-
-          return res.json(JSON.parse(body));
-        },
-      );
-      return null;
-    } catch (e) {
-      return res.status(500).send(`${e}`);
-    }
   });
   express.get('/', (_, res) => res.status(200).send(''));
 }
