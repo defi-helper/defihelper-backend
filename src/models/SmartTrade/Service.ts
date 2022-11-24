@@ -98,6 +98,7 @@ export class SmartTradeService {
     const updated: Order = {
       ...order,
       ...state,
+      updatedAt: new Date(),
     };
     this.onOrderUpdated.emit(updated);
 

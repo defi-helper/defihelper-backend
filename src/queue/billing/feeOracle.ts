@@ -54,8 +54,8 @@ export default async (process: Process) => {
       network,
       status: BillStatus.Pending,
     })
-    .limit(1);
-  log.ex({ billsCount: bills.length }).send();
+    .limit(10);
+  log.ex({ billsCount: bills.length, billsId: bills.map(({ id }) => id) }).send();
   if (bills.length === 0) {
     return process.laterAt(5, 'minutes');
   }
@@ -100,6 +100,9 @@ export default async (process: Process) => {
   log
     .ex({ acceptedFees: JSON.stringify(acceptedFees), rejectedFees: JSON.stringify(rejectedFees) })
     .send();
+  if (acceptedFees.length + rejectedFees.length < 3) {
+    return process.laterAt(5, 'minutes');
+  }
 
   if (acceptedFees.length > 0) {
     await balance.connect(inspector).acceptClaims(
