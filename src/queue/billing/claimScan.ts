@@ -1,105 +1,9 @@
 import BN from 'bignumber.js';
 import container from '@container';
-import dayjs from 'dayjs';
 import { Process } from '@models/Queue/Entity';
 import { Blockchain } from '@models/types';
-import { ethers } from 'ethers';
 import { abi as balanceAbi } from '@defihelper/networks/abi/Balance.json';
-
-const ethFeeDecimals = new BN(10).pow(18);
-
-async function registerClaims(
-  blockchain: Blockchain,
-  network: string,
-  balance: ethers.Contract,
-  events: ethers.Event[],
-) {
-  const duplicates = await container.model
-    .billingBillTable()
-    .column('tx')
-    .where(function () {
-      this.where({ blockchain, network });
-      this.whereIn(
-        'tx',
-        events.map(({ transactionHash }) => transactionHash),
-      );
-    });
-  const duplicatesTx = duplicates.map(({ tx }) => tx);
-  const billingService = container.model.billingService();
-
-  return Promise.all(
-    events.map(async ({ getBlock, transactionHash, args }) => {
-      if (!args || duplicatesTx.includes(transactionHash)) return null;
-      const { timestamp } = await getBlock();
-      const billId = parseInt(args.bill.toString(), 10);
-      const bill = await balance.bills(billId);
-
-      return billingService.claim(
-        billId,
-        blockchain,
-        network,
-        args.account.toLowerCase(),
-        bill.claimant.toLowerCase(),
-        new BN(bill.gasFee.toString()).div(ethFeeDecimals),
-        new BN(bill.protocolFee.toString()).div(ethFeeDecimals),
-        args.description,
-        transactionHash,
-        dayjs.unix(timestamp).toDate(),
-      );
-    }),
-  );
-}
-
-async function registerAcceptBill(
-  network: string,
-  balance: ethers.Contract,
-  events: ethers.Event[],
-) {
-  const billingService = container.model.billingService();
-  return Promise.all(
-    events.map(async ({ getBlock, transactionHash, args }) => {
-      if (!args) return null;
-      const { timestamp } = await getBlock();
-      const billId = Number(args.bill.toString());
-      const bill = await balance.bills(billId);
-      const claim = await billingService
-        .billTable()
-        .where('blockchain', 'ethereum')
-        .where('network', network)
-        .where('number', billId)
-        .first();
-      if (!claim) return null;
-
-      return billingService.acceptBill(
-        claim,
-        new BN(bill.gasFee.toString()).div(ethFeeDecimals),
-        new BN(bill.protocolFee.toString()).div(ethFeeDecimals),
-        transactionHash,
-        dayjs.unix(timestamp).toDate(),
-      );
-    }),
-  );
-}
-
-async function registerRejectBill(network: string, events: ethers.Event[]) {
-  const billingService = container.model.billingService();
-  return Promise.all(
-    events.map(async ({ getBlock, transactionHash, args }) => {
-      if (!args) return null;
-      const { timestamp } = await getBlock();
-      const billId = Number(args.bill.toString());
-      const claim = await billingService
-        .billTable()
-        .where('blockchain', 'ethereum')
-        .where('network', network)
-        .where('number', billId)
-        .first();
-      if (!claim) return null;
-
-      return billingService.rejectBill(claim, transactionHash, dayjs.unix(timestamp).toDate());
-    }),
-  );
-}
+import { LogJsonMessage } from '@services/Log';
 
 export interface Params {
   blockchain: Blockchain;
@@ -111,6 +15,11 @@ export interface Params {
 
 export default async (process: Process) => {
   const { blockchain, network, from, step, lag = 0 } = process.task.params as Params;
+  const log = LogJsonMessage.debug({
+    source: 'billingClaimScan',
+    taskId: process.task.id,
+  });
+
   if (blockchain !== 'ethereum') {
     throw new Error('Invalid blockchain');
   }
@@ -126,11 +35,13 @@ export default async (process: Process) => {
   }
   const provider = networkContainer.provider();
   const balance = blockchainContainer.contract(balanceAddress, balanceAbi, provider);
+  const { decimals } = networkContainer.nativeTokenDetails;
 
   const currentBlockNumber = await provider
     .getBlockNumber()
     .then((v) => v - lag)
     .catch((e) => e);
+  log.ex({ currentBlockNumber }).send();
   if (typeof currentBlockNumber !== 'number') {
     return process.laterAt(1, 'minutes').info(`${currentBlockNumber}`);
   }
@@ -138,25 +49,45 @@ export default async (process: Process) => {
     return process.laterAt(1, 'minutes');
   }
   const to = from + step > currentBlockNumber ? currentBlockNumber : from + step;
+  log.ex({ to }).send();
 
   try {
-    await registerClaims(
-      blockchain,
-      network,
-      balance,
-      await balance.queryFilter(balance.filters.Claim(), from, to),
+    const events = await balance.queryFilter(balance.filters.Claim(), from, to);
+    log.ex({ eventsCount: events.length }).send();
+    const duplicatesTx = await container.model
+      .billingBillTable()
+      .column('tx')
+      .where('blockchain', blockchain)
+      .where('network', network)
+      .whereIn(
+        'tx',
+        events.map(({ transactionHash }) => transactionHash),
+      )
+      .then((rows) => new Set(rows.map(({ tx }) => tx)));
+
+    const billingService = container.model.billingService();
+    await Promise.all(
+      events.map(async ({ transactionHash, args }) => {
+        if (!args || duplicatesTx.has(transactionHash)) return null;
+        const billId = args.bill.toString();
+        const { claimant, gasFee, protocolFee } = await balance.bills(billId);
+        log
+          .ex({ billId, claimant, gasFee: gasFee.toString(), protocolFee: protocolFee.toString() })
+          .send();
+
+        return billingService.claim(
+          billId,
+          blockchain,
+          network,
+          args.account.toLowerCase(),
+          claimant.toLowerCase(),
+          new BN(gasFee.toString()).div(`1e${decimals}`),
+          new BN(protocolFee.toString()).div(`1e${decimals}`),
+          args.description,
+          transactionHash,
+        );
+      }),
     );
-    await Promise.all([
-      registerAcceptBill(
-        network,
-        balance,
-        await balance.queryFilter(balance.filters.AcceptClaim(), from, to),
-      ),
-      registerRejectBill(
-        network,
-        await balance.queryFilter(balance.filters.RejectClaim(), from, to),
-      ),
-    ]);
   } catch (e) {
     if (currentBlockNumber - from > 200) {
       throw new Error(`Task ${process.task.id}, lag: ${currentBlockNumber - from}, message: ${e}`);

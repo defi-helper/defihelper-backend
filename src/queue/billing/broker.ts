@@ -6,12 +6,7 @@ import { isKey } from '@services/types';
 export default async (process: Process) => {
   const tasks = await container.model
     .queueTable()
-    .whereIn('handler', [
-      'billingTransferScan',
-      'billingClaimScan',
-      'billingFeeOracle',
-      'billingStoreScan',
-    ]);
+    .whereIn('handler', ['billingClaimScan', 'billingFeeOracle', 'billingStoreScan']);
   const tasksMap = tasks.reduce((map, task) => {
     const { blockchain, network } = task.params as { blockchain: string; network: string };
     if (blockchain !== 'ethereum') return map; // Skip not ethereum tasks
@@ -42,21 +37,6 @@ export default async (process: Process) => {
       if (isKey(networkContracts, 'Balance')) {
         const { blockNumber: balanceFrom } = networkContracts.Balance;
 
-        if (!tasksMap[network]?.billingTransferScan) {
-          pool.push(
-            queueService.push(
-              'billingTransferScan',
-              {
-                blockchain: 'ethereum',
-                network,
-                step: 5000,
-                from: balanceFrom,
-                lag: ['43114'].includes(network) ? 4 : 1,
-              },
-              { scanner: true },
-            ),
-          );
-        }
         if (!tasksMap[network]?.billingClaimScan) {
           pool.push(
             queueService.push(
