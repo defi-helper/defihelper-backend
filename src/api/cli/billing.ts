@@ -10,16 +10,6 @@ export default async ([network = '1']: string[]) => {
 
   return Promise.all([
     container.model.queueService().push(
-      'billingTransferScan',
-      {
-        blockchain: 'ethereum',
-        network,
-        step: 5000,
-        from: balanceFrom,
-      },
-      { scanner: true },
-    ),
-    container.model.queueService().push(
       'billingClaimScan',
       {
         blockchain: 'ethereum',

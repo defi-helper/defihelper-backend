@@ -22,8 +22,7 @@ export default async (process: Process) => {
       }
       task = await queue.push('smartTradeOrderCheck', { id: order.id }, { topic: 'trigger' });
 
-      return smartTradeService.updateOrder({
-        ...order,
+      return smartTradeService.updateOrder(order, {
         checkTaskId: task.id,
       });
     }),

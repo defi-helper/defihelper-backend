@@ -7,6 +7,7 @@ import ethersMulticall from '@defihelper/ethers-multicall';
 import contracts from '@defihelper/networks/contracts.json';
 import { abi as RouterABI } from '@defihelper/networks/abi/SmartTradeRouter.json';
 import { isKey } from '@services/types';
+import { LogJsonMessage } from '@services/Log';
 
 interface Params {
   id: string;
@@ -14,6 +15,7 @@ interface Params {
 
 export default async (process: Process) => {
   const { id } = process.task.params as Params;
+  const log = LogJsonMessage.debug({ source: 'smartTradeOrderBalancesFiller', orderId: id });
 
   const order = await container.model.smartTradeOrderTable().where('id', id).first();
   if (!order) throw new Error('Order not found');
@@ -79,21 +81,25 @@ export default async (process: Process) => {
       ({ address }) => address.toLowerCase() === path[path.length - 1].toLowerCase(),
     )?.balance ?? '0';
 
-  await container.model.smartTradeService().updateOrder({
-    ...order,
+  const swapPrice =
+    order.status === OrderStatus.Succeeded
+      ? order.callData.swapPrice ??
+        new BN(outTokenBalance)
+          .div(new BN(order.callData.amountIn).div(`1e${order.callData.tokenInDecimals}`))
+          .toString(10)
+      : null;
+  const orderBalances = Object.entries(balancesMap).reduce(
+    (res, [tokenId, { balance: b }]) => ({ ...res, [tokenId]: b }),
+    {},
+  );
+  log.ex({ swapPrice, orderBalances }).send();
+
+  await container.model.smartTradeService().updateOrder(order, {
     callData: {
       ...order.callData,
-      swapPrice:
-        order.status === OrderStatus.Succeeded
-          ? new BN(outTokenBalance)
-              .div(new BN(order.callData.amountIn).div(`1e${order.callData.tokenInDecimals}`))
-              .toString(10)
-          : null,
+      swapPrice,
     },
-    balances: Object.entries(balancesMap).reduce(
-      (res, [tokenId, { balance: b }]) => ({ ...res, [tokenId]: b }),
-      {},
-    ),
+    balances: orderBalances,
   });
 
   return process.done();

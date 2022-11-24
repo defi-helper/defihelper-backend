@@ -1,6 +1,6 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
-import { OrderCallStatus } from '@models/SmartTrade/Entity';
+import { OrderCallStatus, OrderStatus } from '@models/SmartTrade/Entity';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 import dayjs from 'dayjs';
 
@@ -43,13 +43,17 @@ export default async (process: Process) => {
   try {
     const receipt = await provider.waitForTransaction(call.tx, 1, 10000);
     if (receipt.status === 1) {
-      await smartTradeService.updateCall({
-        ...call,
-        status: OrderCallStatus.Succeeded,
-      });
+      await Promise.all([
+        smartTradeService.updateCall(call, {
+          status: OrderCallStatus.Succeeded,
+        }),
+        smartTradeService.updateOrder(order, {
+          status: OrderStatus.Succeeded,
+        }),
+        container.model.queueService().push('smartTradeBalancesFiller', { id: order.id }),
+      ]);
     } else if (receipt.status === 0) {
-      await smartTradeService.updateCall({
-        ...call,
+      await smartTradeService.updateCall(call, {
         status: OrderCallStatus.Error,
         error: 'revert',
       });
@@ -58,8 +62,7 @@ export default async (process: Process) => {
     if (e instanceof Error && e.message.includes('timeout exceeded')) {
       return process.later(dayjs().add(10, 'seconds').toDate());
     }
-    await smartTradeService.updateCall({
-      ...call,
+    await smartTradeService.updateCall(call, {
       status: OrderCallStatus.Error,
       error: `${e}`,
     });

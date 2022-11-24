@@ -103,7 +103,7 @@ export default async (process: Process) => {
               visualizedWalletAddress: `${notifyBy.walletAddress.slice(
                 0,
                 6,
-              )}...${notifyBy.walletAddress.slice(-4)}(${
+              )}...${notifyBy.walletAddress.slice(-4)} (${
                 container.blockchain.ethereum.byNetwork(notifyBy.walletNetwork).name
               })`,
             },

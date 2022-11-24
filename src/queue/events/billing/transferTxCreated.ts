@@ -5,6 +5,7 @@ import { abi as BalanceABI } from '@defihelper/networks/abi/Balance.json';
 import { ethers } from 'ethers';
 import { BigNumber as BN } from 'bignumber.js';
 import { TransferStatus } from '@models/Billing/Entity';
+import { LogJsonMessage } from '@services/Log';
 
 interface Params {
   id: string;
@@ -12,11 +13,13 @@ interface Params {
 
 export default async (process: Process) => {
   const { id } = process.task.params as Params;
+  const log = LogJsonMessage.debug({ source: 'eventsBillingTransferTxCreated', transferId: id });
 
   const transfer = await container.model.billingTransferTable().where('id', id).first();
   if (!transfer) {
-    throw new Error(`Order call "${id}" not found`);
+    throw new Error(`Transfer "${id}" not found`);
   }
+  log.ex({ status: transfer.status }).send();
   if (transfer.status !== TransferStatus.Pending) {
     return process.done();
   }
@@ -31,6 +34,7 @@ export default async (process: Process) => {
     throw new Error('Contracts not deployed to target network');
   }
   const balanceAddress = contracts.BalanceUpgradable?.address ?? contracts.Balance?.address;
+  log.ex({ balanceAddress }).send();
   if (balanceAddress === undefined) {
     throw new Error('Balance contract not deployed on target network');
   }
@@ -39,11 +43,13 @@ export default async (process: Process) => {
 
   try {
     const tx = await provider.getTransaction(transfer.tx);
+    log.ex({ txHash: tx?.hash }).send();
     if (tx === null) {
       await billingService.transferReject(transfer, 'Transaction not found');
       return process.done();
     }
     const receipt = await provider.waitForTransaction(transfer.tx, 1, 10000);
+    log.ex({ receiptStatus: receipt?.status }).send();
     if (receipt.status === 0) {
       return process.later(dayjs().add(10, 'seconds').toDate());
     }
@@ -61,7 +67,6 @@ export default async (process: Process) => {
       await billingService.transferReject(transfer, 'Invalid recipient');
       return process.done();
     }
-    const timestamp = await provider.getBlock(receipt.blockHash).then((block) => block.timestamp);
 
     await container.model
       .billingService()
@@ -70,7 +75,9 @@ export default async (process: Process) => {
         new BN(event.args.amount.toString())
           .div(`1e${network.nativeTokenDetails.decimals}`)
           .multipliedBy(event.name === 'Deposit' ? 1 : -1),
-        dayjs.unix(timestamp).toDate(),
+        await provider
+          .getBlock(receipt.blockHash)
+          .then(({ timestamp }) => dayjs.unix(timestamp).toDate()),
       );
   } catch (e) {
     if (e instanceof Error) {
