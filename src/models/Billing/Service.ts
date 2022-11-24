@@ -28,6 +28,10 @@ export class BillingService {
     );
   });
 
+  public readonly onBillCreated = new Emitter<Bill>((bill) => {
+    return container.model.queueService().push('billingBillStatusResolver', { id: bill.id });
+  });
+
   constructor(
     readonly billTable: Factory<BillTable>,
     readonly transferTable: Factory<TransferTable>,
@@ -62,35 +66,35 @@ export class BillingService {
     return created;
   }
 
-  async transferConfirm(transfer: Transfer, amount: BN, createdAt: Date) {
+  async updateTrasfer(transfer: Transfer, state: Partial<Transfer>) {
+    await this.transferTable().update(state).where('id', transfer.id);
     const updated: Transfer = {
       ...transfer,
+      ...state,
+      updatedAt: new Date(),
+    };
+    this.onTransferUpdated.emit(updated);
+
+    return updated;
+  }
+
+  transferConfirm(transfer: Transfer, amount: BN, createdAt: Date) {
+    return this.updateTrasfer(transfer, {
       amount: amount.toPrecision(15, BN.ROUND_FLOOR),
       status: TransferStatus.Confirmed,
       createdAt,
-      updatedAt: new Date(),
-    };
-    await this.transferTable().update(updated).where('id', updated.id);
-    this.onTransferUpdated.emit(updated);
-
-    return updated;
+    });
   }
 
-  async transferReject(transfer: Transfer, reason: string) {
-    const updated: Transfer = {
-      ...transfer,
+  transferReject(transfer: Transfer, reason: string) {
+    return this.updateTrasfer(transfer, {
       status: TransferStatus.Rejected,
       rejectReason: reason,
-      updatedAt: new Date(),
-    };
-    await this.transferTable().update(updated).where('id', updated.id);
-    this.onTransferUpdated.emit(updated);
-
-    return updated;
+    });
   }
 
   async claim(
-    billId: number,
+    billId: string | number,
     blockchain: Blockchain,
     network: string,
     account: string,
@@ -99,11 +103,10 @@ export class BillingService {
     protocolFee: BN,
     description: string,
     tx: string,
-    createdAt: Date,
   ) {
     const created: Bill = {
       id: uuid(),
-      number: billId,
+      number: Number(billId),
       blockchain,
       network,
       account,
@@ -117,50 +120,49 @@ export class BillingService {
       description,
       tx,
       processTx: null,
-      createdAt,
-      updatedAt: createdAt,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
     await this.billTable().insert(created);
+    this.onBillCreated.emit(created);
 
     return created;
   }
 
-  async acceptBill(bill: Bill, gasFee: BN, protocolFee: BN, tx: string, updatedAt: Date) {
-    const updated: Bill = {
+  async updateClaim(bill: Bill, state: Partial<Bill>): Promise<Bill> {
+    await this.billTable().where({ id: bill.id }).update(state);
+    return {
       ...bill,
+      ...state,
+      updatedAt: new Date(),
+    };
+  }
+
+  async acceptBill(bill: Bill, gasFee: BN, protocolFee: BN) {
+    const updated = await this.updateClaim(bill, {
       gasFee: gasFee.toPrecision(15, BN.ROUND_FLOOR),
       protocolFee: protocolFee.toPrecision(15, BN.ROUND_FLOOR),
       claim: '0',
       status: BillStatus.Accepted,
-      processTx: tx,
-      updatedAt,
-    };
-    await this.billTable().where({ id: bill.id }).update(updated);
-
+    });
     const transferFee = await this.transfer(
       bill.blockchain,
       bill.network,
       bill.account,
       gasFee.plus(protocolFee).multipliedBy(-1),
-      tx,
+      bill.tx,
       true,
-      updatedAt,
+      bill.createdAt,
       updated,
     );
 
     return { updated, transferFee };
   }
 
-  async rejectBill(bill: Bill, tx: string, updatedAt: Date) {
-    const updated: Bill = {
-      ...bill,
+  rejectBill(bill: Bill) {
+    return this.updateClaim(bill, {
       claim: '0',
       status: BillStatus.Rejected,
-      processTx: tx,
-      updatedAt,
-    };
-    await this.billTable().where({ id: bill.id }).update(updated);
-
-    return updated;
+    });
   }
 }

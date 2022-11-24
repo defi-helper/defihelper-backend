@@ -38,10 +38,11 @@ export * as contractResolveDeployBlockNumber from './contract/resolveDeployBlock
 export * as contractResolveAbi from './contract/resolveAbi';
 
 export * as billingBroker from './billing/broker';
-export * as billingTransferScan from './billing/transferScan';
+export * as billingTransferScan from './null';
 export * as billingClaimScan from './billing/claimScan';
 export * as billingFeeOracle from './billing/feeOracle';
 export * as billingStoreScan from './billing/storeScan';
+export * as billingBillStatusResolver from './billing/billStatusResolver';
 export * as automateContractEthereumVerify from './automate/contractEthereumVerify';
 export * as automateContractWavesVerify from './automate/contractWavesVerify';
 export * as automateTransactionEthereumConfirm from './automate/transactionEthereumConfirm';
