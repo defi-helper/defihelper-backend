@@ -78,6 +78,7 @@ export class SmartTradeService {
       tx,
       confirmed,
       claim: false,
+      closed: false,
       watcherListenerId: null,
       checkTaskId: null,
       updatedAt: new Date(),
@@ -116,6 +117,16 @@ export class SmartTradeService {
     return updated;
   }
 
+  process(order: Order, tx: string, closed: boolean) {
+    return Promise.all([
+      this.createCall(order, tx),
+      this.updateOrder(order, {
+        status: OrderStatus.Processed,
+        closed,
+      }),
+    ]);
+  }
+
   async handle(order: Order) {
     let tx;
     switch (order.type) {
@@ -131,7 +142,7 @@ export class SmartTradeService {
 
     if (tx === null) return null;
     if (tx instanceof Error) {
-      return this.orderCallHistoryTable().insert({
+      const call: OrderCallHistory = {
         id: uuid(),
         order: order.id,
         tx: null,
@@ -139,17 +150,12 @@ export class SmartTradeService {
         status: OrderCallStatus.Error,
         updatedAt: new Date(),
         createdAt: new Date(),
-      });
+      };
+      await this.orderCallHistoryTable().insert(call);
+      return call;
     }
 
-    const [created] = await Promise.all([
-      this.createCall(order, tx.hash),
-      this.updateOrder(order, {
-        status: OrderStatus.Processed,
-      }),
-    ]);
-
-    return created;
+    return this.process(order, tx.hash, false).then(([created]) => created);
   }
 
   async createCall(order: Order, tx: string) {

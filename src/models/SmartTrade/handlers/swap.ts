@@ -163,7 +163,7 @@ export default async function (
     log.ex({ callOptions }).send();
     const estimateGas = await smartTradeRouter.estimateGas
       .handleOrder(order.number, callOptions, 1)
-      .then((v) => v.toString());
+      .then((v: ethers.BigNumber) => v.toString());
     const gasLimit = new BN(estimateGas).multipliedBy(1.1).toFixed(0);
     const gasPrice = await provider.getGasPrice().then((v) => v.toString());
     const gasFee = new BN(gasLimit).multipliedBy(gasPrice).toFixed(0);

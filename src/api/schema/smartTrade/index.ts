@@ -364,6 +364,10 @@ export const OrderType = new GraphQLObjectType<Order, Request>({
       type: GraphQLNonNull(GraphQLBoolean),
       description: 'Is order confirmed on blockchain',
     },
+    closed: {
+      type: GraphQLNonNull(GraphQLBoolean),
+      description: 'Is order closed with market price',
+    },
     createdAt: {
       type: GraphQLNonNull(DateTimeType),
       description: 'Date of created',
@@ -826,6 +830,62 @@ export const SwapOrderUpdateMutation: GraphQLFieldConfig<any, Request> = {
           boughtPrice: input.callData?.boughtPrice ?? order.callData.boughtPrice,
         },
       });
+    },
+  ),
+};
+
+export const SwapOrderCloseMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(OrderType),
+  args: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+    },
+    input: {
+      type: GraphQLNonNull(
+        new GraphQLInputObjectType({
+          name: 'SmartTradeSwapOrderCloseInputType',
+          fields: {
+            tx: {
+              type: GraphQLNonNull(EthereumTransactionHashType),
+            },
+          },
+        }),
+      ),
+    },
+  },
+  resolve: onlyAllowed(
+    'smartTradeOrder.update-own',
+    async (root, { id, input }, { currentUser }) => {
+      if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+      const order = await container.model
+        .smartTradeOrderTable()
+        .where('id', id)
+        .first()
+        .then((v) => v as Order<SwapCallData> | undefined);
+      if (!order) {
+        throw new UserInputError('Order not found');
+      }
+      const ownerWallet = await container.model
+        .walletTable()
+        .innerJoin(
+          walletBlockchainTableName,
+          `${walletTableName}.id`,
+          `${walletBlockchainTableName}.id`,
+        )
+        .where(`${walletTableName}.id`, order.owner)
+        .first();
+      if (!ownerWallet) {
+        throw new UserInputError('Owner wallet not found');
+      }
+      if (currentUser.id !== ownerWallet.user) {
+        throw new UserInputError('Foreign order');
+      }
+
+      return container.model
+        .smartTradeService()
+        .process(order, input.tx, true)
+        .then(([, processedOrder]) => processedOrder);
     },
   ),
 };
