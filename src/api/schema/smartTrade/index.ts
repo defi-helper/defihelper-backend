@@ -769,30 +769,32 @@ export const SwapOrderCreateMutation: GraphQLFieldConfig<any, Request> = {
   }),
 };
 
-export const SwapOrderUpdateInputType = new GraphQLInputObjectType({
-  name: 'SmartTradeSwapOrderUpdateInputType',
+export const SwapOrderSetBoughtPriceInputType = new GraphQLInputObjectType({
+  name: 'SmartTradeSwapOrderSetBoughtPriceInputType',
   fields: {
     callData: {
-      type: new GraphQLInputObjectType({
-        name: 'SmartTradeSwapOrderUpdateCallDataInputType',
-        fields: {
-          boughtPrice: {
-            type: BigNumberType,
+      type: GraphQLNonNull(
+        new GraphQLInputObjectType({
+          name: 'SmartTradeSwapOrderSetBoughtPriceCallDataInputType',
+          fields: {
+            boughtPrice: {
+              type: GraphQLNonNull(BigNumberType),
+            },
           },
-        },
-      }),
+        }),
+      ),
     },
   },
 });
 
-export const SwapOrderUpdateMutation: GraphQLFieldConfig<any, Request> = {
+export const SwapOrderSetBoughtPriceMutation: GraphQLFieldConfig<any, Request> = {
   type: GraphQLNonNull(OrderType),
   args: {
     id: {
       type: GraphQLNonNull(UuidType),
     },
     input: {
-      type: GraphQLNonNull(SwapOrderUpdateInputType),
+      type: GraphQLNonNull(SwapOrderSetBoughtPriceInputType),
     },
   },
   resolve: onlyAllowed(
@@ -828,6 +830,131 @@ export const SwapOrderUpdateMutation: GraphQLFieldConfig<any, Request> = {
         callData: {
           ...order.callData,
           boughtPrice: input.callData?.boughtPrice ?? order.callData.boughtPrice,
+        },
+      });
+    },
+  ),
+};
+
+export const SwapOrderUpdateInputType = new GraphQLInputObjectType({
+  name: 'SmartTradeSwapOrderUpdateInputType',
+  fields: {
+    callDataRaw: {
+      type: GraphQLNonNull(GraphQLString),
+      description: 'Handler raw call data',
+    },
+    callData: {
+      type: GraphQLNonNull(
+        new GraphQLInputObjectType({
+          name: 'SmartTradeSwapOrderUpdateCallDataInputType',
+          fields: {
+            amountOut: {
+              type: GraphQLNonNull(BigNumberType),
+            },
+            stopLoss: {
+              type: SwapOrderCallDataStopLossInputType,
+            },
+            stopLoss2: {
+              type: SwapOrderCallDataStopLossInputType,
+            },
+            takeProfit: {
+              type: SwapOrderCallDataTakeProfitInputType,
+            },
+            activate: {
+              type: SwapOrderCallDataActivateInputType,
+            },
+            deadline: {
+              type: GraphQLNonNull(GraphQLInt),
+              description: 'Deadline seconds',
+            },
+          },
+        }),
+      ),
+    },
+  },
+});
+
+export const SwapOrderUpdateMutation: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(OrderType),
+  args: {
+    id: {
+      type: GraphQLNonNull(UuidType),
+    },
+    input: {
+      type: GraphQLNonNull(SwapOrderUpdateInputType),
+    },
+  },
+  resolve: onlyAllowed(
+    'smartTradeOrder.update-own',
+    async (root, { id, input: { callDataRaw, callData } }, { currentUser }) => {
+      if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+      const order = await container.model
+        .smartTradeOrderTable()
+        .where('id', id)
+        .first()
+        .then((v) => v as Order<SwapCallData> | undefined);
+      if (!order) {
+        throw new UserInputError('Order not found');
+      }
+      if (order.status !== OrderStatus.Pending) {
+        throw new UserInputError('Order already processed');
+      }
+      const ownerWallet = await container.model
+        .walletTable()
+        .innerJoin(
+          walletBlockchainTableName,
+          `${walletTableName}.id`,
+          `${walletBlockchainTableName}.id`,
+        )
+        .where(`${walletTableName}.id`, order.owner)
+        .first();
+      if (!ownerWallet) {
+        throw new UserInputError('Owner wallet not found');
+      }
+      if (currentUser.id !== ownerWallet.user) {
+        throw new UserInputError('Foreign order');
+      }
+
+      return container.model.smartTradeService().updateOrder(order, {
+        callDataRaw,
+        callData: {
+          ...order.callData,
+          routes: [
+            callData.stopLoss
+              ? {
+                  amountOut: callData.stopLoss.amountOut.toFixed(0),
+                  amountOutMin: callData.stopLoss.amountOutMin.toFixed(0),
+                  moving: callData.stopLoss.moving
+                    ? callData.amountOut.minus(callData.stopLoss.amountOut).toFixed(0)
+                    : null,
+                  slippage: callData.stopLoss.slippage.toString(),
+                  direction: 'lt',
+                }
+              : null,
+            callData.takeProfit
+              ? {
+                  amountOut: callData.takeProfit.amountOut.toFixed(0),
+                  amountOutMin: callData.takeProfit.amountOutMin.toFixed(0),
+                  moving: null,
+                  slippage: callData.takeProfit.slippage.toString(),
+                  direction: 'gt',
+                }
+              : null,
+            callData.stopLoss2
+              ? {
+                  amountOut: callData.stopLoss2.amountOut.toFixed(0),
+                  amountOutMin: callData.stopLoss2.amountOutMin.toFixed(0),
+                  moving: callData.stopLoss2.moving
+                    ? callData.amountOut.minus(callData.stopLoss2.amountOut).toFixed(0)
+                    : null,
+                  slippage: callData.stopLoss2.slippage.toString(),
+                  direction: 'lt',
+                }
+              : null,
+          ],
+          activate: callData.activate,
+          deadline: callData.deadline,
         },
       });
     },
