@@ -31,6 +31,7 @@ import {
   ContractDebankType as EntityContractDebankType,
   contractDebankTableName,
   ContractRiskFactor,
+  tagContractLinkTableName,
 } from '@models/Protocol/Entity';
 import { apyBoost } from '@services/RestakeStrategy';
 import {
@@ -735,9 +736,13 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
           }
 
           if (Array.isArray(tag) && tag.length > 0) {
-            this.whereIn(
-              `${contractTableName}.id`,
-              container.model.tagContractLinkTable().column('contract').whereIn('tag', tag),
+            this.whereRaw(
+              `(${container.model
+                .tagContractLinkTable()
+                .countDistinct('tag')
+                .whereIn(`${tagContractLinkTableName}.tag`, tag)
+                .whereRaw(`${tagContractLinkTableName}.contract = ${contractTableName}.id`)}) = ?`,
+              [tag.length],
             );
           }
 
