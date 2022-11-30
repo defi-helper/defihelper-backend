@@ -183,6 +183,10 @@ export const SwapHandlerCallDataType = new GraphQLObjectType<Order<SwapCallData>
       type: GraphQLNonNull(EthereumAddressType),
       resolve: ({ callData: { exchange } }) => exchange,
     },
+    pair: {
+      type: GraphQLNonNull(EthereumAddressType),
+      resolve: ({ callData: { pair } }) => pair,
+    },
     path: {
       type: GraphQLNonNull(GraphQLList(GraphQLNonNull(EthereumAddressType))),
       resolve: ({ callData: { path } }) => path,
