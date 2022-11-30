@@ -95,7 +95,6 @@ export default async (process: Process) => {
           pool.adapter,
           pool.layout,
           pool.automate,
-          {},
           pool.name,
           pool.description,
           pool.link,

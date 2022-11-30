@@ -20,7 +20,6 @@ import {
   MetadataType,
   ContractBlockchainTable,
   ContractDebankTable,
-  ContractMetric,
   ContractDebankType,
   ContractBlockchainType,
   TokenContractLinkTable,
@@ -278,7 +277,6 @@ export class ContractService {
     { id: protocol }: Protocol,
     hashAddress: string,
     name: string,
-    metric: ContractMetric,
     description: string = '',
     link: string | null = null,
     hidden: boolean = false,
@@ -298,7 +296,6 @@ export class ContractService {
     const childContract: ContractDebankType = {
       id: parentContract.id,
       address: hashAddress,
-      metric,
     };
 
     await this.database.transaction((trx) =>
@@ -325,7 +322,6 @@ export class ContractService {
     adapter: string,
     layout: string,
     automate: ContractAutomate,
-    metric: ContractMetric,
     name: string,
     description: string = '',
     link: string | null = null,
@@ -357,7 +353,6 @@ export class ContractService {
       blockchain,
       deployBlockNumber,
       watcherId: null,
-      metric,
       network,
     };
 
@@ -413,7 +408,6 @@ export class ContractService {
             watcherId: updatedBlockchain.watcherId,
             adapter: updatedBlockchain.adapter,
             automate: updatedBlockchain.automate,
-            metric: updatedBlockchain.metric,
           })
           .transacting(trx),
       ]),
@@ -446,7 +440,6 @@ export class ContractService {
           .update({
             id: contractDebank.id,
             address: contractDebank.address,
-            metric: contractDebank.metric,
           })
           .transacting(trx),
       ]),

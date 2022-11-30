@@ -1,6 +1,6 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
-import { metricContractTableName, metricTokenTableName } from '@models/Metric/Entity';
+import { metricTokenTableName, RegistryPeriod } from '@models/Metric/Entity';
 import {
   contractBlockchainTableName,
   contractTableName,
@@ -33,22 +33,18 @@ export default async (process: Process) => {
   dayjs.extend(utc);
   const database = container.database();
   const contractMetricRows = await container.model
-    .metricContractTable()
-    .distinctOn('date')
-    .column(database.raw(`DATE_TRUNC('day', date) AS "date"`))
-    .column(database.raw(`data->>'aprDay' AS "aprDay"`))
+    .metricContractRegistryTable()
     .where('contract', contract.id)
+    .where('period', RegistryPeriod.Day)
     .where('date', '>=', periodStart.startOf('day').toDate())
     .where(database.raw(`data->>'aprDay' IS NOT NULL`))
-    .orderBy('date', 'asc')
-    .orderBy(`${metricContractTableName}.date`, 'DESC')
-    .then((rows) => rows as unknown as Array<{ date: Date; aprDay: string }>);
+    .orderBy('date', 'desc');
   if (contractMetricRows.length === 0) throw new Error('Contract metrics not found');
 
   const apr = contractMetricRows.reduce<{ [date: string]: string }>(
-    (result, { date, aprDay }) => ({
+    (result, metric) => ({
       ...result,
-      [dayjs(date).utc().format('YYYY-MM-DD')]: aprDay,
+      [dayjs(metric.date).utc().format('YYYY-MM-DD')]: metric.data.aprDay ?? '0',
     }),
     {},
   );
@@ -114,15 +110,17 @@ export default async (process: Process) => {
     new BN(0),
   );
 
-  const realApr = endInvestingUSD.plus(cumulativeEarned).minus(investing).div(investing);
-
-  await container.model.contractService().updateBlockchain({
-    ...contract,
-    metric: {
-      ...contract.metric,
-      aprWeekReal: realApr.toString(10),
+  await container.model.metricService().createContract(
+    contract,
+    {
+      aprWeekReal: endInvestingUSD
+        .plus(cumulativeEarned)
+        .minus(investing)
+        .div(investing)
+        .toString(10),
     },
-  });
+    new Date(),
+  );
 
   return process.done();
 };

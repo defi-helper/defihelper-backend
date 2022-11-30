@@ -10,6 +10,7 @@ import {
   MetricContract,
   MetricContractAPRField,
   MetricContractField,
+  metricContractRegistryTableName,
   metricContractTableName,
   metricWalletRegistryTableName,
   QueryModify,
@@ -95,35 +96,17 @@ export const protocolLastMetricLoader = ({ metric }: { metric: MetricContractFie
 
     const database = container.database();
     const notCachedIds = protocolsId.filter((protocolId) => cachedMap[protocolId] === undefined);
-    let subselect;
-    if (metric === 'uniqueWalletsCount') {
-      subselect = container.model
-        .metricContractTable()
-        .distinctOn(`${metricContractTableName}.contract`)
-        .column(`${contractTableName}.protocol`)
-        .column(database.raw(`(${metricContractTableName}.data->>'${metric}')::numeric AS v`))
-        .innerJoin(
-          contractTableName,
-          `${contractTableName}.id`,
-          `${metricContractTableName}.contract`,
-        )
-        .whereIn(`${contractTableName}.protocol`, notCachedIds)
-        .andWhere(database.raw(`${metricContractTableName}.data->>'${metric}' IS NOT NULL`))
-        .orderBy(`${metricContractTableName}.contract`)
-        .orderBy(`${metricContractTableName}.date`, 'DESC');
-    } else {
-      subselect = container.model
-        .contractTable()
-        .innerJoin(
-          contractBlockchainTableName,
-          `${contractBlockchainTableName}.id`,
-          `${contractTableName}.id`,
-        )
-        .column(`${contractTableName}.protocol`)
-        .column(database.raw(`(${contractBlockchainTableName}.metric->>'${metric}')::numeric AS v`))
-        .whereIn(`${contractTableName}.protocol`, notCachedIds)
-        .andWhere(database.raw(`${contractBlockchainTableName}.metric->>'${metric}' IS NOT NULL`));
-    }
+    const subselect = container.model
+      .metricContractRegistryTable()
+      .column(`${contractTableName}.protocol`)
+      .column(database.raw(`(${metricContractRegistryTableName}.data->>'${metric}')::numeric AS v`))
+      .innerJoin(
+        contractTableName,
+        `${contractTableName}.id`,
+        `${metricContractRegistryTableName}.contract`,
+      )
+      .whereIn(`${contractTableName}.protocol`, notCachedIds)
+      .where(`${metricContractRegistryTableName}.period`, RegistryPeriod.Latest);
     const metrics =
       notCachedIds.length > 0
         ? await container
@@ -276,19 +259,19 @@ export const protocolUserLastAPRLoader = ({
         ? await container.model
             .contractTable()
             .innerJoin(
-              contractBlockchainTableName,
-              `${contractBlockchainTableName}.id`,
+              metricContractRegistryTableName,
+              `${metricContractRegistryTableName}.contract`,
               `${contractTableName}.id`,
             )
             .column(`${contractTableName}.id`)
             .column(`${contractTableName}.protocol`)
             .column(
-              database.raw(`(${contractBlockchainTableName}.metric->>'${metric}')::numeric AS apr`),
+              database.raw(
+                `(${metricContractRegistryTableName}.data->>'${metric}')::numeric AS apr`,
+              ),
             )
             .whereIn(`${contractTableName}.protocol`, protocolsId)
-            .andWhere(
-              database.raw(`${contractBlockchainTableName}.metric->>'${metric}' IS NOT NULL`),
-            )
+            .where(`${metricContractRegistryTableName}.period`, RegistryPeriod.Latest)
         : [];
     const aprMap = aprMetrics.reduce(
       (map, { protocol, id: contract, apr }) => ({

@@ -93,23 +93,14 @@ export default async (process: Process) => {
   }
 
   log.ex({ contract: contract.id, riskLevel }).send();
-  await Promise.all([
-    container.model.metricService().createContract(
-      contract,
-      {
-        ...lastMetric.data,
-        risk: riskLevel,
-      },
-      new Date(),
-    ),
-    container.model.contractService().updateBlockchain({
-      ...contract,
-      metric: {
-        ...contract.metric,
-        risk: riskLevel,
-      },
-    }),
-  ]);
+  await container.model.metricService().createContract(
+    contract,
+    {
+      ...lastMetric.data,
+      risk: riskLevel,
+    },
+    new Date(),
+  );
 
   return process.done();
 };

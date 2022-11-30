@@ -1242,11 +1242,14 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
           .first();
         if (!wallet) return def;
 
-        const walletMetric = await dataLoader.walletMetric().load(wallet.id);
+        const [contractMetric, walletMetric, invest] = await Promise.all([
+          dataLoader.contractMetric().load(staking.id),
+          dataLoader.walletMetric().load(wallet.id),
+          dataLoader.automateInvestHistory().load(contract.id),
+        ]);
         const totalBalance = new BN(walletMetric.stakingUSD)
           .plus(walletMetric.earnedUSD)
           .toNumber();
-        const invest = await dataLoader.automateInvestHistory().load(contract.id);
         return {
           invest: invest.amountUSD,
           staked: walletMetric.stakingUSD,
@@ -1255,7 +1258,7 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
             blockchain: staking.blockchain,
             network: staking.network,
             balance: totalBalance > 0 ? totalBalance : 10000,
-            aprYear: new BN(staking.metric.aprYear ?? '0').toNumber(),
+            aprYear: new BN(contractMetric?.data.aprYear ?? '0').toNumber(),
           },
         };
       },
