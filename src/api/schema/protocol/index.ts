@@ -379,14 +379,15 @@ export const ContractType: GraphQLObjectType = new GraphQLObjectType<
         },
       },
       resolve: async (contract, { filter }, { currentUser, dataLoader }) => {
+        const contractMetric = await dataLoader.contractMetric().load(contract.id);
         const metric = {
-          tvl: contract.metric.tvl ?? '0',
-          aprDay: contract.metric.aprDay ?? '0',
-          aprWeek: contract.metric.aprWeek ?? '0',
-          aprMonth: contract.metric.aprMonth ?? '0',
-          aprYear: contract.metric.aprYear ?? '0',
-          risk: contract.metric.risk ?? ContractRiskFactor.notCalculated,
-          aprWeekReal: contract.metric.aprWeekReal,
+          tvl: contractMetric?.data.tvl ?? '0',
+          aprDay: contractMetric?.data.aprDay ?? '0',
+          aprWeek: contractMetric?.data.aprWeek ?? '0',
+          aprMonth: contractMetric?.data.aprMonth ?? '0',
+          aprYear: contractMetric?.data.aprYear ?? '0',
+          risk: contractMetric?.data.risk ?? ContractRiskFactor.notCalculated,
+          aprWeekReal: contractMetric?.data.aprWeekReal ?? '0',
           myStaked: '0',
           myStakedChange: {
             day: '0',
@@ -399,7 +400,7 @@ export const ContractType: GraphQLObjectType = new GraphQLObjectType<
             blockchain: contract.blockchain,
             network: contract.network,
             balance: 10000,
-            aprYear: new BN(contract.metric.aprYear ?? '0').toNumber(),
+            aprYear: new BN(contractMetric?.data.aprYear ?? '0').toNumber(),
           },
         };
         if (!currentUser) {
@@ -436,7 +437,7 @@ export const ContractType: GraphQLObjectType = new GraphQLObjectType<
             blockchain: contract.blockchain,
             network: contract.network,
             balance: totalBalance > 0 ? totalBalance : 10000,
-            aprYear: new BN(contract.metric.aprYear ?? '0').toNumber(),
+            aprYear: new BN(contractMetric?.data.aprYear ?? '0').toNumber(),
           },
         };
       },
@@ -576,8 +577,9 @@ export const ContractDebankType: GraphQLObjectType = new GraphQLObjectType<
         },
       },
       resolve: async (contract, { filter }, { currentUser, dataLoader }) => {
+        const contractMetric = await dataLoader.contractMetric().load(contract.id);
         const metric = {
-          tvl: contract.metric.tvl ?? '0',
+          tvl: contractMetric?.data.tvl ?? '0',
           myStaked: '0',
           myEarned: '0',
         };
@@ -894,28 +896,28 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
     if (sortColumns.includes('tvl')) {
       listSelect = listSelect.column(
         database.raw(
-          `(COALESCE(${contractBlockchainTableName}.metric->>'tvl', '0'))::numeric AS "tvl"`,
+          `(COALESCE(${metricContractRegistryTableName}.data->>'tvl', '0'))::numeric AS "tvl"`,
         ),
       );
     }
     if (sortColumns.includes('aprYear')) {
       listSelect = listSelect.column(
         database.raw(
-          `(COALESCE(${contractBlockchainTableName}.metric->>'aprYear', '0'))::numeric AS "aprYear"`,
+          `(COALESCE(${metricContractRegistryTableName}.data->>'aprYear', '0'))::numeric AS "aprYear"`,
         ),
       );
     }
     if (sortColumns.includes('aprYear')) {
       listSelect = listSelect.column(
         database.raw(
-          `(COALESCE(${contractBlockchainTableName}.metric->>'aprBoosted', '0'))::numeric AS "aprBoosted"`,
+          `(COALESCE(${metricContractRegistryTableName}.data->>'aprBoosted', '0'))::numeric AS "aprBoosted"`,
         ),
       );
     }
     if (sortColumns.includes('aprWeekReal')) {
       listSelect = listSelect.column(
         database.raw(
-          `(COALESCE(${contractBlockchainTableName}.metric->>'aprWeekReal', '0'))::numeric AS "aprWeekReal"`,
+          `(COALESCE(${metricContractRegistryTableName}.data->>'aprWeekReal', '0'))::numeric AS "aprWeekReal"`,
         ),
       );
     }
@@ -1170,7 +1172,6 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
           adapters: automates ?? [],
           autorestakeAdapter,
         },
-        {},
         name,
         description,
         link,

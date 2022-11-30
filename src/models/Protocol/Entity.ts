@@ -67,17 +67,6 @@ export enum ContractRiskFactor {
   moderate = 'moderate',
   high = 'high',
 }
-export interface ContractMetric {
-  tvl?: string;
-  aprDay?: string;
-  aprWeek?: string;
-  aprMonth?: string;
-  aprYear?: string;
-  aprBoosted?: string;
-  aprWeekReal?: string;
-  risk?: ContractRiskFactor;
-}
-
 export interface Contract {
   id: string;
   protocol: string;
@@ -94,7 +83,6 @@ export interface Contract {
 export interface ContractDebankType {
   id: string;
   address: string;
-  metric: ContractMetric;
 }
 
 export interface ContractBlockchainType {
@@ -106,7 +94,6 @@ export interface ContractBlockchainType {
   watcherId: string | null;
   adapter: string;
   automate: ContractAutomate;
-  metric: ContractMetric;
 }
 
 export interface ContractMigratableRemindersBulk {

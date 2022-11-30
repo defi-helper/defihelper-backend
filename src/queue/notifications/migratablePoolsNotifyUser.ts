@@ -41,6 +41,10 @@ export default async (process: Process) => {
     )
     .whereIn(`${contractTableName}.id`, Object.values(payload).flat())
     .then((rows) => new Map(rows.map((contract) => [contract.id, contract])));
+  const contractsMetric = await container.model
+    .metricContractRegistryTable()
+    .whereIn('contract', Array.from(contracts.keys()))
+    .then((rows) => new Map(rows.map((metric) => [metric.contract, metric])));
   const telegramContacts = await container.model
     .userContactTable()
     .where('user', userId)
@@ -58,7 +62,7 @@ export default async (process: Process) => {
         const contract = contracts.get(contractId);
         if (!contract) return res;
 
-        const currentApy = new BN(contract.metric.aprYear ?? '0');
+        const currentApy = new BN(contractsMetric.get(contractId)?.data.aprYear ?? '0');
         const boostedApy = await apyBoost(
           contract.blockchain,
           contract.network,

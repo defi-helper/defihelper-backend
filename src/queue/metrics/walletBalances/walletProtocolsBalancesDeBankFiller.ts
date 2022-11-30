@@ -279,12 +279,10 @@ export default async (process: Process) => {
 
         return existingContract?.adapter !== 'debankByApiReadonly';
       })
-      .map(async (contract) => {
-        const existingProtocol = protocols.find(
-          (existings) => existings?.debankId === contract.protocol,
-        );
+      .map(async ({ protocol, hashAddress, contractName }) => {
+        const existingProtocol = protocols.find((existings) => existings?.debankId === protocol);
         const existingContract = existingContracts.find(
-          (v) => v.address === contract.hashAddress && contract.protocol === v.debankId,
+          (v) => v.address === hashAddress && protocol === v.debankId,
         );
 
         if (existingContract) return existingContract;
@@ -292,19 +290,20 @@ export default async (process: Process) => {
           throw new Error('protocol must be found here');
         }
 
-        return container.model.contractService().createDebank(
-          existingProtocol,
-          contract.hashAddress,
-          contract.contractName,
+        const contract = await container.model
+          .contractService()
+          .createDebank(existingProtocol, hashAddress, contractName, '', '', false);
+        await container.model.metricService().createContract(
+          contract,
           {
             tvl:
               debankUserProtocolsList.find((p) => p.id === contract.protocol)?.tvl.toString(10) ??
               '0',
           },
-          '',
-          '',
-          false,
+          new Date(),
         );
+
+        return contract;
       }),
   );
 

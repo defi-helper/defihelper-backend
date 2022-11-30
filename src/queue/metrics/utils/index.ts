@@ -129,26 +129,23 @@ export async function contractMetrics(process: Process) {
     typeof contractAdapterData.metrics === 'object' &&
     Object.keys(contractAdapterData.metrics).length > 0
   ) {
-    await Promise.all([
-      metricService.createContract(contract, contractAdapterData.metrics, date),
-      container.model.contractService().updateBlockchain({
-        ...contract,
-        metric: {
-          ...contract.metric,
-          tvl: contractAdapterData.metrics.tvl ?? '0',
-          aprDay: contractAdapterData.metrics.aprDay ?? '0',
-          aprWeek: contractAdapterData.metrics.aprWeek ?? '0',
-          aprMonth: contractAdapterData.metrics.aprMonth ?? '0',
-          aprYear: contractAdapterData.metrics.aprYear ?? '0',
-          aprBoosted: await apyBoost(
-            contract.blockchain,
-            contract.network,
-            10000,
-            Number(contractAdapterData.metrics.aprYear ?? 0),
-          ),
-        },
-      }),
-    ]);
+    await metricService.createContract(
+      contract,
+      {
+        tvl: contractAdapterData.metrics.tvl ?? '0',
+        aprDay: contractAdapterData.metrics.aprDay ?? '0',
+        aprWeek: contractAdapterData.metrics.aprWeek ?? '0',
+        aprMonth: contractAdapterData.metrics.aprMonth ?? '0',
+        aprYear: contractAdapterData.metrics.aprYear ?? '0',
+        aprBoosted: await apyBoost(
+          contract.blockchain,
+          contract.network,
+          10000,
+          Number(contractAdapterData.metrics.aprYear ?? 0),
+        ),
+      },
+      date,
+    );
 
     if (contractAdapterData.stakeToken) {
       await registerToken(
