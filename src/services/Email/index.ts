@@ -1,6 +1,7 @@
-import * as Mustache from 'mustache';
+import path from 'path';
 import nodemailer, { Transporter } from 'nodemailer';
 import container from '@container';
+import { Locale } from '@services/I18n/container';
 import { Templates } from './templates';
 
 export type EmailTemplate = keyof typeof Templates;
@@ -38,9 +39,14 @@ export class EmailService {
     this.from = config.from;
   }
 
-  async send(template: EmailTemplate, data: Object, subject: string, to: string): Promise<void> {
-    const html = Mustache.render(await Templates[template], data);
-
+  async send<T extends EmailTemplate>(
+    templateName: T,
+    params: Parameters<typeof Templates[T]>[0],
+    subject: string,
+    to: string,
+    locale: Locale,
+  ) {
+    const html = await Templates[templateName](params as any, locale);
     const email = {
       from: {
         name: 'DeFiHelper service',
@@ -49,6 +55,11 @@ export class EmailService {
       to,
       subject,
       html,
+      attachments: Array.from(html.matchAll(/"cid:(.+?)"/g)).map(([, filename]) => ({
+        filename,
+        path: path.resolve(__dirname, '../../../assets/images', filename),
+        cid: filename,
+      })),
     };
 
     if (this.transporter) {
@@ -57,8 +68,4 @@ export class EmailService {
       container.logger().info(JSON.stringify(email));
     }
   }
-}
-
-export function emailServiceFactory(config: EmailServiceConfig) {
-  return () => new EmailService(config);
 }

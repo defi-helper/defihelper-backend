@@ -31,14 +31,7 @@ export default async (process: Process) => {
   }
 
   try {
-    await container.telegram().send(
-      template,
-      {
-        ...container.template.i18n(container.i18n.byLocale(user.locale)),
-        ...params,
-      },
-      Number(contact.params.chatId),
-    );
+    await container.telegram().send(template, params, Number(contact.params.chatId));
   } catch (error: any) {
     if (error?.response?.error_code === 403) {
       await container.model.userContactService().deactivate(contact);

@@ -1,7 +1,7 @@
 import { Factory } from '@services/Container';
 import { Telegraf } from 'telegraf';
 import { I18nContainer, Locale } from '@services/I18n/container';
-import { TemplateContainer } from '@services/Template/container';
+import { TemplateRender } from '@services/Template';
 import { Templates } from './templates';
 
 export type TelegramTemplate = keyof typeof Templates;
@@ -15,18 +15,13 @@ export interface ITelegramService {
 
 class NullService implements ITelegramService {
   constructor(
-    protected readonly template: TemplateContainer,
+    protected readonly template: TemplateRender,
     protected readonly i18n: I18nContainer,
   ) {}
 
   // eslint-disable-next-line
   async send(template: TelegramTemplate, data: Object, chatId: number, locale: Locale = 'enUS') {
-    console.info(
-      this.template.render(await Templates[template], {
-        ...data,
-        ...this.template.i18n(this.i18n.byLocale(locale)),
-      }),
-    );
+    console.info(this.template.render(await Templates[template], data, locale));
   }
 
   // eslint-disable-next-line
@@ -42,7 +37,7 @@ export class TelegramService implements ITelegramService {
 
   constructor(
     token: string,
-    protected readonly template: TemplateContainer,
+    protected readonly template: TemplateRender,
     protected readonly i18n: I18nContainer,
   ) {
     this.bot = new Telegraf(token);
@@ -63,10 +58,7 @@ export class TelegramService implements ITelegramService {
     chatId: number,
     locale: Locale = 'enUS',
   ): Promise<void> {
-    const message = this.template.render(await Templates[template], {
-      ...data,
-      ...this.template.i18n(this.i18n.byLocale(locale)),
-    });
+    const message = this.template.render(await Templates[template], data, locale);
 
     await this.bot.telegram.sendMessage(chatId, message, {
       parse_mode: 'HTML',
@@ -76,7 +68,7 @@ export class TelegramService implements ITelegramService {
 
 export function telegramServiceFactory(
   token: string,
-  template: TemplateContainer,
+  template: TemplateRender,
   i18n: I18nContainer,
 ): Factory<ITelegramService> {
   return () =>

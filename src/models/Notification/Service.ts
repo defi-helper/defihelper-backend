@@ -71,9 +71,10 @@ export class UserContactService {
       if (contact.broker === ContactBroker.Email) {
         await container.model.queueService().push('sendEmail', {
           email: contact.address,
-          template: 'confirmEmailTemplate',
+          template: 'ConfirmEmail',
           subject: 'Confirm your email ✅',
           params: {
+            email: contact.address,
             confirmationCode: contact.confirmationCode,
           },
           locale: user.locale,

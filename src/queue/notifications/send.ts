@@ -46,14 +46,14 @@ export default async (process: Process) => {
             contractUrl: notification.payload.contractUrl,
             network: networkNameById(notification.payload.network.toString()),
           },
-          template: 'eventTemplate',
+          template: 'EventTemplate',
         };
         break;
       case NotificationType.trigger:
         sendParams = {
           subject: 'Trigger run',
           params: notification.payload,
-          template: 'triggerTemplate',
+          template: 'TriggerTemplate',
         };
         break;
       default:

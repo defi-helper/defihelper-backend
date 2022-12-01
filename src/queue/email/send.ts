@@ -14,15 +14,7 @@ export interface EmailNotification {
 export default async (process: Process) => {
   const { template, params, subject, email, locale } = process.task.params as EmailNotification;
 
-  await container.email().send(
-    template,
-    {
-      ...container.template.i18n(container.i18n.byLocale(locale)),
-      ...params,
-    },
-    subject,
-    email,
-  );
+  await container.email().send(template, params, subject, email, locale);
 
   return process.done();
 };

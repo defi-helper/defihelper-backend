@@ -94,15 +94,15 @@ export default async (process: Process) => {
       });
       break;
     case ContactBroker.Email:
-      await container.email().send(
-        'portfolioMetrics',
-        {
-          ...container.template.i18n(container.i18n.byLocale(user.locale)),
-          ...templateParams,
-        },
-        'Portfolio statistics',
-        contact.address,
-      );
+      await container
+        .email()
+        .send(
+          'PortfolioMetrics',
+          templateParams,
+          'Portfolio statistics',
+          contact.address,
+          user.locale,
+        );
       break;
     default:
       throw new Error('Unknown broker');
