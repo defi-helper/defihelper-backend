@@ -73,7 +73,7 @@ export default async (process: Process) => {
       await container.blockchain.ethereum.byNetwork(t.walletNetwork).nativeTokenPrice(),
     ).toNumber();
 
-    return walletFunds.funds * chainNativeUSD - (1 + chainNativeUSD * 0.1) <= 0 ? t : null;
+    return walletFunds.funds * chainNativeUSD <= 18 ? t : null;
   }, Promise.resolve(null));
   if (notifyBy === null) {
     return process.done();
