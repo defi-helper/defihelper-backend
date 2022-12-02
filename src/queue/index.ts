@@ -164,3 +164,4 @@ export * as smartTradeOrderCheck from './smartTrade/orderCheck';
 export * as smartTradeBalancesFiller from './smartTrade/orderBalancesFiller';
 export * as eventsSmartTradeOrderConfirmed from './events/smartTrade/orderConfirmed';
 export * as eventsSmartTradeOrderCallTxCreated from './events/smartTrade/orderCallTxCreated';
+export * as smartTradeOrderCreatedNotify from './notifications/smartTrade/orderCreated';

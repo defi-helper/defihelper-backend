@@ -31,6 +31,7 @@ export default async (process: Process) => {
   }
 
   await Promise.all([
+    container.model.queueService().push('smartTradeOrderCreatedNotify', { id: order.id }),
     container.model.queueService().push('smartTradeBalancesFiller', { id: order.id }),
     (async () => {
       if (order.watcherListenerId !== null) return null;
