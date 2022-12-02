@@ -7,8 +7,8 @@ import { I18nContainer } from '@services/I18n/container';
 import { ModelContainer } from '@models/container';
 import { redisConnectFactory, redisLockFactory, redisSubscriberFactory } from '@services/Cache';
 import { ACLContainer } from '@services/ACL/container';
-import { TemplateContainer } from '@services/Template/container';
-import { emailServiceFactory } from '@services/Email';
+import { TemplateRender } from '@services/Template';
+import { EmailService } from '@services/Email';
 import { telegramServiceFactory } from '@services/Telegram';
 import { ScannerService } from '@services/Scanner';
 import { rabbitmqFactory } from '@services/Rabbitmq';
@@ -36,7 +36,7 @@ class AppContainer extends Container<typeof config> {
 
   readonly semafor = singleton(redisLockFactory(this.cache));
 
-  readonly email = singleton(emailServiceFactory(this.parent.email));
+  readonly email = singleton(() => new EmailService(this.parent.email));
 
   readonly cexServicesProvider = singleton(cexServicesProviderFactory());
 
@@ -73,7 +73,7 @@ class AppContainer extends Container<typeof config> {
 
   readonly acl = new ACLContainer(this);
 
-  readonly template = new TemplateContainer(this);
+  readonly template = new TemplateRender(this.i18n, this.numbers());
 
   readonly model = new ModelContainer(this);
 

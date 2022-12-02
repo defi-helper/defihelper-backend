@@ -1,12 +1,29 @@
 import fs from 'fs';
+import container from '@container';
+import { Locale } from '@services/I18n/container';
+
+const template =
+  <T>(templateFile: string) =>
+  (params: T, locale: Locale) =>
+    fs.promises
+      .readFile(`${__dirname}/${templateFile}`, 'utf8')
+      .then((v) => container.template.render(v, params, locale));
 
 export const Templates = {
-  confirmEmailTemplate: fs.promises.readFile(`${__dirname}/ConfirmEmail.mustache`, 'utf8'),
-  automateNotEnoughFunds: fs.promises.readFile(
-    `${__dirname}/AutomateNotEnoughFunds.mustache`,
-    'utf8',
-  ),
-  eventTemplate: fs.promises.readFile(`${__dirname}/Event.mustache`, 'utf8'),
-  triggerTemplate: fs.promises.readFile(`${__dirname}/Trigger.mustache`, 'utf8'),
-  portfolioMetrics: fs.promises.readFile(`${__dirname}/PortfolioMetrics.mustache`, 'utf8'),
+  ConfirmEmail: template<{ email: string; confirmationCode: string }>('ConfirmEmail.mustache'),
+  PortfolioMetrics: template<{
+    totalNetWorth: string;
+    percentageTracked: string;
+    totalEarnedUSD: string;
+    percentageEarned: string;
+  }>('PortfolioMetrics.mustache'),
+  AutomateNotEnoughFunds: template<{}>('AutomateNotEnoughFunds.mustache'),
+  EventTemplate: template<{
+    eventName: string;
+    eventsUrls: string;
+    contractName: string;
+    contractUrl: string;
+    network: string;
+  }>('Event.mustache'),
+  TriggerTemplate: template<{ message: string }>('Trigger.mustache'),
 };

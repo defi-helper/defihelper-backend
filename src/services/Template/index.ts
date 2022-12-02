@@ -1,12 +1,21 @@
-import { I18n } from '@services/I18n';
+import * as Mustache from 'mustache';
+import { I18nContainer, Locale } from '@services/I18n/container';
+import { Numbers } from '@services/Numbers';
 
-export const i18nContext = (i18n: I18n) => ({
-  t: () => (text: string, render: any) => {
-    return render(i18n.t(text));
-  },
-  p: () => (text: string, render: any) => {
-    const [n] = render(text);
+export class TemplateRender {
+  constructor(public readonly i18n: I18nContainer, public readonly numbers: Numbers) {}
 
-    return render(i18n.p(parseFloat(n), text));
-  },
-});
+  render(template: string, data: any | typeof Mustache.Context, locale: Locale = 'enUS') {
+    return Mustache.render(template, {
+      ...data,
+      t: () => (text: string, render: any) => {
+        return render(this.i18n.byLocale(locale).t(text));
+      },
+      p: () => (text: string, render: any) => {
+        const [n] = render(text);
+        return render(this.i18n.byLocale(locale).p(parseFloat(n), text));
+      },
+      formatMoney: () => (text: string, render: any) => this.numbers.formatMoney(render(text)),
+    });
+  }
+}

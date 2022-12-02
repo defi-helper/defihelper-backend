@@ -21,6 +21,8 @@ export default {
       'Мы рады видеть тебя в рядах сообщества DeFiHelper!',
     'Please confirm your E-Mail address <b>{{email}}</b> by clicking on the following link:':
       'Пожалуйста, подтвердите свой E-Mail адрес <b>{{email}}</b>, нажатием на ссылку ниже:',
+    'Please note, that you need to top up your DeFiHelper balance to run the automations':
+      'Обратите внимание, что вам необходимо пополнить баланс DeFiHelper, чтобы запустить автоматизацию',
     'New {{eventName}} events in {{contractAddress}} on {{network}}:':
       'Новое событие {{eventName}} в контракте {{contractAddress}} сети {{network}}:',
     'Your portfolio: total stacked ${{totalStackedUSD}}, total earned ${{totalEarnedUSD}}':

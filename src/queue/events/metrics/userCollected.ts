@@ -106,7 +106,7 @@ async function sendPortfolioNotification(user: User) {
         'sendEmail',
         {
           email: notification.address,
-          template: 'portfolioMetrics',
+          template: 'PortfolioMetrics',
           subject: 'Portfolio statistics',
           params: templateParams,
           locale: user.locale,

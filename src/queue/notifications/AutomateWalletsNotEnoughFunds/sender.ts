@@ -90,8 +90,9 @@ export default async (process: Process) => {
         case ContactBroker.Email:
           return container.model.queueService().push('sendEmail', {
             email: contact.address,
-            template: 'automateNotEnoughFunds',
+            template: 'AutomateNotEnoughFunds',
             subject: '🚨Action required: service is not working',
+            params: {},
             locale: user.locale,
           });
 
