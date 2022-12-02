@@ -216,23 +216,7 @@ export class ContractService {
         wallet: wallet.id,
       })
       .first();
-
-    if (existing) {
-      if (existing.processed === true) {
-        const updatedInstance = {
-          ...existing,
-          processed: false,
-          updatedAt: new Date(),
-        };
-        await this.contractMigratableRemindersBulkTable()
-          .where('id', existing.id)
-          .update(updatedInstance);
-
-        return updatedInstance;
-      }
-
-      return existing;
-    }
+    if (existing) return existing;
 
     const created: ContractMigratableRemindersBulk = {
       id: uuid(),
