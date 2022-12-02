@@ -27,4 +27,13 @@ export const Templates = {
     `${__dirname}/AutomateNotEnoughFunds.mustache`,
     'utf8',
   ),
+  // Smart trade
+  smartTradeOrderCreated: fs.promises.readFile(
+    `${__dirname}/SmartTradeOrderCreated.mustache`,
+    'utf8',
+  ),
+  smartTradeOrderSucceeded: fs.promises.readFile(
+    `${__dirname}/SmartTradeOrderSucceeded.mustache`,
+    'utf8',
+  ),
 };
