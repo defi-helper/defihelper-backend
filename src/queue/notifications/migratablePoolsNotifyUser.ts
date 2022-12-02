@@ -89,7 +89,7 @@ export default async (process: Process) => {
             contactId,
             template: 'automationsMigrableContracts',
             params: {
-              walletName: `${wallet.name} (${wallet.blockchain})`,
+              walletName: `${wallet.name} (${wallet.network} ${wallet.address})`,
               items,
             },
           }),
