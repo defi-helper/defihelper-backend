@@ -83,6 +83,10 @@ export const tokenAliasUserLastMetricLoader = ({
           `${metricWalletTokenRegistryTableName}.data->>'usd'`,
         ])
         .where(`${metricWalletTokenRegistryTableName}.period`, RegistryPeriod.Latest)
+        .whereBetween(`${metricWalletTokenRegistryTableName}.date`, [
+          dayjs().add(-1, 'day').startOf('day').toDate(),
+          dayjs().add(1, 'day').startOf('day').toDate(),
+        ])
         .then(
           (
             rows: Array<{

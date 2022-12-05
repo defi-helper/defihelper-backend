@@ -90,6 +90,10 @@ export const userLastMetricLoader = () =>
           `${metricWalletRegistryTableName}.data->>'earnedUSD'`,
         ])
         .where(`${metricWalletRegistryTableName}.period`, RegistryPeriod.Latest)
+        .whereBetween(`${metricWalletRegistryTableName}.date`, [
+          dayjs().add(-1, 'day').startOf('day').toDate(),
+          dayjs().add(1, 'day').startOf('day').toDate(),
+        ])
         .then(
           (
             rows: Array<{
@@ -201,6 +205,10 @@ export const userLastAPRLoader = ({ metric }: { metric: MetricContractAPRField }
       .where(`${metricWalletRegistryTableName}.period`, RegistryPeriod.Latest)
       .whereIn(`${walletTableName}.user`, usersId)
       .whereNull(`${walletTableName}.deletedAt`)
+      .whereBetween(`${metricWalletRegistryTableName}.date`, [
+        dayjs().add(-1, 'day').startOf('day').toDate(),
+        dayjs().add(1, 'day').startOf('day').toDate(),
+      ])
       .groupBy('user', 'contract')
       .then((rows) =>
         rows.reduce(
@@ -293,6 +301,10 @@ export const userTokenLastMetricLoader = ({
           `${metricWalletTokenRegistryTableName}.data->>'usd'`,
         ])
         .where(`${metricWalletTokenRegistryTableName}.period`, RegistryPeriod.Latest)
+        .whereBetween(`${metricWalletTokenRegistryTableName}.date`, [
+          dayjs().add(-1, 'day').startOf('day').toDate(),
+          dayjs().add(1, 'day').startOf('day').toDate(),
+        ])
         .then(
           (
             rows: Array<{
@@ -376,6 +388,10 @@ export const walletLastMetricLoader = () =>
           `${metricWalletRegistryTableName}.data->>'earnedUSD'`,
         ])
         .where(`${metricWalletRegistryTableName}.period`, RegistryPeriod.Latest)
+        .whereBetween(`${metricWalletRegistryTableName}.date`, [
+          dayjs().add(-1, 'day').startOf('day').toDate(),
+          dayjs().add(1, 'day').startOf('day').toDate(),
+        ])
         .then(
           (
             rows: Array<{
@@ -496,6 +512,10 @@ export const walletTokenLastMetricLoader = (filter: {
           `${metricWalletTokenRegistryTableName}.data->>'balance'`,
         ])
         .where(`${metricWalletTokenRegistryTableName}.period`, RegistryPeriod.Latest)
+        .whereBetween(`${metricWalletTokenRegistryTableName}.date`, [
+          dayjs().add(-1, 'day').startOf('day').toDate(),
+          dayjs().add(1, 'day').startOf('day').toDate(),
+        ])
         .then(
           (
             rows: Array<{
