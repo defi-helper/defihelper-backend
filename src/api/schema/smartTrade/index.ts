@@ -739,7 +739,7 @@ export const SwapOrderCreateMutation: GraphQLFieldConfig<any, Request> = {
                   amountOut: callData.stopLoss2.amountOut.toFixed(0),
                   amountOutMin: callData.stopLoss2.amountOutMin.toFixed(0),
                   moving: callData.stopLoss2.moving
-                    ? callData.amountOut.minus(callData.stopLoss2.amountOut).toFixed(0)
+                    ? callData.activate.amountOut.minus(callData.stopLoss2.amountOut).toFixed(0)
                     : null,
                   slippage: callData.stopLoss2.slippage.toString(),
                   direction: 'lt',
