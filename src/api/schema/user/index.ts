@@ -337,6 +337,10 @@ export const WalletBlockchainType: GraphQLObjectType = new GraphQLObjectType<
           .innerJoin(tokenAliasTableName, `${tokenAliasTableName}.id`, `${tokenTableName}.alias`)
           .where(function () {
             this.where(`${metricWalletTokenRegistryTableName}.period`, RegistryPeriod.Latest);
+            this.whereBetween(`${metricWalletRegistryTableName}.date`, [
+              dayjs().add(-1, 'day').startOf('day').toDate(),
+              dayjs().add(1, 'day').startOf('day').toDate(),
+            ]);
             this.where(`${metricWalletTokenRegistryTableName}.wallet`, wallet.id);
             if (Array.isArray(filter.liquidity) && filter.liquidity.length > 0) {
               this.whereIn(`${tokenAliasTableName}.liquidity`, filter.liquidity);
@@ -710,6 +714,10 @@ export const WalletExchangeType = new GraphQLObjectType<
           .innerJoin(tokenAliasTableName, `${tokenAliasTableName}.id`, `${tokenTableName}.alias`)
           .where(function () {
             this.where(`${metricWalletTokenRegistryTableName}.period`, RegistryPeriod.Latest);
+            this.whereBetween(`${metricWalletRegistryTableName}.date`, [
+              dayjs().add(-1, 'day').startOf('day').toDate(),
+              dayjs().add(1, 'day').startOf('day').toDate(),
+            ]);
             this.where(`${metricWalletTokenRegistryTableName}.wallet`, wallet.id);
             if (Array.isArray(filter.liquidity) && filter.liquidity.length > 0) {
               this.whereIn(`${tokenAliasTableName}.liquidity`, filter.liquidity);
@@ -1177,6 +1185,10 @@ export const UserType = new GraphQLObjectType<User, Request>({
           )
           .where(function () {
             this.where(`${metricWalletTokenRegistryTableName}.period`, RegistryPeriod.Latest);
+            this.whereBetween(`${metricWalletRegistryTableName}.date`, [
+              dayjs().add(-1, 'day').startOf('day').toDate(),
+              dayjs().add(1, 'day').startOf('day').toDate(),
+            ]);
             this.where(`${protocolContractTableName}.protocol`, filter.protocol);
             this.where(`${walletTableName}.user`, user.id);
             this.whereNull(`${walletTableName}.deletedAt`);

@@ -169,6 +169,10 @@ export const protocolUserLastMetricLoader = ({ userId }: { userId: string }) =>
         ])
         .min(`${metricWalletRegistryTableName}.date AS minUpdatedAt`)
         .where(`${metricWalletRegistryTableName}.period`, RegistryPeriod.Latest)
+        .whereBetween(`${metricWalletRegistryTableName}.date`, [
+          dayjs().add(-1, 'day').startOf('day').toDate(),
+          dayjs().add(1, 'day').startOf('day').toDate(),
+        ])
         .then(
           (
             rows: Array<{
@@ -305,6 +309,10 @@ export const protocolUserLastAPRLoader = ({
               `${metricWalletRegistryTableName}.wallet`,
             )
             .where(`${metricWalletRegistryTableName}.period`, RegistryPeriod.Latest)
+            .whereBetween(`${metricWalletRegistryTableName}.date`, [
+              dayjs().add(-1, 'day').startOf('day').toDate(),
+              dayjs().add(1, 'day').startOf('day').toDate(),
+            ])
             .whereIn(`${contractTableName}.protocol`, protocolsId)
             .andWhere(`${walletTableName}.user`, userId)
             .whereNull(`${walletTableName}.deletedAt`)
@@ -422,6 +430,10 @@ export const contractUserLastMetricLoader = ({
           `${metricWalletRegistryTableName}.data->>'earnedUSD'`,
         ])
         .where(`${metricWalletRegistryTableName}.period`, RegistryPeriod.Latest)
+        .whereBetween(`${metricWalletRegistryTableName}.date`, [
+          dayjs().add(-1, 'day').startOf('day').toDate(),
+          dayjs().add(1, 'day').startOf('day').toDate(),
+        ])
         .then(
           (
             rows: Array<{
