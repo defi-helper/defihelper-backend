@@ -381,7 +381,7 @@ export class BlockchainContainer extends Container<Config> {
     '56': networkFactory({
       id: '56',
       testnet: false,
-      name: 'Binance Smart Chain',
+      name: 'BNB Chain',
       icon: 'bnbRegular',
       explorerURL: new URL('https://bscscan.com'),
       txExplorerURL: new URL('https://bscscan.com/tx'),
