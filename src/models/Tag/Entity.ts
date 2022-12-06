@@ -7,16 +7,16 @@ export enum TagType {
 }
 
 export enum TagPreservedName {
-  TvlHundredThousand = '$100,000-$1,000,000 TVL',
-  TvlOneMillion = '$1,000,000-$10,000,000 TVL',
-  TvlTenMillion = '$10,000,000-$100,000,000 TVL',
-  TvlHundredMillion = '$100,000,000+ TVL',
+  TvlHundredThousand = '$100k — $1m TVL',
+  TvlOneMillion = '$1m — $10m TVL',
+  TvlTenMillion = '$10m — $100m TVL',
+  TvlHundredMillion = '$100m+ TVL',
 
-  RiskLow = 'Low Risk',
-  RiskModerate = 'Moderate Risk',
-  RiskHigh = 'High Risk',
+  RiskLow = 'Low risk',
+  RiskModerate = 'Moderate risk',
+  RiskHigh = 'High risk',
   TypeStable = 'Stable',
-  TypeStableVsNative = 'Stable vs Native',
+  TypeStableVsNative = 'Stable vs native',
   TypeMajorTokens = 'Major tokens',
 }
 
