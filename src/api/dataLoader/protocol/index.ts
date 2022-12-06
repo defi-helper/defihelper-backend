@@ -11,7 +11,6 @@ import {
   MetricContractAPRField,
   MetricContractField,
   metricContractRegistryTableName,
-  metricContractTableName,
   metricWalletRegistryTableName,
   QueryModify,
   RegistryPeriod,
@@ -106,6 +105,8 @@ export const protocolLastMetricLoader = ({ metric }: { metric: MetricContractFie
         `${metricContractRegistryTableName}.contract`,
       )
       .whereIn(`${contractTableName}.protocol`, notCachedIds)
+      .where(`${contractTableName}.hidden`, false)
+      .where(`${contractTableName}.deprecated`, false)
       .where(`${metricContractRegistryTableName}.period`, RegistryPeriod.Latest);
     const metrics =
       notCachedIds.length > 0
@@ -373,12 +374,14 @@ export const contractLoader = () =>
 export const contractLastMetricLoader = () =>
   new DataLoader<string, MetricContract | null>(async (contractsId) => {
     const map = await container.model
-      .metricContractTable()
-      .distinctOn(`${metricContractTableName}.contract`)
-      .column(`${metricContractTableName}.*`)
-      .whereIn(`${metricContractTableName}.contract`, contractsId)
-      .orderBy(`${metricContractTableName}.contract`)
-      .orderBy(`${metricContractTableName}.date`, 'DESC')
+      .metricContractRegistryTable()
+      .column(`${metricContractRegistryTableName}.*`)
+      .whereIn(`${metricContractRegistryTableName}.contract`, contractsId)
+      .where(`${metricContractRegistryTableName}.period`, RegistryPeriod.Latest)
+      .whereBetween(`${metricContractRegistryTableName}.date`, [
+        dayjs().add(-1, 'day').startOf('day').toDate(),
+        dayjs().add(1, 'day').startOf('day').toDate(),
+      ])
       .then((rows) => new Map(rows.map((row) => [row.contract, row])));
 
     return contractsId.map((id) => map.get(id) ?? null);
