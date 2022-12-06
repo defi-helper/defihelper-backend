@@ -105,6 +105,8 @@ export const protocolLastMetricLoader = ({ metric }: { metric: MetricContractFie
         `${metricContractRegistryTableName}.contract`,
       )
       .whereIn(`${contractTableName}.protocol`, notCachedIds)
+      .where(`${contractTableName}.hidden`, false)
+      .where(`${contractTableName}.deprecated`, false)
       .where(`${metricContractRegistryTableName}.period`, RegistryPeriod.Latest);
     const metrics =
       notCachedIds.length > 0
