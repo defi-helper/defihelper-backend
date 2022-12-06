@@ -142,6 +142,36 @@ export const MockHandlerCallDataType = new GraphQLObjectType<Order<MockCallData>
   },
 });
 
+export const SwapOrderCallDataDirectionEnum = new GraphQLEnumType({
+  name: 'SwapOrderCallDataDirectionEnum',
+  values: {
+    gt: {
+      value: 'gt',
+      description: 'great',
+    },
+    lt: {
+      value: 'lt',
+      description: 'less',
+    },
+  },
+});
+
+export const SwapHandlerCallDataRouteActivationType = new GraphQLObjectType({
+  name: 'SwapHandlerCallDataRouteActivationType',
+  fields: {
+    amountOut: {
+      type: GraphQLNonNull(BigNumberType),
+      resolve: ({ amountOut, decimals }) => new BN(amountOut).div(`1e${decimals}`),
+    },
+    direction: {
+      type: GraphQLNonNull(SwapOrderCallDataDirectionEnum),
+    },
+    activated: {
+      type: GraphQLNonNull(GraphQLBoolean),
+    },
+  },
+});
+
 export const SwapHandlerCallDataRouteType = new GraphQLObjectType({
   name: 'SwapHandlerCallDataRouteType',
   fields: {
@@ -159,19 +189,9 @@ export const SwapHandlerCallDataRouteType = new GraphQLObjectType({
     moving: {
       type: GraphQLNonNull(GraphQLBoolean),
     },
-  },
-});
-
-export const SwapOrderCallDataDirectionEnum = new GraphQLEnumType({
-  name: 'SwapOrderCallDataDirectionEnum',
-  values: {
-    gt: {
-      value: 'gt',
-      description: 'great',
-    },
-    lt: {
-      value: 'lt',
-      description: 'less',
+    activation: {
+      type: SwapHandlerCallDataRouteActivationType,
+      resolve: ({ activation, decimals }) => (activation ? { ...activation, decimals } : null),
     },
   },
 });
@@ -245,26 +265,6 @@ export const SwapHandlerCallDataType = new GraphQLObjectType<Order<SwapCallData>
           moving: false,
         };
       },
-    },
-    activate: {
-      type: new GraphQLObjectType({
-        name: 'SmartTradeSwapHandlerCallDataActivateType',
-        fields: {
-          amountOut: {
-            type: GraphQLNonNull(BigNumberType),
-          },
-          direction: {
-            type: GraphQLNonNull(SwapOrderCallDataDirectionEnum),
-          },
-        },
-      }),
-      resolve: ({ callData: { tokenOutDecimals, activate } }) =>
-        activate
-          ? {
-              amountOut: new BN(activate.amountOut).div(`1e${tokenOutDecimals}`),
-              direction: activate.direction,
-            }
-          : null,
     },
     deadline: {
       type: GraphQLNonNull(GraphQLInt),
@@ -523,6 +523,18 @@ export const OrderClaimMutation: GraphQLFieldConfig<any, Request> = {
   }),
 };
 
+export const SwapOrderCallDataRouteActivationInputType = new GraphQLInputObjectType({
+  name: 'SwapOrderCallDataRouteActivationInputType',
+  fields: {
+    amountOut: {
+      type: GraphQLNonNull(BigNumberType),
+    },
+    direction: {
+      type: GraphQLNonNull(SwapOrderCallDataDirectionEnum),
+    },
+  },
+});
+
 export const SwapOrderCallDataTakeProfitInputType = new GraphQLInputObjectType({
   name: 'SwapOrderCallDataTakeProfitInputType',
   fields: {
@@ -534,6 +546,9 @@ export const SwapOrderCallDataTakeProfitInputType = new GraphQLInputObjectType({
     },
     slippage: {
       type: GraphQLNonNull(GraphQLFloat),
+    },
+    activation: {
+      type: SwapOrderCallDataRouteActivationInputType,
     },
   },
 });
@@ -547,23 +562,14 @@ export const SwapOrderCallDataStopLossInputType = new GraphQLInputObjectType({
     amountOutMin: {
       type: GraphQLNonNull(BigNumberType),
     },
-    moving: {
-      type: GraphQLNonNull(GraphQLBoolean),
-    },
     slippage: {
       type: GraphQLNonNull(GraphQLFloat),
     },
-  },
-});
-
-export const SwapOrderCallDataActivateInputType = new GraphQLInputObjectType({
-  name: 'SwapOrderCallDataActivateInputType',
-  fields: {
-    amountOut: {
-      type: GraphQLNonNull(BigNumberType),
+    moving: {
+      type: BigNumberType,
     },
-    direction: {
-      type: GraphQLNonNull(SwapOrderCallDataDirectionEnum),
+    activation: {
+      type: SwapOrderCallDataRouteActivationInputType,
     },
   },
 });
@@ -624,9 +630,6 @@ export const SwapOrderCreateInputType = new GraphQLInputObjectType({
             },
             takeProfit: {
               type: SwapOrderCallDataTakeProfitInputType,
-            },
-            activate: {
-              type: SwapOrderCallDataActivateInputType,
             },
             deadline: {
               type: GraphQLNonNull(GraphQLInt),
@@ -718,11 +721,15 @@ export const SwapOrderCreateMutation: GraphQLFieldConfig<any, Request> = {
               ? {
                   amountOut: callData.stopLoss.amountOut.toFixed(0),
                   amountOutMin: callData.stopLoss.amountOutMin.toFixed(0),
-                  moving: callData.stopLoss.moving
-                    ? callData.amountOut.minus(callData.stopLoss.amountOut).toFixed(0)
-                    : null,
                   slippage: callData.stopLoss.slippage.toString(),
+                  moving: callData.stopLoss.moving ? callData.stopLoss.moving.toFixed(0) : null,
                   direction: 'lt',
+                  activation: callData.stopLoss.activation
+                    ? {
+                        ...callData.stopLoss.activation,
+                        activated: false,
+                      }
+                    : null,
                 }
               : null,
             callData.takeProfit
@@ -732,26 +739,34 @@ export const SwapOrderCreateMutation: GraphQLFieldConfig<any, Request> = {
                   moving: null,
                   slippage: callData.takeProfit.slippage.toString(),
                   direction: 'gt',
+                  activation: callData.takeProfit.activation
+                    ? {
+                        ...callData.takeProfit.activation,
+                        activated: false,
+                      }
+                    : null,
                 }
               : null,
             callData.stopLoss2
               ? {
                   amountOut: callData.stopLoss2.amountOut.toFixed(0),
                   amountOutMin: callData.stopLoss2.amountOutMin.toFixed(0),
-                  moving: callData.stopLoss2.moving
-                    ? callData.activate.amountOut.minus(callData.stopLoss2.amountOut).toFixed(0)
-                    : null,
                   slippage: callData.stopLoss2.slippage.toString(),
+                  moving: callData.stopLoss2.moving ? callData.stopLoss2.moving.toFixed(0) : null,
                   direction: 'lt',
+                  activation: callData.stopLoss2.activation
+                    ? {
+                        ...callData.stopLoss2.activation,
+                        activated: false,
+                      }
+                    : null,
                 }
               : null,
           ],
-          activate: callData.activate,
           deadline: callData.deadline,
         },
       },
       OrderStatus.Pending,
-      callData.activate === null || callData.activate === undefined,
       tx,
       false,
     );
@@ -852,9 +867,6 @@ export const SwapOrderUpdateInputType = new GraphQLInputObjectType({
         new GraphQLInputObjectType({
           name: 'SmartTradeSwapOrderUpdateCallDataInputType',
           fields: {
-            amountOut: {
-              type: GraphQLNonNull(BigNumberType),
-            },
             stopLoss: {
               type: SwapOrderCallDataStopLossInputType,
             },
@@ -863,9 +875,6 @@ export const SwapOrderUpdateInputType = new GraphQLInputObjectType({
             },
             takeProfit: {
               type: SwapOrderCallDataTakeProfitInputType,
-            },
-            activate: {
-              type: SwapOrderCallDataActivateInputType,
             },
             deadline: {
               type: GraphQLNonNull(GraphQLInt),
@@ -929,35 +938,48 @@ export const SwapOrderUpdateMutation: GraphQLFieldConfig<any, Request> = {
               ? {
                   amountOut: callData.stopLoss.amountOut.toFixed(0),
                   amountOutMin: callData.stopLoss.amountOutMin.toFixed(0),
-                  moving: callData.stopLoss.moving
-                    ? callData.amountOut.minus(callData.stopLoss.amountOut).toFixed(0)
-                    : null,
                   slippage: callData.stopLoss.slippage.toString(),
+                  moving: callData.stopLoss.moving ? callData.stopLoss.moving.toFixed(0) : null,
                   direction: 'lt',
+                  activation: callData.stopLoss.activation
+                    ? {
+                        ...callData.stopLoss.activation,
+                        activated: false,
+                      }
+                    : null,
                 }
               : null,
             callData.takeProfit
               ? {
                   amountOut: callData.takeProfit.amountOut.toFixed(0),
                   amountOutMin: callData.takeProfit.amountOutMin.toFixed(0),
-                  moving: null,
                   slippage: callData.takeProfit.slippage.toString(),
+                  moving: null,
                   direction: 'gt',
+                  activation: callData.takeProfit.activation
+                    ? {
+                        ...callData.takeProfit.activation,
+                        activated: false,
+                      }
+                    : null,
                 }
               : null,
             callData.stopLoss2
               ? {
                   amountOut: callData.stopLoss2.amountOut.toFixed(0),
                   amountOutMin: callData.stopLoss2.amountOutMin.toFixed(0),
-                  moving: callData.stopLoss2.moving
-                    ? callData.amountOut.minus(callData.stopLoss2.amountOut).toFixed(0)
-                    : null,
                   slippage: callData.stopLoss2.slippage.toString(),
+                  moving: callData.stopLoss2.moving ? callData.stopLoss2.moving.toFixed(0) : null,
                   direction: 'lt',
+                  activation: callData.stopLoss2.activation
+                    ? {
+                        ...callData.stopLoss2.activation,
+                        activated: false,
+                      }
+                    : null,
                 }
               : null,
           ],
-          activate: callData.activate,
           deadline: callData.deadline,
         },
       });

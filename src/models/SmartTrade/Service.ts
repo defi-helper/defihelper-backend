@@ -61,7 +61,6 @@ export class SmartTradeService {
     callDataRaw: string,
     callData: CallData,
     status: OrderStatus,
-    active: boolean,
     tx: string,
     confirmed: boolean,
   ) {
@@ -74,7 +73,6 @@ export class SmartTradeService {
       ...callData,
       balances: {},
       status,
-      active,
       tx,
       confirmed,
       claim: false,

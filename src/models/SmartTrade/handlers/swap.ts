@@ -11,22 +11,6 @@ import { BigNumber as BN } from 'bignumber.js';
 import { Order, SwapCallData } from '../Entity';
 import UniswapRouterABI from '../data/uniswapRouterABI.json';
 
-async function activateOrder(order: Order<SwapCallData>, actualAmountout: string) {
-  if (order.active) return order;
-
-  const { amountOut, direction } = order.callData.activate ?? {};
-  if (
-    direction === undefined ||
-    amountOut === undefined ||
-    (direction === 'lt' && new BN(actualAmountout).lt(amountOut)) ||
-    (direction === 'gt' && new BN(actualAmountout).gt(amountOut))
-  ) {
-    return container.model.smartTradeService().updateOrder(order, { active: true });
-  }
-
-  return order;
-}
-
 export default async function (
   order: Order<SwapCallData>,
 ): Promise<ethers.ContractTransaction | Error | null> {
@@ -67,47 +51,61 @@ export default async function (
     .then((amountsOut: ethers.BigNumber[]) => new BN(amountsOut[amountsOut.length - 1].toString()));
   log
     .ex({
-      routesAmountOut: order.callData.routes.map((route, index) => ({
-        index,
-        amountOut: route?.amountOut,
-        amountOutMin: route?.amountOutMin,
-      })),
-      activate: JSON.stringify(order.callData.activate),
+      routes: JSON.stringify(order.callData.routes),
       actualAmountOut: actualAmountOut.toString(10),
     })
     .send();
 
-  const { active } = await activateOrder(order, actualAmountOut);
-  log.ex({ active }).send();
-  if (!active) {
-    return null;
-  }
-
+  // Update routes
   const routes = order.callData.routes.map((route) => {
     if (route === null) return route;
+
+    const update = {
+      amountOut: route.amountOut,
+      amountOutMin: route.amountOutMin,
+      activated: route.activation?.activated,
+    };
     if (route.direction === 'lt') {
       if (route.moving !== null && actualAmountOut.minus(route.amountOut).gt(route.moving)) {
         const amountOut = actualAmountOut.minus(route.moving);
-        return {
-          ...route,
-          amountOut: amountOut.toFixed(0),
-          amountOutMin: amountOut.multipliedBy(new BN(1).minus(route.slippage)).toFixed(0),
-        };
+        update.amountOut = amountOut.toFixed(0);
+        update.amountOutMin = amountOut.multipliedBy(new BN(1).minus(route.slippage)).toFixed(0);
+      }
+    }
+    if (route.activation !== null && route.activation.activated === false) {
+      const { direction, amountOut } = route.activation;
+      if (
+        (direction === 'lt' && actualAmountOut.lte(amountOut)) ||
+        (direction === 'gt' && actualAmountOut.gte(amountOut))
+      ) {
+        update.activated = true;
       }
     }
 
-    return route;
+    return {
+      ...route,
+      amountOut: update.amountOut,
+      amountOutMin: update.amountOutMin,
+      activation: route.activation
+        ? {
+            ...route.activation,
+            activated: update.activated,
+          }
+        : null,
+    };
   });
+  log.ex({ routes: JSON.stringify(routes) }).send();
   await container.model.smartTradeService().updateOrder(order, {
-    active,
     callData: {
       ...order.callData,
       routes,
     },
   });
 
+  // Find actual route
   const routeIndex = routes.reduce<number | null>((prev, route, index) => {
     if (prev !== null || route === null) return prev;
+    if (route.activation?.activated === false) return prev;
     if (
       (route.direction === 'gt' && actualAmountOut.lt(route.amountOut)) ||
       (route.direction === 'lt' && actualAmountOut.gt(route.amountOut))
@@ -125,6 +123,7 @@ export default async function (
   const currentRoute = routes[routeIndex];
   if (currentRoute === null) return null;
 
+  // Execute transaction
   const freeConsumer = await useEthereumFreeConsumer(ownerWallet.network);
   log.ex({ consumer: freeConsumer?.consumer.address }).send();
   if (freeConsumer === null) return new Error('Not free consumer');
