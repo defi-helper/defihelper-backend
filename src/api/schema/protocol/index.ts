@@ -986,12 +986,16 @@ export const ContractDebankListQuery: GraphQLFieldConfig<any, Request> = {
         `${contractDebankTableName}.id`,
         `${contractTableName}.id`,
       )
+      .innerJoin(metricContractRegistryTableName, function () {
+        this.on(`${metricContractRegistryTableName}.contract`, '=', `${contractTableName}.id`);
+        this.onIn(`${metricContractRegistryTableName}.period`, [RegistryPeriod.Latest]);
+      })
       .column(`${contractTableName}.*`)
       .column(`${contractDebankTableName}.*`)
       .column(database.raw('COALESCE("myStaked", 0) AS "myStaked"'))
       .column(
         database.raw(
-          `(COALESCE(${contractDebankTableName}.metric->>'tvl', '0'))::numeric AS "tvl"`,
+          `(COALESCE(${metricContractRegistryTableName}.data->>'tvl', '0'))::numeric AS "tvl"`,
         ),
       )
       .leftJoin(
