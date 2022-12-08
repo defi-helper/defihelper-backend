@@ -616,9 +616,6 @@ export const SwapOrderCreateInputType = new GraphQLInputObjectType({
             amountIn: {
               type: GraphQLNonNull(BigNumberType),
             },
-            amountOut: {
-              type: GraphQLNonNull(BigNumberType),
-            },
             boughtPrice: {
               type: BigNumberType,
             },
