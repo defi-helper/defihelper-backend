@@ -29,6 +29,7 @@ import {
 } from 'graphql';
 import BN from 'bignumber.js';
 import { OrderStatus } from '@models/SmartTrade/Entity';
+import { contractTableName as automateContractTableName } from '@models/Automate/Entity';
 import {
   BigNumberType,
   BlockchainEnum,
@@ -345,11 +346,9 @@ export const WalletBillingType = new GraphQLObjectType<Wallet & WalletBlockchain
             .whereIn('status', [BillStatus.Pending, BillStatus.Accepted])
             .first(),
           container.model
-            .automateTriggerTable()
-            .where({
-              wallet: wallet.id,
-              active: true,
-            })
+            .automateContractTable()
+            .where(`${automateContractTableName}.wallet`, wallet.id)
+            .whereNull(`${automateContractTableName}.archivedAt`)
             .count()
             .first(),
           container.model
