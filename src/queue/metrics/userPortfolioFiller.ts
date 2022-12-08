@@ -142,12 +142,14 @@ export default async (process: Process) => {
           `${walletTableName}.id`,
           `${walletBlockchainTableName}.id`,
         )
+        .innerJoin(userTableName, `${walletTableName}.user`, `${userTableName}.id`)
         .leftJoin(metricWalletTaskTableName, function () {
           this.on(`${metricWalletTaskTableName}.contract`, '=', `${contractTableName}.id`);
           this.on(`${metricWalletTaskTableName}.wallet`, '=', `${walletTableName}.id`);
         })
         .where(`${walletTableName}.user`, userId)
         .whereNull(`${walletTableName}.deletedAt`)
+        .where(`${userTableName}.isMetricsTracked`, true)
         .where(`${contractTableName}.deprecated`, false)
         .whereIn(
           `${walletBlockchainTableName}.network`,
@@ -165,10 +167,12 @@ export default async (process: Process) => {
           `${walletBlockchainTableName}.id`,
           `${walletTableName}.id`,
         )
+        .innerJoin(userTableName, `${walletTableName}.user`, `${userTableName}.id`)
         .where(`${walletTableName}.user`, userId)
         .where(`${walletBlockchainTableName}.type`, WalletBlockchainType.Wallet)
         .whereNull(`${walletTableName}.deletedAt`)
         .where(`${walletBlockchainTableName}.blockchain`, 'ethereum')
+        .where(`${userTableName}.isMetricsTracked`, true)
         .whereIn(
           `${walletBlockchainTableName}.network`,
           Object.values(container.blockchain.ethereum.networks)
@@ -189,7 +193,7 @@ export default async (process: Process) => {
         .innerJoin(userTableName, `${walletTableName}.user`, `${userTableName}.id`)
         .where(`${walletTableName}.user`, userId)
         .where(`${walletBlockchainTableName}.type`, WalletBlockchainType.Wallet)
-        .andWhere(`${walletBlockchainTableName}.blockchain`, 'ethereum')
+        .where(`${walletBlockchainTableName}.blockchain`, 'ethereum')
         .whereNull(`${walletTableName}.deletedAt`)
         .then(createDebankContractMetricsCollector.bind(null, priority)),
       // Centralized exchange collector
@@ -200,8 +204,10 @@ export default async (process: Process) => {
           `${walletExchangeTableName}.id`,
           `${walletTableName}.id`,
         )
+        .innerJoin(userTableName, `${walletTableName}.user`, `${userTableName}.id`)
         .where(`${walletTableName}.suspendReason`, null)
         .whereNull(`${walletTableName}.deletedAt`)
+        .where(`${userTableName}.isMetricsTracked`, true)
         .then(createCentralizedExchangeMetricsCollector.bind(null, priority)),
     ]);
 
