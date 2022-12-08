@@ -1,7 +1,6 @@
 import {
   GraphQLEnumType,
   GraphQLFieldConfig,
-  GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
@@ -9,7 +8,7 @@ import {
 import container from '@container';
 import { Request } from 'express';
 import { TagType as EntityTagTypeEnum } from '@models/Tag/Entity';
-import { UuidType } from '../types';
+import { PaginateList, PaginationArgument, SortArgument, UuidType } from '../types';
 
 export const TagTypeEnum = new GraphQLEnumType({
   name: 'TagTypeEnum',
@@ -35,6 +34,23 @@ export const TagType = new GraphQLObjectType({
 });
 
 export const TagsListQuery: GraphQLFieldConfig<any, Request> = {
-  type: GraphQLNonNull(GraphQLList(GraphQLNonNull(TagType))),
-  resolve: () => container.model.tagTable(),
+  type: GraphQLNonNull(PaginateList('TagsListQuery', GraphQLNonNull(TagType))),
+  args: {
+    sort: SortArgument(
+      'TagsListSortInputType',
+      ['position', 'name'],
+      [{ column: 'position', order: 'asc' }],
+    ),
+    pagination: PaginationArgument('TagsListPaginationInputType'),
+  },
+  resolve: async (root, { sort, pagination }) => {
+    const select = container.model.tagTable();
+
+    return {
+      list: await select.clone().orderBy(sort).limit(pagination.limit).offset(pagination.offset),
+      pagination: {
+        count: await select.clone().count().first(),
+      },
+    };
+  },
 };

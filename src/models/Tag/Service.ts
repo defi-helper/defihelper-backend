@@ -17,6 +17,7 @@ export class TagService {
     const created: Tag = {
       ...input,
       id: uuid(),
+      position: 0,
       createdAt: new Date(),
     };
 
