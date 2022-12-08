@@ -1,6 +1,10 @@
 import container from '@container';
 import { MetricTokenRiskFactor } from '@models/Metric/Entity';
-import { tokenContractLinkTableName } from '@models/Protocol/Entity';
+import {
+  contractTableName,
+  tokenContractLinkTableName,
+  TokenContractLinkType,
+} from '@models/Protocol/Entity';
 import { Process } from '@models/Queue/Entity';
 import { TagRiskType, TagType, TagPreservedName } from '@models/Tag/Entity';
 import { tokenTableName } from '@models/Token/Entity';
@@ -16,15 +20,17 @@ export default async (process: Process) => {
     container.model.contractTable().where('id', id).first(),
     container.model
       .tokenContractLinkTable()
-      .column(`${tokenTableName}.coingeckoId`)
+      .distinct(`${tokenTableName}.coingeckoId`)
+      .innerJoin(tokenTableName, `${tokenContractLinkTableName}.token`, `${tokenTableName}.id`)
       .innerJoin(
-        tokenContractLinkTableName,
-        `${tokenContractLinkTableName}.token`,
-        `${tokenTableName}.id`,
+        contractTableName,
+        `${tokenContractLinkTableName}.contract`,
+        `${contractTableName}.id`,
       )
-      .where('contract', id)
-      .andWhereNot('coingeckoId', null)
-      .andWhere('type', 'stake'),
+      .where(`${tokenContractLinkTableName}.contract`, id)
+      .where(`${contractTableName}.layout`, 'staking')
+      .whereNotNull(`${tokenTableName}.coingeckoId`)
+      .where(`${tokenContractLinkTableName}.type`, TokenContractLinkType.Stake),
   ]);
 
   if (!contract) {
@@ -46,10 +52,13 @@ export default async (process: Process) => {
   };
 
   const resolvedRisk = await container.riskRanking().getPoolScoring(
-    linkedTokens.reduce((prev, cur) => ({
-      ...prev,
-      [cur.coingeckoId]: 0.5,
-    })),
+    linkedTokens.reduce(
+      (prev, cur) => ({
+        ...prev,
+        [cur.coingeckoId]: 0.5,
+      }),
+      {},
+    ),
   );
   if (!resolvedRisk) {
     return process.done().info('nothing found');

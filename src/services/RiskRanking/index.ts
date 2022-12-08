@@ -98,7 +98,7 @@ export class RiskRanking implements IRiskRankingGateway {
 
   async getPoolScoring(pools: { [coinId: string]: number }) {
     const response = await this.apiRequest<PoolRisking | { status_code: number }>(
-      RequestType.GET,
+      RequestType.POST,
       'cumulative-scorring',
       {},
       pools,
