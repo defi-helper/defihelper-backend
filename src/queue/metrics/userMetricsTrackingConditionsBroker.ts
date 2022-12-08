@@ -13,13 +13,14 @@ export default async (process: Process) => {
       'id',
       container.model
         .userTable()
-        .column(`${userTableName}.id`)
-        .leftJoin(userContactTableName, `${userContactTableName}.user`, `${userTableName}.id`)
-        .where(`${userContactTableName}.status`, ContactStatus.Inactive)
-        .orWhere(`${userContactTableName}.status`, null)
-        .havingRaw(`count(${userContactTableName}.id) = 0`)
+        .distinct(`${userTableName}.id`)
+        .leftJoin(userContactTableName, function () {
+          this.on(`${userContactTableName}.user`, '=', `${userTableName}.id`);
+          this.onIn(`${userContactTableName}.status`, [ContactStatus.Active]);
+        })
         .whereRaw(`(CURRENT_TIMESTAMP::date - "${userTableName}"."createdAt"::date) > 7`)
-        .andWhere(`${userTableName}.isMetricsTracked`, true)
+        .where(`${userTableName}.isMetricsTracked`, true)
+        .havingRaw(`count(${userContactTableName}.id) = 0`)
         .groupBy(`${userTableName}.id`),
     );
 
