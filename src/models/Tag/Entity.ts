@@ -45,6 +45,7 @@ export interface TagSpecialMarkType {
 export type TagTypePair = TagTvlType | TagRiskType | TagSpecialMarkType;
 export type Tag = {
   id: string;
+  position: number;
   createdAt: Date;
 } & TagTypePair;
 
