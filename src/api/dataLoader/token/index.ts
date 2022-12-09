@@ -145,7 +145,7 @@ export const tokenLastMetricLoader = () =>
   >(async (tokensIds) => {
     const select = container.model
       .metricTokenRegistryTable()
-      .column(`${metricTokenRegistryTableName}.id as token`)
+      .column(`${metricTokenRegistryTableName}.token`)
       .column(`${metricTokenRegistryTableName}.data`)
       .where(`${metricTokenRegistryTableName}.period`, RegistryPeriod.Latest)
       .whereIn(`${metricTokenRegistryTableName}.token`, tokensIds);
@@ -154,28 +154,32 @@ export const tokenLastMetricLoader = () =>
       (
         rows: Array<{
           token: string;
-          totalRate: MetricTokenRiskFactor;
-          reliabilityRate: MetricTokenRiskFactor;
-          profitabilityRate: MetricTokenRiskFactor;
-          volatilityRate: MetricTokenRiskFactor;
-          total: string;
-          reliability: string;
-          volatility: string;
-          profitability: string;
+          data: {
+            totalRate: MetricTokenRiskFactor;
+            reliabilityRate: MetricTokenRiskFactor;
+            profitabilityRate: MetricTokenRiskFactor;
+            volatilityRate: MetricTokenRiskFactor;
+            total: string;
+            reliability: string;
+            volatility: string;
+            profitability: string;
+          };
         }>,
       ) =>
         new Map(
           rows.map(
             ({
               token,
-              totalRate,
-              reliabilityRate,
-              profitabilityRate,
-              volatilityRate,
-              reliability,
-              volatility,
-              profitability,
-              total,
+              data: {
+                totalRate,
+                reliabilityRate,
+                profitabilityRate,
+                volatilityRate,
+                reliability,
+                volatility,
+                profitability,
+                total,
+              },
             }) => [
               token,
               {
