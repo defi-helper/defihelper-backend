@@ -12,7 +12,9 @@ const debugTelegramContact = 'ad068a6f-d1b3-4634-a649-d20f68f25b32';
 export default async (process: Process) => {
   const { template, params, contactId } = process.task.params as TelegramNotification;
   const isDebug =
-    template === 'automationsMigrableContracts' || template === 'deadInvestmentWarning';
+    template === 'automationsMigrableContracts' ||
+    template === 'deadInvestmentWarning' ||
+    template === 'automateRestakeDone';
 
   const contact = await container.model
     .userContactTable()
