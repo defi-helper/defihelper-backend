@@ -3,6 +3,21 @@ import axios from 'axios';
 import buildUrl from 'build-url';
 
 export type RawRiskRank = 'green' | 'red' | 'yellow';
+
+export enum RiskFactor {
+  notCalculated = 'notCalculated',
+  low = 'low',
+  moderate = 'moderate',
+  high = 'high',
+}
+
+export const riskFactorSwitcher = (input: RawRiskRank) =>
+  ({
+    green: RiskFactor.low,
+    yellow: RiskFactor.moderate,
+    red: RiskFactor.high,
+  }[input] ?? RiskFactor.notCalculated);
+
 export interface CoinInfo {
   id: string;
   name: string;
@@ -27,9 +42,18 @@ export interface CoinInfo {
 export interface PoolRisking {
   score: number;
   ranking_score: RawRiskRank;
-  volatility_quantile: number;
-  reliability_quantile: number;
-  profitability_quantile: number;
+  volatility: {
+    volatility_quantile: number;
+    volatility_ranking: RawRiskRank;
+  };
+  reliability: {
+    reliability_quantile: number;
+    reliability_ranking: RawRiskRank;
+  };
+  profitability: {
+    profitability_quantile: number;
+    profitability_ranking: RawRiskRank;
+  };
   total_quantile: number;
 }
 

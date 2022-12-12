@@ -61,12 +61,6 @@ export interface ContractAutomate {
   };
 }
 
-export enum ContractRiskFactor {
-  notCalculated = 'notCalculated',
-  low = 'low',
-  moderate = 'moderate',
-  high = 'high',
-}
 export interface Contract {
   id: string;
   protocol: string;

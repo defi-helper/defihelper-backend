@@ -16,7 +16,6 @@ import {
   GraphQLString,
   GraphQLUnionType,
 } from 'graphql';
-import { MetricTokenRiskFactor } from '@models/Metric/Entity';
 import {
   BlockchainEnum,
   BlockchainFilterInputType,
@@ -24,6 +23,7 @@ import {
   onlyAllowed,
   PaginateList,
   PaginationArgument,
+  RiskScoringEnum,
   SortArgument,
   UuidType,
 } from '../types';
@@ -43,14 +43,6 @@ export const PriceFeedCoingeckoIdType = new GraphQLObjectType({
 export const PriceFeedCoingeckoPlatformEnum = new GraphQLEnumType({
   name: 'TokenPriceFeedCoingeckoPlatformEnum',
   values: Object.values(PriceFeed.CoingeckoPlatform).reduce(
-    (res, type) => ({ ...res, [type.replace(/-/g, '_')]: { value: type } }),
-    {},
-  ),
-});
-
-export const TokenRiskScoringEnum = new GraphQLEnumType({
-  name: 'TokenRiskScoringEnum',
-  values: Object.values(MetricTokenRiskFactor).reduce(
     (res, type) => ({ ...res, [type.replace(/-/g, '_')]: { value: type } }),
     {},
   ),
@@ -121,29 +113,38 @@ export const PriceFeedInputType = new GraphQLInputObjectType({
 export const TokenMetricType = new GraphQLObjectType({
   name: 'TokenMetricType',
   fields: {
-    totalRate: {
-      type: GraphQLNonNull(TokenRiskScoringEnum),
-    },
-    reliabilityRate: {
-      type: GraphQLNonNull(TokenRiskScoringEnum),
-    },
-    profitabilityRate: {
-      type: GraphQLNonNull(TokenRiskScoringEnum),
-    },
-    volatilityRate: {
-      type: GraphQLNonNull(TokenRiskScoringEnum),
-    },
-    total: {
-      type: GraphQLNonNull(GraphQLFloat),
-    },
-    reliability: {
-      type: GraphQLNonNull(GraphQLFloat),
-    },
-    profitability: {
-      type: GraphQLNonNull(GraphQLFloat),
-    },
-    volatility: {
-      type: GraphQLNonNull(GraphQLFloat),
+    risk: {
+      type: new GraphQLNonNull(
+        new GraphQLObjectType({
+          name: 'TokenMetricRiskType',
+          fields: {
+            totalRate: {
+              type: GraphQLNonNull(RiskScoringEnum),
+            },
+            reliabilityRate: {
+              type: GraphQLNonNull(RiskScoringEnum),
+            },
+            profitabilityRate: {
+              type: GraphQLNonNull(RiskScoringEnum),
+            },
+            volatilityRate: {
+              type: GraphQLNonNull(RiskScoringEnum),
+            },
+            total: {
+              type: GraphQLNonNull(GraphQLFloat),
+            },
+            reliability: {
+              type: GraphQLNonNull(GraphQLFloat),
+            },
+            profitability: {
+              type: GraphQLNonNull(GraphQLFloat),
+            },
+            volatility: {
+              type: GraphQLNonNull(GraphQLFloat),
+            },
+          },
+        }),
+      ),
     },
   },
 });
@@ -192,12 +193,9 @@ export const TokenType: GraphQLObjectType = new GraphQLObjectType<Token, Request
     priceFeedNeeded: {
       type: GraphQLNonNull(GraphQLBoolean),
     },
-
     metric: {
       type: GraphQLNonNull(TokenMetricType),
-      resolve: async (token, _, { dataLoader }) => {
-        return dataLoader.tokenLastMetric().load(token.id);
-      },
+      resolve: async (token, _, { dataLoader }) => dataLoader.tokenLastMetric().load(token.id),
     },
   }),
 });

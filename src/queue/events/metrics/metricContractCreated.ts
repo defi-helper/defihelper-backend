@@ -14,6 +14,10 @@ export default async (process: Process) => {
   if (!metric) {
     throw new Error('Metric now found');
   }
+  const { aprYear } = metric.data;
+  if (!aprYear) {
+    return process.done();
+  }
 
   const contract = await container.model
     .contractTable()
@@ -26,11 +30,6 @@ export default async (process: Process) => {
     .first();
   if (!contract || contract.blockchain !== 'ethereum') {
     return process.done();
-  }
-
-  const { aprYear } = metric.data;
-  if (!aprYear) {
-    throw new Error('No aprYear found');
   }
 
   if (new BN(aprYear).isZero() || !contract.hidden) {
