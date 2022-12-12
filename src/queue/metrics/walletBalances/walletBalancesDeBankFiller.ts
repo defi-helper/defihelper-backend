@@ -8,6 +8,7 @@ import {
   metricWalletTokenRegistryTableName,
   RegistryPeriod,
 } from '@models/Metric/Entity';
+import { LogJsonMessage } from '@services/Log';
 
 interface Params {
   id: string;
@@ -15,6 +16,7 @@ interface Params {
 
 export default async (process: Process) => {
   const { id } = process.task.params as Params;
+  let log = LogJsonMessage.debug({ source: 'metricsWalletBalancesDeBankFiller', walletId: id });
 
   const walletMetrics = container.model.metricService();
   const blockchainWallet = await container.model
@@ -33,12 +35,14 @@ export default async (process: Process) => {
   if (container.blockchain.ethereum.byNetwork(blockchainWallet.network).testnet) {
     throw new Error('testnet unsupported');
   }
+  log = log.ex({ userId: blockchainWallet.user });
 
-  const debankUserTokenList = (
-    await container
-      .debank()
-      .getTokensOnWalletNetwork(blockchainWallet.address, blockchainWallet.network)
-  )
+  const debankAssets = await container
+    .debank()
+    .getTokensOnWalletNetwork(blockchainWallet.address, blockchainWallet.network);
+  log.ex({ debankAssets: JSON.stringify(debankAssets) }).send();
+
+  const debankUserTokenList = debankAssets
     .map((tokenAsset) => ({
       ...tokenAsset,
       id:
@@ -49,6 +53,7 @@ export default async (process: Process) => {
       symbol: (tokenAsset.symbol ?? '').replace(/\0/g, '').trim(),
     }))
     .filter((v) => v.is_wallet === true);
+  log.ex({ debankUserTokenList: JSON.stringify(debankUserTokenList) }).send();
 
   const existingTokensRecords = await container.model
     .tokenTable()
