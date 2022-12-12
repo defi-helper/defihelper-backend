@@ -1,7 +1,6 @@
 import container from '@container';
 import {
   metricTokenRegistryTableName,
-  MetricTokenRiskFactor,
   metricWalletTokenRegistryTableName,
   QueryModify,
   RegistryPeriod,
@@ -9,6 +8,7 @@ import {
 import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
 import { TokenAlias, Token, tokenAliasTableName, tokenTableName } from '@models/Token/Entity';
 import { walletTableName } from '@models/Wallet/Entity';
+import { RiskFactor } from '@services/RiskRanking';
 import DataLoader from 'dataloader';
 import BN from 'bignumber.js';
 import dayjs from 'dayjs';
@@ -133,10 +133,10 @@ export const tokenLastMetricLoader = () =>
   new DataLoader<
     string,
     {
-      totalRate: MetricTokenRiskFactor;
-      reliabilityRate: MetricTokenRiskFactor;
-      profitabilityRate: MetricTokenRiskFactor;
-      volatilityRate: MetricTokenRiskFactor;
+      totalRate: RiskFactor;
+      reliabilityRate: RiskFactor;
+      profitabilityRate: RiskFactor;
+      volatilityRate: RiskFactor;
       total: number;
       reliability: number;
       volatility: number;
@@ -155,10 +155,10 @@ export const tokenLastMetricLoader = () =>
         rows: Array<{
           token: string;
           data: {
-            totalRate: MetricTokenRiskFactor;
-            reliabilityRate: MetricTokenRiskFactor;
-            profitabilityRate: MetricTokenRiskFactor;
-            volatilityRate: MetricTokenRiskFactor;
+            totalRate: RiskFactor;
+            reliabilityRate: RiskFactor;
+            profitabilityRate: RiskFactor;
+            volatilityRate: RiskFactor;
             total: string;
             reliability: string;
             volatility: string;
@@ -200,10 +200,10 @@ export const tokenLastMetricLoader = () =>
     return tokensIds.map(
       (id) =>
         map.get(id) ?? {
-          totalRate: MetricTokenRiskFactor.notCalculated,
-          reliabilityRate: MetricTokenRiskFactor.notCalculated,
-          profitabilityRate: MetricTokenRiskFactor.notCalculated,
-          volatilityRate: MetricTokenRiskFactor.notCalculated,
+          totalRate: RiskFactor.notCalculated,
+          reliabilityRate: RiskFactor.notCalculated,
+          profitabilityRate: RiskFactor.notCalculated,
+          volatilityRate: RiskFactor.notCalculated,
           reliability: 1,
           volatility: 1,
           profitability: 1,

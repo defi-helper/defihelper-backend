@@ -1,6 +1,7 @@
 import container from '@container';
-import { MetricTokenRiskFactor, RegistryPeriod } from '@models/Metric/Entity';
+import { RegistryPeriod } from '@models/Metric/Entity';
 import { Process } from '@models/Queue/Entity';
+import { RiskFactor } from '@services/RiskRanking';
 import dayjs from 'dayjs';
 
 interface Params {
@@ -21,10 +22,10 @@ export default async (process: Process) => {
       .columns<
         Array<{
           token: string;
-          totalRate: MetricTokenRiskFactor;
-          reliabilityRate: MetricTokenRiskFactor;
-          profitabilityRate: MetricTokenRiskFactor;
-          volatilityRate: MetricTokenRiskFactor;
+          totalRate: RiskFactor;
+          reliabilityRate: RiskFactor;
+          profitabilityRate: RiskFactor;
+          volatilityRate: RiskFactor;
           total: string;
           reliability: string;
           profitability: string;

@@ -1,4 +1,5 @@
 import container from '@container';
+import { RiskFactor } from '@services/RiskRanking';
 import dayjs from 'dayjs';
 import * as uuid from 'uuid';
 import { Request } from 'express';
@@ -7,6 +8,7 @@ import {
   GraphQLEnumType,
   GraphQLFieldConfig,
   GraphQLFieldConfigMap,
+  GraphQLFloat,
   GraphQLInputObjectType,
   GraphQLList,
   GraphQLNonNull,
@@ -30,7 +32,6 @@ import {
   protocolTableName,
   ContractDebankType as EntityContractDebankType,
   contractDebankTableName,
-  ContractRiskFactor,
   tagContractLinkTableName,
 } from '@models/Protocol/Entity';
 import { apyBoost } from '@services/RestakeStrategy';
@@ -66,17 +67,10 @@ import {
   UuidType,
   WalletBlockchainTypeEnum,
   MetricChangeType,
+  RiskScoringEnum,
 } from '../types';
 import { TokenMetricType, TokenType } from '../token';
 import { TagType } from '../tag';
-
-export const ContractRiskFactorEnum = new GraphQLEnumType({
-  name: 'ContractRiskFactorEnum',
-  values: Object.values(ContractRiskFactor).reduce(
-    (prev, name) => ({ ...prev, [name]: { value: name } }),
-    {},
-  ),
-});
 
 export const ContractMetricType = new GraphQLObjectType({
   name: 'ContractMetricType',
@@ -96,11 +90,41 @@ export const ContractMetricType = new GraphQLObjectType({
     aprYear: {
       type: GraphQLNonNull(GraphQLString),
     },
-    risk: {
-      type: GraphQLNonNull(ContractRiskFactorEnum),
-    },
     aprWeekReal: {
       type: GraphQLString,
+    },
+    risk: {
+      type: GraphQLNonNull(
+        new GraphQLObjectType({
+          name: 'ContractMetricRiskType',
+          fields: {
+            totalRate: {
+              type: GraphQLNonNull(RiskScoringEnum),
+            },
+            reliabilityRate: {
+              type: GraphQLNonNull(RiskScoringEnum),
+            },
+            profitabilityRate: {
+              type: GraphQLNonNull(RiskScoringEnum),
+            },
+            volatilityRate: {
+              type: GraphQLNonNull(RiskScoringEnum),
+            },
+            total: {
+              type: GraphQLNonNull(GraphQLFloat),
+            },
+            reliability: {
+              type: GraphQLNonNull(GraphQLFloat),
+            },
+            profitability: {
+              type: GraphQLNonNull(GraphQLFloat),
+            },
+            volatility: {
+              type: GraphQLNonNull(GraphQLFloat),
+            },
+          },
+        }),
+      ),
     },
     myStaked: {
       type: GraphQLNonNull(GraphQLString),
@@ -386,8 +410,17 @@ export const ContractType: GraphQLObjectType = new GraphQLObjectType<
           aprWeek: contractMetric?.data.aprWeek ?? '0',
           aprMonth: contractMetric?.data.aprMonth ?? '0',
           aprYear: contractMetric?.data.aprYear ?? '0',
-          risk: contractMetric?.data.risk ?? ContractRiskFactor.notCalculated,
           aprWeekReal: contractMetric?.data.aprWeekReal ?? '0',
+          risk: {
+            totalRate: contractMetric?.data.totalRate ?? RiskFactor.notCalculated,
+            reliabilityRate: contractMetric?.data.reliabilityRate ?? RiskFactor.notCalculated,
+            profitabilityRate: contractMetric?.data.profitabilityRate ?? RiskFactor.notCalculated,
+            volatilityRate: contractMetric?.data.volatilityRate ?? RiskFactor.notCalculated,
+            reliability: new BN(contractMetric?.data.reliability ?? 1).toNumber(),
+            volatility: new BN(contractMetric?.data.volatility ?? 1).toNumber(),
+            profitability: new BN(contractMetric?.data.profitability ?? 1).toNumber(),
+            total: new BN(contractMetric?.data.total ?? 1).toNumber(),
+          },
           myStaked: '0',
           myStakedChange: {
             day: '0',
@@ -652,7 +685,7 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
             type: ContractUserLinkTypeEnum,
           },
           risk: {
-            type: ContractRiskFactorEnum,
+            type: RiskScoringEnum,
           },
           automate: {
             type: new GraphQLInputObjectType({
@@ -751,7 +784,7 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
           if (typeof risk === 'string') {
             this.where(
               database.raw(
-                `COALESCE(${metricContractRegistryTableName}.data->>'risk', '${ContractRiskFactor.notCalculated}') = '${risk}'`,
+                `COALESCE(${metricContractRegistryTableName}.data->>'totalRate', '${RiskFactor.notCalculated}') = '${risk}'`,
               ),
             );
           }
@@ -883,7 +916,7 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
     if (sortColumns.includes('riskFactor')) {
       listSelect = listSelect.column(
         database.raw(
-          `CASE COALESCE(${metricContractRegistryTableName}.data->>'risk', '${ContractRiskFactor.notCalculated}')
+          `CASE COALESCE(${metricContractRegistryTableName}.data->>'totalRate', '${RiskFactor.notCalculated}')
               WHEN 'notCalculated' THEN 0
               WHEN 'low' THEN 1
               WHEN 'moderate' THEN 2

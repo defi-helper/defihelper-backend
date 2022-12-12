@@ -22,6 +22,7 @@ import container from '@container';
 import { Request } from 'express';
 import { ForbiddenError } from 'apollo-server-express';
 import { WalletExchangeType } from '@models/Wallet/Entity';
+import { RiskFactor } from '@services/RiskRanking';
 
 export class GraphQLParseError extends GraphQLError {
   constructor(type: string, value: any) {
@@ -303,4 +304,12 @@ export const EthereumTransactionHashType = new GraphQLScalarType({
   serialize: (value: string) => {
     return value;
   },
+});
+
+export const RiskScoringEnum = new GraphQLEnumType({
+  name: 'TokenRiskScoringEnum',
+  values: Object.values(RiskFactor).reduce(
+    (res, type) => ({ ...res, [type.replace(/-/g, '_')]: { value: type } }),
+    {},
+  ),
 });

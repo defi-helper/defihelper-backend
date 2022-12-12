@@ -212,12 +212,6 @@ export type MetricTokenRegistryTable = ReturnType<
   ReturnType<typeof metricTokenRegistryTableFactory>
 >;
 
-export enum MetricTokenRiskFactor {
-  notCalculated = 'notCalculated',
-  low = 'low',
-  moderate = 'moderate',
-  high = 'high',
-}
 export interface MetricToken extends Metric {
   token: string;
 }

@@ -1,5 +1,4 @@
 import container from '@container';
-import { MetricTokenRiskFactor } from '@models/Metric/Entity';
 import {
   contractTableName,
   tokenContractLinkTableName,
@@ -8,7 +7,7 @@ import {
 import { Process } from '@models/Queue/Entity';
 import { TagRiskType, TagType, TagPreservedName } from '@models/Tag/Entity';
 import { tokenTableName } from '@models/Token/Entity';
-import { RawRiskRank } from '@services/RiskRanking';
+import { riskFactorSwitcher } from '@services/RiskRanking';
 
 export interface Params {
   id: string;
@@ -41,16 +40,6 @@ export default async (process: Process) => {
     throw new Error('not enough linked tokens');
   }
 
-  const riskFactorSwitcher = (input: RawRiskRank) => {
-    return (
-      {
-        green: MetricTokenRiskFactor.low,
-        yellow: MetricTokenRiskFactor.moderate,
-        red: MetricTokenRiskFactor.high,
-      }[input] ?? MetricTokenRiskFactor.notCalculated
-    );
-  };
-
   const resolvedRisk = await container.riskRanking().getPoolScoring(
     linkedTokens.reduce(
       (prev, cur) => ({
@@ -68,15 +57,8 @@ export default async (process: Process) => {
     if (n < 0 || n > 1) {
       throw new Error(`Expected volatility quantile 0.0-1.0, got ${n}`);
     }
-
-    return n.toString(10);
+    return String(n);
   };
-
-  const totalRate = resolvedRisk.ranking_score;
-  const totalQuantile = verifyPercentile(resolvedRisk.total_quantile);
-  const profitabilityQuantile = verifyPercentile(resolvedRisk.profitability_quantile);
-  const reliabilityQuantile = verifyPercentile(resolvedRisk.reliability_quantile);
-  const volatilityQuantile = verifyPercentile(resolvedRisk.volatility_quantile);
 
   await container.model.contractService().unlinkAllTagsByType(contract, TagType.Risk);
   await container.model
@@ -86,7 +68,7 @@ export default async (process: Process) => {
         green: TagPreservedName.RiskLow,
         yellow: TagPreservedName.RiskModerate,
         red: TagPreservedName.RiskHigh,
-      }[totalRate],
+      }[resolvedRisk.ranking_score],
       type: TagType.Risk,
     } as TagRiskType)
     .then((tag) => container.model.contractService().linkTag(contract, tag));
@@ -94,11 +76,15 @@ export default async (process: Process) => {
   await container.model.metricService().createContract(
     contract,
     {
-      totalRate: riskFactorSwitcher(totalRate),
-      totalQuantile,
-      profitabilityQuantile,
-      reliabilityQuantile,
-      volatilityQuantile,
+      totalRate: riskFactorSwitcher(resolvedRisk.ranking_score),
+      reliabilityRate: riskFactorSwitcher(resolvedRisk.reliability.reliability_ranking),
+      profitabilityRate: riskFactorSwitcher(resolvedRisk.profitability.profitability_ranking),
+      volatilityRate: riskFactorSwitcher(resolvedRisk.volatility.volatility_ranking),
+
+      total: verifyPercentile(resolvedRisk.total_quantile),
+      profitability: verifyPercentile(resolvedRisk.profitability.profitability_quantile),
+      reliability: verifyPercentile(resolvedRisk.reliability.reliability_quantile),
+      volatility: verifyPercentile(resolvedRisk.volatility.volatility_quantile),
     },
     new Date(),
   );
