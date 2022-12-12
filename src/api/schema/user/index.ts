@@ -1745,6 +1745,9 @@ export const UserType = new GraphQLObjectType<User, Request>({
       type: GraphQLNonNull(DateTimeType),
       description: 'Date of last auth',
     },
+    isMetricsTracked: {
+      type: GraphQLNonNull(GraphQLBoolean),
+    },
     createdAt: {
       type: GraphQLNonNull(DateTimeType),
       description: 'Date of created account',
