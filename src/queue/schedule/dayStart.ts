@@ -11,6 +11,7 @@ export default async (process: Process) => {
       period: 'day',
     }),
     queue.push('metricsNotifyLostChains'),
+    queue.push('metricsLostMetricFiller'),
     queue.push('deadPoolsInvestmentsBroker'),
     queue.push('metricsTrackingConditionsBroker'),
     queue.push('systemGarbageCollector', {}),
