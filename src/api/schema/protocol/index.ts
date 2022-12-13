@@ -69,7 +69,7 @@ import {
   MetricChangeType,
   RiskScoringEnum,
 } from '../types';
-import { TokenMetricType, TokenType } from '../token';
+import { TokenMetricRiskType, TokenType } from '../token';
 import { TagType } from '../tag';
 
 export const ContractMetricType = new GraphQLObjectType({
@@ -1669,7 +1669,7 @@ export const ProtocolMetricType = new GraphQLObjectType({
       type: DateTimeType,
     },
     risk: {
-      type: TokenMetricType,
+      type: TokenMetricRiskType,
     },
   },
 });
