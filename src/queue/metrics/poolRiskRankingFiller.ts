@@ -1,12 +1,8 @@
 import container from '@container';
-import {
-  contractTableName,
-  tokenContractLinkTableName,
-  TokenContractLinkType,
-} from '@models/Protocol/Entity';
+import { tokenContractLinkTableName, TokenContractLinkType } from '@models/Protocol/Entity';
 import { Process } from '@models/Queue/Entity';
 import { TagRiskType, TagType, TagPreservedName } from '@models/Tag/Entity';
-import { tokenTableName } from '@models/Token/Entity';
+import { tokenPartTableName, tokenTableName } from '@models/Token/Entity';
 import { riskFactorSwitcher } from '@services/RiskRanking';
 
 export interface Params {
@@ -15,27 +11,40 @@ export interface Params {
 
 export default async (process: Process) => {
   const { id } = process.task.params as Params;
-  const [contract, linkedTokens] = await Promise.all([
+  const [contract, stakeToken] = await Promise.all([
     container.model.contractTable().where('id', id).first(),
     container.model
-      .tokenContractLinkTable()
-      .distinct(`${tokenTableName}.coingeckoId`)
-      .innerJoin(tokenTableName, `${tokenContractLinkTableName}.token`, `${tokenTableName}.id`)
+      .tokenTable()
+      .column(`${tokenTableName}.*`)
       .innerJoin(
-        contractTableName,
-        `${tokenContractLinkTableName}.contract`,
-        `${contractTableName}.id`,
+        tokenContractLinkTableName,
+        `${tokenContractLinkTableName}.token`,
+        `${tokenTableName}.id`,
       )
-      .where(`${tokenContractLinkTableName}.contract`, id)
-      .where(`${contractTableName}.layout`, 'staking')
-      .whereNotNull(`${tokenTableName}.coingeckoId`)
-      .where(`${tokenContractLinkTableName}.type`, TokenContractLinkType.Stake),
+      .innerJoin(
+        tokenPartTableName,
+        `${tokenContractLinkTableName}.token`,
+        `${tokenPartTableName}.parent`,
+      )
+      .where(`${tokenContractLinkTableName}.contract`, '043662e0-e7c9-475d-965f-4804b73ebff0')
+      .where(`${tokenContractLinkTableName}.type`, TokenContractLinkType.Stake)
+      .groupBy(`${tokenTableName}.id`)
+      .havingRaw(`count(${tokenPartTableName}.id) = 2`)
+      .first(),
   ]);
-
   if (!contract) {
     throw new Error(`No contract found with id ${id}`);
   }
+  if (!stakeToken) {
+    throw new Error('Invalid stake token');
+  }
 
+  const linkedTokens = await container.model
+    .tokenTable()
+    .column(`${tokenTableName}.*`)
+    .innerJoin(tokenPartTableName, `${tokenTableName}.id`, `${tokenPartTableName}.child`)
+    .where(`${tokenPartTableName}.parent`, stakeToken.id)
+    .whereNotNull(`${tokenTableName}.coingeckoId`);
   if (linkedTokens.length < 2) {
     throw new Error('not enough linked tokens');
   }
