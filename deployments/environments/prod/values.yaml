@@ -238,15 +238,15 @@ handlers:
 migrator:
   nodeSelector:
     group_name: "apps-jobs"
-  labels:
-    app: migrator
-    component: migrator
-    environment: dev
   tolerations:
     - key: node-role.kubernetes.io/apps-jobs
       operator: "Equal"
       value: "true"
       effect: NoSchedule
+  labels:
+    app: migrator
+    component: migrator
+    environment: dev
   resources:
     requests:
       memory: 128Mi
