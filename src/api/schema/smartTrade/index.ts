@@ -28,6 +28,8 @@ import {
   SwapCallData,
   OrderTokenLinkType as OrderTokenLinkTypeNative,
   OrderTokenLink,
+  Direction,
+  SwapCallDataRoute,
 } from '@models/SmartTrade/Entity';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 import { Token, TokenCreatedBy } from '@models/Token/Entity';
@@ -535,26 +537,16 @@ export const SwapOrderCallDataRouteActivationInputType = new GraphQLInputObjectT
   },
 });
 
-export const SwapOrderCallDataTakeProfitInputType = new GraphQLInputObjectType({
-  name: 'SwapOrderCallDataTakeProfitInputType',
-  fields: {
-    amountOut: {
-      type: GraphQLNonNull(BigNumberType),
-    },
-    amountOutMin: {
-      type: GraphQLNonNull(BigNumberType),
-    },
-    slippage: {
-      type: GraphQLNonNull(GraphQLFloat),
-    },
-    activation: {
-      type: SwapOrderCallDataRouteActivationInputType,
-    },
-  },
-});
+interface SwapOrderRouteInput {
+  amountOut: BN;
+  amountOutMin: BN;
+  slippage: number;
+  moving: BN | null;
+  activation: { amountOut: BN; direction: Direction } | null;
+}
 
-export const SwapOrderCallDataStopLossInputType = new GraphQLInputObjectType({
-  name: 'SwapOrderCallDataStopLossInputType',
+export const SwapOrderCallDataRouteInputType = new GraphQLInputObjectType({
+  name: 'SwapOrderCallDataRouteInputType',
   fields: {
     amountOut: {
       type: GraphQLNonNull(BigNumberType),
@@ -620,13 +612,13 @@ export const SwapOrderCreateInputType = new GraphQLInputObjectType({
               type: BigNumberType,
             },
             stopLoss: {
-              type: SwapOrderCallDataStopLossInputType,
+              type: SwapOrderCallDataRouteInputType,
             },
             stopLoss2: {
-              type: SwapOrderCallDataStopLossInputType,
+              type: SwapOrderCallDataRouteInputType,
             },
             takeProfit: {
-              type: SwapOrderCallDataTakeProfitInputType,
+              type: SwapOrderCallDataRouteInputType,
             },
             deadline: {
               type: GraphQLNonNull(GraphQLInt),
@@ -668,6 +660,26 @@ async function orderTokenLink(network: string, tokenAddress: string) {
   return token;
 }
 
+const routeInputToRoute = (
+  direction: Direction,
+  input: SwapOrderRouteInput,
+): SwapCallDataRoute => ({
+  direction,
+  amountOut: input.amountOut.toFixed(0),
+  amountOutMin: input.amountOutMin.toFixed(0),
+  slippage: String(input.slippage),
+  moving: input.moving ? input.moving.toFixed(0) : null,
+  activation: input.activation
+    ? {
+        amountOut: input.activation.amountOut.toFixed(0),
+        direction: input.activation.direction,
+        activated: false,
+      }
+    : null,
+});
+const slToRoute = routeInputToRoute.bind(null, 'lt');
+const tpToRoute = routeInputToRoute.bind(null, 'gt');
+
 export const SwapOrderCreateMutation: GraphQLFieldConfig<any, Request> = {
   type: GraphQLNonNull(OrderType),
   args: {
@@ -697,6 +709,19 @@ export const SwapOrderCreateMutation: GraphQLFieldConfig<any, Request> = {
     }
 
     const smartTradeService = container.model.smartTradeService();
+    const {
+      exchange,
+      pair,
+      path,
+      tokenInDecimals,
+      tokenOutDecimals,
+      amountIn,
+      boughtPrice,
+      stopLoss,
+      stopLoss2,
+      takeProfit,
+      deadline,
+    } = callData;
     const order = await smartTradeService.createOrder(
       number,
       ownerWallet,
@@ -705,62 +730,20 @@ export const SwapOrderCreateMutation: GraphQLFieldConfig<any, Request> = {
       {
         type: HandlerType.SwapHandler,
         callData: {
-          exchange: callData.exchange,
-          pair: callData.pair,
-          path: callData.path,
-          tokenInDecimals: callData.tokenInDecimals,
-          tokenOutDecimals: callData.tokenOutDecimals,
-          amountIn: callData.amountIn.toFixed(0),
-          boughtPrice: callData.boughtPrice ? callData.boughtPrice.toString(10) : null,
+          exchange,
+          pair,
+          path,
+          tokenInDecimals,
+          tokenOutDecimals,
+          amountIn: amountIn.toFixed(0),
+          boughtPrice: boughtPrice ? boughtPrice.toString(10) : null,
           swapPrice: null,
           routes: [
-            callData.stopLoss
-              ? {
-                  amountOut: callData.stopLoss.amountOut.toFixed(0),
-                  amountOutMin: callData.stopLoss.amountOutMin.toFixed(0),
-                  slippage: callData.stopLoss.slippage.toString(),
-                  moving: callData.stopLoss.moving ? callData.stopLoss.moving.toFixed(0) : null,
-                  direction: 'lt',
-                  activation: callData.stopLoss.activation
-                    ? {
-                        ...callData.stopLoss.activation,
-                        activated: false,
-                      }
-                    : null,
-                }
-              : null,
-            callData.takeProfit
-              ? {
-                  amountOut: callData.takeProfit.amountOut.toFixed(0),
-                  amountOutMin: callData.takeProfit.amountOutMin.toFixed(0),
-                  moving: null,
-                  slippage: callData.takeProfit.slippage.toString(),
-                  direction: 'gt',
-                  activation: callData.takeProfit.activation
-                    ? {
-                        ...callData.takeProfit.activation,
-                        activated: false,
-                      }
-                    : null,
-                }
-              : null,
-            callData.stopLoss2
-              ? {
-                  amountOut: callData.stopLoss2.amountOut.toFixed(0),
-                  amountOutMin: callData.stopLoss2.amountOutMin.toFixed(0),
-                  slippage: callData.stopLoss2.slippage.toString(),
-                  moving: callData.stopLoss2.moving ? callData.stopLoss2.moving.toFixed(0) : null,
-                  direction: 'lt',
-                  activation: callData.stopLoss2.activation
-                    ? {
-                        ...callData.stopLoss2.activation,
-                        activated: false,
-                      }
-                    : null,
-                }
-              : null,
+            stopLoss ? slToRoute(stopLoss) : null,
+            takeProfit ? tpToRoute(takeProfit) : null,
+            stopLoss2 ? slToRoute(stopLoss2) : null,
           ],
-          deadline: callData.deadline,
+          deadline,
         },
       },
       OrderStatus.Pending,
@@ -865,13 +848,13 @@ export const SwapOrderUpdateInputType = new GraphQLInputObjectType({
           name: 'SmartTradeSwapOrderUpdateCallDataInputType',
           fields: {
             stopLoss: {
-              type: SwapOrderCallDataStopLossInputType,
+              type: SwapOrderCallDataRouteInputType,
             },
             stopLoss2: {
-              type: SwapOrderCallDataStopLossInputType,
+              type: SwapOrderCallDataRouteInputType,
             },
             takeProfit: {
-              type: SwapOrderCallDataTakeProfitInputType,
+              type: SwapOrderCallDataRouteInputType,
             },
             deadline: {
               type: GraphQLNonNull(GraphQLInt),
@@ -926,58 +909,17 @@ export const SwapOrderUpdateMutation: GraphQLFieldConfig<any, Request> = {
         throw new UserInputError('Foreign order');
       }
 
+      const { stopLoss, stopLoss2, takeProfit, deadline } = callData;
       return container.model.smartTradeService().updateOrder(order, {
         callDataRaw,
         callData: {
           ...order.callData,
           routes: [
-            callData.stopLoss
-              ? {
-                  amountOut: callData.stopLoss.amountOut.toFixed(0),
-                  amountOutMin: callData.stopLoss.amountOutMin.toFixed(0),
-                  slippage: callData.stopLoss.slippage.toString(),
-                  moving: callData.stopLoss.moving ? callData.stopLoss.moving.toFixed(0) : null,
-                  direction: 'lt',
-                  activation: callData.stopLoss.activation
-                    ? {
-                        ...callData.stopLoss.activation,
-                        activated: false,
-                      }
-                    : null,
-                }
-              : null,
-            callData.takeProfit
-              ? {
-                  amountOut: callData.takeProfit.amountOut.toFixed(0),
-                  amountOutMin: callData.takeProfit.amountOutMin.toFixed(0),
-                  slippage: callData.takeProfit.slippage.toString(),
-                  moving: null,
-                  direction: 'gt',
-                  activation: callData.takeProfit.activation
-                    ? {
-                        ...callData.takeProfit.activation,
-                        activated: false,
-                      }
-                    : null,
-                }
-              : null,
-            callData.stopLoss2
-              ? {
-                  amountOut: callData.stopLoss2.amountOut.toFixed(0),
-                  amountOutMin: callData.stopLoss2.amountOutMin.toFixed(0),
-                  slippage: callData.stopLoss2.slippage.toString(),
-                  moving: callData.stopLoss2.moving ? callData.stopLoss2.moving.toFixed(0) : null,
-                  direction: 'lt',
-                  activation: callData.stopLoss2.activation
-                    ? {
-                        ...callData.stopLoss2.activation,
-                        activated: false,
-                      }
-                    : null,
-                }
-              : null,
+            stopLoss ? slToRoute(stopLoss) : null,
+            takeProfit ? tpToRoute(takeProfit) : null,
+            stopLoss2 ? slToRoute(stopLoss2) : null,
           ],
-          deadline: callData.deadline,
+          deadline,
         },
       });
     },

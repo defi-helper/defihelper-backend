@@ -65,12 +65,13 @@ export default async function (
       amountOutMin: route.amountOutMin,
       activated: route.activation?.activated,
     };
-    if (route.direction === 'lt') {
-      if (route.moving !== null && actualAmountOut.minus(route.amountOut).gt(route.moving)) {
-        const amountOut = actualAmountOut.minus(route.moving);
-        update.amountOut = amountOut.toFixed(0);
-        update.amountOutMin = amountOut.multipliedBy(new BN(1).minus(route.slippage)).toFixed(0);
-      }
+    if (route.moving !== null && actualAmountOut.minus(route.amountOut).abs().gt(route.moving)) {
+      const amountOut =
+        route.direction === 'gt'
+          ? actualAmountOut.plus(route.moving)
+          : actualAmountOut.minus(route.moving);
+      update.amountOut = amountOut.toFixed(0);
+      update.amountOutMin = amountOut.multipliedBy(new BN(1).minus(route.slippage)).toFixed(0);
     }
     if (route.activation !== null && route.activation.activated === false) {
       const { direction, amountOut } = route.activation;
