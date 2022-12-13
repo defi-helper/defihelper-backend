@@ -110,41 +110,41 @@ export const PriceFeedInputType = new GraphQLInputObjectType({
   },
 });
 
+export const TokenMetricRiskType = new GraphQLObjectType({
+  name: 'TokenMetricRiskType',
+  fields: {
+    totalRate: {
+      type: GraphQLNonNull(RiskScoringEnum),
+    },
+    reliabilityRate: {
+      type: GraphQLNonNull(RiskScoringEnum),
+    },
+    profitabilityRate: {
+      type: GraphQLNonNull(RiskScoringEnum),
+    },
+    volatilityRate: {
+      type: GraphQLNonNull(RiskScoringEnum),
+    },
+    total: {
+      type: GraphQLNonNull(GraphQLFloat),
+    },
+    reliability: {
+      type: GraphQLNonNull(GraphQLFloat),
+    },
+    profitability: {
+      type: GraphQLNonNull(GraphQLFloat),
+    },
+    volatility: {
+      type: GraphQLNonNull(GraphQLFloat),
+    },
+  },
+});
+
 export const TokenMetricType = new GraphQLObjectType({
   name: 'TokenMetricType',
   fields: {
     risk: {
-      type: new GraphQLNonNull(
-        new GraphQLObjectType({
-          name: 'TokenMetricRiskType',
-          fields: {
-            totalRate: {
-              type: GraphQLNonNull(RiskScoringEnum),
-            },
-            reliabilityRate: {
-              type: GraphQLNonNull(RiskScoringEnum),
-            },
-            profitabilityRate: {
-              type: GraphQLNonNull(RiskScoringEnum),
-            },
-            volatilityRate: {
-              type: GraphQLNonNull(RiskScoringEnum),
-            },
-            total: {
-              type: GraphQLNonNull(GraphQLFloat),
-            },
-            reliability: {
-              type: GraphQLNonNull(GraphQLFloat),
-            },
-            profitability: {
-              type: GraphQLNonNull(GraphQLFloat),
-            },
-            volatility: {
-              type: GraphQLNonNull(GraphQLFloat),
-            },
-          },
-        }),
-      ),
+      type: GraphQLNonNull(TokenMetricRiskType),
     },
   },
 });
