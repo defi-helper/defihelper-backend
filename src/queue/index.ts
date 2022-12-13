@@ -65,6 +65,7 @@ export * as eventsBillingTransferTxCreated from './events/billing/transferTxCrea
 /* metrics */
 export * as metricsGarbageCollector from './metrics/garbageCollector';
 export * as metricsNotifyLostChains from './metrics/notifyLostMetricChains';
+export * as metricsLostMetricFiller from './metrics/lostMetricFiller';
 
 export * as metricsUserBroker from './metrics/userBroker';
 export * as metricsTrackingConditionsBroker from './metrics/userMetricsTrackingConditionsBroker';
