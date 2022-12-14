@@ -57,44 +57,69 @@ export default async function (
     .send();
 
   // Update routes
-  const routes = order.callData.routes.map((route) => {
-    if (route === null) return route;
+  const routes = await Promise.all(
+    order.callData.routes.map(async (route) => {
+      if (route === null) return route;
 
-    const update = {
-      amountOut: route.amountOut,
-      amountOutMin: route.amountOutMin,
-      activated: route.activation?.activated,
-    };
-    if (route.moving !== null && actualAmountOut.minus(route.amountOut).abs().gt(route.moving)) {
-      const amountOut =
-        route.direction === 'gt'
-          ? actualAmountOut.plus(route.moving)
-          : actualAmountOut.minus(route.moving);
-      update.amountOut = amountOut.toFixed(0);
-      update.amountOutMin = amountOut.multipliedBy(new BN(1).minus(route.slippage)).toFixed(0);
-    }
-    if (route.activation !== null && route.activation.activated === false) {
-      const { direction, amountOut } = route.activation;
-      if (
-        (direction === 'lt' && actualAmountOut.lte(amountOut)) ||
-        (direction === 'gt' && actualAmountOut.gte(amountOut))
-      ) {
-        update.activated = true;
+      const update = {
+        amountOut: route.amountOut,
+        amountOutMin: route.amountOutMin,
+        activated: route.activation?.activated ?? null,
+        timeoutAt: route.timeout?.activatedAt ?? null,
+      };
+      if (route.moving !== null && actualAmountOut.minus(route.amountOut).abs().gt(route.moving)) {
+        const amountOut =
+          route.direction === 'gt'
+            ? actualAmountOut.plus(route.moving)
+            : actualAmountOut.minus(route.moving);
+        update.amountOut = amountOut.toFixed(0);
+        update.amountOutMin = amountOut.multipliedBy(new BN(1).minus(route.slippage)).toFixed(0);
       }
-    }
+      if (route.activation && route.activation.activated === false) {
+        const { direction, amountOut } = route.activation;
+        if (
+          (direction === 'lt' && actualAmountOut.lte(amountOut)) ||
+          (direction === 'gt' && actualAmountOut.gte(amountOut))
+        ) {
+          update.activated = true;
+        }
+      }
+      if (route.timeout && update.activated && !route.timeout.activatedAt) {
+        if (
+          (route.direction === 'lt' && actualAmountOut.lte(route.amountOut)) ||
+          (route.direction === 'gt' && actualAmountOut.gte(route.amountOut))
+        ) {
+          update.timeoutAt = dayjs().toString();
+          await container.model.queueService().push(
+            'smartTradeTimeout',
+            { id: order.id },
+            {
+              startAt: dayjs(update.timeoutAt).add(route.timeout.duration, 'seconds').toDate(),
+              priority: 7,
+            },
+          );
+        }
+      }
 
-    return {
-      ...route,
-      amountOut: update.amountOut,
-      amountOutMin: update.amountOutMin,
-      activation: route.activation
-        ? {
-            ...route.activation,
-            activated: update.activated,
-          }
-        : null,
-    };
-  });
+      return {
+        ...route,
+        amountOut: update.amountOut,
+        amountOutMin: update.amountOutMin,
+        activation: route.activation
+          ? {
+              ...route.activation,
+              activated: update.activated,
+            }
+          : null,
+        timeout: route.timeout
+          ? {
+              ...route.timeout,
+              activatedAt: update.timeoutAt,
+            }
+          : null,
+      };
+    }),
+  );
   log.ex({ routes: JSON.stringify(routes) }).send();
   await container.model.smartTradeService().updateOrder(order, {
     callData: {

@@ -537,12 +537,22 @@ export const SwapOrderCallDataRouteActivationInputType = new GraphQLInputObjectT
   },
 });
 
+export const SwapOrderCallDataRouteTimeoutInputType = new GraphQLInputObjectType({
+  name: 'SwapOrderCallDataRouteTimeoutInputType',
+  fields: {
+    duration: {
+      type: GraphQLNonNull(GraphQLInt),
+    },
+  },
+});
+
 interface SwapOrderRouteInput {
   amountOut: BN;
   amountOutMin: BN;
   slippage: number;
   moving: BN | null;
   activation: { amountOut: BN; direction: Direction } | null;
+  timeout: { duration: number } | null;
 }
 
 export const SwapOrderCallDataRouteInputType = new GraphQLInputObjectType({
@@ -562,6 +572,9 @@ export const SwapOrderCallDataRouteInputType = new GraphQLInputObjectType({
     },
     activation: {
       type: SwapOrderCallDataRouteActivationInputType,
+    },
+    timeout: {
+      type: SwapOrderCallDataRouteTimeoutInputType,
     },
   },
 });
@@ -676,6 +689,7 @@ const routeInputToRoute = (
         activated: false,
       }
     : null,
+  timeout: input.timeout ? { duration: input.timeout.duration, activatedAt: null } : null,
 });
 const slToRoute = routeInputToRoute.bind(null, 'lt');
 const tpToRoute = routeInputToRoute.bind(null, 'gt');
