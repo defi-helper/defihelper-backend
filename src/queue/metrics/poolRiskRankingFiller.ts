@@ -36,7 +36,7 @@ export default async (process: Process) => {
         `${tokenContractLinkTableName}.token`,
         `${tokenPartTableName}.parent`,
       )
-      .where(`${tokenContractLinkTableName}.contract`, '043662e0-e7c9-475d-965f-4804b73ebff0')
+      .where(`${tokenContractLinkTableName}.contract`, id)
       .where(`${tokenContractLinkTableName}.type`, TokenContractLinkType.Stake)
       .groupBy(`${tokenTableName}.id`)
       .havingRaw(`count(${tokenPartTableName}.id) = 2`)
