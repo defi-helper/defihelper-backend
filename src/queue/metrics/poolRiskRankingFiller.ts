@@ -4,12 +4,22 @@ import { Process } from '@models/Queue/Entity';
 import { TagRiskType, TagType, TagPreservedName } from '@models/Tag/Entity';
 import { tokenPartTableName, tokenTableName } from '@models/Token/Entity';
 import { riskFactorSwitcher } from '@services/RiskRanking';
+import dayjs from 'dayjs';
 
 export interface Params {
   id: string;
 }
 
 export default async (process: Process) => {
+  const updateDatetime = await container.riskRanking().getUpdateDatetime();
+  if (
+    !updateDatetime ||
+    dayjs().startOf('day').isAfter(updateDatetime.update_end) ||
+    dayjs().isBefore(updateDatetime.update_end)
+  ) {
+    return process.laterAt(1, 'hour');
+  }
+
   const { id } = process.task.params as Params;
   const [contract, stakeToken] = await Promise.all([
     container.model.contractTable().where('id', id).first(),
@@ -26,7 +36,7 @@ export default async (process: Process) => {
         `${tokenContractLinkTableName}.token`,
         `${tokenPartTableName}.parent`,
       )
-      .where(`${tokenContractLinkTableName}.contract`, '043662e0-e7c9-475d-965f-4804b73ebff0')
+      .where(`${tokenContractLinkTableName}.contract`, id)
       .where(`${tokenContractLinkTableName}.type`, TokenContractLinkType.Stake)
       .groupBy(`${tokenTableName}.id`)
       .havingRaw(`count(${tokenPartTableName}.id) = 2`)
