@@ -57,6 +57,11 @@ export interface PoolRisking {
   total_quantile: number;
 }
 
+export interface UpdateDatetime {
+  update_start: string;
+  update_end: string;
+}
+
 export class TemporaryOutOfService extends Error {
   constructor(m = 'risk ranking api temporary out of service') {
     super(m);
@@ -71,6 +76,7 @@ enum RequestType {
 export interface IRiskRankingGateway {
   getCoinInfo(coingeckoId: string): Promise<CoinInfo | null>;
   getPoolScoring(pools: { [coinId: string]: number }): Promise<PoolRisking | null>;
+  getUpdateDatetime(): Promise<UpdateDatetime | null>;
 }
 
 export class RiskRanking implements IRiskRankingGateway {
@@ -134,6 +140,19 @@ export class RiskRanking implements IRiskRankingGateway {
 
     return response;
   }
+
+  async getUpdateDatetime() {
+    const response = await this.apiRequest<UpdateDatetime | { status_code: number }>(
+      RequestType.GET,
+      'update_datetime',
+      {},
+    );
+    if ('status_code' in response) {
+      return null;
+    }
+
+    return response;
+  }
 }
 
 class NullService implements IRiskRankingGateway {
@@ -144,6 +163,11 @@ class NullService implements IRiskRankingGateway {
 
   // eslint-disable-next-line
   async getPoolScoring() {
+    return null;
+  }
+
+  // eslint-disable-next-line
+  async getUpdateDatetime() {
     return null;
   }
 }
