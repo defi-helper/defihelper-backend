@@ -15,13 +15,11 @@ export default async (process: Process) => {
     .where(`${contractBlockchainTableName}.blockchain`, 'ethereum')
     .where(`${contractTableName}.layout`, '<>', 'debank');
 
-  const lag = 28800 / contracts.length;
-  await contracts.reduce<Promise<dayjs.Dayjs>>(async (prev, { id }) => {
-    const startAt = await prev;
-    await queue.push('metricsPoolRiskRankingFiller', { id }, { startAt: startAt.toDate() });
-
-    return startAt.clone().add(lag, 'seconds');
-  }, Promise.resolve(dayjs()));
+  const startAt = dayjs().startOf('day').add(8, 'hours').toDate();
+  await contracts.reduce<Promise<unknown>>(async (prev, { id }) => {
+    await prev;
+    return queue.push('metricsPoolRiskRankingFiller', { id }, { startAt });
+  }, Promise.resolve(null));
 
   return process.done();
 };
