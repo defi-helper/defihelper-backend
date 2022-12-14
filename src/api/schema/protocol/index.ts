@@ -735,13 +735,14 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
     const database = container.database();
     const select = container.model
       .contractTable()
+      .column(`${contractTableName}.*`)
+      .column<Array<Contract & ContractBlockchainType>>(`${contractBlockchainTableName}.*`)
       .innerJoin(
         contractBlockchainTableName,
         `${contractBlockchainTableName}.id`,
         `${contractTableName}.id`,
       )
-      .column(`${contractTableName}.*`)
-      .column(`${contractBlockchainTableName}.*`)
+      .innerJoin(protocolTableName, `${contractTableName}.protocol`, `${protocolTableName}.id`)
       .leftJoin(metricContractRegistryTableName, function () {
         this.on(`${metricContractRegistryTableName}.contract`, '=', `${contractTableName}.id`);
         this.onIn(`${metricContractRegistryTableName}.period`, [RegistryPeriod.Latest]);
@@ -764,7 +765,8 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
             }
           }
           if (typeof hidden === 'boolean') {
-            this.andWhere('hidden', hidden);
+            this.where(`${contractTableName}.hidden`, hidden);
+            this.where(`${protocolTableName}.hidden`, hidden);
           }
           if (typeof deprecated === 'boolean') {
             this.where('deprecated', deprecated);
