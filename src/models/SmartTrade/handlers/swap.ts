@@ -58,14 +58,15 @@ export default async function (
 
   // Update routes
   const routes = await Promise.all(
-    order.callData.routes.map(async (route) => {
+    order.callData.routes.map(async (route, index) => {
       if (route === null) return route;
 
       const update = {
         amountOut: route.amountOut,
         amountOutMin: route.amountOutMin,
         activated: route.activation?.activated ?? null,
-        timeoutAt: route.timeout?.activatedAt ?? null,
+        timeoutAt: route.timeout?.enterAt ?? null,
+        timeoutActivated: route.timeout?.activated ?? null,
       };
       if (route.moving !== null && actualAmountOut.minus(route.amountOut).abs().gt(route.moving)) {
         const amountOut =
@@ -84,17 +85,31 @@ export default async function (
           update.activated = true;
         }
       }
-      if (route.timeout && update.activated && !route.timeout.activatedAt) {
-        if (
+      if (route.timeout) {
+        const isEnter =
           (route.direction === 'lt' && actualAmountOut.lte(route.amountOut)) ||
-          (route.direction === 'gt' && actualAmountOut.gte(route.amountOut))
-        ) {
-          update.timeoutAt = dayjs().toString();
+          (route.direction === 'gt' && actualAmountOut.gte(route.amountOut));
+        if (route.timeout.enterAt) {
+          if (isEnter) {
+            if (
+              dayjs
+                .unix(route.timeout.enterAt)
+                .add(route.timeout.duration, 'seconds')
+                .isBefore(new Date())
+            ) {
+              update.timeoutActivated = true;
+            }
+          } else {
+            update.timeoutAt = null;
+            update.timeoutActivated = false;
+          }
+        } else if (isEnter) {
+          update.timeoutAt = dayjs().unix();
           await container.model.queueService().push(
             'smartTradeTimeout',
-            { id: order.id },
+            { order: order.id, route: index, enterAt: update.timeoutAt },
             {
-              startAt: dayjs(update.timeoutAt).add(route.timeout.duration, 'seconds').toDate(),
+              startAt: dayjs.unix(update.timeoutAt).add(route.timeout.duration, 'seconds').toDate(),
               priority: 7,
             },
           );
@@ -114,7 +129,8 @@ export default async function (
         timeout: route.timeout
           ? {
               ...route.timeout,
-              activatedAt: update.timeoutAt,
+              enterAt: update.timeoutAt,
+              activated: update.timeoutActivated,
             }
           : null,
       };
@@ -131,7 +147,9 @@ export default async function (
   // Find actual route
   const routeIndex = routes.reduce<number | null>((prev, route, index) => {
     if (prev !== null || route === null) return prev;
-    if (route.activation?.activated === false) return prev;
+    if (route.activation?.activated === false || route.timeout?.activated === false) {
+      return prev;
+    }
     if (
       (route.direction === 'gt' && actualAmountOut.lt(route.amountOut)) ||
       (route.direction === 'lt' && actualAmountOut.gt(route.amountOut))

@@ -30,7 +30,8 @@ export interface SwapCallDataRouteActivation {
 
 export interface SwapCallDataRouteTimeout {
   duration: number;
-  activatedAt: string | null;
+  enterAt: number | null;
+  activated: boolean;
 }
 
 export interface SwapCallDataRoute {

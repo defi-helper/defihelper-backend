@@ -689,7 +689,9 @@ const routeInputToRoute = (
         activated: false,
       }
     : null,
-  timeout: input.timeout ? { duration: input.timeout.duration, activatedAt: null } : null,
+  timeout: input.timeout
+    ? { duration: input.timeout.duration, enterAt: null, activated: false }
+    : null,
 });
 const slToRoute = routeInputToRoute.bind(null, 'lt');
 const tpToRoute = routeInputToRoute.bind(null, 'gt');
