@@ -39,6 +39,7 @@ export default async (process: Process) => {
           notificationProduct,
           firstBlockchainWallet.blockchain,
           firstBlockchainWallet.network,
+          0,
           firstBlockchainWallet.address,
           notificationProduct.amount,
           '',

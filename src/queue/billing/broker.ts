@@ -35,8 +35,6 @@ export default async (process: Process) => {
 
       const pool = [];
       if (isKey(networkContracts, 'Balance')) {
-        const { blockNumber: balanceFrom } = networkContracts.Balance;
-
         if (!tasksMap[network]?.billingClaimScan) {
           pool.push(
             queueService.push(
@@ -44,9 +42,6 @@ export default async (process: Process) => {
               {
                 blockchain: 'ethereum',
                 network,
-                step: 5000,
-                from: balanceFrom,
-                lag: ['43114'].includes(network) ? 4 : 1,
               },
               { scanner: true },
             ),
@@ -55,8 +50,6 @@ export default async (process: Process) => {
       }
 
       if (isKey(networkContracts, 'StoreUpgradable')) {
-        const { blockNumber: storeFrom } = networkContracts.StoreUpgradable;
-
         if (!tasksMap[network]?.billingFeeOracle) {
           pool.push(
             queueService.push(
@@ -64,9 +57,6 @@ export default async (process: Process) => {
               {
                 blockchain: 'ethereum',
                 network,
-                step: 5000,
-                from: storeFrom,
-                lag: ['43114'].includes(network) ? 4 : 1,
               },
               { scanner: true },
             ),
