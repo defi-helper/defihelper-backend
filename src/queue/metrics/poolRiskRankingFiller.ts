@@ -17,6 +17,24 @@ const verifyPercentile = (n: number) => {
   return String(n);
 };
 
+const defaultHigtRisk: PoolRisking = {
+  score: 0,
+  total_quantile: 0,
+  ranking_score: 'red',
+  volatility: {
+    volatility_quantile: 0,
+    volatility_ranking: 'red',
+  },
+  reliability: {
+    reliability_quantile: 0,
+    reliability_ranking: 'red',
+  },
+  profitability: {
+    profitability_quantile: 0,
+    profitability_ranking: 'red',
+  },
+};
+
 async function setRisk(contract: Contract, risk: PoolRisking) {
   await container.model.contractService().unlinkAllTagsByType(contract, TagType.Risk);
   await container.model
@@ -97,23 +115,7 @@ export default async (process: Process) => {
     .where(`${tokenPartTableName}.parent`, stakeToken.id)
     .whereNotNull(`${tokenTableName}.coingeckoId`);
   if (linkedTokens.length < 2) {
-    await setRisk(contract, {
-      score: 0,
-      total_quantile: 0,
-      ranking_score: 'red',
-      volatility: {
-        volatility_quantile: 0,
-        volatility_ranking: 'red',
-      },
-      reliability: {
-        reliability_quantile: 0,
-        reliability_ranking: 'red',
-      },
-      profitability: {
-        profitability_quantile: 0,
-        profitability_ranking: 'red',
-      },
-    });
+    await setRisk(contract, defaultHigtRisk);
     return process.done();
   }
 
@@ -127,7 +129,8 @@ export default async (process: Process) => {
     ),
   );
   if (!resolvedRisk) {
-    return process.done().info('nothing found');
+    await setRisk(contract, defaultHigtRisk);
+    return process.done();
   }
 
   await setRisk(contract, resolvedRisk);
