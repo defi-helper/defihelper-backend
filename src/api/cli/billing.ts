@@ -5,11 +5,10 @@ import contracts from '@defihelper/networks/contracts.json';
 export default async ([network = '1']: string[]) => {
   if (!isKey(contracts, network)) throw new Error('Invalid network');
   const networkContracts = contracts[network];
-  const { blockNumber: balanceFrom } = networkContracts.Balance;
-  const { blockNumber: storeFrom } = networkContracts.StoreUpgradable;
 
-  return Promise.all([
-    container.model.queueService().push(
+  if ('Balance' in networkContracts) {
+    const { blockNumber: balanceFrom } = networkContracts.Balance;
+    await container.model.queueService().push(
       'billingClaimScan',
       {
         blockchain: 'ethereum',
@@ -18,7 +17,11 @@ export default async ([network = '1']: string[]) => {
         from: balanceFrom,
       },
       { scanner: true },
-    ),
+    );
+  }
+
+  const { blockNumber: storeFrom } = networkContracts.StoreUpgradable;
+  return Promise.all([
     container.model.queueService().push(
       'billingFeeOracle',
       {

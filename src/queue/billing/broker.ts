@@ -34,7 +34,7 @@ export default async (process: Process) => {
       }
 
       const pool = [];
-      if (isKey(networkContracts, 'Balance')) {
+      if ('Balance' in networkContracts) {
         const { blockNumber: balanceFrom } = networkContracts.Balance;
 
         if (!tasksMap[network]?.billingClaimScan) {
