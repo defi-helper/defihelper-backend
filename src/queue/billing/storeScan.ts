@@ -1,88 +1,63 @@
 import container from '@container';
-import dayjs from 'dayjs';
 import { Process } from '@models/Queue/Entity';
-import { Blockchain } from '@models/types';
-import { isKey } from '@services/types';
-import { ethers } from 'ethers';
-import { abi as storeAbi } from '@defihelper/networks/abi/StoreV2.json';
-import contracts from '@defihelper/networks/contracts.json';
-
-async function registerBuy(blockchain: Blockchain, network: string, events: ethers.Event[]) {
-  const duplicates = await container.model
-    .storePurchaseTable()
-    .column('tx')
-    .where(function () {
-      this.where({ blockchain, network }).whereIn(
-        'tx',
-        events.map(({ transactionHash }) => transactionHash),
-      );
-    });
-  const duplicatesTx = duplicates.map(({ tx }) => tx);
-  const storeService = container.model.storeService();
-  return Promise.all(
-    events.map(async ({ getBlock, transactionHash, args }) => {
-      if (args === undefined || duplicatesTx.includes(transactionHash)) return null;
-      const { timestamp } = await getBlock();
-
-      const product = await storeService.productTable().where('number', args.product).first();
-      if (!product) return null;
-
-      return storeService.purchase(
-        product,
-        blockchain,
-        network,
-        args.recipient.toLowerCase(),
-        product.amount,
-        transactionHash,
-        dayjs.unix(timestamp).toDate(),
-      );
-    }),
-  );
-}
+import { abi as storeAbi } from '@defihelper/networks/abi/StoreV3.json';
 
 export interface Params {
-  blockchain: Blockchain;
   network: string;
-  from: number;
-  step: number;
-  lag?: number;
 }
 
 export default async (process: Process) => {
-  const { blockchain, network, from, step, lag = 0 } = process.task.params as Params;
-  if (blockchain !== 'ethereum') {
-    throw new Error('Invalid blockchain');
-  }
-  if (!isKey(contracts, network)) {
+  const { network } = process.task.params as Params;
+
+  const blockchainContainer = container.blockchain.ethereum;
+  const networkContainer = blockchainContainer.byNetwork(network);
+  const contracts = networkContainer.dfhContracts();
+  if (contracts === null) {
     throw new Error('Contracts not deployed to target network');
   }
-
-  const later = dayjs().add(1, 'minute').toDate();
-  const provider = container.blockchain[blockchain].byNetwork(network).provider();
-
-  let currentBlockNumber;
-  try {
-    currentBlockNumber = parseInt((await provider.getBlockNumber()).toString(), 10) - lag;
-  } catch (e) {
-    return process.later(later).info(`${e}`);
+  const storeAddress = contracts.StoreUpgradable?.address;
+  if (storeAddress === undefined) {
+    throw new Error('Store contract not deployed on this network');
   }
+  const provider = networkContainer.provider();
+  const store = blockchainContainer.contract(storeAddress, storeAbi, provider);
 
-  if (currentBlockNumber < from) {
-    return process.later(later);
-  }
-  const to = from + step > currentBlockNumber ? currentBlockNumber : from + step;
+  const lastPurchaseNumber = await container.model
+    .storePurchaseTable()
+    .where('blockchain', 'ethereum')
+    .where('network', network)
+    .orderBy('number', 'desc')
+    .first()
+    .then((row) => Number(row?.number ?? 0));
 
-  const storeAddress = contracts[network].StoreUpgradable.address;
-  const store = container.blockchain[blockchain].contract(storeAddress, storeAbi, provider);
-
+  const storeService = container.model.storeService();
   try {
-    await registerBuy(blockchain, network, await store.queryFilter(store.filters.Buy(), from, to));
-  } catch (e) {
-    if (currentBlockNumber - from > 100) {
-      throw new Error(`Task ${process.task.id}, lag: ${currentBlockNumber - from}, message: ${e}`);
+    const newPurchase = await store.purchases(lastPurchaseNumber + 1);
+    if (newPurchase.recipient === '0x0000000000000000000000000000000000000000') {
+      return process.laterAt(1, 'minutes');
     }
-    return process.later(later).info(`${e}`);
+
+    const product = await storeService
+      .productTable()
+      .where('number', newPurchase.product.toString())
+      .first();
+    if (!product) {
+      return process.laterAt(1, 'minutes');
+    }
+
+    await storeService.purchase(
+      product,
+      'ethereum',
+      network,
+      Number(newPurchase.id.toString()),
+      newPurchase.recipient.toLowerCase(),
+      product.amount,
+      '',
+      new Date(),
+    );
+  } catch (e) {
+    return process.laterAt(1, 'minutes').info(`${e}`);
   }
 
-  return process.param({ ...process.task.params, from: to + 1 }).later(later);
+  return process.later(new Date());
 };
