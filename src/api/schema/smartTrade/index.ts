@@ -174,6 +174,15 @@ export const SwapHandlerCallDataRouteActivationType = new GraphQLObjectType({
   },
 });
 
+export const SwapHandlerCallDataRouteTimeoutType = new GraphQLObjectType({
+  name: 'SwapHandlerCallDataRouteTimeoutType',
+  fields: {
+    duration: {
+      type: GraphQLNonNull(GraphQLInt),
+    },
+  },
+});
+
 export const SwapHandlerCallDataRouteType = new GraphQLObjectType({
   name: 'SwapHandlerCallDataRouteType',
   fields: {
@@ -189,11 +198,14 @@ export const SwapHandlerCallDataRouteType = new GraphQLObjectType({
       type: GraphQLNonNull(GraphQLFloat),
     },
     moving: {
-      type: GraphQLNonNull(GraphQLBoolean),
+      type: BigNumberType,
     },
     activation: {
       type: SwapHandlerCallDataRouteActivationType,
       resolve: ({ activation, decimals }) => (activation ? { ...activation, decimals } : null),
+    },
+    timeout: {
+      type: SwapHandlerCallDataRouteTimeoutType,
     },
   },
 });
@@ -236,7 +248,9 @@ export const SwapHandlerCallDataType = new GraphQLObjectType<Order<SwapCallData>
           amountOutMin: routes[0].amountOutMin,
           slippage: routes[0].slippage,
           decimals: tokenOutDecimals,
-          moving: routes[0].moving !== null,
+          moving: routes[0].moving,
+          activation: routes[0].activation,
+          timeout: routes[0].timeout,
         };
       },
     },
@@ -250,7 +264,9 @@ export const SwapHandlerCallDataType = new GraphQLObjectType<Order<SwapCallData>
           amountOutMin: routes[2].amountOutMin,
           slippage: routes[2].slippage,
           decimals: tokenOutDecimals,
-          moving: routes[2].moving !== null,
+          moving: routes[2].moving,
+          activation: routes[2].activation,
+          timeout: routes[2].timeout,
         };
       },
     },
@@ -264,7 +280,9 @@ export const SwapHandlerCallDataType = new GraphQLObjectType<Order<SwapCallData>
           amountOutMin: routes[1].amountOutMin,
           slippage: routes[1].slippage,
           decimals: tokenOutDecimals,
-          moving: false,
+          moving: routes[1].moving,
+          activation: routes[1].activation,
+          timeout: routes[1].timeout,
         };
       },
     },
@@ -537,12 +555,22 @@ export const SwapOrderCallDataRouteActivationInputType = new GraphQLInputObjectT
   },
 });
 
+export const SwapOrderCallDataRouteTimeoutInputType = new GraphQLInputObjectType({
+  name: 'SwapOrderCallDataRouteTimeoutInputType',
+  fields: {
+    duration: {
+      type: GraphQLNonNull(GraphQLInt),
+    },
+  },
+});
+
 interface SwapOrderRouteInput {
   amountOut: BN;
   amountOutMin: BN;
   slippage: number;
   moving: BN | null;
   activation: { amountOut: BN; direction: Direction } | null;
+  timeout: { duration: number } | null;
 }
 
 export const SwapOrderCallDataRouteInputType = new GraphQLInputObjectType({
@@ -562,6 +590,9 @@ export const SwapOrderCallDataRouteInputType = new GraphQLInputObjectType({
     },
     activation: {
       type: SwapOrderCallDataRouteActivationInputType,
+    },
+    timeout: {
+      type: SwapOrderCallDataRouteTimeoutInputType,
     },
   },
 });
@@ -675,6 +706,9 @@ const routeInputToRoute = (
         direction: input.activation.direction,
         activated: false,
       }
+    : null,
+  timeout: input.timeout
+    ? { duration: input.timeout.duration, enterAt: null, activated: false }
     : null,
 });
 const slToRoute = routeInputToRoute.bind(null, 'lt');

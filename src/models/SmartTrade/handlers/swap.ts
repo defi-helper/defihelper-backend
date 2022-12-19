@@ -57,44 +57,85 @@ export default async function (
     .send();
 
   // Update routes
-  const routes = order.callData.routes.map((route) => {
-    if (route === null) return route;
+  const routes = await Promise.all(
+    order.callData.routes.map(async (route, index) => {
+      if (route === null) return route;
 
-    const update = {
-      amountOut: route.amountOut,
-      amountOutMin: route.amountOutMin,
-      activated: route.activation?.activated,
-    };
-    if (route.moving !== null && actualAmountOut.minus(route.amountOut).abs().gt(route.moving)) {
-      const amountOut =
-        route.direction === 'gt'
-          ? actualAmountOut.plus(route.moving)
-          : actualAmountOut.minus(route.moving);
-      update.amountOut = amountOut.toFixed(0);
-      update.amountOutMin = amountOut.multipliedBy(new BN(1).minus(route.slippage)).toFixed(0);
-    }
-    if (route.activation !== null && route.activation.activated === false) {
-      const { direction, amountOut } = route.activation;
-      if (
-        (direction === 'lt' && actualAmountOut.lte(amountOut)) ||
-        (direction === 'gt' && actualAmountOut.gte(amountOut))
-      ) {
-        update.activated = true;
+      const update = {
+        amountOut: route.amountOut,
+        amountOutMin: route.amountOutMin,
+        activated: route.activation?.activated ?? null,
+        timeoutAt: route.timeout?.enterAt ?? null,
+        timeoutActivated: route.timeout?.activated ?? null,
+      };
+      if (route.moving !== null && actualAmountOut.minus(route.amountOut).abs().gt(route.moving)) {
+        const amountOut =
+          route.direction === 'gt'
+            ? actualAmountOut.plus(route.moving)
+            : actualAmountOut.minus(route.moving);
+        update.amountOut = amountOut.toFixed(0);
+        update.amountOutMin = amountOut.multipliedBy(new BN(1).minus(route.slippage)).toFixed(0);
       }
-    }
-
-    return {
-      ...route,
-      amountOut: update.amountOut,
-      amountOutMin: update.amountOutMin,
-      activation: route.activation
-        ? {
-            ...route.activation,
-            activated: update.activated,
+      if (route.activation && route.activation.activated === false) {
+        const { direction, amountOut } = route.activation;
+        if (
+          (direction === 'lt' && actualAmountOut.lte(amountOut)) ||
+          (direction === 'gt' && actualAmountOut.gte(amountOut))
+        ) {
+          update.activated = true;
+        }
+      }
+      if (route.timeout) {
+        const isEnter =
+          (route.direction === 'lt' && actualAmountOut.lte(route.amountOut)) ||
+          (route.direction === 'gt' && actualAmountOut.gte(route.amountOut));
+        if (route.timeout.enterAt) {
+          if (isEnter) {
+            if (
+              dayjs
+                .unix(route.timeout.enterAt)
+                .add(route.timeout.duration, 'seconds')
+                .isBefore(new Date())
+            ) {
+              update.timeoutActivated = true;
+            }
+          } else {
+            update.timeoutAt = null;
+            update.timeoutActivated = false;
           }
-        : null,
-    };
-  });
+        } else if (isEnter) {
+          update.timeoutAt = dayjs().unix();
+          await container.model.queueService().push(
+            'smartTradeTimeout',
+            { order: order.id, route: index, enterAt: update.timeoutAt },
+            {
+              startAt: dayjs.unix(update.timeoutAt).add(route.timeout.duration, 'seconds').toDate(),
+              priority: 7,
+            },
+          );
+        }
+      }
+
+      return {
+        ...route,
+        amountOut: update.amountOut,
+        amountOutMin: update.amountOutMin,
+        activation: route.activation
+          ? {
+              ...route.activation,
+              activated: update.activated,
+            }
+          : null,
+        timeout: route.timeout
+          ? {
+              ...route.timeout,
+              enterAt: update.timeoutAt,
+              activated: update.timeoutActivated,
+            }
+          : null,
+      };
+    }),
+  );
   log.ex({ routes: JSON.stringify(routes) }).send();
   await container.model.smartTradeService().updateOrder(order, {
     callData: {
@@ -106,7 +147,9 @@ export default async function (
   // Find actual route
   const routeIndex = routes.reduce<number | null>((prev, route, index) => {
     if (prev !== null || route === null) return prev;
-    if (route.activation?.activated === false) return prev;
+    if (route.activation?.activated === false || route.timeout?.activated === false) {
+      return prev;
+    }
     if (
       (route.direction === 'gt' && actualAmountOut.lt(route.amountOut)) ||
       (route.direction === 'lt' && actualAmountOut.gt(route.amountOut))
