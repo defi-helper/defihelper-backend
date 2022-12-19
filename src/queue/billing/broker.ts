@@ -34,7 +34,7 @@ export default async (process: Process) => {
       }
 
       const pool = [];
-      if (isKey(networkContracts, 'Balance')) {
+      if ('Balance' in networkContracts || 'BalanceUpgradable' in networkContracts) {
         if (!tasksMap[network]?.billingClaimScan) {
           pool.push(
             queueService.push(
