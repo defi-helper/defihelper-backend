@@ -27,6 +27,7 @@ export interface Purchase {
   id: string;
   product: string;
   blockchain: Blockchain;
+  number: number;
   network: string;
   account: string;
   amount: number;
