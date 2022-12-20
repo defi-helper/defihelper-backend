@@ -1,5 +1,5 @@
 import { Factory } from '@services/Container';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import buildUrl from 'build-url';
 
 export interface Token {
@@ -34,8 +34,8 @@ export interface ProtocolListItem {
 }
 
 export class TemporaryOutOfService extends Error {
-  constructor(m = 'debank api temporary out of service') {
-    super(m);
+  constructor(m: string = 'unknown') {
+    super(`debank api temporary out of service: ${m}`);
   }
 }
 
@@ -91,9 +91,9 @@ export class Debank {
 
         return data;
       })
-      .catch((e) => {
-        if (!e.response) {
-          throw new TemporaryOutOfService();
+      .catch((e: Error | AxiosError) => {
+        if (axios.isAxiosError(e) && !e.response) {
+          throw new TemporaryOutOfService(e.message);
         }
 
         throw new Error(`[Debank ${paidWay ? 'PAID' : 'NONPAID'}]: ${url}; ${e}`);

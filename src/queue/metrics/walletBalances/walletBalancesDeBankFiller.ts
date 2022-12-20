@@ -9,6 +9,7 @@ import {
   RegistryPeriod,
 } from '@models/Metric/Entity';
 import { LogJsonMessage } from '@services/Log';
+import { TemporaryOutOfService, Token } from '@services/Debank';
 
 interface Params {
   id: string;
@@ -37,10 +38,25 @@ export default async (process: Process) => {
   }
   log = log.ex({ userId: blockchainWallet.user });
 
-  const debankAssets = await container
-    .debank()
-    .getTokensOnWalletNetwork(blockchainWallet.address, blockchainWallet.network);
-  log.ex({ debankAssets: JSON.stringify(debankAssets) }).send();
+  let debankAssets: Array<Token & { amount: number }>;
+  try {
+    debankAssets = await container
+      .debank()
+      .getTokensOnWalletNetwork(blockchainWallet.address, blockchainWallet.network);
+    log.ex({ debankAssets: JSON.stringify(debankAssets) }).send();
+  } catch (e) {
+    if (e instanceof TemporaryOutOfService) {
+      if (process.task.attempt > 10) {
+        throw e;
+      }
+
+      return process
+        .info('postponed due to temporarily service unavailability')
+        .laterAt(process.task.attempt, 'minutes');
+    }
+
+    throw e;
+  }
 
   const debankUserTokenList = debankAssets
     .map((tokenAsset) => ({
