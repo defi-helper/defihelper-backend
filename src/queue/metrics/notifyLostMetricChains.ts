@@ -25,7 +25,7 @@ export default async (process: Process) => {
       )
       .andWhere('isMetricsTracked', true)
       .first()
-      .then((row) => row?.count ?? '0'),
+      .then((row) => Number(row?.count ?? 0)),
     container.model
       .metricWalletTokenRegistryTable()
       .count()
@@ -41,8 +41,11 @@ export default async (process: Process) => {
       )
       .andWhere('isMetricsTracked', true)
       .first()
-      .then((row) => row?.count ?? '0'),
+      .then((row) => Number(row?.count ?? 0)),
   ]);
+  if (walletCandidatesCount + walletTokenCandidatesCount === 0) {
+    return process.done();
+  }
 
   container.telegram().send(
     'log',
