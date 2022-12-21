@@ -452,6 +452,7 @@ export function route({ express, server }: { express: Express; server: Server })
     else if (Array.isArray(req.query.tokens)) addresses = req.query.tokens.map((v) => `${v}`);
     const tokens: Token[] = await container.model.tokenTable().where(function () {
       this.where('network', network);
+      this.whereNotNull('priceFeed');
       if (addresses.length > 0) {
         this.whereIn(
           'address',

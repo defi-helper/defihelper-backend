@@ -15,12 +15,12 @@ export default async (process: Process) => {
       container.model
         .tokenAliasTable()
         .distinct(`${tokenTableName}.network`)
+        .innerJoin(tokenTableName, `${tokenAliasTableName}.id`, `${tokenTableName}.alias`)
         .where('liquidity', TokenAliasLiquidity.Stable)
-        .andWhere(`${tokenTableName}.blockchain`, 'ethereum')
-        .innerJoin(tokenTableName, `${tokenAliasTableName}.id`, `${tokenTableName}.alias`),
+        .where(`${tokenTableName}.blockchain`, 'ethereum'),
     )
-    .andWhere('priceFeedNeeded', true)
-    .andWhere('blockchain', 'ethereum');
+    .where('blockchain', 'ethereum')
+    .where('priceFeedNeeded', true);
 
   const lag = 86400 / uniswapRoutableTokens.length;
   await uniswapRoutableTokens.reduce<Promise<dayjs.Dayjs>>(async (prev, token) => {
