@@ -90,6 +90,7 @@ export namespace PriceFeed {
     type: 'uniswapRouterV2';
     route: string[];
     routerAddress: string;
+    inputDecimals: number;
     outputDecimals: number;
   }
 
