@@ -28,6 +28,12 @@ export interface SwapCallDataRouteActivation {
   direction: Direction;
 }
 
+export interface SwapCallDataRouteTimeout {
+  duration: number;
+  enterAt: number | null;
+  activated: boolean;
+}
+
 export interface SwapCallDataRoute {
   amountOut: string;
   amountOutMin: string;
@@ -35,6 +41,7 @@ export interface SwapCallDataRoute {
   moving: string | null;
   direction: Direction;
   activation: SwapCallDataRouteActivation | null;
+  timeout: SwapCallDataRouteTimeout | null;
 }
 
 export interface SwapCallData {
