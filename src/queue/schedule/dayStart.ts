@@ -18,6 +18,7 @@ export default async (process: Process) => {
     ),
     queue.push('deadPoolsInvestmentsBroker'),
     queue.push('metricsTrackingConditionsBroker'),
+    queue.push('tokenResolveUniswapRouteBroker'),
     queue.push('systemGarbageCollector', {}),
     queue.push('logGarbageCollector', {}),
     queue.push('automateTriggerByTime', { type: TriggerType.EveryDay }),
