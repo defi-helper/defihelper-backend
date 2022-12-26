@@ -50,6 +50,9 @@ export default async (process: Process) => {
         smartTradeService.updateOrder(order, {
           status: OrderStatus.Succeeded,
         }),
+        container.model
+          .queueService()
+          .push('billingClaimReceiptResolver', { network: ownerWallet.network, txId: call.tx }),
         container.model.queueService().push('smartTradeBalancesFiller', { id: order.id }),
       ]);
     } else if (receipt.status === 0) {

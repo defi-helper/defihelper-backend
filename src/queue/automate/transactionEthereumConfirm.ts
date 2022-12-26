@@ -39,6 +39,10 @@ export default async (process: Process) => {
     return process.later(dayjs().add(network.avgBlockTime, 'seconds').toDate());
   }
 
+  await container.model
+    .queueService()
+    .push('billingClaimReceiptResolver', { network: blockchainWallet.network, txId: hash });
+
   await Promise.all([
     container
       .semafor()
