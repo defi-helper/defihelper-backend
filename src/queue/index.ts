@@ -38,11 +38,11 @@ export * as contractResolveDeployBlockNumber from './contract/resolveDeployBlock
 export * as contractResolveAbi from './contract/resolveAbi';
 
 export * as billingBroker from './billing/broker';
-export * as billingTransferScan from './null';
-export * as billingClaimScan from './billing/claimScan';
+export * as billingClaimScan from './null';
 export * as billingFeeOracle from './billing/feeOracle';
 export * as billingStoreScan from './billing/storeScan';
 export * as billingBillStatusResolver from './billing/billStatusResolver';
+export * as billingClaimReceiptResolver from './billing/claimReceiptResolver';
 export * as automateContractEthereumVerify from './automate/contractEthereumVerify';
 export * as automateContractWavesVerify from './automate/contractWavesVerify';
 export * as automateTransactionEthereumConfirm from './automate/transactionEthereumConfirm';
@@ -52,8 +52,6 @@ export * as automateContractStopLossBroker from './automate/contractStopLossBrok
 export * as automateContractStopLossRun from './automate/contractStopLossRun';
 export * as automateContractStopLossTx from './automate/contractStopLossTx';
 export * as automateTriggerByTime from './automate/trigger/byTime';
-export * as riskCalculationBroker from './null';
-export * as riskCalculationFiller from './null';
 
 export * as deadPoolsInvestmentsBroker from './contract/deadPoolsInvestmentsBroker';
 export * as automateNotifyExecutedRestake from './automate/notifyExecutedRestake';

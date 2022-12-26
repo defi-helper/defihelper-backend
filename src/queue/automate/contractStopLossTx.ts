@@ -56,6 +56,10 @@ export default async (process: Process) => {
       return process.later(dayjs().add(10, 'seconds').toDate());
     }
 
+    await container.model
+      .queueService()
+      .push('billingClaimReceiptResolver', { network: ownerWallet.network, txId: stopLoss.tx });
+
     const parser = new ethers.utils.Interface(['event StopLossOrderCompleted(uint256 amountOut)']);
     const event = receipt.logs.reduce<ethers.utils.LogDescription | null>((prev, topic) => {
       if (prev !== null) return prev;
