@@ -6,7 +6,7 @@ import { isKey } from '@services/types';
 export default async (process: Process) => {
   const tasks = await container.model
     .queueTable()
-    .whereIn('handler', ['billingClaimScan', 'billingFeeOracle', 'billingStoreScan']);
+    .whereIn('handler', ['billingFeeOracle', 'billingStoreScan']);
   const tasksMap = tasks.reduce((map, task) => {
     const { blockchain, network } = task.params as { blockchain: string; network: string };
     if (blockchain !== 'ethereum') return map; // Skip not ethereum tasks
@@ -34,21 +34,6 @@ export default async (process: Process) => {
       }
 
       const pool = [];
-      if ('Balance' in networkContracts || 'BalanceUpgradable' in networkContracts) {
-        if (!tasksMap[network]?.billingClaimScan) {
-          pool.push(
-            queueService.push(
-              'billingClaimScan',
-              {
-                blockchain: 'ethereum',
-                network,
-              },
-              { scanner: true },
-            ),
-          );
-        }
-      }
-
       if (isKey(networkContracts, 'StoreUpgradable')) {
         if (!tasksMap[network]?.billingFeeOracle) {
           pool.push(
