@@ -30,7 +30,7 @@ service:
 
 ingress:
   enabled: true
-  className: ""
+  className: "nginx-ingress"
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-production"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "360"
@@ -58,7 +58,6 @@ broker:
         replicas: 1
         maxReplicas: 10
         maxReadyMessagesForHpa: 25
-        graceperiod: 3600
         resources:
           requests:
             memory: 128Mi
@@ -66,13 +65,20 @@ broker:
           limits:
             memory: 512Mi
             cpu: 100m
+        graceperiod: 3600
+        nodeSelector:
+          group_name: "service"
+        tolerations:
+          - key: node-role.kubernetes.io/service
+            operator: "Equal"
+            value: "true"
+            effect: NoSchedule
       events-smart-trade:
         name: events-smart-trade
         command: '"npm","run","smartTrade:event"'
         replicas: 1
         maxReplicas: 20
         maxReadyMessagesForHpa: 100
-        graceperiod: 3600
         resources:
           requests:
             memory: 128Mi
@@ -80,13 +86,20 @@ broker:
           limits:
             memory: 128Mi
             cpu: 100m
+        graceperiod: 3600
+        nodeSelector:
+          group_name: "service"
+        tolerations:
+          - key: node-role.kubernetes.io/service
+            operator: "Equal"
+            value: "true"
+            effect: NoSchedule
       events-trigger:
         name: events-trigger
         command: '"npm","run","trigger:event"'
         replicas: 1
         maxReplicas: 20
         maxReadyMessagesForHpa: 100
-        graceperiod: 3600
         resources:
           requests:
             memory: 128Mi
@@ -94,13 +107,20 @@ broker:
           limits:
             memory: 128Mi
             cpu: 100m
+        graceperiod: 3600
+        nodeSelector:
+          group_name: "service"
+        tolerations:
+          - key: node-role.kubernetes.io/service
+            operator: "Equal"
+            value: "true"
+            effect: NoSchedule
       trigger:
         name: trigger
         command: '"npm","run","queue:consume","--","-q","tasks_trigger"'
         replicas: 1
         maxReplicas: 20
         maxReadyMessagesForHpa: 100
-        graceperiod: 3600
         resources:
           requests:
             memory: 128Mi
@@ -108,13 +128,20 @@ broker:
           limits:
             memory: 128Mi
             cpu: 100m
+        graceperiod: 3600
+        nodeSelector:
+          group_name: "service"
+        tolerations:
+          - key: node-role.kubernetes.io/service
+            operator: "Equal"
+            value: "true"
+            effect: NoSchedule
       metrics:
         name: metrics
         command: '"npm","run","queue:consume","--","-q","tasks_metricCurrent"'
         replicas: 1
         maxReplicas: 20
         maxReadyMessagesForHpa: 100
-        graceperiod: 3600
         resources:
           requests:
             memory: 192Mi
@@ -122,13 +149,20 @@ broker:
           limits:
             memory: 512Mi
             cpu: 100m
+        graceperiod: 3600
+        nodeSelector:
+          group_name: "service"
+        tolerations:
+          - key: node-role.kubernetes.io/service
+            operator: "Equal"
+            value: "true"
+            effect: NoSchedule
       history:
         name: history
         command: '"npm","run","queue:consume","--","-q","tasks_metricHistory"'
         replicas: 1
         maxReplicas: 20
         maxReadyMessagesForHpa: 100
-        graceperiod: 3600
         resources:
           requests:
             memory: 128Mi
@@ -136,6 +170,14 @@ broker:
           limits:
             memory: 128Mi
             cpu: 100m
+        graceperiod: 3600
+        nodeSelector:
+          group_name: "service"
+        tolerations:
+          - key: node-role.kubernetes.io/service
+            operator: "Equal"
+            value: "true"
+            effect: NoSchedule
       telegram-bot:
         name: telegram-bot
         command: '"npm","run","telegram:bot"'
@@ -150,12 +192,26 @@ broker:
             memory: 128Mi
             cpu: 100m
         graceperiod: 3600
+        nodeSelector:
+          group_name: "service"
+        tolerations:
+          - key: node-role.kubernetes.io/service
+            operator: "Equal"
+            value: "true"
+            effect: NoSchedule
 
 handlers:
   labels:
     app: backend
     component: cronHandler
     environment: prod
+  nodeSelector:
+    group_name: "service"
+  tolerations:
+    - key: node-role.kubernetes.io/service
+      operator: "Equal"
+      value: "true"
+      effect: NoSchedule
   resources:
     requests:
       memory: 128Mi
@@ -173,6 +229,13 @@ migrator:
     app: migrator
     component: migrator
     environment: dev
+  nodeSelector:
+    group_name: "service"
+  tolerations:
+    - key: node-role.kubernetes.io/service
+      operator: "Equal"
+      value: "true"
+      effect: NoSchedule
   resources:
     requests:
       memory: 128Mi
@@ -188,8 +251,13 @@ autoscaling:
   maxReplicas: 1
   targetCPUUtilizationPercentage: 80
   targetMemoryUtilizationPercentage: 80
-nodeSelector: {}
-tolerations: []
+nodeSelector:
+  group_name: "service"
+tolerations:
+  - key: node-role.kubernetes.io/service
+    operator: "Equal"
+    value: "true"
+    effect: NoSchedule
 affinity: {}
 nameOverride: ""
 fullnameOverride: ""
