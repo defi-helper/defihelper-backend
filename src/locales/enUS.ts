@@ -27,7 +27,7 @@ export default {
     "DeFiHelper's public beta now available. Get your APY boost right now on https://app.defihelper.io!":
       "DeFiHelper's public beta now available. Get your APY boost right now on https://app.defihelper.io!",
     '[{{name}}]: Tracked Balance ${{totalNetWorth}} ({{percentageTracked}}%), Total unclaimed ${{totalEarnedUSD}} ({{percentageTracked}}%) on {{time}}':
-      '[{{name}}]: Tracked Balance ${{totalNetWorth}} ({{percentageTracked}}%), Total unclaimed ${{totalEarnedUSD}} ({{percentageEarned}}%) on {{time}}',
+      '[{{name}}]: Tracked Balance ${{totalNetWorth}}, Total unclaimed ${{totalEarnedUSD}} on {{time}}',
     'automate:trigger:contractEvent:name': 'Contract event',
     'automate:trigger:contractEvent:description': 'Call trigger for contract event',
     'automate:trigger:everyMonth:name': 'Periodic',
