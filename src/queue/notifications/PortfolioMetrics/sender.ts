@@ -51,10 +51,15 @@ export default async (process: Process) => {
     {
       stakingUSD: totalStackedUSD,
       earnedUSD: totalEarnedUSD,
+      /*
       earnedUSDDayBefore,
       stakingUSDDayBefore,
+      */
     },
-    { usd: totalTokensUSD, usdDayBefore },
+    {
+      usd: totalTokensUSD,
+      // usdDayBefore
+    },
   ] = await Promise.all([
     dataLoader.userMetric().load(contact.user),
     dataLoader
@@ -69,6 +74,7 @@ export default async (process: Process) => {
   }
 
   const totalNetWorth = new BN(totalStackedUSD).plus(totalEarnedUSD).plus(totalTokensUSD);
+  /*
   const worthDayBefore = new BN(stakingUSDDayBefore).plus(earnedUSDDayBefore).plus(usdDayBefore);
   const worthChange = !worthDayBefore.eq(0)
     ? new BN(totalNetWorth).minus(worthDayBefore).div(worthDayBefore).multipliedBy(100)
@@ -76,13 +82,16 @@ export default async (process: Process) => {
   const earnedChange = !new BN(earnedUSDDayBefore).eq(0)
     ? new BN(totalEarnedUSD).minus(earnedUSDDayBefore).div(earnedUSDDayBefore).multipliedBy(100)
     : new BN(0);
+  */
 
   const templateParams = {
     name: user.name === '' ? 'My Portfolio' : user.name,
     totalNetWorth: totalNetWorth.toFixed(2),
     totalEarnedUSD: new BN(totalEarnedUSD).toFixed(2),
+    /*
     percentageEarned: `${earnedChange.isPositive() ? '+' : ''}${earnedChange.toFixed(2)}`,
     percentageTracked: `${worthChange.isPositive() ? '+' : ''}${worthChange.toFixed(2)}`,
+    */
   };
 
   switch (contact.broker) {
