@@ -13,9 +13,11 @@ export const Templates = {
   ConfirmEmail: template<{ email: string; confirmationCode: string }>('ConfirmEmail.mustache'),
   PortfolioMetrics: template<{
     totalNetWorth: string;
-    percentageTracked: string;
     totalEarnedUSD: string;
+    /*
+    percentageTracked: string;
     percentageEarned: string;
+    */
   }>('PortfolioMetrics.mustache'),
   AutomateNotEnoughFunds: template<{}>('AutomateNotEnoughFunds.mustache'),
   EventTemplate: template<{
