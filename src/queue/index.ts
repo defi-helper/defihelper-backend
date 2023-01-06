@@ -98,6 +98,7 @@ export * as metricsWalletTokenRegistryPeriodFiller from './metrics/registry/peri
 
 /* protocol */
 export * as protocolContractsResolver from './protocol/resolveContracts';
+export * as protocolInvestFlagResolver from './protocol/investFlagResolver';
 
 /* regular notifications */
 export * as notificationPortfolioMetricsNotify from './notifications/PortfolioMetrics/sender';
