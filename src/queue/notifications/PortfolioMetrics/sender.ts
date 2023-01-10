@@ -3,7 +3,12 @@ import container from '@container';
 import { DataLoaderContainer } from '@api/dataLoader/container';
 import BN from 'bignumber.js';
 import { TokenAliasLiquidity } from '@models/Token/Entity';
-import { ContactBroker, ContactStatus } from '@models/Notification/Entity';
+import {
+  ContactBroker,
+  ContactStatus,
+  NotificationStatus,
+  NotificationType,
+} from '@models/Notification/Entity';
 
 interface Params {
   notificationId: string;
@@ -33,15 +38,13 @@ export default async (process: Process) => {
     throw new Error('Contact not found');
   }
 
-  const user = await container.model
-    .userTable()
-    .where({
-      id: contact.user,
-    })
-    .first();
-
+  const user = await container.model.userTable().where({ id: contact.user }).first();
   if (!user) {
     throw new Error('User not found');
+  }
+  const availableNotifications = await container.model.storeService().availableNotifications(user);
+  if (availableNotifications <= 0) {
+    throw new Error('Not available notifications');
   }
 
   const chatId = contact.params?.chatId;
@@ -116,6 +119,13 @@ export default async (process: Process) => {
     default:
       throw new Error('Unknown broker');
   }
+  await container.model
+    .notificationService()
+    .create(
+      contact,
+      { type: NotificationType.portfolioMetrics, payload: {} },
+      NotificationStatus.processed,
+    );
 
   return process.done();
 };

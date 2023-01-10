@@ -1,11 +1,11 @@
 import container from '@container';
-import { Express, Request } from 'express';
+import Express from 'express';
 import { Server } from 'http';
 import { ApolloServer } from 'apollo-server-express';
 import { formatApolloErrors } from 'apollo-server-errors';
 import { json } from 'body-parser';
 import cors from 'cors';
-import { GraphQLNonNull, GraphQLObjectType, GraphQLSchema, GraphQLString } from 'graphql';
+import { GraphQLObjectType, GraphQLSchema } from 'graphql';
 import { DataLoaderContainer } from '@api/dataLoader/container';
 import * as middlewares from '@api/middlewares';
 import * as configSchemas from '@api/schema/config';
@@ -41,6 +41,7 @@ import { walletTableName } from '@models/Wallet/Entity';
 import { Token } from '@models/Token/Entity';
 
 import axios from 'axios';
+import path from 'path';
 
 interface AprMetric {
   contract: string;
@@ -49,16 +50,12 @@ interface AprMetric {
   network: string;
 }
 
-export function route({ express, server }: { express: Express; server: Server }) {
+export function route({ express, server }: { express: Express.Express; server: Server }) {
   const apollo = new ApolloServer({
     schema: new GraphQLSchema({
-      query: new GraphQLObjectType<undefined, Request>({
+      query: new GraphQLObjectType<undefined, Express.Request>({
         name: 'Query',
         fields: {
-          ping: {
-            type: GraphQLNonNull(GraphQLString),
-            resolve: () => 'pong',
-          },
           config: configSchemas.ConfigQuery,
           me: userSchemas.MeQuery,
           userReferrer: userSchemas.UserReferrerCodeQuery,
@@ -183,7 +180,7 @@ export function route({ express, server }: { express: Express; server: Server })
           smartTradeSwapOrderClose: smartTradeSchemas.SwapOrderCloseMutation,
         },
       }),
-      subscription: new GraphQLObjectType<any, Request>({
+      subscription: new GraphQLObjectType<any, Express.Request>({
         name: 'Subscription',
         fields: {
           onWalletCreated: userSchemas.OnWalletCreated,
@@ -260,6 +257,7 @@ export function route({ express, server }: { express: Express; server: Server })
   ]);
 
   express.use(cors({ origin: container.parent.adapters.host }));
+  express.use(Express.static(path.resolve(__dirname, '../../assets')));
   express.route('/p/:code').get(async (req, res) => {
     const { code } = req.params;
     const codeRecord = await container.model.referrerCodeTable().where({ code }).first();
