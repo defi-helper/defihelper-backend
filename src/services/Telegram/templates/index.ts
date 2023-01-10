@@ -27,6 +27,8 @@ export const Templates = {
     `${__dirname}/AutomateNotEnoughFunds.mustache`,
     'utf8',
   ),
+  notificationsFew: fs.promises.readFile(`${__dirname}/NotificationsFew.mustache`, 'utf8'),
+  notificationsOver: fs.promises.readFile(`${__dirname}/NotificationsOver.mustache`, 'utf8'),
   // Smart trade
   smartTradeOrderCreated: fs.promises.readFile(
     `${__dirname}/SmartTradeOrderCreated.mustache`,

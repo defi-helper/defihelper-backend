@@ -28,4 +28,6 @@ export const Templates = {
     network: string;
   }>('Event.mustache'),
   TriggerTemplate: template<{ message: string }>('Trigger.mustache'),
+  NotificationsFew: template<{}>('NotificationsFew.mustache'),
+  NotificationsOver: template<{}>('NotificationsOver.mustache'),
 };

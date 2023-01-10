@@ -3,6 +3,7 @@ import { v4 as uuid } from 'uuid';
 import { Factory } from '@services/Container';
 import { User } from '@models/User/Entity';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
+import { Query as NotificationQuery } from '@models/Notification/Service';
 import {
   NotificationTable,
   notificationTableName,
@@ -17,6 +18,21 @@ import {
   PurchaseTable,
   purchaseTableName,
 } from './Entity';
+
+export namespace Query {
+  export function purchaseJoinWallet(qb: PurchaseTable) {
+    qb.innerJoin(walletBlockchainTableName, function () {
+      this.on(`${walletBlockchainTableName}.blockchain`, '=', `${purchaseTableName}.blockchain`);
+      this.on(`${walletBlockchainTableName}.network`, '=', `${purchaseTableName}.network`);
+      this.on(`${walletBlockchainTableName}.address`, '=', `${purchaseTableName}.account`);
+    });
+    qb.innerJoin(walletTableName, `${walletTableName}.id`, `${walletBlockchainTableName}.id`);
+  }
+
+  export function purchaseAmount(qb: PurchaseTable, alias: string = 'sum') {
+    qb.sum({ [alias]: `${purchaseTableName}.amount` });
+  }
+}
 
 export class StoreService {
   constructor(
@@ -91,14 +107,9 @@ export class StoreService {
 
   purchaseAmount(code: ProductCode, user: User): Promise<number> {
     return this.purchaseTable()
-      .sum<{ sum: string }>(`${purchaseTableName}.amount`)
+      .modify(Query.purchaseAmount)
+      .modify(Query.purchaseJoinWallet)
       .innerJoin(productTableName, `${purchaseTableName}.product`, '=', `${productTableName}.id`)
-      .innerJoin(walletBlockchainTableName, function () {
-        this.on(`${walletBlockchainTableName}.blockchain`, '=', `${purchaseTableName}.blockchain`)
-          .andOn(`${walletBlockchainTableName}.network`, '=', `${purchaseTableName}.network`)
-          .andOn(`${walletBlockchainTableName}.address`, '=', `${purchaseTableName}.account`);
-      })
-      .innerJoin(walletTableName, `${walletTableName}.id`, `${walletBlockchainTableName}.id`)
       .where(`${productTableName}.code`, code)
       .where(`${walletTableName}.user`, user.id)
       .first()
@@ -107,18 +118,20 @@ export class StoreService {
   }
 
   async availableNotifications(user: User): Promise<number> {
-    const purchaseAmount = await this.purchaseAmount(ProductCode.Notification, user);
-    const notificationsCount = await this.notificationTable()
-      .countDistinct<{ count: string }>(`${notificationTableName}.id`)
-      .innerJoin(
-        userContactTableName,
-        `${userContactTableName}.id`,
-        `${notificationTableName}.contact`,
-      )
-      .where(`${userContactTableName}.user`, user.id)
-      .first()
-      .then((row) => row ?? { count: 0 })
-      .then(({ count }) => Number(count));
+    const [purchaseAmount, notificationsCount] = await Promise.all([
+      this.purchaseAmount(ProductCode.Notification, user),
+      this.notificationTable()
+        .modify(NotificationQuery.notificationCount)
+        .innerJoin(
+          userContactTableName,
+          `${userContactTableName}.id`,
+          `${notificationTableName}.contact`,
+        )
+        .where(`${userContactTableName}.user`, user.id)
+        .first()
+        .then((row) => row ?? { count: 0 })
+        .then(({ count }) => Number(count)),
+    ]);
 
     return purchaseAmount - notificationsCount;
   }
