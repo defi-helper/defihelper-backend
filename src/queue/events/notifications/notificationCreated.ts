@@ -47,7 +47,7 @@ export default async (process: Process) => {
   }
 
   const availableNotifications = await container.model.storeService().availableNotifications(user);
-  if (availableNotifications === 4) {
+  if (availableNotifications === 5) {
     const { email, telegram } = await getContacts(user);
     await Promise.all([
       email
