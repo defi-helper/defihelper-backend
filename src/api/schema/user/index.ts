@@ -337,7 +337,7 @@ export const WalletBlockchainType: GraphQLObjectType = new GraphQLObjectType<
           .innerJoin(tokenAliasTableName, `${tokenAliasTableName}.id`, `${tokenTableName}.alias`)
           .where(function () {
             this.where(`${metricWalletTokenRegistryTableName}.period`, RegistryPeriod.Latest);
-            this.whereBetween(`${metricWalletRegistryTableName}.date`, [
+            this.whereBetween(`${metricWalletTokenRegistryTableName}.date`, [
               dayjs().add(-1, 'day').startOf('day').toDate(),
               dayjs().add(1, 'day').startOf('day').toDate(),
             ]);
