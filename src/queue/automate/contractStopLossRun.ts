@@ -92,11 +92,10 @@ export default async (process: Process) => {
       throw new Error('Insufficient funds to pay commission');
     }
 
-    const res: { tx: ethers.ContractTransaction } = await automate.runStopLoss(gasFee, deadline, {
+    const tx: ethers.ContractTransaction = await automate.runStopLoss(gasFee, deadline, {
       gasLimit,
       gasPrice,
     });
-    const { tx } = res;
     await automateService.updateStopLoss({
       ...stopLoss,
       status: ContractStopLossStatus.Sended,
