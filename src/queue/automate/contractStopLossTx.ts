@@ -53,7 +53,12 @@ export default async (process: Process) => {
   try {
     const receipt = await provider.waitForTransaction(stopLoss.tx, 1, 10000);
     if (receipt.status === 0) {
-      return process.later(dayjs().add(10, 'seconds').toDate());
+      await container.model.automateService().updateStopLoss({
+        ...stopLoss,
+        status: ContractStopLossStatus.Error,
+        rejectReason: 'Transaction reverted',
+      });
+      return process.done();
     }
 
     await container.model
