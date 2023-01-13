@@ -96,12 +96,18 @@ export default async (process: Process) => {
       gasLimit,
       gasPrice,
     });
-    await automateService.updateStopLoss({
-      ...stopLoss,
-      status: ContractStopLossStatus.Sended,
-      tx: tx.hash,
-      rejectReason: '',
-    });
+    await Promise.all([
+      automateService.updateStopLoss({
+        ...stopLoss,
+        status: ContractStopLossStatus.Sended,
+        tx: tx.hash,
+        rejectReason: '',
+      }),
+      automateService.updateContract({
+        ...contract,
+        blockedAt: new Date(),
+      }),
+    ]);
     await container.model.queueService().push('automateContractStopLossTx', { id: stopLoss.id });
   } catch (e) {
     if (isEthersError(e)) {

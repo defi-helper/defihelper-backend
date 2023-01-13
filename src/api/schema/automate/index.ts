@@ -1217,8 +1217,9 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
         if (
           !contract.contract ||
           contract.verification !== Automate.ContractVerificationStatus.Confirmed
-        )
+        ) {
           return def;
+        }
 
         const staking = await dataLoader.contract().load(contract.contract);
         if (!staking) return def;
@@ -1262,6 +1263,10 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
           },
         };
       },
+    },
+    blockedAt: {
+      type: DateTimeType,
+      description: 'Date at blocked contract',
     },
     archivedAt: {
       type: DateTimeType,

@@ -284,6 +284,7 @@ export class AutomateService {
       initParams,
       verification: ContractVerificationStatus.Pending,
       rejectReason: '',
+      blockedAt: null,
       archivedAt: null,
       updatedAt: new Date(),
       createdAt: new Date(),
