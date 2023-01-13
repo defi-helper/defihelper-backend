@@ -12,7 +12,7 @@ images:
         memory: 64Mi
         cpu: 50m
       limits:
-        memory: 64Mi
+        memory: 128Mi
         cpu: 100m
   app:
     name: app
