@@ -16,7 +16,8 @@ export default async (process: Process) => {
       `${contractTableName}.id`,
     )
     .where('status', ContractStopLossStatus.Pending)
-    .whereNull(`${contractTableName}.archivedAt`);
+    .whereNull(`${contractTableName}.archivedAt`)
+    .whereNull(`${contractTableName}.blockedAt`);
 
   const automateService = container.model.automateService();
   const queue = container.model.queueService();
