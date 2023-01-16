@@ -2,7 +2,6 @@ import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import dayjs from 'dayjs';
 import { abi as BalanceABI } from '@defihelper/networks/abi/Balance.json';
-import { ethers } from 'ethers';
 import { BigNumber as BN } from 'bignumber.js';
 import { TransferStatus } from '@models/Billing/Entity';
 import { LogJsonMessage } from '@services/Log';
@@ -54,11 +53,15 @@ export default async (process: Process) => {
       return process.later(dayjs().add(10, 'seconds').toDate());
     }
 
-    const event = receipt.logs.reduce<ethers.utils.LogDescription | null>((prev, topic) => {
-      if (prev !== null) return prev;
-      const logDescription = balance.interface.parseLog(topic);
-      return ['Deposit', 'Refund'].includes(logDescription.name) ? logDescription : null;
-    }, null);
+    const event = receipt.logs
+      .map((topic) => {
+        try {
+          return balance.interface.parseLog(topic);
+        } catch {
+          return null;
+        }
+      })
+      .find((topic) => topic && ['Deposit', 'Refund'].includes(topic.name));
     if (!event) {
       await billingService.transferReject(transfer, 'Transaction  not include target event');
       return process.done();
