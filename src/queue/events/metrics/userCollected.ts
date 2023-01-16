@@ -13,15 +13,37 @@ import {
 import {
   ContactBroker,
   ContactStatus,
+  NotificationStatus,
+  notificationTableName,
+  NotificationType,
   UserContact,
   userContactTableName,
 } from '@models/Notification/Entity';
 import { TokenAliasLiquidity } from '@models/Token/Entity';
 import { LogJsonMessage } from '@services/Log';
+import { Query as StoreQuery } from '@models/Store/Service';
+import { Query as NotificationQuery } from '@models/Notification/Service';
+import { walletTableName } from '@models/Wallet/Entity';
 
 const log = LogJsonMessage.debug({ source: 'eventsMetricUserCollected' });
 
 async function sendPortfolioNotification(user: User) {
+  const purchaseAmountQuery = container.model
+    .storePurchaseTable()
+    .modify(StoreQuery.purchaseAmount)
+    .modify(StoreQuery.purchaseJoinWallet)
+    .whereRaw(`${walletTableName}.user = "${userTableName}".id`)
+    .toQuery();
+  const notificationsCountQuery = container.model
+    .notificationTable()
+    .modify(NotificationQuery.notificationCount)
+    .innerJoin(
+      userContactTableName,
+      `${userContactTableName}.id`,
+      `${notificationTableName}.contact`,
+    )
+    .whereRaw(`${userContactTableName}.user = "${userTableName}".id`)
+    .toQuery();
   const notifications: Array<UserNotification & UserContact> = await container.model
     .userNotificationTable()
     .columns(`${userNotificationTableName}.*`)
@@ -34,7 +56,8 @@ async function sendPortfolioNotification(user: User) {
     .innerJoin(userTableName, `${userContactTableName}.user`, `${userTableName}.id`)
     .where(`${userTableName}.id`, user.id)
     .where(`${userContactTableName}.status`, ContactStatus.Active)
-    .where(`${userNotificationTableName}.type`, UserNotificationType.PortfolioMetrics);
+    .where(`${userNotificationTableName}.type`, UserNotificationType.PortfolioMetrics)
+    .whereRaw(`(${purchaseAmountQuery}) - (${notificationsCountQuery}) > 0`);
   log.ex({ notificationsCount: notifications.length }).send();
   if (notifications.length === 0) return;
 
@@ -43,10 +66,13 @@ async function sendPortfolioNotification(user: User) {
     {
       stakingUSD: totalStackedUSD,
       earnedUSD: totalEarnedUSD,
-      earnedUSDDayBefore,
-      stakingUSDDayBefore,
+      // earnedUSDDayBefore,
+      // stakingUSDDayBefore,
     },
-    { usd: totalTokensUSD, usdDayBefore },
+    {
+      usd: totalTokensUSD,
+      // usdDayBefore
+    },
   ] = await Promise.all([
     dataLoader.userMetric().load(user.id),
     dataLoader
@@ -59,6 +85,7 @@ async function sendPortfolioNotification(user: User) {
   if (!totalStackedUSD) return;
 
   const totalNetWorth = new BN(totalStackedUSD).plus(totalEarnedUSD).plus(totalTokensUSD);
+  /*
   const worthDayBefore = new BN(stakingUSDDayBefore).plus(earnedUSDDayBefore).plus(usdDayBefore);
   const worthChange = !worthDayBefore.eq(0)
     ? new BN(totalNetWorth).minus(worthDayBefore).div(worthDayBefore).multipliedBy(100)
@@ -66,13 +93,14 @@ async function sendPortfolioNotification(user: User) {
   const earnedChange = !new BN(earnedUSDDayBefore).eq(0)
     ? new BN(totalEarnedUSD).minus(earnedUSDDayBefore).div(earnedUSDDayBefore).multipliedBy(100)
     : new BN(0);
+  */
   const templateParams = {
     name: user.name === '' ? 'My Portfolio' : user.name,
     time: dayjs().format('YYYY-MM-DD HH:mm'),
     totalNetWorth: totalNetWorth.toFixed(2),
     totalEarnedUSD: new BN(totalEarnedUSD).toFixed(2),
-    percentageEarned: `${earnedChange.isPositive() ? '+' : ''}${earnedChange.toFixed(2)}`,
-    percentageTracked: `${worthChange.isPositive() ? '+' : ''}${worthChange.toFixed(2)}`,
+    // percentageEarned: `${earnedChange.isPositive() ? '+' : ''}${earnedChange.toFixed(2)}`,
+    // percentageTracked: `${worthChange.isPositive() ? '+' : ''}${worthChange.toFixed(2)}`,
   };
   log.ex({ templateParams }).send();
 
@@ -90,6 +118,25 @@ async function sendPortfolioNotification(user: User) {
         sendDate: `${sendDate.toDate()}`,
       })
       .send();
+
+    const contact = await container.model
+      .userContactTable()
+      .where({
+        id: notification.id,
+        status: ContactStatus.Active,
+      })
+      .first();
+    if (!contact) {
+      return null;
+    }
+
+    await container.model
+      .notificationService()
+      .create(
+        contact,
+        { type: NotificationType.portfolioMetrics, payload: {} },
+        NotificationStatus.processed,
+      );
     if (notification.broker === ContactBroker.Telegram) {
       return container.model.queueService().push(
         'sendTelegramByContact',
