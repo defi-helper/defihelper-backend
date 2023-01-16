@@ -50,10 +50,36 @@ export default async (process: Process) => {
   );
   const tokenOutDecimals = await tokenOut.decimals().then((v: ethers.BigNumber) => v.toString());
 
+  const automateService = container.model.automateService();
+
   try {
     const receipt = await provider.waitForTransaction(stopLoss.tx, 1, 10000);
     if (receipt.status === 0) {
-      return process.later(dayjs().add(10, 'seconds').toDate());
+      const tx = await provider.getTransaction(stopLoss.tx);
+      const code = await provider.call(tx as any, tx.blockNumber);
+      const reason = ethers.utils.toUtf8String(`0x${code.slice(138)}`);
+      if (reason.indexOf('Transaction too old') === 0) {
+        await Promise.all([
+          automateService.updateContract({
+            ...contract,
+            blockedAt: null,
+          }),
+          automateService.updateStopLoss({
+            ...stopLoss,
+            status: ContractStopLossStatus.Pending,
+            tx: '',
+            task: null,
+          }),
+        ]);
+        return process.done();
+      }
+
+      await automateService.updateStopLoss({
+        ...stopLoss,
+        status: ContractStopLossStatus.Error,
+        rejectReason: `Transaction reverted: ${reason}`,
+      });
+      return process.done();
     }
 
     await container.model
@@ -71,7 +97,7 @@ export default async (process: Process) => {
       }
     }, null);
     if (!event) {
-      await container.model.automateService().updateStopLoss({
+      await automateService.updateStopLoss({
         ...stopLoss,
         status: ContractStopLossStatus.Error,
         rejectReason: 'Transaction  not include target event',
@@ -80,7 +106,7 @@ export default async (process: Process) => {
     }
     const amountOut = new BN(event.args.amountOut.toString()).div(`1e${tokenOutDecimals}`);
 
-    await container.model.automateService().updateStopLoss({
+    await automateService.updateStopLoss({
       ...stopLoss,
       status: ContractStopLossStatus.Completed,
       amountOut: amountOut.toString(10),
@@ -91,7 +117,7 @@ export default async (process: Process) => {
         return process.later(dayjs().add(10, 'seconds').toDate());
       }
       if (e.message.includes('no matching event')) {
-        await container.model.automateService().updateStopLoss({
+        await automateService.updateStopLoss({
           ...stopLoss,
           status: ContractStopLossStatus.Error,
           rejectReason: 'Transaction  not include target event',

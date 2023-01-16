@@ -68,6 +68,7 @@ export interface Contract {
   name: string;
   description: string;
   link: string | null;
+  invest: boolean;
   hidden: boolean;
   deprecated: boolean;
   updatedAt: Date;

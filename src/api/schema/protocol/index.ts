@@ -675,6 +675,9 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
           blockchain: {
             type: BlockchainFilterInputType,
           },
+          invest: {
+            type: GraphQLBoolean,
+          },
           hidden: {
             type: GraphQLBoolean,
           },
@@ -748,7 +751,7 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
         this.onIn(`${metricContractRegistryTableName}.period`, [RegistryPeriod.Latest]);
       })
       .where(function () {
-        const { id, protocol, hidden, deprecated, risk, userLink, search, tag } = filter;
+        const { id, protocol, invest, hidden, deprecated, risk, userLink, search, tag } = filter;
         if (id) {
           this.where(`${contractTableName}.id`, id);
         } else {
@@ -763,6 +766,9 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
             if (network !== undefined) {
               this.andWhere('network', network);
             }
+          }
+          if (typeof invest === 'boolean') {
+            this.where('invest', invest);
           }
           if (typeof hidden === 'boolean') {
             this.where(`${contractTableName}.hidden`, hidden);

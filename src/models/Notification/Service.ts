@@ -10,26 +10,39 @@ import {
   NotificationPayloadType,
   NotificationStatus,
   NotificationTable,
+  notificationTableName,
   UserContact,
   UserContactParams,
   UserContactTable,
 } from './Entity';
 
+export namespace Query {
+  export function notificationCount(qb: NotificationTable, alias: string = 'count') {
+    qb.countDistinct({ [alias]: `${notificationTableName}.id` });
+  }
+}
+
 export class NotificationService {
   constructor(readonly table: Factory<NotificationTable>) {}
 
   public readonly onCreated = new Emitter<Notification>(async (notification) => {
-    return container.model
-      .queueService()
-      .push('notificationSend', { id: notification.id }, { priority: 9 });
+    if (notification.status === NotificationStatus.new) {
+      await container.model
+        .queueService()
+        .push('notificationSend', { id: notification.id }, { priority: 9 });
+    }
   });
 
-  async create(contact: UserContact, payload: NotificationPayloadType): Promise<Notification> {
+  async create(
+    contact: UserContact,
+    payload: NotificationPayloadType,
+    status: NotificationStatus = NotificationStatus.new,
+  ) {
     const created: Notification = {
       id: uuid(),
       contact: contact.id,
       ...payload,
-      status: NotificationStatus.new,
+      status,
       createdAt: new Date(),
     };
 
@@ -39,8 +52,8 @@ export class NotificationService {
     return created;
   }
 
-  async markAsProcessed(notification: Notification): Promise<Notification> {
-    const updated = {
+  async markAsProcessed(notification: Notification) {
+    const updated: Notification = {
       ...notification,
       status: NotificationStatus.processed,
       processedAt: new Date(),

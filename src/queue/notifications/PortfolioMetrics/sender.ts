@@ -3,7 +3,12 @@ import container from '@container';
 import { DataLoaderContainer } from '@api/dataLoader/container';
 import BN from 'bignumber.js';
 import { TokenAliasLiquidity } from '@models/Token/Entity';
-import { ContactBroker, ContactStatus } from '@models/Notification/Entity';
+import {
+  ContactBroker,
+  ContactStatus,
+  NotificationStatus,
+  NotificationType,
+} from '@models/Notification/Entity';
 
 interface Params {
   notificationId: string;
@@ -33,15 +38,13 @@ export default async (process: Process) => {
     throw new Error('Contact not found');
   }
 
-  const user = await container.model
-    .userTable()
-    .where({
-      id: contact.user,
-    })
-    .first();
-
+  const user = await container.model.userTable().where({ id: contact.user }).first();
   if (!user) {
     throw new Error('User not found');
+  }
+  const availableNotifications = await container.model.storeService().availableNotifications(user);
+  if (availableNotifications <= 0) {
+    throw new Error('Not available notifications');
   }
 
   const chatId = contact.params?.chatId;
@@ -51,10 +54,15 @@ export default async (process: Process) => {
     {
       stakingUSD: totalStackedUSD,
       earnedUSD: totalEarnedUSD,
+      /*
       earnedUSDDayBefore,
       stakingUSDDayBefore,
+      */
     },
-    { usd: totalTokensUSD, usdDayBefore },
+    {
+      usd: totalTokensUSD,
+      // usdDayBefore
+    },
   ] = await Promise.all([
     dataLoader.userMetric().load(contact.user),
     dataLoader
@@ -69,6 +77,7 @@ export default async (process: Process) => {
   }
 
   const totalNetWorth = new BN(totalStackedUSD).plus(totalEarnedUSD).plus(totalTokensUSD);
+  /*
   const worthDayBefore = new BN(stakingUSDDayBefore).plus(earnedUSDDayBefore).plus(usdDayBefore);
   const worthChange = !worthDayBefore.eq(0)
     ? new BN(totalNetWorth).minus(worthDayBefore).div(worthDayBefore).multipliedBy(100)
@@ -76,13 +85,16 @@ export default async (process: Process) => {
   const earnedChange = !new BN(earnedUSDDayBefore).eq(0)
     ? new BN(totalEarnedUSD).minus(earnedUSDDayBefore).div(earnedUSDDayBefore).multipliedBy(100)
     : new BN(0);
+  */
 
   const templateParams = {
     name: user.name === '' ? 'My Portfolio' : user.name,
     totalNetWorth: totalNetWorth.toFixed(2),
     totalEarnedUSD: new BN(totalEarnedUSD).toFixed(2),
+    /*
     percentageEarned: `${earnedChange.isPositive() ? '+' : ''}${earnedChange.toFixed(2)}`,
     percentageTracked: `${worthChange.isPositive() ? '+' : ''}${worthChange.toFixed(2)}`,
+    */
   };
 
   switch (contact.broker) {
@@ -107,6 +119,13 @@ export default async (process: Process) => {
     default:
       throw new Error('Unknown broker');
   }
+  await container.model
+    .notificationService()
+    .create(
+      contact,
+      { type: NotificationType.portfolioMetrics, payload: {} },
+      NotificationStatus.processed,
+    );
 
   return process.done();
 };

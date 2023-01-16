@@ -155,6 +155,7 @@ export interface Contract {
   initParams: Object;
   verification: ContractVerificationStatus;
   rejectReason: string;
+  blockedAt: Date | null;
   archivedAt: Date | null;
   updatedAt: Date;
   createdAt: Date;

@@ -49,6 +49,7 @@ export default async (process: Process) => {
         startAt: dayjs().add(15, 'minutes').toDate(),
       },
     ),
+    queue.push('protocolInvestFlagResolver', {}),
   ]);
 
   return process.done();
