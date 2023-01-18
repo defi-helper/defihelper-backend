@@ -2638,11 +2638,6 @@ export const WalletMetricScanMutation: GraphQLFieldConfig<any, Request> = {
       const contract = await container.model.contractTable().where('id', contractId).first();
       if (!contract) throw new UserInputError('Contract not found');
 
-      const link = await container.model
-        .walletContractLinkTable()
-        .where({ wallet: wallet.id, contract: contract.id })
-        .first();
-      if (!link) throw new UserInputError('Wallet not linked to contract');
       await container.model.queueService().push(
         'metricsWalletScanMutation',
         {
