@@ -27,7 +27,6 @@ import {
   contractBlockchainTableName,
   MetadataType,
   TokenContractLinkType,
-  tokenContractLinkTableName,
   UserContractLinkType,
   protocolTableName,
   ContractDebankType as EntityContractDebankType,
@@ -51,7 +50,6 @@ import { AuthenticationError, ForbiddenError, UserInputError } from 'apollo-serv
 import BN from 'bignumber.js';
 import { Blockchain } from '@models/types';
 import { Post } from '@models/Protocol/Social/Entity';
-import { tokenPartTableName, tokenTableName } from '@models/Token/Entity';
 import { PostProvider } from '@services/SocialStats';
 import {
   BlockchainEnum,
@@ -188,18 +186,8 @@ export const ContractTokenLinkType = new GraphQLObjectType<
   fields: {
     stakeBase: {
       type: TokenType,
-      resolve: (contract) => {
-        return container.model
-          .tokenTable()
-          .column(`${tokenTableName}.*`)
-          .innerJoin(
-            tokenContractLinkTableName,
-            `${tokenTableName}.id`,
-            `${tokenContractLinkTableName}.token`,
-          )
-          .where(`${tokenContractLinkTableName}.contract`, contract.id)
-          .andWhere(`${tokenContractLinkTableName}.type`, TokenContractLinkType.Stake)
-          .first();
+      resolve: (contract, args, { dataLoader }) => {
+        return dataLoader.tokenContract({ type: TokenContractLinkType.Stake }).load(contract.id);
       },
     },
     ...Object.values(TokenContractLinkType).reduce(
@@ -207,24 +195,10 @@ export const ContractTokenLinkType = new GraphQLObjectType<
         ...result,
         [linkType]: {
           type: GraphQLNonNull(GraphQLList(GraphQLNonNull(TokenType))),
-          resolve: async (contract) => {
-            const token = await container.model
-              .tokenTable()
-              .column(`${tokenTableName}.*`)
-              .innerJoin(
-                tokenContractLinkTableName,
-                `${tokenTableName}.id`,
-                `${tokenContractLinkTableName}.token`,
-              )
-              .where(`${tokenContractLinkTableName}.contract`, contract.id)
-              .andWhere(`${tokenContractLinkTableName}.type`, linkType)
-              .first();
+          resolve: async (contract, args, { dataLoader }) => {
+            const token = await dataLoader.tokenContract({ type: linkType }).load(contract.id);
             if (!token) return [];
-
-            const childTokens = await container.model
-              .tokenTable()
-              .innerJoin(tokenPartTableName, `${tokenTableName}.id`, `${tokenPartTableName}.child`)
-              .where(`${tokenPartTableName}.parent`, token.id);
+            const childTokens = await dataLoader.tokenChild().load(token.id);
 
             return childTokens.length > 0 ? childTokens : [token];
           },

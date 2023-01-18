@@ -5,8 +5,19 @@ import {
   QueryModify,
   RegistryPeriod,
 } from '@models/Metric/Entity';
-import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
-import { TokenAlias, Token, tokenAliasTableName, tokenTableName } from '@models/Token/Entity';
+import {
+  contractBlockchainTableName,
+  contractTableName,
+  tokenContractLinkTableName,
+  TokenContractLinkType,
+} from '@models/Protocol/Entity';
+import {
+  TokenAlias,
+  Token,
+  tokenAliasTableName,
+  tokenTableName,
+  tokenPartTableName,
+} from '@models/Token/Entity';
 import { walletTableName } from '@models/Wallet/Entity';
 import { RiskFactor } from '@services/RiskRanking';
 import DataLoader from 'dataloader';
@@ -220,4 +231,49 @@ export const tokenLoader = () =>
       .then((rows) => new Map(rows.map((token) => [token.id, token])));
 
     return tokensId.map((id) => map.get(id) ?? null);
+  });
+
+export const tokenContractLoader = (filter?: { type?: TokenContractLinkType }) =>
+  new DataLoader<string, Token | null>(async (contractsId) => {
+    const map = await container.model
+      .tokenTable()
+      .column(`${tokenContractLinkTableName}.contract`)
+      .column<Array<Token & { contract: string }>>(`${tokenTableName}.*`)
+      .innerJoin(
+        tokenContractLinkTableName,
+        `${tokenTableName}.id`,
+        `${tokenContractLinkTableName}.token`,
+      )
+      .where(function () {
+        this.whereIn(`${tokenContractLinkTableName}.contract`, contractsId);
+        if (filter) {
+          if (filter.type) {
+            this.where(`${tokenContractLinkTableName}.type`, filter.type);
+          }
+        }
+      })
+      .then((rows) => new Map(rows.map((token) => [token.contract, token])));
+
+    return contractsId.map((id) => map.get(id) ?? null);
+  });
+
+export const tokenChildLoader = () =>
+  new DataLoader<string, Token[]>(async (parentsId) => {
+    const map = await container.model
+      .tokenTable()
+      .column(`${tokenPartTableName}.parent`)
+      .column<Array<Token & { parent: string }>>(`${tokenTableName}.*`)
+      .innerJoin(tokenPartTableName, `${tokenTableName}.id`, `${tokenPartTableName}.child`)
+      .whereIn(`${tokenPartTableName}.parent`, parentsId)
+      .then((rows) =>
+        rows.reduce<Record<string, Token[] | undefined>>(
+          (res, token) => ({
+            ...res,
+            [token.parent]: [...(res[token.parent] ?? []), token],
+          }),
+          {},
+        ),
+      );
+
+    return parentsId.map((id) => map[id] ?? []);
   });
