@@ -18,6 +18,8 @@ import { tagContractLoader } from './tag';
 import {
   tokenAliasLoader,
   tokenAliasUserLastMetricLoader,
+  tokenChildLoader,
+  tokenContractLoader,
   tokenLastMetricLoader,
   tokenLoader,
 } from './token';
@@ -81,6 +83,10 @@ export class DataLoaderContainer extends Container<{}> {
   readonly tokenLastMetric = singleton(tokenLastMetricLoader);
 
   readonly token = singleton(tokenLoader);
+
+  readonly tokenChild = singleton(tokenChildLoader);
+
+  readonly tokenContract = singletonParametric(tokenContractLoader);
 
   readonly automateContractStopLoss = singleton(automateContractStopLossLoader);
 
