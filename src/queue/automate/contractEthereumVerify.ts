@@ -7,7 +7,7 @@ async function reject(contract: Contract, rejectReason: string) {
   return container.model.automateService().updateContract({
     ...contract,
     verification: ContractVerificationStatus.Rejected,
-    rejectReason,
+    rejectReason: rejectReason.slice(0, 512),
   });
 }
 
