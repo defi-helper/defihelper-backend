@@ -1,24 +1,32 @@
-import axios, { AxiosError, AxiosInstance } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 
 export class TemporaryOutOfService extends Error {
-  constructor(m = 'wait a bit, usually it means that we updating our infrastructure') {
+  constructor(
+    m = 'wait a bit, usually it means that we updating our infrastructure',
+    public readonly reason: AxiosResponse,
+  ) {
     super(m);
   }
 }
 
-export interface ScannerParams {
-  host: string;
-}
-
 export interface Contract {
   id: string;
-  address: string;
-  network: string;
   name: string;
+  address: string;
+  network: number;
   abi: Array<any>;
   startHeight: number;
   updatedAt: Date;
   createdAt: Date;
+}
+
+export interface ContractConfig {
+  name?: string;
+  network?: number;
+  address?: string;
+  abi?: object;
+  startHeight?: number;
+  enabled?: boolean;
 }
 
 export interface ContractStatistics {
@@ -35,54 +43,93 @@ export interface EventListener {
 
 export interface EventListenerConfig {
   promptly?: {} | null;
-  historical?: { syncHeight: number; saveEvents: boolean } | null;
+}
+
+export interface HistoryScanner {
+  id: string;
+  eventListener: string;
+  syncHeight: number;
+  endHeight: number | null;
+  saveEvents: boolean;
+}
+
+export interface HistoryScannerConfig {
+  syncHeight: number;
+  endHeight: number | null;
+  saveEvents: boolean;
+}
+
+export interface WalletInteraction {
+  network: string;
+  contract: string;
+  event: string;
 }
 
 export interface WalletsInteractedWith {
   [wallet: string]: { [network: string]: string[] };
 }
 
-export class ScannerService {
-  static factory = (params: ScannerParams) => () => new ScannerService(params);
+const handleResponse = <T>(r: Promise<AxiosResponse<T>>) =>
+  r
+    .then(({ data }) => data)
+    .catch((e) => {
+      if (!(e instanceof Error) || !axios.isAxiosError(e) || !e.response) {
+        throw new Error(`Undefined error in scanner: ${e}`);
+      }
+      if (e.response?.status >= 400 && e.response?.status <= 599) {
+        throw new TemporaryOutOfService(`${e}`, e.response);
+      }
 
+      throw new Error(`Undefined error in scanner: ${e.message}`);
+    });
+
+type Id<T extends { id: string }> = T | string;
+
+const id = <T extends { id: string }>(instance: Id<T>) =>
+  typeof instance === 'string' ? instance : instance.id;
+
+export class ScannerService {
   protected client: AxiosInstance;
 
-  constructor(scannerParams: ScannerParams) {
+  constructor(scannerParams: { host: string }) {
     this.client = axios.create({
       baseURL: scannerParams.host,
     });
   }
 
-  findContract(network: string, address: string): Promise<Contract | undefined> {
-    return this.client
-      .get<Contract[]>(`/api/contract?network=${network}&address=${address.toLowerCase()}`)
-      .catch((e) => {
-        if (e.response?.code !== 200) throw new TemporaryOutOfService();
-        throw new Error(`Undefined error in scanner: ${e.message}`);
-      })
-      .then(({ data }) => (data.length > 0 ? data[0] : undefined));
+  protected request<T>(config: AxiosRequestConfig): Promise<T> {
+    return handleResponse(this.client.request<T>(config));
   }
 
-  getContract(id: string): Promise<Contract | null> {
-    return this.client
-      .get<Contract>(`/api/contract/${id}`)
-      .then(({ data }) => data)
-      .catch((e: AxiosError) => {
-        if (e.response?.status === 404) return null;
-        throw e;
-      });
+  findContract(network: string, address: string) {
+    return this.request<Contract[]>({
+      method: 'GET',
+      url: `/api/contract?network=${network}&address=${address.toLowerCase()}`,
+    }).then((data) => (data.length > 0 ? data[0] : undefined));
   }
 
-  getContractStatistics(id: string): Promise<ContractStatistics> {
-    return this.client
-      .get<ContractStatistics>(`/api/contract/${id}/statistics`)
-      .then(({ data }) => data)
-      .catch((e: AxiosError) => {
-        if (e.response?.status === 404) {
-          return { uniqueWalletsCount: 0 };
-        }
-        throw e;
-      });
+  getContract(contractId: string) {
+    return this.request<Contract>({
+      method: 'GET',
+      url: `/api/contract/${contractId}`,
+    }).catch((e) => {
+      if (e instanceof TemporaryOutOfService && e.reason.status === 404) {
+        return null;
+      }
+      throw e;
+    });
+  }
+
+  getContractStatistics(contract: Id<Contract>) {
+    return this.request<ContractStatistics>({
+      method: 'GET',
+      url: `/api/contract/${id(contract)}/statistics`,
+    }).catch((e) => {
+      if (e instanceof TemporaryOutOfService && e.reason.status === 404) {
+        return { uniqueWalletsCount: 0 };
+      }
+      throw e;
+    });
   }
 
   registerContract(
@@ -91,66 +138,42 @@ export class ScannerService {
     abi: object,
     name?: string,
     startHeight?: number | string,
-  ): Promise<Contract> {
-    return this.client
-      .post<Contract>(`/api/contract`, {
+  ) {
+    return this.request<Contract>({
+      method: 'POST',
+      url: '/api/contract',
+      data: {
         name: name ?? address.toLowerCase(),
         network,
         address: address.toLowerCase(),
         startHeight: startHeight ?? 0,
         abi: JSON.stringify(abi),
-      })
-      .then(({ data }) => data)
-      .catch((e) => {
-        if (e.response?.code !== 200) throw new TemporaryOutOfService(`${e}`);
-        throw new Error(`Undefined error in scanner: ${e.message}`);
-      });
+        enabled: true,
+      },
+    });
   }
 
-  updateContract(
-    id: string,
-    state: {
-      network?: string;
-      address?: string;
-      abi?: object;
-      name?: string;
-      startHeight?: number;
-      enabled?: boolean;
-    },
-  ) {
-    return this.client
-      .put<Contract>(`/api/contract/${id}`, state)
-      .then(({ data }) => data)
-      .catch((e) => {
-        if (e.response?.code !== 200) throw new TemporaryOutOfService(`${e}`);
-        throw new Error(`Undefined error in scanner: ${e.message}`);
-      });
+  updateContract(contract: Id<Contract>, data: ContractConfig) {
+    return this.request<Contract>({
+      method: 'PUT',
+      url: `/api/contract/${id(contract)}`,
+      data,
+    });
   }
 
-  findListener(contractId: string, event: string): Promise<EventListener | undefined> {
-    return this.client
-      .get<EventListener[]>(`/api/contract/${contractId}/event-listener?name=${event}`)
-      .catch((e) => {
-        if (e.response?.code !== 200) throw new TemporaryOutOfService(`${e}`);
-        throw new Error(`Undefined error in scanner: ${e.message}`);
-      })
-      .then(({ data }) => (data.length > 0 ? data[0] : undefined));
+  findListener(contract: Id<Contract>, event: string) {
+    return this.request<EventListener[]>({
+      method: 'GET',
+      url: `/api/contract/${id(contract)}/event-listener?name=${event}`,
+    }).then((data) => (data.length > 0 ? data[0] : undefined));
   }
 
-  async registerListener(
-    contract: Contract,
-    event: string,
-    config?: EventListenerConfig,
-  ): Promise<EventListener> {
-    const listener = await this.client
-      .post<EventListener>(`/api/contract/${contract.id}/event-listener`, {
-        name: event,
-      })
-      .then(({ data }) => data)
-      .catch((e) => {
-        if (e.response?.code !== 200) throw new TemporaryOutOfService(`${e}`);
-        throw new Error(`Undefined error in scanner: ${e.message}`);
-      });
+  async registerListener(contract: Id<Contract>, event: string, config?: EventListenerConfig) {
+    const listener = await this.request<EventListener>({
+      method: 'POST',
+      url: `/api/contract/${id(contract)}/event-listener`,
+      data: { name: event },
+    });
     if (config) {
       await this.updateListener(contract, listener, config);
     }
@@ -161,29 +184,55 @@ export class ScannerService {
   /**
    * @param contract
    * @param listener
-   * @param config Null for delete sync.
+   * @param data Null for delete sync.
    */
-  updateListener(contract: Contract, listener: EventListener, config: EventListenerConfig) {
-    return this.client
-      .put<boolean>(`/api/contract/${contract.id}/event-listener/${listener.id}`, config)
-      .then(({ data }) => data)
-      .catch((e) => {
-        if (e.response?.code !== 200) throw new TemporaryOutOfService(`${e}`);
-        throw new Error(`Undefined error in scanner: ${e.message}`);
-      });
+  updateListener(contract: Id<Contract>, listener: Id<EventListener>, data: EventListenerConfig) {
+    return this.request<boolean>({
+      method: 'PUT',
+      url: `/api/contract/${id(contract)}/event-listener/${id(listener)}`,
+      data,
+    });
+  }
+
+  createHistoryScanner(
+    contract: Id<Contract>,
+    listener: Id<EventListener>,
+    data: HistoryScannerConfig,
+  ) {
+    return this.request<HistoryScanner>({
+      method: 'POST',
+      url: `/api/contract/${id(contract)}/event-listener/${id(listener)}/history`,
+      data,
+    });
+  }
+
+  updateHistoryScanner(
+    contract: Id<Contract>,
+    listener: Id<EventListener>,
+    historyScanner: Id<HistoryScanner>,
+    data: HistoryScannerConfig,
+  ) {
+    return this.request<HistoryScanner>({
+      method: 'PUT',
+      url: `/api/contract/${id(contract)}/event-listener/${id(listener)}/history/${id(
+        historyScanner,
+      )}`,
+      data,
+    });
   }
 
   getWalletInteractions(network: string, address: string) {
-    return this.client
-      .get<Array<{ network: string; contract: string; event: string }>>(
-        `/api/address/${address.toLowerCase()}?network=${network}`,
-      )
-      .then(({ data }) => data);
+    return this.request<WalletInteraction[]>({
+      method: 'GET',
+      url: `/api/address/${address.toLowerCase()}?network=${network}`,
+    });
   }
 
-  getWalletsInteractedContracts(walletList: string[]): Promise<WalletsInteractedWith> {
-    return this.client
-      .post<WalletsInteractedWith>('/api/address/bulk', walletList)
-      .then(({ data }) => data);
+  getWalletsInteractedContracts(walletList: string[]) {
+    return this.request<WalletsInteractedWith>({
+      method: 'POST',
+      url: '/api/address/bulk',
+      data: walletList,
+    });
   }
 }

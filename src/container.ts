@@ -40,7 +40,7 @@ class AppContainer extends Container<typeof config> {
 
   readonly cexServicesProvider = singleton(cexServicesProviderFactory());
 
-  readonly scanner = singleton(ScannerService.factory(this.parent.scanner));
+  readonly scanner = singleton(() => new ScannerService(this.parent.scanner));
 
   readonly cryptography = singleton(cryptographyServiceFactory(this.parent.cryptography.key));
 

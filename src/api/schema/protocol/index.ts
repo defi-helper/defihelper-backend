@@ -751,7 +751,6 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
           if (typeof deprecated === 'boolean') {
             this.where('deprecated', deprecated);
           }
-
           if (Array.isArray(tag) && tag.length > 0) {
             this.whereRaw(
               `(${container.model
@@ -762,7 +761,6 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
               [tag.length],
             );
           }
-
           if (typeof risk === 'string') {
             this.where(
               database.raw(
@@ -841,9 +839,9 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
             );
           }
           if (search !== undefined && search !== '') {
-            this.andWhere(function () {
-              this.where('name', 'iLike', `%${search}%`);
-              this.orWhere('address', 'iLike', `%${search}%`);
+            this.where(function () {
+              this.where(`${contractTableName}.name`, 'iLike', `%${search}%`);
+              this.orWhere(`${contractBlockchainTableName}.address`, 'iLike', `%${search}%`);
             });
           }
         }
