@@ -92,17 +92,30 @@ export default async (process: Process) => {
     throw new Error('Events to subscribe not founds');
   }
 
+  const provider = container.blockchain.ethereum.byNetwork(contract.network).provider();
+  const currentBlockNumber = await provider.getBlockNumber();
+
   // Watcher contract
   const watcherContract = await registerWatcherContract(contract, metadataABI.value.value);
 
   // Watcher listeners
   const scanner = container.scanner();
   await Promise.all(
-    events.map((event) =>
-      scanner.registerListener(watcherContract, event, {
-        historical: { syncHeight: watcherContract.startHeight, saveEvents: false },
-      }),
-    ),
+    events.map(async (event) => {
+      const listener = await scanner.registerListener(watcherContract, event);
+      return Promise.all([
+        scanner.createHistoryScanner(watcherContract, listener, {
+          syncHeight: currentBlockNumber - 1,
+          endHeight: watcherContract.startHeight,
+          saveEvents: false,
+        }),
+        scanner.createHistoryScanner(watcherContract, listener, {
+          syncHeight: currentBlockNumber,
+          endHeight: null,
+          saveEvents: false,
+        }),
+      ]);
+    }),
   );
 
   return process.done();
