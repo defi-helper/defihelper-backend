@@ -133,7 +133,7 @@ export class ScannerService {
   }
 
   registerContract(
-    network: string,
+    network: string | number,
     address: string,
     abi: object,
     name?: string,
@@ -144,7 +144,7 @@ export class ScannerService {
       url: '/api/contract',
       data: {
         name: name ?? address.toLowerCase(),
-        network,
+        network: Number(network),
         address: address.toLowerCase(),
         startHeight: startHeight ?? 0,
         abi: JSON.stringify(abi),
