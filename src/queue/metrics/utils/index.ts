@@ -288,7 +288,18 @@ export async function walletMetrics(process: Process) {
     typeof walletAdapterData.metrics === 'object' &&
     Object.keys(walletAdapterData.metrics).length > 0
   ) {
-    await metricService.createWallet(contract, blockchainWallet, walletAdapterData.metrics, date);
+    const metric = await metricService.createWallet(
+      contract,
+      blockchainWallet,
+      walletAdapterData.metrics,
+      date,
+    );
+    if (protocol.adapter === 'uniswap3') {
+      await container.model.queueService().push('eventsMetricUni3WalletCreated', {
+        id: metric.id,
+        positions: (walletAdapterData as any).positions,
+      });
+    }
   }
 
   if (

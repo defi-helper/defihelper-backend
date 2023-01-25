@@ -111,6 +111,7 @@ export * as migratablePoolsBatch from './notifications/migratablePoolsBatch';
 
 /* events */
 export * as eventsMetricContractCreated from './events/metrics/metricContractCreated';
+export * as eventsMetricUni3WalletCreated from './events/metrics/metricUni3WalletCreated';
 export * as eventsMetricUserCollected from './events/metrics/userCollected';
 export * as eventsContractBlockchainCreated from './events/contractBlockchainCreated';
 export * as eventsContractBlockchainUpdated from './events/contractBlockchainUpdated';

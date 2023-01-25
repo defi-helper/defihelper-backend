@@ -38,4 +38,8 @@ export const Templates = {
     `${__dirname}/SmartTradeOrderSucceeded.mustache`,
     'utf8',
   ),
+  uni3PositionWithoutReward: fs.promises.readFile(
+    `${__dirname}/Uni3PositionWithoutReward.mustache`,
+    'utf8',
+  ),
 };

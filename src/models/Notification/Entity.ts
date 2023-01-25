@@ -35,6 +35,7 @@ export enum NotificationStatus {
 
 export enum NotificationType {
   portfolioMetrics = 'portfolioMetrics',
+  uni3PositionWithoutReward = 'uni3PositionWithoutReward',
   event = 'event',
   trigger = 'trigger',
 }
@@ -67,10 +68,16 @@ export interface NotificationPortfolioMetricType {
   payload: {};
 }
 
+export interface NotificationUni3PositionWithoutRewardType {
+  type: NotificationType.uni3PositionWithoutReward;
+  payload: {};
+}
+
 export type NotificationPayloadType =
   | NotificationEventType
   | NotificationTriggerType
-  | NotificationPortfolioMetricType;
+  | NotificationPortfolioMetricType
+  | NotificationUni3PositionWithoutRewardType;
 
 export type Notification = {
   id: string;
