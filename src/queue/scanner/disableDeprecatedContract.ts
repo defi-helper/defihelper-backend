@@ -3,11 +3,11 @@ import { Process } from '@models/Queue/Entity';
 import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
 
 export interface Params {
-  contract: string;
+  id: string;
 }
 
 export default async (process: Process) => {
-  const { contract: contractId } = process.task.params as Params;
+  const { id } = process.task.params as Params;
   const contract = await container.model
     .contractTable()
     .innerJoin(
@@ -15,14 +15,12 @@ export default async (process: Process) => {
       `${contractBlockchainTableName}.id`,
       `${contractTableName}.id`,
     )
-    .where(`${contractTableName}.id`, contractId)
+    .where(`${contractTableName}.id`, id)
     .first();
   if (!contract) throw new Error('Contract not found');
+  if (!contract.watcherId) return process.done();
 
-  // Disable deprecated contracts on watcher
-  if (contract.watcherId) {
-    await container.scanner().updateContract(contract.watcherId, { enabled: !contract.deprecated });
-  }
+  await container.scanner().updateContract(contract.watcherId, { enabled: !contract.deprecated });
 
   return process.done();
 };
