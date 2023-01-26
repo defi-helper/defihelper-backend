@@ -1334,6 +1334,11 @@ export const ContractUpdateMutation: GraphQLFieldConfig<any, Request> = {
             : contractBlockchain.automate.autorestakeAdapter,
       },
     });
+    if (contractBlockchain.deprecated !== updated.deprecated) {
+      await container.model.queueService().push('watcherDisableDeprecatedContract', {
+        id: contractBlockchain.id,
+      });
+    }
 
     return updated;
   }),

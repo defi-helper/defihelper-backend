@@ -33,12 +33,12 @@ export * as sendTelegram from './telegram/send';
 export * as sendTelegramByContact from './telegram/sendByContact';
 export * as registerContractInScanner from './scanner/registerContract';
 export * as watcherResolveContractId from './scanner/resolveWatcherId';
+export * as watcherDisableDeprecatedContract from './scanner/disableDeprecatedContract';
 export * as notificationSend from './notifications/send';
 export * as contractResolveDeployBlockNumber from './contract/resolveDeployBlockNumber';
 export * as contractResolveAbi from './contract/resolveAbi';
 
 export * as billingBroker from './billing/broker';
-export * as billingClaimScan from './null';
 export * as billingFeeOracle from './billing/feeOracle';
 export * as billingStoreScan from './billing/storeScan';
 export * as billingBillStatusResolver from './billing/billStatusResolver';
@@ -114,7 +114,7 @@ export * as eventsMetricContractCreated from './events/metrics/metricContractCre
 export * as eventsMetricUni3WalletCreated from './events/metrics/metricUni3WalletCreated';
 export * as eventsMetricUserCollected from './events/metrics/userCollected';
 export * as eventsContractBlockchainCreated from './events/contractBlockchainCreated';
-export * as eventsContractBlockchainUpdated from './events/contractBlockchainUpdated';
+export * as eventsContractBlockchainUpdated from './null';
 export * as eventsUserCreated from './events/userCreated';
 export * as eventsWalletCreated from './events/walletCreated';
 export * as eventsWalletContractLinked from './events/walletContractLinked';
