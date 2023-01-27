@@ -91,6 +91,9 @@ export default async (process: Process) => {
         await billingService.transferReject(transfer, 'Traget transaction not matching event');
         return process.done();
       }
+      if (process.task.attempt < 10) {
+        return process.later(dayjs().add(10, 'seconds').toDate());
+      }
     }
     return process.error(<Error>e);
   }
