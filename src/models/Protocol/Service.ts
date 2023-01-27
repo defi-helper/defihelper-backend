@@ -137,14 +137,6 @@ export class ContractService {
     },
   );
 
-  public readonly onContractBlockchainUpdated = new Emitter<
-    Readonly<ContractBlockchainType & Contract>
-  >((contract) => {
-    container.model.queueService().push('eventsContractBlockchainUpdated', {
-      contract: contract.id,
-    });
-  });
-
   public readonly onWalletLink = new Emitter<{
     contract: Contract;
     wallet: WalletBlockchain;
@@ -357,8 +349,8 @@ export class ContractService {
     return { ...parentContract, ...childContract };
   }
 
-  async updateBlockchain(contractBlockchain: ContractBlockchainType & Contract) {
-    const updatedBlockchain: ContractBlockchainType = {
+  async updateBlockchain(contractBlockchain: Contract & ContractBlockchainType) {
+    const updatedBlockchain: Contract & ContractBlockchainType = {
       ...contractBlockchain,
       address:
         contractBlockchain.blockchain === 'ethereum'
@@ -398,8 +390,6 @@ export class ContractService {
           .transacting(trx),
       ]),
     );
-
-    this.onContractBlockchainUpdated.emit(contractBlockchain);
 
     return updatedBlockchain;
   }

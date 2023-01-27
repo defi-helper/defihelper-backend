@@ -84,9 +84,6 @@ export default async (process: Process) => {
       ...contract,
       verification: ContractVerificationStatus.Confirmed,
     });
-    await container.model.queueService().push('eventsAutomateContractVerificationConfirmed', {
-      contract: contract.id,
-    });
   } catch (e) {
     await reject(contract, `${e}`);
     return process.done();

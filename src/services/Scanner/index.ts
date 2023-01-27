@@ -22,11 +22,33 @@ export interface Contract {
 
 export interface ContractConfig {
   name?: string;
-  network?: number;
+  network?: string | number;
   address?: string;
   abi?: object;
-  startHeight?: number;
+  startHeight?: string | number;
   enabled?: boolean;
+}
+
+export function prepareContractConfig({
+  name,
+  network,
+  address,
+  abi,
+  startHeight,
+  enabled,
+}: ContractConfig) {
+  const networkNormal = network !== undefined ? Number(network) : undefined;
+  const addressNormal = address !== undefined ? address.toLowerCase() : undefined;
+  const startHeightNormal = startHeight !== undefined ? Number(startHeight) : undefined;
+
+  return {
+    name,
+    network: networkNormal,
+    address: addressNormal,
+    abi,
+    startHeight: startHeightNormal,
+    enabled,
+  };
 }
 
 export interface ContractStatistics {
@@ -54,9 +76,29 @@ export interface HistoryScanner {
 }
 
 export interface HistoryScannerConfig {
-  syncHeight: number;
-  endHeight: number | null;
+  syncHeight: string | number;
+  endHeight: string | number | null;
   saveEvents: boolean;
+}
+
+export function prepareHistoryScannerConfig({
+  syncHeight,
+  endHeight,
+  saveEvents,
+}: HistoryScannerConfig) {
+  const syncHeightNormal = Number(syncHeight);
+  const endHeightNormal = endHeight !== null ? Number(endHeight) : null;
+  if (Number.isNaN(syncHeightNormal)) {
+    throw new Error(`Sync height is NaN "${syncHeightNormal}"`);
+  }
+  if (Number.isNaN(endHeightNormal)) {
+    throw new Error(`End height is NaN "${endHeightNormal}"`);
+  }
+  return {
+    syncHeight: syncHeightNormal,
+    endHeight: endHeightNormal,
+    saveEvents,
+  };
 }
 
 export interface WalletInteraction {
@@ -73,11 +115,15 @@ const handleResponse = <T>(r: Promise<AxiosResponse<T>>) =>
   r
     .then(({ data }) => data)
     .catch((e) => {
-      if (!(e instanceof Error) || !axios.isAxiosError(e) || !e.response) {
+      if (!axios.isAxiosError(e) || !e.response) {
         throw new Error(`Undefined error in scanner: ${e}`);
       }
-      if (e.response?.status >= 400 && e.response?.status <= 599) {
-        throw new TemporaryOutOfService(`${e}`, e.response);
+      if (e.response.status >= 400 && e.response.status <= 599) {
+        const request = e.request ? `${e.request.method} ${e.request.path} ` : '';
+        throw new TemporaryOutOfService(
+          `${request}${e.response.status} ${e.response.data}`,
+          e.response,
+        );
       }
 
       throw new Error(`Undefined error in scanner: ${e.message}`);
@@ -133,20 +179,34 @@ export class ScannerService {
   }
 
   registerContract(
-    network: string,
+    network: string | number,
     address: string,
     abi: object,
     name?: string,
     startHeight?: number | string,
   ) {
+    const networkNormal = Number(network);
+    const startHeightNormal = Number(startHeight ?? 0);
+    const addressNormal = address.toLowerCase();
+    const nameNormal = name ?? address;
+    if (Number.isNaN(networkNormal)) {
+      throw new Error(`Network is NaN "${networkNormal}"`);
+    }
+    if (Number.isNaN(startHeightNormal)) {
+      throw new Error(`Start height is NaN "${networkNormal}"`);
+    }
+    if (nameNormal === '') {
+      throw new Error('Name is empty');
+    }
+
     return this.request<Contract>({
       method: 'POST',
       url: '/api/contract',
       data: {
-        name: name ?? address.toLowerCase(),
-        network,
-        address: address.toLowerCase(),
-        startHeight: startHeight ?? 0,
+        name: nameNormal,
+        network: networkNormal,
+        address: addressNormal,
+        startHeight: startHeightNormal,
         abi: JSON.stringify(abi),
         enabled: true,
       },
@@ -157,7 +217,7 @@ export class ScannerService {
     return this.request<Contract>({
       method: 'PUT',
       url: `/api/contract/${id(contract)}`,
-      data,
+      data: prepareContractConfig(data),
     });
   }
 
@@ -165,7 +225,7 @@ export class ScannerService {
     return this.request<EventListener[]>({
       method: 'GET',
       url: `/api/contract/${id(contract)}/event-listener?name=${event}`,
-    }).then((data) => (data.length > 0 ? data[0] : undefined));
+    }).then((data) => (data.length > 1 ? data[0] : undefined));
   }
 
   async registerListener(contract: Id<Contract>, event: string, config?: EventListenerConfig) {
@@ -202,7 +262,7 @@ export class ScannerService {
     return this.request<HistoryScanner>({
       method: 'POST',
       url: `/api/contract/${id(contract)}/event-listener/${id(listener)}/history`,
-      data,
+      data: prepareHistoryScannerConfig(data),
     });
   }
 
@@ -217,7 +277,7 @@ export class ScannerService {
       url: `/api/contract/${id(contract)}/event-listener/${id(listener)}/history/${id(
         historyScanner,
       )}`,
-      data,
+      data: prepareHistoryScannerConfig(data),
     });
   }
 

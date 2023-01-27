@@ -41,7 +41,7 @@ import {
 } from './Entity';
 
 export class MetricContractService {
-  public readonly onWalletCreated = new Emitter<MetricWallet>(async (metric) =>
+  public readonly onWalletCreated = new Emitter<MetricWallet>((metric) =>
     container.cache().publish(
       'defihelper:channel:onWalletMetricUpdated',
       JSON.stringify({
@@ -52,7 +52,7 @@ export class MetricContractService {
     ),
   );
 
-  public readonly onWalletTokenCreated = new Emitter<MetricWalletToken>(async (metric) => {
+  public readonly onWalletTokenCreated = new Emitter<MetricWalletToken>((metric) =>
     container.cache().publish(
       'defihelper:channel:onWalletTokenMetricUpdated',
       JSON.stringify({
@@ -61,8 +61,8 @@ export class MetricContractService {
         contract: metric.contract,
         token: metric.token,
       }),
-    );
-  });
+    ),
+  );
 
   public readonly onContractCreated = new Emitter<MetricContract>(async (metric) => {
     container.model.queueService().push('eventsMetricContractCreated', {
