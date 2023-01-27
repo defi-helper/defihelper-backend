@@ -1,6 +1,7 @@
 import { Blockchain } from '@models/types';
 import { v4 as uuid } from 'uuid';
 import BN from 'bignumber.js';
+import dayjs from 'dayjs';
 import { Factory } from '@services/Container';
 import { Emitter } from '@services/Event';
 import container from '@container';
@@ -15,7 +16,13 @@ export class BillingService {
       }),
     );
     if (transfer.blockchain === 'ethereum' && transfer.status === TransferStatus.Pending) {
-      container.model.queueService().push('eventsBillingTransferTxCreated', { id: transfer.id });
+      container.model
+        .queueService()
+        .push(
+          'eventsBillingTransferTxCreated',
+          { id: transfer.id },
+          { startAt: dayjs().add(5, 'seconds').toDate() },
+        );
     }
   });
 
