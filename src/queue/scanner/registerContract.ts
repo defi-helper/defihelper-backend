@@ -92,7 +92,8 @@ export default async (process: Process) => {
     throw new Error('Events to subscribe not founds');
   }
 
-  const provider = container.blockchain.ethereum.byNetwork(contract.network).provider();
+  const network = container.blockchain.ethereum.byNetwork(contract.network);
+  const provider = network.provider();
   const currentBlockNumber = await provider.getBlockNumber();
 
   // Watcher contract
@@ -106,7 +107,11 @@ export default async (process: Process) => {
       return Promise.all([
         scanner.createHistoryScanner(watcherContract, listener, {
           syncHeight: currentBlockNumber - 1,
-          endHeight: watcherContract.startHeight,
+          // Max 6 months ago
+          endHeight: Math.max(
+            watcherContract.startHeight,
+            Math.ceil(dayjs().diff(dayjs().add(-6, 'months'), 'seconds') / network.avgBlockTime),
+          ),
           saveEvents: false,
         }),
         scanner.createHistoryScanner(watcherContract, listener, {
