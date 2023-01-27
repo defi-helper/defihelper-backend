@@ -271,12 +271,13 @@ export class AutomateService {
     address: string,
     adapter: string,
     initParams: Object,
+    contractWallet: (Wallet & WalletBlockchain) | null = null,
   ) {
     const created: Contract = {
       id: uuid(),
       type,
       wallet: blockchainWallet.id,
-      contractWallet: null,
+      contractWallet: contractWallet ? contractWallet.id : null,
       protocol: protocol.id,
       contract: contract?.id ?? null,
       address,

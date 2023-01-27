@@ -1100,27 +1100,7 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
       type: WalletBlockchainType,
       description: 'Automate contract wallet',
       resolve: async (contract, args, { dataLoader }) => {
-        if (contract.verification !== Automate.ContractVerificationStatus.Confirmed) return null;
-
-        const ownerWallet = await dataLoader.wallet().load(contract.wallet);
-        if (!ownerWallet) return null;
-
-        return container.model
-          .walletTable()
-          .innerJoin(
-            walletBlockchainTableName,
-            `${walletBlockchainTableName}.id`,
-            `${walletTableName}.id`,
-          )
-          .where({
-            user: ownerWallet.user,
-            type: WalletBlockchainModelType.Contract,
-            address:
-              ownerWallet.blockchain === 'ethereum'
-                ? contract.address.toLowerCase()
-                : contract.address,
-          })
-          .first();
+        return contract.contractWallet ? dataLoader.wallet().load(contract.contractWallet) : null;
       },
     },
     adapter: {
@@ -1473,6 +1453,17 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
       }
     }
 
+    const contractWallet = await container.model
+      .walletService()
+      .createBlockchainWallet(
+        currentUser,
+        blockchainWallet.blockchain,
+        blockchainWallet.network,
+        WalletBlockchainModelType.Contract,
+        address.toLowerCase(),
+        '',
+        `Automate contract ${address.slice(0, 5)}...`,
+      );
     const created = await container.model
       .automateService()
       .createContract(
@@ -1483,7 +1474,11 @@ export const ContractCreateMutation: GraphQLFieldConfig<any, Request> = {
         address,
         adapter,
         JSON.parse(initParams),
+        contractWallet,
       );
+    if (contract) {
+      await container.model.contractService().walletLink(contract, contractWallet);
+    }
 
     return created;
   }),

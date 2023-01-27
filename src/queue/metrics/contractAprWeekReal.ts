@@ -1,6 +1,6 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
-import { metricTokenTableName, RegistryPeriod } from '@models/Metric/Entity';
+import { RegistryPeriod } from '@models/Metric/Entity';
 import {
   contractBlockchainTableName,
   contractTableName,
@@ -48,9 +48,13 @@ export default async (process: Process) => {
     }),
     {},
   );
-  const avgApr = Array.from(Object.values(apr))
-    .reduce((sum, v) => sum.plus(v), new BN(0))
-    .div(Object.values(apr).length);
+  const aprValues = Object.values(apr);
+  const avgApr =
+    aprValues.length > 0
+      ? Array.from(aprValues)
+          .reduce((sum, v) => sum.plus(v), new BN(0))
+          .div(aprValues.length)
+      : new BN(0);
 
   const stakeTokenLink = await container.model
     .tokenContractLinkTable()
@@ -60,27 +64,28 @@ export default async (process: Process) => {
   if (stakeTokenLink === undefined) throw new Error('Staking token for contract not found');
 
   const tokenPrices = await container.model
-    .metricTokenTable()
-    .distinctOn('date')
-    .column(database.raw(`DATE_TRUNC('day', date) AS "date"`))
-    .column(database.raw(`data->>'usd' AS "usd"`))
+    .metricTokenRegistryTable()
     .where('token', stakeTokenLink.token)
+    .where('period', RegistryPeriod.Day)
     .where('date', '>=', periodStart.startOf('day').toDate())
-    .orderBy('date')
-    .orderBy(`${metricTokenTableName}.date`, 'DESC')
-    .then((rows) => rows as unknown as Array<{ date: Date; usd: string }>);
+    .where(database.raw(`data->>'usd' IS NOT NULL`))
+    .orderBy('date');
   if (tokenPrices.length === 0) throw new Error('Staking token prices not found');
 
   const price = tokenPrices.reduce<{ [date: string]: string }>(
-    (result, { date, usd }) => ({
+    (result, metric) => ({
       ...result,
-      [dayjs(date).utc().format('YYYY-MM-DD')]: usd,
+      [dayjs(metric.date).utc().format('YYYY-MM-DD')]: metric.data.usd ?? '0',
     }),
     {},
   );
-  const avgPrice = Array.from(Object.values(price))
-    .reduce((sum, v) => sum.plus(v), new BN(0))
-    .div(Object.values(price).length);
+  const avgPriceValues = Object.values(price);
+  const avgPrice =
+    avgPriceValues.length > 0
+      ? Array.from(avgPriceValues)
+          .reduce((sum, v) => sum.plus(v), new BN(0))
+          .div(avgPriceValues.length)
+      : new BN(0);
 
   const data = Array.from(new Array(period).keys()).reduceRight<
     Array<{ stake: string; stakeUSD: string; dayRewardUSD: string }>
@@ -89,7 +94,9 @@ export default async (process: Process) => {
     const stakingTokenPriceUSD = price[day] ?? avgPrice.toString(10);
     const aprDay = apr[day] ?? avgApr.toString(10);
     const stake = new BN(
-      result[result.length - 1]?.stake ?? new BN(investing).div(stakingTokenPriceUSD),
+      result[result.length - 1]?.stake ?? stakingTokenPriceUSD !== '0'
+        ? new BN(investing).div(stakingTokenPriceUSD)
+        : '0',
     );
     const stakeUSD = stake.multipliedBy(stakingTokenPriceUSD);
     const dayRewardUSD = stakeUSD.multipliedBy(aprDay);
@@ -113,11 +120,10 @@ export default async (process: Process) => {
   await container.model.metricService().createContract(
     contract,
     {
-      aprWeekReal: endInvestingUSD
-        .plus(cumulativeEarned)
-        .minus(investing)
-        .div(investing)
-        .toString(10),
+      aprWeekReal:
+        investing > 0
+          ? endInvestingUSD.plus(cumulativeEarned).minus(investing).div(investing).toString(10)
+          : '0',
     },
     new Date(),
   );
