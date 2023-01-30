@@ -58,6 +58,10 @@ export default async (process: Process) => {
       return process.done();
     }
   } catch (e) {
+    if (String(e).indexOf('missing response') !== -1 && process.task.attempt < 5) {
+      return process.laterAt(30, 'seconds');
+    }
+
     await reject(contract, `${e}`);
     return process.done();
   }
@@ -85,6 +89,10 @@ export default async (process: Process) => {
       verification: ContractVerificationStatus.Confirmed,
     });
   } catch (e) {
+    if (String(e).indexOf('missing response') !== -1 && process.task.attempt < 5) {
+      return process.laterAt(30, 'seconds');
+    }
+
     await reject(contract, `${e}`);
     return process.done();
   }
