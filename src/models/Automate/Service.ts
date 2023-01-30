@@ -12,6 +12,7 @@ import {
   WalletTable,
   walletTableName,
 } from '@models/Wallet/Entity';
+import { Token } from '@models/Token/Entity';
 import {
   Action,
   ActionParams,
@@ -95,14 +96,6 @@ export class AutomateService {
       );
     }
   });
-
-  public readonly onStopLossEnabled = new Emitter<{ stopLoss: ContractStopLoss }>(
-    ({ stopLoss }) => {
-      container.model
-        .queueService()
-        .push('eventsAutomateContractStopLossEnabled', { id: stopLoss.id });
-    },
-  );
 
   constructor(
     readonly triggerTable: Factory<TriggerTable>,
@@ -315,6 +308,8 @@ export class AutomateService {
     path: string[],
     amountOut: string,
     amountOutMin: string,
+    { id: inToken }: Token,
+    { id: outToken }: Token,
   ) {
     await this.disableStopLoss(contract);
     const created: ContractStopLoss = {
@@ -324,8 +319,8 @@ export class AutomateService {
         path,
         amountOut,
         amountOutMin,
-        inToken: null,
-        outToken: null,
+        inToken,
+        outToken,
       },
       status: ContractStopLossStatus.Pending,
       tx: '',
@@ -336,7 +331,6 @@ export class AutomateService {
       updatedAt: new Date(),
     };
     await this.contractStopLossTable().insert(created);
-    this.onStopLossEnabled.emit({ stopLoss: created });
 
     return created;
   }

@@ -1650,6 +1650,14 @@ export const ContractStopLossEnable: GraphQLFieldConfig<any, Request> = {
               type: GraphQLNonNull(GraphQLList(GraphQLNonNull(EthereumAddressType))),
               description: 'Swap path',
             },
+            inToken: {
+              type: GraphQLNonNull(UuidType),
+              description: 'In token id',
+            },
+            outToken: {
+              type: GraphQLNonNull(UuidType),
+              description: 'Out token id',
+            },
             amountOut: {
               type: GraphQLNonNull(BigNumberType),
               description: 'Target amount',
@@ -1673,6 +1681,16 @@ export const ContractStopLossEnable: GraphQLFieldConfig<any, Request> = {
     if (!contract) {
       throw new UserInputError('Contract not found');
     }
+    const [inToken, outToken] = await Promise.all([
+      container.model.tokenTable().where('id', input.inToken).first(),
+      container.model.tokenTable().where('id', input.outToken).first(),
+    ]);
+    if (!inToken) {
+      throw new UserInputError('In token not found');
+    }
+    if (!outToken) {
+      throw new UserInputError('Out token not found');
+    }
 
     await container.model
       .automateService()
@@ -1681,6 +1699,8 @@ export const ContractStopLossEnable: GraphQLFieldConfig<any, Request> = {
         input.path,
         input.amountOut.toFixed(0),
         input.amountOutMin.toFixed(0),
+        inToken,
+        outToken,
       );
 
     return true;
