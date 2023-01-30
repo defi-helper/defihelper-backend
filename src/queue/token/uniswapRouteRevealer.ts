@@ -75,11 +75,14 @@ export default async (process: Process) => {
         const routerRes = await routerPrev;
         if (routerRes !== null) return routerRes;
 
-        return blockchainContainer
+        const amountsOut = await blockchainContainer
           .contract(possibleRouter, blockchainContainer.abi.uniswapRouterABI, provider)
           .getAmountsOut(new BN(`1e${token.decimals}`).toFixed(0), possibleRoute)
-          .then(() => possibleRouter)
           .catch(() => null);
+        if (amountsOut === null) return null;
+        if (amountsOut[amountsOut.length - 1].toString() === '0') return null;
+
+        return possibleRouter;
       },
       Promise.resolve(null),
     );

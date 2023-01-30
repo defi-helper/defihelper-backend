@@ -106,11 +106,24 @@ export default async (process: Process) => {
     }
     const amountOut = new BN(event.args.amountOut.toString()).div(`1e${tokenOutDecimals}`);
 
-    await automateService.updateStopLoss({
-      ...stopLoss,
-      status: ContractStopLossStatus.Completed,
-      amountOut: amountOut.toString(10),
-    });
+    await Promise.all([
+      automateService.updateStopLoss({
+        ...stopLoss,
+        status: ContractStopLossStatus.Completed,
+        amountOut: amountOut.toString(10),
+      }),
+      container.model.queueService().push(
+        'metricsWalletScanMutation',
+        {
+          contract: contract.contract,
+          wallet: contract.contractWallet,
+        },
+        {
+          topic: 'metricCurrent',
+          priority: 9,
+        },
+      ),
+    ]);
   } catch (e) {
     if (e instanceof Error) {
       if (e.message.includes('timeout exceeded')) {
