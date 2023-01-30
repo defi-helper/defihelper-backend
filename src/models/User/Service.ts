@@ -2,6 +2,7 @@ import { Factory } from '@services/Container';
 import { Locale } from '@services/I18n/container';
 import { RedisClient } from 'redis';
 import { v4 as uuid } from 'uuid';
+import dayjs from 'dayjs';
 import { Emitter } from '@services/Event';
 import container from '@container';
 import { ReferrerCode } from '@models/ReferrerCode/Entity';
@@ -11,9 +12,13 @@ import { User, Table as UserTable, Role } from './Entity';
 
 export class UserService {
   public readonly onCreated = new Emitter<User>((user) =>
-    container.model.queueService().push('eventsUserCreated', {
-      id: user.id,
-    }),
+    container.model.queueService().push(
+      'eventsUserCreated',
+      {
+        id: user.id,
+      },
+      { startAt: dayjs().add(5, 'seconds').toDate() },
+    ),
   );
 
   public readonly onAuth = new Emitter<User>();
