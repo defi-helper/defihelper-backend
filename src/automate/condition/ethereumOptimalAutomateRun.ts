@@ -143,14 +143,17 @@ export default async function (this: Condition, params: Params) {
   const {
     calldata: [gasFee],
   } = automateRunParams;
-  const fee = new BN(gasFee).div(new BN(10).pow(18)).multipliedBy(gasPriceUSD).toFixed(4);
 
   const { data: optimalRes } = await axios.get(`${container.parent.restakeOptimal.host}/optimal`, {
     params: {
       balance: stakingUSD,
       earned: earnedUSD,
       apd: aprDay,
-      fee,
+      fee: new BN(gasFee)
+        .div('1e18')
+        .multipliedBy(gasPriceUSD)
+        .plus(1) // 1$ protocol fees
+        .toFixed(4),
       minInterval: 3600,
     },
     headers: {
