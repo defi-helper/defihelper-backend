@@ -140,7 +140,7 @@ export default async function (this: Condition, params: Params) {
       balance: new BN(walletMetrics.stakingUSD).toFixed(4),
       earned: new BN(walletMetrics.earnedUSD).toFixed(4),
       apd: contractMetrics.aprDay,
-      fee: new BN(gasFee).div('1e18').multipliedBy(gasPriceUSD).toFixed(4),
+      fee: new BN(gasFee).div('1e18').multipliedBy(gasPriceUSD).plus(1).toFixed(4),
       minInterval: 3600,
     },
     headers: {
