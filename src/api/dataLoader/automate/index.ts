@@ -41,6 +41,7 @@ export const automateInvestHistoryLoader = () =>
       .sum({ amount: 'amount' })
       .sum({ amountUSD: 'amountUSD' })
       .whereIn('contract', contractsId)
+      .where('confirmed', true)
       .where('refunded', false)
       .groupBy('contract')
       .then(

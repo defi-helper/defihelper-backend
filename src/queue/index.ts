@@ -52,6 +52,7 @@ export * as automateContractStopLossBroker from './automate/contractStopLossBrok
 export * as automateContractStopLossRun from './automate/contractStopLossRun';
 export * as automateContractStopLossTx from './automate/contractStopLossTx';
 export * as automateTriggerByTime from './automate/trigger/byTime';
+export * as automateInvestHistoryTx from './automate/investHistoryTx';
 
 export * as deadPoolsInvestmentsBroker from './contract/deadPoolsInvestmentsBroker';
 export * as automateNotifyExecutedRestake from './automate/notifyExecutedRestake';
