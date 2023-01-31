@@ -106,29 +106,20 @@ export default async function (this: Condition, params: Params) {
     throw new Error('Target contract adapter not found');
   }
 
-  const { metrics: targetContractMetrics, wallet: walletTargetContractAdapter } =
+  const { metrics: contractMetrics, wallet: walletTargetContractAdapter } =
     await targetContractAdapterFactory(provider, targetContract.address, {
       blockNumber: 'latest',
     });
   if (typeof walletTargetContractAdapter !== 'function') {
     throw new Error('Target contract adapter for wallet not found');
   }
-  if (typeof targetContractMetrics !== 'object' || !targetContractMetrics.aprDay) {
+  if (typeof contractMetrics !== 'object' || !contractMetrics.aprDay) {
     throw new Error('Target contract metrics not found');
   }
-  const { aprDay } = targetContractMetrics;
-
-  const { metrics: targetContractWalletMetrics } = await walletTargetContractAdapter(
-    contract.address,
-  );
-  if (
-    typeof targetContractWalletMetrics !== 'object' ||
-    !targetContractWalletMetrics.stakingUSD ||
-    !targetContractWalletMetrics.earnedUSD
-  ) {
+  const { metrics: walletMetrics } = await walletTargetContractAdapter(contract.address);
+  if (typeof walletMetrics !== 'object' || !walletMetrics.stakingUSD || !walletMetrics.earnedUSD) {
     throw new Error('Target contract metrics not found');
   }
-  const { stakingUSD, earnedUSD } = targetContractWalletMetrics;
 
   const automateAdapterFactory = adapters.automates[contract.adapter] as EthereumAutomateAdapter;
   if (typeof automateAdapterFactory !== 'function') throw new Error('Automate adapter not found');
@@ -143,14 +134,13 @@ export default async function (this: Condition, params: Params) {
   const {
     calldata: [gasFee],
   } = automateRunParams;
-  const fee = new BN(gasFee).div(new BN(10).pow(18)).multipliedBy(gasPriceUSD).toFixed(4);
 
   const { data: optimalRes } = await axios.get(`${container.parent.restakeOptimal.host}/optimal`, {
     params: {
-      balance: stakingUSD,
-      earned: earnedUSD,
-      apd: aprDay,
-      fee,
+      balance: new BN(walletMetrics.stakingUSD).toFixed(4),
+      earned: new BN(walletMetrics.earnedUSD).toFixed(4),
+      apd: contractMetrics.aprDay,
+      fee: new BN(gasFee).div('1e18').multipliedBy(gasPriceUSD).toFixed(4),
       minInterval: 3600,
     },
     headers: {
