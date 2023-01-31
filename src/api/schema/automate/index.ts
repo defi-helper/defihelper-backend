@@ -1,5 +1,5 @@
 import * as Automate from '@models/Automate/Entity';
-import { AuthenticationError, UserInputError } from 'apollo-server-express';
+import { AuthenticationError, UserInputError, withFilter } from 'apollo-server-express';
 import BN from 'bignumber.js';
 import { Request } from 'express';
 import { Role } from '@models/User/Entity';
@@ -8,6 +8,7 @@ import {
   walletTableName,
   walletBlockchainTableName,
   WalletBlockchainType as WalletBlockchainModelType,
+  Wallet,
 } from '@models/Wallet/Entity';
 import {
   GraphQLBoolean,
@@ -25,6 +26,7 @@ import {
 } from 'graphql';
 import { apyBoost, optimalRestakeNearesDate } from '@services/RestakeStrategy';
 import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
+import { contractTableName as autoamteContractTableName } from '@models/Automate/Entity';
 import { metricContractTableName } from '@models/Metric/Entity';
 import dayjs from 'dayjs';
 import {
@@ -1194,10 +1196,7 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
           apyBoost: '0',
           invest: '0',
         };
-        if (
-          !contract.contract ||
-          contract.verification !== Automate.ContractVerificationStatus.Confirmed
-        ) {
+        if (!contract.contract) {
           return def;
         }
 
@@ -1212,14 +1211,7 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
             `${walletBlockchainTableName}.id`,
             `${walletTableName}.id`,
           )
-          .where({
-            user: ownerWallet.user,
-            type: WalletBlockchainModelType.Contract,
-            address:
-              ownerWallet.blockchain === 'ethereum'
-                ? contract.address.toLowerCase()
-                : contract.address,
-          })
+          .where(`${walletTableName}.id`, contract.contractWallet)
           .first();
         if (!wallet) return def;
 
@@ -1768,6 +1760,10 @@ export const InvestCreateMutation: GraphQLFieldConfig<any, Request> = {
         new GraphQLInputObjectType({
           name: 'AutomateInvestCreateInputType',
           fields: {
+            tx: {
+              type: GraphQLNonNull(EthereumTransactionHashType),
+              description: 'Deposit transaction hash',
+            },
             contract: {
               type: GraphQLNonNull(UuidType),
               description: 'Automate contract',
@@ -1815,7 +1811,7 @@ export const InvestCreateMutation: GraphQLFieldConfig<any, Request> = {
 
     return container.model
       .automateService()
-      .createInvestHistory(contract, wallet, input.amount, input.amountUSD);
+      .createInvestHistory(input.tx, contract, wallet, input.amount, input.amountUSD);
   }),
 };
 
@@ -1870,4 +1866,42 @@ export const InvestRefundMutation: GraphQLFieldConfig<any, Request> = {
 
     return true;
   }),
+};
+
+export const OnContractUpdated: GraphQLFieldConfig<{ id: string }, Request> = {
+  type: GraphQLNonNull(ContractType),
+  args: {
+    filter: {
+      type: new GraphQLInputObjectType({
+        name: 'OnAutomateContractChangedFilterInputType',
+        fields: {
+          user: {
+            type: GraphQLNonNull(UuidType),
+          },
+        },
+      }),
+      defaultValue: {},
+    },
+  },
+  subscribe: withFilter(
+    () => container.cacheSubscriber('defihelper:channel:onAutomateContractChanged').asyncIterator(),
+    async ({ id }, { filter }) => {
+      if (!filter.user) return false;
+
+      const wallet = await container.model
+        .walletTable()
+        .column<Wallet[]>(`${walletTableName}.*`)
+        .innerJoin(
+          autoamteContractTableName,
+          `${walletTableName}.id`,
+          `${autoamteContractTableName}.wallet`,
+        )
+        .where(`${autoamteContractTableName}.id`, id)
+        .first();
+      return wallet !== undefined && filter.user === wallet.user;
+    },
+  ),
+  resolve: ({ id }) => {
+    return container.model.automateContractTable().where('id', id).first();
+  },
 };
