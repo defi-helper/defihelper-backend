@@ -27,7 +27,7 @@ import {
 import { apyBoost, optimalRestakeNearesDate } from '@services/RestakeStrategy';
 import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
 import { contractTableName as autoamteContractTableName } from '@models/Automate/Entity';
-import { metricContractTableName } from '@models/Metric/Entity';
+import { metricContractTableName, RegistryPeriod } from '@models/Metric/Entity';
 import dayjs from 'dayjs';
 import {
   BigNumberType,
@@ -1060,6 +1060,30 @@ export const ContractMetricType = new GraphQLObjectType({
   },
 });
 
+export const ContractUni3MetricType = new GraphQLObjectType({
+  name: 'AutomateContractUni3MetricType',
+  fields: {
+    token0Address: {
+      type: GraphQLNonNull(EthereumAddressType),
+    },
+    token0PriceLower: {
+      type: GraphQLNonNull(BigNumberType),
+    },
+    token0PriceUpper: {
+      type: GraphQLNonNull(BigNumberType),
+    },
+    token1Address: {
+      type: GraphQLNonNull(EthereumAddressType),
+    },
+    token1PriceLower: {
+      type: GraphQLNonNull(BigNumberType),
+    },
+    token1PriceUpper: {
+      type: GraphQLNonNull(BigNumberType),
+    },
+  },
+});
+
 export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
   name: 'AutomateContractType',
   fields: {
@@ -1204,15 +1228,9 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
         if (!staking) return def;
         const ownerWallet = await dataLoader.wallet().load(contract.wallet);
         if (!ownerWallet) return def;
-        const wallet = await container.model
-          .walletTable()
-          .innerJoin(
-            walletBlockchainTableName,
-            `${walletBlockchainTableName}.id`,
-            `${walletTableName}.id`,
-          )
-          .where(`${walletTableName}.id`, contract.contractWallet)
-          .first();
+        const wallet = contract.contractWallet
+          ? await dataLoader.wallet().load(contract.contractWallet)
+          : null;
         if (!wallet) return def;
 
         const [contractMetric, walletMetric, invest] = await Promise.all([
@@ -1233,6 +1251,50 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
             balance: totalBalance > 0 ? totalBalance : 10000,
             aprYear: new BN(contractMetric?.data.aprYear ?? '0').toNumber(),
           },
+        };
+      },
+    },
+    metricUni3: {
+      type: GraphQLNonNull(ContractUni3MetricType),
+      resolve: async (contract, args, { dataLoader }) => {
+        const def = {
+          token0Address: '0x0000000000000000000000000000000000000000',
+          token0PriceLower: '0',
+          token0PriceUpper: '0',
+          token1Address: '0x0000000000000000000000000000000000000000',
+          token1PriceLower: '0',
+          token1PriceUpper: '0',
+        };
+        if (!contract.contract || !contract.contractWallet) {
+          return def;
+        }
+
+        const staking = await dataLoader.contract().load(contract.contract);
+        if (!staking) return def;
+        const protocol = await dataLoader.protocol().load(staking.protocol);
+        if (!protocol || protocol.adapter !== 'uniswap3') return def;
+
+        const {
+          token0Address,
+          token0PriceLower,
+          token0PriceUpper,
+          token1Address,
+          token1PriceLower,
+          token1PriceUpper,
+        } = await container.model
+          .metricWalletRegistryTable()
+          .where('wallet', contract.contractWallet)
+          .where('period', RegistryPeriod.Latest)
+          .first()
+          .then((row) => (row ? row.data : def));
+        return {
+          ...def,
+          token0Address,
+          token0PriceLower,
+          token0PriceUpper,
+          token1Address,
+          token1PriceLower,
+          token1PriceUpper,
         };
       },
     },
