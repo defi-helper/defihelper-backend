@@ -27,7 +27,7 @@ import {
 import { apyBoost, optimalRestakeNearesDate } from '@services/RestakeStrategy';
 import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
 import { contractTableName as autoamteContractTableName } from '@models/Automate/Entity';
-import { metricContractTableName, RegistryPeriod } from '@models/Metric/Entity';
+import { metricContractTableName } from '@models/Metric/Entity';
 import dayjs from 'dayjs';
 import {
   BigNumberType,
@@ -1063,8 +1063,18 @@ export const ContractMetricType = new GraphQLObjectType({
 export const ContractUni3MetricType = new GraphQLObjectType({
   name: 'AutomateContractUni3MetricType',
   fields: {
+    inPriceRange: {
+      type: GraphQLNonNull(GraphQLBoolean),
+      resolve: ({ token0Price, token0PriceLower, token0PriceUpper }) =>
+        new BN(token0Price).gt(0) &&
+        new BN(token0Price).gte(token0PriceLower) &&
+        new BN(token0Price).lte(token0PriceUpper),
+    },
     token0Address: {
       type: GraphQLNonNull(EthereumAddressType),
+    },
+    token0Price: {
+      type: GraphQLNonNull(BigNumberType),
     },
     token0PriceLower: {
       type: GraphQLNonNull(BigNumberType),
@@ -1074,6 +1084,9 @@ export const ContractUni3MetricType = new GraphQLObjectType({
     },
     token1Address: {
       type: GraphQLNonNull(EthereumAddressType),
+    },
+    token1Price: {
+      type: GraphQLNonNull(BigNumberType),
     },
     token1PriceLower: {
       type: GraphQLNonNull(BigNumberType),
@@ -1259,9 +1272,11 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
       resolve: async (contract, args, { dataLoader }) => {
         const def = {
           token0Address: '0x0000000000000000000000000000000000000000',
+          token0Price: '0',
           token0PriceLower: '0',
           token0PriceUpper: '0',
           token1Address: '0x0000000000000000000000000000000000000000',
+          token1Price: '0',
           token1PriceLower: '0',
           token1PriceUpper: '0',
         };
@@ -1276,23 +1291,28 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
 
         const {
           token0Address,
+          token0Price,
           token0PriceLower,
           token0PriceUpper,
           token1Address,
+          token1Price,
           token1PriceLower,
           token1PriceUpper,
-        } = await container.model
-          .metricWalletRegistryTable()
-          .where('wallet', contract.contractWallet)
-          .where('period', RegistryPeriod.Latest)
-          .first()
-          .then((row) => (row ? row.data : def));
+        } = await dataLoader
+          .walletRegistry()
+          .load({
+            wallet: contract.contractWallet,
+            contract: contract.contract,
+          })
+          .then((registry) => registry?.data ?? def);
         return {
           ...def,
           token0Address,
+          token0Price,
           token0PriceLower,
           token0PriceUpper,
           token1Address,
+          token1Price,
           token1PriceLower,
           token1PriceUpper,
         };
