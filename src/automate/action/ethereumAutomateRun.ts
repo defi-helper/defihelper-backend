@@ -28,7 +28,7 @@ export function paramsVerify(params: any): params is Params {
   return true;
 }
 
-export async function getEarnedAmount(
+export async function getMetrics(
   provider: ethers.providers.JsonRpcProvider,
   protocol: Protocol,
   contract: Contract,
@@ -38,7 +38,9 @@ export async function getEarnedAmount(
     .where('id', contract.contract)
     .first();
 
-  if (!contractBlockchain) return new BN(0);
+  if (!contractBlockchain) {
+    return { stakingUSD: new BN(0), earnedUSD: new BN(0) };
+  }
 
   const protocolAdapter = await container.blockchainAdapter.loadAdapter(protocol.adapter);
   const contractAdapterFactory = protocolAdapter[contractBlockchain.adapter];
@@ -53,7 +55,10 @@ export async function getEarnedAmount(
   }
 
   const walletMetrics = await contractAdapterReader.wallet(contract.address);
-  return new BN(walletMetrics.metrics?.earnedUSD ?? 0);
+  return {
+    stakingUSD: new BN(walletMetrics.metrics?.stakingUSD ?? 0),
+    earnedUSD: new BN(walletMetrics.metrics?.earnedUSD ?? 0),
+  };
 }
 
 export default async function (this: Action, params: Params) {
@@ -147,9 +152,14 @@ export default async function (this: Action, params: Params) {
   }, Promise.resolve(null));
   if (consumer === null) throw new Error('Not free consumer');
 
-  const earnedUsd = await getEarnedAmount(provider, protocol, contract).catch(() => new BN(0));
+  const { earnedUSD, stakingUSD } = await getMetrics(provider, protocol, contract).catch(() => ({
+    stakingUSD: new BN(0),
+    earnedUSD: new BN(0),
+  }));
   const { run: adapter } = await adapterFactory(consumer, contract.address);
   try {
+    const runParams = await adapter.methods.runParams();
+    if (runParams instanceof Error) throw runParams;
     const res = await adapter.methods.run();
     if (res instanceof Error) throw res;
 
@@ -166,10 +176,13 @@ export default async function (this: Action, params: Params) {
       container.amplitude().log('automation_fee_charged_successful', wallet.user, {
         hash: tx.hash,
       }),
-      !earnedUsd.isZero()
+      !earnedUSD.isZero()
         ? container.model.queueService().push('automateNotifyExecutedRestake', {
             contract: contract.id,
-            amount: earnedUsd.toFixed(2),
+            staked: stakingUSD.toFixed(2),
+            fee: new BN(runParams.calldata[0]).div('1e18').plus(1).toFixed(2),
+            earned: earnedUSD.toFixed(2),
+            total: stakingUSD.plus(earnedUSD).toFixed(2),
           })
         : null,
     ]);

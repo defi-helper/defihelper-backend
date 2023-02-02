@@ -206,6 +206,8 @@ export interface InvestHistory {
   wallet: string;
   amount: string;
   amountUSD: string;
+  tx: string;
+  confirmed: boolean;
   refunded: boolean;
   createdAt: Date;
 }

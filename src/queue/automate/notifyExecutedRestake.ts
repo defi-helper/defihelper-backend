@@ -1,16 +1,20 @@
 import container from '@container';
 import { Contract, contractTableName } from '@models/Automate/Entity';
 import { ContactBroker, ContactStatus } from '@models/Notification/Entity';
+import { contractBlockchainTableName } from '@models/Protocol/Entity';
 import { Process } from '@models/Queue/Entity';
 import { Wallet, walletTableName } from '@models/Wallet/Entity';
 
 export interface Params {
   contract: string;
-  amount: string;
+  staked: string;
+  earned: string;
+  fee: string;
+  total: string;
 }
 
 export default async (process: Process) => {
-  const { contract, amount } = process.task.params as Params;
+  const { contract, earned, total, fee } = process.task.params as Params;
 
   const automateContractWithWallet = (await container.model
     .automateContractTable()
@@ -24,6 +28,11 @@ export default async (process: Process) => {
 
   const protocolContract = await container.model
     .contractTable()
+    .innerJoin(
+      contractBlockchainTableName,
+      `${contractTableName}.id`,
+      `${contractBlockchainTableName}.id`,
+    )
     .where('id', automateContractWithWallet.contract)
     .first();
 
@@ -34,8 +43,8 @@ export default async (process: Process) => {
   const contactsByUser = await container.model
     .userContactTable()
     .where('broker', ContactBroker.Telegram)
-    .andWhere('status', ContactStatus.Active)
-    .andWhere('user', automateContractWithWallet.user);
+    .where('status', ContactStatus.Active)
+    .where('user', automateContractWithWallet.user);
 
   await Promise.all(
     contactsByUser.map((contact) => {
@@ -43,8 +52,11 @@ export default async (process: Process) => {
         contactId: contact.id,
         template: 'automateRestakeDone',
         params: {
-          tokensUSDAmount: amount,
           poolName: protocolContract.name,
+          network: container.blockchain.ethereum.byNetwork(protocolContract.network).name,
+          earned,
+          total,
+          fee,
         },
       });
     }),

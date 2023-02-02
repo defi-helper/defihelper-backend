@@ -12,6 +12,7 @@ import {
   WalletTable,
   walletTableName,
 } from '@models/Wallet/Entity';
+import { Token } from '@models/Token/Entity';
 import {
   Action,
   ActionParams,
@@ -67,6 +68,10 @@ export class AutomateService {
     }
   });
 
+  public readonly onInvestHistoryCreated = new Emitter<InvestHistory>(({ id }) =>
+    container.model.queueService().push('automateInvestHistoryTx', { id }),
+  );
+
   public readonly onTransactionCreated = new Emitter<{
     blockchainWallet: Wallet & WalletBlockchain;
     contract: Contract;
@@ -95,14 +100,6 @@ export class AutomateService {
       );
     }
   });
-
-  public readonly onStopLossEnabled = new Emitter<{ stopLoss: ContractStopLoss }>(
-    ({ stopLoss }) => {
-      container.model
-        .queueService()
-        .push('eventsAutomateContractStopLossEnabled', { id: stopLoss.id });
-    },
-  );
 
   constructor(
     readonly triggerTable: Factory<TriggerTable>,
@@ -315,6 +312,8 @@ export class AutomateService {
     path: string[],
     amountOut: string,
     amountOutMin: string,
+    { id: inToken }: Token,
+    { id: outToken }: Token,
   ) {
     await this.disableStopLoss(contract);
     const created: ContractStopLoss = {
@@ -324,8 +323,8 @@ export class AutomateService {
         path,
         amountOut,
         amountOutMin,
-        inToken: null,
-        outToken: null,
+        inToken,
+        outToken,
       },
       status: ContractStopLossStatus.Pending,
       tx: '',
@@ -336,7 +335,6 @@ export class AutomateService {
       updatedAt: new Date(),
     };
     await this.contractStopLossTable().insert(created);
-    this.onStopLossEnabled.emit({ stopLoss: created });
 
     return created;
   }
@@ -355,19 +353,35 @@ export class AutomateService {
     return updated;
   }
 
-  async createInvestHistory(contract: Contract, wallet: Wallet, amount: BN, amountUSD: BN) {
+  async createInvestHistory(
+    tx: string,
+    contract: Contract,
+    wallet: Wallet,
+    amount: BN,
+    amountUSD: BN,
+  ) {
+    const duplicate = await this.investHistoryTable().where('tx', tx).first();
+    if (duplicate) return duplicate;
+
     const created: InvestHistory = {
       id: uuid(),
       contract: contract.id,
       wallet: wallet.id,
       amount: amount.toPrecision(15, BN.ROUND_FLOOR),
       amountUSD: amountUSD.toPrecision(15, BN.ROUND_FLOOR),
+      tx,
+      confirmed: false,
       refunded: false,
       createdAt: new Date(),
     };
     await this.investHistoryTable().insert(created);
+    this.onInvestHistoryCreated.emit(created);
 
     return created;
+  }
+
+  confirmInvestHistory(id: string) {
+    return this.investHistoryTable().update({ confirmed: true }).where('id', id);
   }
 
   refundInvestHistory(contract: Contract, wallet: Wallet) {

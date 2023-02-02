@@ -190,6 +190,7 @@ export function route({ express, server }: { express: Express.Express; server: S
           onBillingTransferUpdated: billingSchemas.OnTransferUpdated,
           onUserContactActivated: notificationSchemas.OnUserContactActivated,
           onSmartTradeOrderUpdated: smartTradeSchemas.OnOrderUpdated,
+          onAutomateContractUpdated: automateSchemas.OnContractUpdated,
         },
       }),
     }),

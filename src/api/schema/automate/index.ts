@@ -1,5 +1,5 @@
 import * as Automate from '@models/Automate/Entity';
-import { AuthenticationError, UserInputError } from 'apollo-server-express';
+import { AuthenticationError, UserInputError, withFilter } from 'apollo-server-express';
 import BN from 'bignumber.js';
 import { Request } from 'express';
 import { Role } from '@models/User/Entity';
@@ -8,6 +8,7 @@ import {
   walletTableName,
   walletBlockchainTableName,
   WalletBlockchainType as WalletBlockchainModelType,
+  Wallet,
 } from '@models/Wallet/Entity';
 import {
   GraphQLBoolean,
@@ -25,7 +26,8 @@ import {
 } from 'graphql';
 import { apyBoost, optimalRestakeNearesDate } from '@services/RestakeStrategy';
 import { contractBlockchainTableName, contractTableName } from '@models/Protocol/Entity';
-import { metricContractTableName } from '@models/Metric/Entity';
+import { contractTableName as autoamteContractTableName } from '@models/Automate/Entity';
+import { metricContractTableName, RegistryPeriod } from '@models/Metric/Entity';
 import dayjs from 'dayjs';
 import {
   BigNumberType,
@@ -1058,6 +1060,30 @@ export const ContractMetricType = new GraphQLObjectType({
   },
 });
 
+export const ContractUni3MetricType = new GraphQLObjectType({
+  name: 'AutomateContractUni3MetricType',
+  fields: {
+    token0Address: {
+      type: GraphQLNonNull(EthereumAddressType),
+    },
+    token0PriceLower: {
+      type: GraphQLNonNull(BigNumberType),
+    },
+    token0PriceUpper: {
+      type: GraphQLNonNull(BigNumberType),
+    },
+    token1Address: {
+      type: GraphQLNonNull(EthereumAddressType),
+    },
+    token1PriceLower: {
+      type: GraphQLNonNull(BigNumberType),
+    },
+    token1PriceUpper: {
+      type: GraphQLNonNull(BigNumberType),
+    },
+  },
+});
+
 export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
   name: 'AutomateContractType',
   fields: {
@@ -1194,10 +1220,7 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
           apyBoost: '0',
           invest: '0',
         };
-        if (
-          !contract.contract ||
-          contract.verification !== Automate.ContractVerificationStatus.Confirmed
-        ) {
+        if (!contract.contract) {
           return def;
         }
 
@@ -1205,22 +1228,9 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
         if (!staking) return def;
         const ownerWallet = await dataLoader.wallet().load(contract.wallet);
         if (!ownerWallet) return def;
-        const wallet = await container.model
-          .walletTable()
-          .innerJoin(
-            walletBlockchainTableName,
-            `${walletBlockchainTableName}.id`,
-            `${walletTableName}.id`,
-          )
-          .where({
-            user: ownerWallet.user,
-            type: WalletBlockchainModelType.Contract,
-            address:
-              ownerWallet.blockchain === 'ethereum'
-                ? contract.address.toLowerCase()
-                : contract.address,
-          })
-          .first();
+        const wallet = contract.contractWallet
+          ? await dataLoader.wallet().load(contract.contractWallet)
+          : null;
         if (!wallet) return def;
 
         const [contractMetric, walletMetric, invest] = await Promise.all([
@@ -1241,6 +1251,50 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
             balance: totalBalance > 0 ? totalBalance : 10000,
             aprYear: new BN(contractMetric?.data.aprYear ?? '0').toNumber(),
           },
+        };
+      },
+    },
+    metricUni3: {
+      type: GraphQLNonNull(ContractUni3MetricType),
+      resolve: async (contract, args, { dataLoader }) => {
+        const def = {
+          token0Address: '0x0000000000000000000000000000000000000000',
+          token0PriceLower: '0',
+          token0PriceUpper: '0',
+          token1Address: '0x0000000000000000000000000000000000000000',
+          token1PriceLower: '0',
+          token1PriceUpper: '0',
+        };
+        if (!contract.contract || !contract.contractWallet) {
+          return def;
+        }
+
+        const staking = await dataLoader.contract().load(contract.contract);
+        if (!staking) return def;
+        const protocol = await dataLoader.protocol().load(staking.protocol);
+        if (!protocol || protocol.adapter !== 'uniswap3') return def;
+
+        const {
+          token0Address,
+          token0PriceLower,
+          token0PriceUpper,
+          token1Address,
+          token1PriceLower,
+          token1PriceUpper,
+        } = await container.model
+          .metricWalletRegistryTable()
+          .where('wallet', contract.contractWallet)
+          .where('period', RegistryPeriod.Latest)
+          .first()
+          .then((row) => (row ? row.data : def));
+        return {
+          ...def,
+          token0Address,
+          token0PriceLower,
+          token0PriceUpper,
+          token1Address,
+          token1PriceLower,
+          token1PriceUpper,
         };
       },
     },
@@ -1650,6 +1704,14 @@ export const ContractStopLossEnable: GraphQLFieldConfig<any, Request> = {
               type: GraphQLNonNull(GraphQLList(GraphQLNonNull(EthereumAddressType))),
               description: 'Swap path',
             },
+            inToken: {
+              type: GraphQLNonNull(UuidType),
+              description: 'In token id',
+            },
+            outToken: {
+              type: GraphQLNonNull(UuidType),
+              description: 'Out token id',
+            },
             amountOut: {
               type: GraphQLNonNull(BigNumberType),
               description: 'Target amount',
@@ -1673,6 +1735,16 @@ export const ContractStopLossEnable: GraphQLFieldConfig<any, Request> = {
     if (!contract) {
       throw new UserInputError('Contract not found');
     }
+    const [inToken, outToken] = await Promise.all([
+      container.model.tokenTable().where('id', input.inToken).first(),
+      container.model.tokenTable().where('id', input.outToken).first(),
+    ]);
+    if (!inToken) {
+      throw new UserInputError('In token not found');
+    }
+    if (!outToken) {
+      throw new UserInputError('Out token not found');
+    }
 
     await container.model
       .automateService()
@@ -1681,6 +1753,8 @@ export const ContractStopLossEnable: GraphQLFieldConfig<any, Request> = {
         input.path,
         input.amountOut.toFixed(0),
         input.amountOutMin.toFixed(0),
+        inToken,
+        outToken,
       );
 
     return true;
@@ -1748,6 +1822,10 @@ export const InvestCreateMutation: GraphQLFieldConfig<any, Request> = {
         new GraphQLInputObjectType({
           name: 'AutomateInvestCreateInputType',
           fields: {
+            tx: {
+              type: GraphQLNonNull(EthereumTransactionHashType),
+              description: 'Deposit transaction hash',
+            },
             contract: {
               type: GraphQLNonNull(UuidType),
               description: 'Automate contract',
@@ -1795,7 +1873,7 @@ export const InvestCreateMutation: GraphQLFieldConfig<any, Request> = {
 
     return container.model
       .automateService()
-      .createInvestHistory(contract, wallet, input.amount, input.amountUSD);
+      .createInvestHistory(input.tx, contract, wallet, input.amount, input.amountUSD);
   }),
 };
 
@@ -1850,4 +1928,42 @@ export const InvestRefundMutation: GraphQLFieldConfig<any, Request> = {
 
     return true;
   }),
+};
+
+export const OnContractUpdated: GraphQLFieldConfig<{ id: string }, Request> = {
+  type: GraphQLNonNull(ContractType),
+  args: {
+    filter: {
+      type: new GraphQLInputObjectType({
+        name: 'OnAutomateContractChangedFilterInputType',
+        fields: {
+          user: {
+            type: GraphQLNonNull(UuidType),
+          },
+        },
+      }),
+      defaultValue: {},
+    },
+  },
+  subscribe: withFilter(
+    () => container.cacheSubscriber('defihelper:channel:onAutomateContractChanged').asyncIterator(),
+    async ({ id }, { filter }) => {
+      if (!filter.user) return false;
+
+      const wallet = await container.model
+        .walletTable()
+        .column<Wallet[]>(`${walletTableName}.*`)
+        .innerJoin(
+          autoamteContractTableName,
+          `${walletTableName}.id`,
+          `${autoamteContractTableName}.wallet`,
+        )
+        .where(`${autoamteContractTableName}.id`, id)
+        .first();
+      return wallet !== undefined && filter.user === wallet.user;
+    },
+  ),
+  resolve: ({ id }) => {
+    return container.model.automateContractTable().where('id', id).first();
+  },
 };

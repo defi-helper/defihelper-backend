@@ -52,6 +52,7 @@ export * as automateContractStopLossBroker from './automate/contractStopLossBrok
 export * as automateContractStopLossRun from './automate/contractStopLossRun';
 export * as automateContractStopLossTx from './automate/contractStopLossTx';
 export * as automateTriggerByTime from './automate/trigger/byTime';
+export * as automateInvestHistoryTx from './automate/investHistoryTx';
 
 export * as deadPoolsInvestmentsBroker from './contract/deadPoolsInvestmentsBroker';
 export * as automateNotifyExecutedRestake from './automate/notifyExecutedRestake';
@@ -120,7 +121,7 @@ export * as eventsWalletCreated from './events/walletCreated';
 export * as eventsWalletContractLinked from './events/walletContractLinked';
 export * as eventsWalletChangeOwner from './events/walletChangeOwner';
 export * as eventsAutomateContractVerificationConfirmed from './null';
-export * as eventsAutomateContractStopLossEnabled from './events/automate/contractStopLossEnabled';
+export * as eventsAutomateContractStopLossEnabled from './null';
 export * as followContractEvent from './scanner/followContractEvent';
 export * as eventsNotificationsContactActivated from './events/notifications/contactActivated';
 

@@ -337,7 +337,7 @@ export class BlockchainContainer extends Container<Config> {
       id: '10',
       testnet: false,
       name: 'Optimistic',
-      icon: 'ethereumRegular',
+      icon: 'optimistic',
       explorerURL: new URL('https://optimistic.etherscan.io'),
       txExplorerURL: new URL('https://optimistic.etherscan.io/tx'),
       walletExplorerURL: new URL('https://optimistic.etherscan.io/address'),

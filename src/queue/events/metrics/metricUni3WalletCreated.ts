@@ -8,6 +8,11 @@ import {
 import { Process } from '@models/Queue/Entity';
 import dayjs from 'dayjs';
 import BN from 'bignumber.js';
+import {
+  walletBlockchainTableName,
+  walletTableName,
+  WalletBlockchainType,
+} from '@models/Wallet/Entity';
 
 interface PositionToken {
   address: string;
@@ -38,6 +43,41 @@ export interface Params {
 export default async (process: Process) => {
   const { id, positions } = process.task.params as Params;
 
+  const metric = await container.model.metricWalletTable().where('id', id).first();
+  if (!metric) {
+    throw new Error('Metric not found');
+  }
+  const wallet = await container.model
+    .walletTable()
+    .innerJoin(
+      walletBlockchainTableName,
+      `${walletTableName}.id`,
+      `${walletBlockchainTableName}.id`,
+    )
+    .where(`${walletTableName}.id`, metric.wallet)
+    .first();
+  if (!wallet) {
+    throw new Error('Wallet not found');
+  }
+  if (wallet.type === WalletBlockchainType.Contract) {
+    const contract = await container.model.contractTable().where('id', metric.contract).first();
+    if (contract) {
+      await container.model.metricService().createWallet(
+        contract,
+        wallet,
+        {
+          token0Address: positions[0].token0.address.toLowerCase(),
+          token0PriceLower: positions[0].token0.price.lower,
+          token0PriceUpper: positions[0].token0.price.upper,
+          token1Address: positions[0].token1.address.toLowerCase(),
+          token1PriceLower: positions[0].token1.price.lower,
+          token1PriceUpper: positions[0].token1.price.upper,
+        },
+        new Date(),
+      );
+    }
+  }
+
   const notRewardedPositions = positions.filter(
     ({ token0 }) =>
       new BN(token0.price.value).lt(token0.price.lower) ||
@@ -47,14 +87,6 @@ export default async (process: Process) => {
     return process.done();
   }
 
-  const metric = await container.model.metricWalletTable().where('id', id).first();
-  if (!metric) {
-    throw new Error('Metric not found');
-  }
-  const wallet = await container.model.walletTable().where('id', metric.wallet).first();
-  if (!wallet) {
-    throw new Error('Wallet not found');
-  }
   const isLocked = await container
     .cache()
     .promises.get(`defihelper:uni3-notification:positionsWithoutReward:${wallet.id}`);
