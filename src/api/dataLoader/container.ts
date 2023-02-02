@@ -35,6 +35,7 @@ import {
   walletTokenLastMetricLoader,
   walletTriggersCountLoader,
   walletAutomatesLoader,
+  walletRegistryLoader,
 } from './user';
 
 export class DataLoaderContainer extends Container<{}> {
@@ -69,6 +70,8 @@ export class DataLoaderContainer extends Container<{}> {
   readonly wallet = singleton(walletLoader);
 
   readonly walletMetric = singleton(walletLastMetricLoader);
+
+  readonly walletRegistry = singleton(walletRegistryLoader);
 
   readonly walletTokenMetric = singletonParametric(walletTokenLastMetricLoader);
 

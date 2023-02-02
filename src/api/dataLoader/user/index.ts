@@ -7,6 +7,7 @@ import {
   metricWalletTokenRegistryTableName,
   QueryModify,
   RegistryPeriod,
+  MetricWalletRegistry,
 } from '@models/Metric/Entity';
 import { User } from '@models/User/Entity';
 import { walletContractLinkTableName } from '@models/Protocol/Entity';
@@ -457,6 +458,25 @@ export const walletLastMetricLoader = () =>
       return { ...latest, ...dayBefore };
     });
   });
+
+export const walletRegistryLoader = () =>
+  new DataLoader<{ contract: string; wallet: string }, MetricWalletRegistry | null>(
+    async (pairs: Readonly<Array<{ contract: string; wallet: string }>>) => {
+      const map = await container.model
+        .metricWalletRegistryTable()
+        .where('period', RegistryPeriod.Latest)
+        .where(function () {
+          pairs.forEach(({ contract, wallet }) =>
+            this.orWhere(function () {
+              this.where({ contract, wallet });
+            }),
+          );
+        })
+        .then((rows) => new Map(rows.map((row) => [`${row.contract}:${row.wallet}`, row])));
+
+      return pairs.map(({ contract, wallet }) => map.get(`${contract}:${wallet}`) ?? null);
+    },
+  );
 
 export const walletTokenLastMetricLoader = (filter: {
   tokenAlias?: { id?: string[]; liquidity?: TokenAliasLiquidity[] };
