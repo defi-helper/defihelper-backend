@@ -116,6 +116,21 @@ export default async (process: Process) => {
     return process.info('Not available notifications').done();
   }
 
+  const automate = await container.model
+    .automateContractTable()
+    .where('contractWallet', wallet.id)
+    .first();
+  if (!automate) {
+    throw new Error('Automate not found');
+  }
+
+  const pool = await container.model.contractTable().where('id', automate.contract).first();
+  if (!pool) {
+    throw new Error('Pool not found');
+  }
+
+  const networkName = container.blockchain.ethereum.byNetwork(wallet.network).name;
+
   const contact = await container.model
     .userContactTable()
     .where('user', wallet.user)
@@ -131,8 +146,8 @@ export default async (process: Process) => {
       contactId: contact.id,
       template: 'uni3PositionWithoutReward',
       params: {
-        walletName: wallet.name,
-        tokenSymbol: position.token0.symbol,
+        name: `${pool.name} (${networkName})`,
+        tokenSymbol: position.token1.symbol,
         lowerPrice: new BN(position.token0.price.lower).toFixed(4).replace(/0+$/, ''),
         upperPrice: new BN(position.token0.price.upper).toFixed(4).replace(/0+$/, ''),
         currentPrice: new BN(position.token0.price.value).toFixed(4).replace(/0+$/, ''),

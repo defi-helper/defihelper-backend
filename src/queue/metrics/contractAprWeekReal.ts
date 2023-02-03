@@ -72,13 +72,15 @@ export default async (process: Process) => {
     .orderBy('date');
   if (tokenPrices.length === 0) throw new Error('Staking token prices not found');
 
-  const price = tokenPrices.reduce<{ [date: string]: string }>(
-    (result, metric) => ({
-      ...result,
-      [dayjs(metric.date).utc().format('YYYY-MM-DD')]: metric.data.usd ?? '0',
-    }),
-    {},
-  );
+  const price = tokenPrices.reduce<{ [date: string]: string }>((result, metric) => {
+    const { usd } = metric.data;
+    return usd !== undefined && usd !== '0'
+      ? {
+          ...result,
+          [dayjs(metric.date).utc().format('YYYY-MM-DD')]: usd,
+        }
+      : result;
+  }, {});
   const avgPriceValues = Object.values(price);
   const avgPrice =
     avgPriceValues.length > 0
@@ -94,9 +96,8 @@ export default async (process: Process) => {
     const stakingTokenPriceUSD = price[day] ?? avgPrice.toString(10);
     const aprDay = apr[day] ?? avgApr.toString(10);
     const stake = new BN(
-      result[result.length - 1]?.stake ?? stakingTokenPriceUSD !== '0'
-        ? new BN(investing).div(stakingTokenPriceUSD)
-        : '0',
+      result[result.length - 1]?.stake ??
+        (stakingTokenPriceUSD !== '0' ? new BN(investing).div(stakingTokenPriceUSD) : '0'),
     );
     const stakeUSD = stake.multipliedBy(stakingTokenPriceUSD);
     const dayRewardUSD = stakeUSD.multipliedBy(aprDay);
