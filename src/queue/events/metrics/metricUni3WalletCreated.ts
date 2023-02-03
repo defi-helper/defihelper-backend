@@ -65,14 +65,27 @@ export default async (process: Process) => {
       await container.model.metricService().createWallet(
         contract,
         wallet,
-        {
-          token0Address: positions[0].token0.address.toLowerCase(),
-          token0PriceLower: positions[0].token0.price.lower,
-          token0PriceUpper: positions[0].token0.price.upper,
-          token1Address: positions[0].token1.address.toLowerCase(),
-          token1PriceLower: positions[0].token1.price.lower,
-          token1PriceUpper: positions[0].token1.price.upper,
-        },
+        positions.length > 0
+          ? {
+              token0Address: positions[0].token0.address.toLowerCase(),
+              token0Price: positions[0].token0.price.value,
+              token0PriceLower: positions[0].token0.price.lower,
+              token0PriceUpper: positions[0].token0.price.upper,
+              token1Address: positions[0].token1.address.toLowerCase(),
+              token1Price: positions[0].token1.price.value,
+              token1PriceLower: positions[0].token1.price.lower,
+              token1PriceUpper: positions[0].token1.price.upper,
+            }
+          : {
+              token0Address: '0x0000000000000000000000000000000000000000',
+              token0Price: '0',
+              token0PriceLower: '0',
+              token0PriceUpper: '0',
+              token1Address: '0x0000000000000000000000000000000000000000',
+              token1Price: '0',
+              token1PriceLower: '0',
+              token1PriceUpper: '0',
+            },
         new Date(),
       );
     }
