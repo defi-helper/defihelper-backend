@@ -1306,15 +1306,14 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
           })
           .then((registry) => registry?.data ?? def);
         return {
-          ...def,
-          token0Address,
-          token0Price,
-          token0PriceLower,
-          token0PriceUpper,
-          token1Address,
-          token1Price,
-          token1PriceLower,
-          token1PriceUpper,
+          token0Address: token0Address ?? def.token0Address,
+          token0Price: token0Price ?? def.token0Price,
+          token0PriceLower: token0PriceLower ?? def.token0PriceLower,
+          token0PriceUpper: token0PriceUpper ?? def.token0PriceUpper,
+          token1Address: token1Address ?? def.token1Address,
+          token1Price: token1Price ?? def.token1Price,
+          token1PriceLower: token1PriceLower ?? def.token1PriceLower,
+          token1PriceUpper: token1PriceUpper ?? def.token1PriceUpper,
         };
       },
     },
