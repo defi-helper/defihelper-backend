@@ -183,7 +183,6 @@ export default async (process: Process) => {
       // Debank contract collector
       container.model
         .walletTable()
-        .distinctOn(`${walletBlockchainTableName}.address`)
         .column(`${walletBlockchainTableName}.id`)
         .innerJoin(
           walletBlockchainTableName,
