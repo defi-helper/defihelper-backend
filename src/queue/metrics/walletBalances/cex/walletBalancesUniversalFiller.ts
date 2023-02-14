@@ -5,6 +5,7 @@ import {
   walletExchangeTableName,
   WalletSuspenseReason,
   walletTableName,
+  WalletExchangeType,
 } from '@models/Wallet/Entity';
 import BN from 'bignumber.js';
 import {
@@ -13,6 +14,21 @@ import {
   RegistryPeriod,
 } from '@models/Metric/Entity';
 import { Token, tokenTableName } from '@models/Token/Entity';
+
+const exchangeConstructors = {
+  [WalletExchangeType.Binance]: ccxt.binance,
+  [WalletExchangeType.Huobi]: ccxt.huobi,
+  [WalletExchangeType.Okex]: ccxt.okex,
+  [WalletExchangeType.Ascendex]: ccxt.ascendex,
+  [WalletExchangeType.Mexc]: ccxt.mexc,
+  [WalletExchangeType.Bitmart]: ccxt.bitmart,
+  [WalletExchangeType.Coinex]: ccxt.coinex,
+  [WalletExchangeType.Poloniex]: ccxt.poloniex,
+  [WalletExchangeType.BinanceUS]: ccxt.binanceus,
+  [WalletExchangeType.Bybit]: ccxt.bybit,
+  [WalletExchangeType.Lbank]: ccxt.lbank,
+  [WalletExchangeType.GateIO]: ccxt.gateio,
+};
 
 interface Params {
   id: string;
@@ -33,7 +49,8 @@ export default async (process: Process) => {
   }
 
   const keyPair = container.cryptography().decryptJson(exchangeWallet.payload);
-  const exchangeInstance = new ccxt[exchangeWallet.exchange]({
+  const constructor = exchangeConstructors[exchangeWallet.exchange];
+  const exchangeInstance = new constructor({
     ...keyPair,
 
     options: {
