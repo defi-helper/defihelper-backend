@@ -168,6 +168,8 @@ export function route({ express, server }: { express: Express.Express; server: S
           automateContractDelete: automateSchemas.ContractDeleteMutation,
           automateContractStopLossEnable: automateSchemas.ContractStopLossEnable,
           automateContractStopLossDisable: automateSchemas.ContractStopLossDisable,
+          automateContractRebalanceEnable: automateSchemas.ContractRebalanceEnable,
+          automateContractRebalanceDisable: automateSchemas.ContractRebalanceDisable,
           automateInvestCreate: automateSchemas.InvestCreateMutation,
           automateInvestRefund: automateSchemas.InvestRefundMutation,
           automateContractTriggerUpdate: automateSchemas.ContractTriggerUpdateMutation,

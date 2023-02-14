@@ -177,7 +177,7 @@ function isWavesAutomateArtifact(data: any): data is WavesAutomateArtifact {
 export class AdapterService {
   constructor(readonly host: string) {}
 
-  async loadAdapter<T extends ProtocolAdapter = ProtocolAdapter>(protocol: string): Promise<T> {
+  async loadAdapter<T = ProtocolAdapter>(protocol: string): Promise<T> {
     const adapterResponse = await axios.get(`${this.host}/${protocol}.js`).catch((e) => {
       if (e.response?.code === 503) throw new TemporaryOutOfService();
       throw new Error(`Undefined error in adapters: ${e.message}`);
