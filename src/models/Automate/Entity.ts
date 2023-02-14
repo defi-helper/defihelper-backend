@@ -200,6 +200,53 @@ export const contractStopLossTableFactory =
 
 export type ContractStopLossTable = ReturnType<ReturnType<typeof contractStopLossTableFactory>>;
 
+export enum ContractRebalanceStatus {
+  Pending = 'pending',
+  Sended = 'sended',
+}
+
+export interface ContractRebalance {
+  id: string;
+  contract: string;
+  status: ContractRebalanceStatus;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export const contractRebalanceTableName = 'automate_contract_rebalance';
+
+export const contractRebalanceTableFactory = tableFactoryLegacy<ContractRebalance>(
+  contractRebalanceTableName,
+);
+
+export type ContractRebalanceTable = ReturnType<ReturnType<typeof contractRebalanceTableFactory>>;
+
+export enum ContractRebalanceTxStatus {
+  Pending = 'pending',
+  Completed = 'completed',
+  Error = 'error',
+}
+
+export interface ContractRebalanceTx {
+  id: string;
+  rebalance: string;
+  tx: string;
+  status: ContractRebalanceTxStatus;
+  error: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export const contractRebalanceTxTableName = 'automate_contract_rebalance_tx';
+
+export const contractRebalanceTxTableFactory = tableFactoryLegacy<ContractRebalanceTx>(
+  contractRebalanceTxTableName,
+);
+
+export type ContractRebalanceTxTable = ReturnType<
+  ReturnType<typeof contractRebalanceTxTableFactory>
+>;
+
 export interface InvestHistory {
   id: string;
   contract: string;

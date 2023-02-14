@@ -1023,6 +1023,23 @@ export const ContractStopLossType = new GraphQLObjectType<Automate.ContractStopL
   },
 });
 
+export const ContractRebalanceStatusEnum = new GraphQLEnumType({
+  name: 'AutomateContractRebalanceStatusEnum',
+  values: Object.values(Automate.ContractRebalanceStatus).reduce(
+    (res, value) => ({ ...res, [value]: { value } }),
+    {} as GraphQLEnumValueConfigMap,
+  ),
+});
+
+export const ContractRebalanceType = new GraphQLObjectType<Automate.ContractRebalance, Request>({
+  name: 'AutomateContractRebalanceType',
+  fields: {
+    status: {
+      type: GraphQLNonNull(ContractRebalanceStatusEnum),
+    },
+  },
+});
+
 export const ContractVerificationStatusEnum = new GraphQLEnumType({
   name: 'AutomateContractVerificationStatusEnum',
   values: Object.values(Automate.ContractVerificationStatus).reduce(
@@ -1331,6 +1348,12 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
         return dataLoader.automateContractStopLoss().load(contract.id);
       },
     },
+    rebalance: {
+      type: ContractRebalanceType,
+      resolve: (contract, args, { dataLoader }) => {
+        return dataLoader.automateContractRebalance().load(contract.id);
+      },
+    },
     trigger: {
       type: TriggerType,
       resolve: (contract, args, { dataLoader }) => {
@@ -1347,6 +1370,9 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
       type: new GraphQLInputObjectType({
         name: 'AutomateContractListFilterInputType',
         fields: {
+          id: {
+            type: GraphQLList(GraphQLNonNull(UuidType)),
+          },
           user: {
             type: UuidType,
           },
@@ -1393,31 +1419,35 @@ export const ContractListQuery: GraphQLFieldConfig<any, Request> = {
         `${Automate.contractTableName}.contract`,
       )
       .where(function () {
-        const { wallet, user, protocol, contract, type, address, archived, search } = filter;
-        if (typeof user === 'string') {
-          this.andWhere(`${walletTableName}.user`, user);
-        }
-        if (typeof wallet === 'string') {
-          this.andWhere(`${Automate.contractTableName}.wallet`, wallet);
-        }
-        if (typeof protocol === 'string') {
-          this.andWhere(`${Automate.contractTableName}.protocol`, protocol);
-        }
-        if (Array.isArray(type)) {
-          this.whereIn(`${Automate.contractTableName}.type`, type);
-        }
-        if (Array.isArray(contract) && contract.length > 0) {
-          this.whereIn(`${Automate.contractTableName}.contract`, contract);
-        }
-        if (Array.isArray(address) && address.length > 0) {
-          this.whereIn(`${Automate.contractTableName}.address`, address);
-        }
-        if (typeof archived === 'boolean') {
-          if (archived) this.whereNotNull(`${Automate.contractTableName}.archivedAt`);
-          else this.whereNull(`${Automate.contractTableName}.archivedAt`);
-        }
-        if (typeof search === 'string' && search !== '') {
-          this.where(`${contractTableName}.name`, 'iLike', `%${search}%`);
+        if (Array.isArray(filter.id) && filter.id.length > 0) {
+          this.whereIn(`${Automate.contractTableName}.id`, filter.id);
+        } else {
+          const { wallet, user, protocol, contract, type, address, archived, search } = filter;
+          if (typeof user === 'string') {
+            this.andWhere(`${walletTableName}.user`, user);
+          }
+          if (typeof wallet === 'string') {
+            this.andWhere(`${Automate.contractTableName}.wallet`, wallet);
+          }
+          if (typeof protocol === 'string') {
+            this.andWhere(`${Automate.contractTableName}.protocol`, protocol);
+          }
+          if (Array.isArray(type)) {
+            this.whereIn(`${Automate.contractTableName}.type`, type);
+          }
+          if (Array.isArray(contract) && contract.length > 0) {
+            this.whereIn(`${Automate.contractTableName}.contract`, contract);
+          }
+          if (Array.isArray(address) && address.length > 0) {
+            this.whereIn(`${Automate.contractTableName}.address`, address);
+          }
+          if (typeof archived === 'boolean') {
+            if (archived) this.whereNotNull(`${Automate.contractTableName}.archivedAt`);
+            else this.whereNull(`${Automate.contractTableName}.archivedAt`);
+          }
+          if (typeof search === 'string' && search !== '') {
+            this.where(`${contractTableName}.name`, 'iLike', `%${search}%`);
+          }
         }
       });
 
@@ -1809,6 +1839,74 @@ export const ContractStopLossDisable: GraphQLFieldConfig<any, Request> = {
     }
 
     await container.model.automateService().disableStopLoss(contract);
+
+    return true;
+  }),
+};
+
+export const ContractRebalanceEnable: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLBoolean),
+  args: {
+    input: {
+      type: GraphQLNonNull(
+        new GraphQLInputObjectType({
+          name: 'AutomateContractRebalanceEnableInputType',
+          fields: {
+            contract: {
+              type: GraphQLNonNull(UuidType),
+              description: 'Automate contract',
+            },
+          },
+        }),
+      ),
+    },
+  },
+  resolve: onlyAllowed('automateContract.create', async (root, { input }, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const contract = await container.model
+      .automateContractTable()
+      .where('id', input.contract)
+      .first();
+    if (!contract) {
+      throw new UserInputError('Contract not found');
+    }
+
+    await container.model.automateService().enableRebalance(contract);
+
+    return true;
+  }),
+};
+
+export const ContractRebalanceDisable: GraphQLFieldConfig<any, Request> = {
+  type: GraphQLNonNull(GraphQLBoolean),
+  args: {
+    input: {
+      type: GraphQLNonNull(
+        new GraphQLInputObjectType({
+          name: 'AutomateContractRebalanceDisableInputType',
+          fields: {
+            contract: {
+              type: GraphQLNonNull(UuidType),
+              description: 'Automate contract',
+            },
+          },
+        }),
+      ),
+    },
+  },
+  resolve: onlyAllowed('automateContract.create', async (root, { input }, { currentUser }) => {
+    if (!currentUser) throw new AuthenticationError('UNAUTHENTICATED');
+
+    const contract = await container.model
+      .automateContractTable()
+      .where('id', input.contract)
+      .first();
+    if (!contract) {
+      throw new UserInputError('Contract not found');
+    }
+
+    await container.model.automateService().disableRebalance(contract);
 
     return true;
   }),

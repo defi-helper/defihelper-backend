@@ -1,6 +1,7 @@
 import container from '@container';
 import {
   actionTableName,
+  ContractRebalance,
   ContractStopLoss,
   Trigger,
   triggerTableName,
@@ -29,6 +30,16 @@ export const automateContractStopLossLoader = () =>
       .automateContractStopLossTable()
       .whereIn('contract', contractsId)
       .then((rows) => new Map(rows.map((stopLoss) => [stopLoss.contract, stopLoss])));
+
+    return contractsId.map((id) => map.get(id) ?? null);
+  });
+
+export const automateContractRebalanceLoader = () =>
+  new DataLoader<string, ContractRebalance | null>(async (contractsId) => {
+    const map = await container.model
+      .automateContractRebalanceTable()
+      .whereIn('contract', contractsId)
+      .then((rows) => new Map(rows.map((rebalance) => [rebalance.contract, rebalance])));
 
     return contractsId.map((id) => map.get(id) ?? null);
   });
