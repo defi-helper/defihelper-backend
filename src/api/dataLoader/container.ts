@@ -1,5 +1,6 @@
 import { Container, singleton, singletonParametric } from '@services/Container';
 import {
+  automateContractRebalanceLoader,
   automateContractStopLossLoader,
   automateContractTriggerLoader,
   automateInvestHistoryLoader,
@@ -92,6 +93,8 @@ export class DataLoaderContainer extends Container<{}> {
   readonly tokenContract = singletonParametric(tokenContractLoader);
 
   readonly automateContractStopLoss = singleton(automateContractStopLossLoader);
+
+  readonly automateContractRebalance = singleton(automateContractRebalanceLoader);
 
   readonly automateContractTrigger = singleton(automateContractTriggerLoader);
 

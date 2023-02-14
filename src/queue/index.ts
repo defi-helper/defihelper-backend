@@ -53,6 +53,8 @@ export * as automateContractStopLossRun from './automate/contractStopLossRun';
 export * as automateContractStopLossTx from './automate/contractStopLossTx';
 export * as automateTriggerByTime from './automate/trigger/byTime';
 export * as automateInvestHistoryTx from './automate/investHistoryTx';
+export * as automateUni3Rebalance from './automate/uni3Rebalance';
+export * as automateUni3RebalanceTx from './automate/uni3RebalanceTx';
 
 export * as deadPoolsInvestmentsBroker from './contract/deadPoolsInvestmentsBroker';
 export * as automateNotifyExecutedRestake from './automate/notifyExecutedRestake';
@@ -109,6 +111,7 @@ export * as notificationAutomateWalletsNotEnoughFundsBroker from './notification
 export * as migratablePoolsBroker from './notifications/migratablePoolsBroker';
 export * as migratablePoolsNotifyUser from './notifications/migratablePoolsNotifyUser';
 export * as migratablePoolsBatch from './notifications/migratablePoolsBatch';
+export * as notificationUni3OutOfPriceRange from './notifications/uniswap3/outOfPriceRange';
 
 /* events */
 export * as eventsMetricContractCreated from './events/metrics/metricContractCreated';

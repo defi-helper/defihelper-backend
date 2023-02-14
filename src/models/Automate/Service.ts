@@ -25,6 +25,12 @@ import {
   ConditionTable,
   ConditionType,
   Contract,
+  ContractRebalance,
+  ContractRebalanceStatus,
+  ContractRebalanceTable,
+  ContractRebalanceTx,
+  ContractRebalanceTxStatus,
+  ContractRebalanceTxTable,
   ContractStopLoss,
   ContractStopLossStatus,
   ContractStopLossTable,
@@ -108,6 +114,8 @@ export class AutomateService {
     readonly triggerCallHistoryTable: Factory<TriggerCallHistoryTable>,
     readonly contractTable: Factory<ContractTable>,
     readonly contractStopLossTable: Factory<ContractStopLossTable>,
+    readonly contractRebalanceTable: Factory<ContractRebalanceTable>,
+    readonly contractRebalanceTxTable: Factory<ContractRebalanceTxTable>,
     readonly investHistoryTable: Factory<InvestHistoryTable>,
     readonly transactionTable: Factory<TransactionTable>,
     readonly walletTable: Factory<WalletTable>,
@@ -341,6 +349,68 @@ export class AutomateService {
 
   async disableStopLoss(contract: Contract) {
     await this.contractStopLossTable().where('contract', contract.id).delete();
+  }
+
+  async enableRebalance(contract: Contract) {
+    const duplicate = await this.contractRebalanceTable().where('contract', contract.id).first();
+    if (duplicate) {
+      return duplicate;
+    }
+
+    const created: ContractRebalance = {
+      id: uuid(),
+      contract: contract.id,
+      status: ContractRebalanceStatus.Pending,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    await this.contractRebalanceTable().insert(created);
+
+    return created;
+  }
+
+  async disableRebalance(contract: Contract) {
+    await this.contractRebalanceTable().where('contract', contract.id).delete();
+  }
+
+  lockRebalance(rebalance: ContractRebalance) {
+    return this.contractRebalanceTable()
+      .update('status', ContractRebalanceStatus.Sended)
+      .where({ id: rebalance.id, status: ContractRebalanceStatus.Pending })
+      .then((updated) => updated > 0);
+  }
+
+  unlockRebalance(rebalance: ContractRebalance) {
+    return this.contractRebalanceTable()
+      .update({ status: ContractRebalanceStatus.Pending })
+      .where({ id: rebalance.id });
+  }
+
+  async rebalanceTx(rebalance: ContractRebalance, tx: string) {
+    const created: ContractRebalanceTx = {
+      id: uuid(),
+      rebalance: rebalance.id,
+      status: ContractRebalanceTxStatus.Pending,
+      tx,
+      error: '',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    await this.contractRebalanceTxTable().insert(created);
+
+    return created;
+  }
+
+  rebalanceTxCompleted(rebalanceTx: ContractRebalanceTx) {
+    return this.contractRebalanceTxTable()
+      .update('status', ContractRebalanceTxStatus.Completed)
+      .where('id', rebalanceTx.id);
+  }
+
+  rebalanceTxError(rebalanceTx: ContractRebalanceTx, reason: string) {
+    return this.contractRebalanceTxTable()
+      .update({ status: ContractRebalanceTxStatus.Error, error: reason })
+      .where('id', rebalanceTx.id);
   }
 
   async updateStopLoss(stopLoss: ContractStopLoss) {
