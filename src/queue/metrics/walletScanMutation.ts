@@ -32,17 +32,29 @@ export default async (process: Process) => {
     }
   }
 
-  await container.model.queueService().push(
-    'metricsWalletCurrent',
-    {
-      contract: contractId,
-      wallet: walletId,
-    },
-    {
-      topic: 'metricCurrent',
-      priority: 9,
-    },
-  );
+  await Promise.all([
+    container.model.queueService().push(
+      'metricsWalletCurrent',
+      {
+        contract: contractId,
+        wallet: walletId,
+      },
+      {
+        topic: 'metricCurrent',
+        priority: 9,
+      },
+    ),
+    container.model.queueService().push(
+      'metricsWalletBalancesDeBankFiller',
+      {
+        id: walletId,
+      },
+      {
+        topic: 'metricCurrent',
+        priority: 9,
+      },
+    ),
+  ]);
 
   return process.done();
 };
