@@ -99,6 +99,8 @@ export * as metricsTokenRegistryPeriodFiller from './metrics/registry/period/tok
 export * as metricsWalletRegistryPeriodFiller from './metrics/registry/period/walletFiller';
 export * as metricsWalletTokenRegistryPeriodFiller from './metrics/registry/period/walletTokenFiller';
 
+export * as metricsUni3RebalanceBroker from './metrics/uni3RebalanceBroker';
+
 /* protocol */
 export * as protocolContractsResolver from './protocol/resolveContracts';
 export * as protocolInvestFlagResolver from './protocol/investFlagResolver';
