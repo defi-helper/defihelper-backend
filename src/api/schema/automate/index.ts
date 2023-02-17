@@ -1065,6 +1065,9 @@ export const ContractMetricType = new GraphQLObjectType({
     staked: {
       type: GraphQLNonNull(GraphQLString),
     },
+    balance: {
+      type: GraphQLNonNull(GraphQLString),
+    },
     earned: {
       type: GraphQLNonNull(GraphQLString),
     },
@@ -1263,9 +1266,10 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
           : null;
         if (!wallet) return def;
 
-        const [contractMetric, walletMetric, invest] = await Promise.all([
+        const [contractMetric, walletMetric, tokenMetric, invest] = await Promise.all([
           dataLoader.contractMetric().load(staking.id),
           dataLoader.walletMetric().load(wallet.id),
+          dataLoader.walletTokenMetric({ contract: [] }).load(wallet.id),
           dataLoader.automateInvestHistory().load(contract.id),
         ]);
         const totalBalance = new BN(walletMetric.stakingUSD)
@@ -1274,6 +1278,7 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
         return {
           invest: invest.amountUSD,
           staked: walletMetric.stakingUSD,
+          balance: tokenMetric.usd,
           earned: walletMetric.earnedUSD,
           apyBoost: {
             blockchain: staking.blockchain,
