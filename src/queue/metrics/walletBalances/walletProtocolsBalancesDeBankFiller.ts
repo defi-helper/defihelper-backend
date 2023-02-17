@@ -116,8 +116,8 @@ export default async (process: Process) => {
     )
     .whereNotNull('contract')
     .then((rows) =>
-      rows.reduce<Record<string, MetricWalletRegistry>>(
-        (res, metric) => ({ ...res, [metric.wallet]: metric }),
+      rows.reduce<Record<string, MetricWalletRegistry[]>>(
+        (res, metric) => ({ ...res, [metric.wallet]: [...(res[metric.wallet] ?? []), metric] }),
         {},
       ),
     );
@@ -618,39 +618,43 @@ export default async (process: Process) => {
   );
 
   await Object.entries(lastMetricsAcrossWallets).reduce<Promise<unknown>>(
-    async (prev, [lastMetricWalletId, metricEntry]) => {
+    async (prev, [lastMetricWalletId, metricEntries]) => {
       await prev;
 
-      if (
-        touchedWalletContracts.has(lastMetricWalletId, metricEntry.contract) ||
-        (metricEntry.data.staking === '0' && metricEntry.data.earned === '0')
-      ) {
-        return null;
-      }
+      return Promise.all(
+        metricEntries.map(async (metricEntry) => {
+          if (
+            touchedWalletContracts.has(lastMetricWalletId, metricEntry.contract) ||
+            (metricEntry.data.staking === '0' && metricEntry.data.earned === '0')
+          ) {
+            return null;
+          }
 
-      const foundTargetWallet = chainsWallets.find((w) => w.id === lastMetricWalletId);
-      if (!foundTargetWallet) {
-        throw new Error('Wallet not found');
-      }
+          const foundTargetWallet = chainsWallets.find((w) => w.id === lastMetricWalletId);
+          if (!foundTargetWallet) {
+            throw new Error('Wallet not found');
+          }
 
-      const foundContract = await container.model
-        .contractTable()
-        .where('id', metricEntry.contract)
-        .first();
-      if (!foundContract) {
-        throw new Error('Contract not found');
-      }
+          const foundContract = await container.model
+            .contractTable()
+            .where('id', metricEntry.contract)
+            .first();
+          if (!foundContract) {
+            throw new Error('Contract not found');
+          }
 
-      return walletMetrics.createWallet(
-        foundContract,
-        foundTargetWallet,
-        {
-          earned: '0',
-          staking: '0',
-          earnedUSD: '0',
-          stakingUSD: '0',
-        },
-        new Date(),
+          return walletMetrics.createWallet(
+            foundContract,
+            foundTargetWallet,
+            {
+              earned: '0',
+              staking: '0',
+              earnedUSD: '0',
+              stakingUSD: '0',
+            },
+            new Date(),
+          );
+        }),
       );
     },
     Promise.resolve(null),
