@@ -1,11 +1,6 @@
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
-import {
-  Wallet,
-  walletBlockchainTableName,
-  WalletBlockchainType,
-  walletTableName,
-} from '@models/Wallet/Entity';
+import { Wallet, walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
 import {
   Contract,
   contractDebankTableName,
@@ -77,7 +72,6 @@ export default async (process: Process) => {
     .where({
       address: targetWallet.address,
       blockchain: 'ethereum',
-      type: WalletBlockchainType.Wallet,
     })
     .orderBy('createdAt', 'desc');
 
