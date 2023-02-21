@@ -1,3 +1,4 @@
+import dayjs from 'dayjs';
 import container from '@container';
 import { Process } from '@models/Queue/Entity';
 import {
@@ -23,16 +24,19 @@ export default async (process: Process) => {
     .where(`${contractTableName}.verification`, ContractVerificationStatus.Confirmed)
     .whereNull(`${contractTableName}.archivedAt`);
 
+  const lag = 1800 / wallets.length; // 30 minutes
   const queue = container.model.queueService();
-  await wallets.reduce<Promise<unknown>>(async (prev, wallet) => {
-    await prev;
+  await wallets.reduce<Promise<dayjs.Dayjs>>(async (prev, wallet) => {
+    const startAt = await prev;
 
-    return queue.push(
+    await queue.push(
       'metricsWalletCurrent',
       { wallet: wallet.id, contract: wallet.contract },
-      { topic: 'metricCurrent' },
+      { topic: 'metricCurrent', startAt: startAt.toDate() },
     );
-  }, Promise.resolve(null));
+
+    return startAt.clone().add(lag, 'seconds');
+  }, Promise.resolve(dayjs()));
 
   return process.done();
 };
