@@ -9,7 +9,6 @@ export default async (process: Process) => {
     queue.push('billingBroker', {}),
     queue.push('treasuryStatsCache', {}),
     queue.push('logStuckQueueTask', {}),
-    queue.push('metricsUni3RebalanceBroker', {}),
   ]);
 
   return process.done();
