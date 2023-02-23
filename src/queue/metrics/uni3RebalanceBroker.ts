@@ -24,7 +24,7 @@ export default async (process: Process) => {
     .where(`${contractTableName}.verification`, ContractVerificationStatus.Confirmed)
     .whereNull(`${contractTableName}.archivedAt`);
 
-  const lag = 1800 / wallets.length; // 30 minutes
+  const lag = 300 / wallets.length; // 5 minutes
   const queue = container.model.queueService();
   await wallets.reduce<Promise<dayjs.Dayjs>>(async (prev, wallet) => {
     const startAt = await prev;
