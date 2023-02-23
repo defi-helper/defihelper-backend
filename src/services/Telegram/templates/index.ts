@@ -42,4 +42,8 @@ export const Templates = {
     `${__dirname}/Uni3PositionWithoutReward.mustache`,
     'utf8',
   ),
+  uni3PositionRebalance: fs.promises.readFile(
+    `${__dirname}/Uni3PositionRebalance.mustache`,
+    'utf8',
+  ),
 };
