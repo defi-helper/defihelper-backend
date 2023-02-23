@@ -88,6 +88,7 @@ export default async (process: Process) => {
     }
 
     await Promise.all([
+      container.cache().promises.set(`defihelper:uni3-rebalance:${automate.id}`, '1'),
       automateService.unlockRebalance(rebalance),
       automateService.rebalanceTxCompleted(rebalanceTx),
       container.model.queueService().push(
