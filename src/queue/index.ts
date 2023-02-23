@@ -114,6 +114,7 @@ export * as migratablePoolsBroker from './notifications/migratablePoolsBroker';
 export * as migratablePoolsNotifyUser from './notifications/migratablePoolsNotifyUser';
 export * as migratablePoolsBatch from './notifications/migratablePoolsBatch';
 export * as notificationUni3OutOfPriceRange from './notifications/uniswap3/outOfPriceRange';
+export * as notificationUni3Rebalance from './notifications/uniswap3/rebalance';
 
 /* events */
 export * as eventsMetricContractCreated from './events/metrics/metricContractCreated';

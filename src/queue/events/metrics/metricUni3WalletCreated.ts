@@ -84,6 +84,28 @@ export default async (process: Process) => {
     }
   }
 
+  const automate = await container.model
+    .automateContractTable()
+    .where('contractWallet', wallet.id)
+    .first();
+  if (!automate) {
+    throw new Error('Automate not found');
+  }
+
+  const isNewRebalance = await container
+    .cache()
+    .promises.get(`defihelper:uni3-rebalance:${automate.id}`)
+    .then((v) => v === '1');
+  if (isNewRebalance && positions.length > 0) {
+    await Promise.all([
+      container.model.queueService().push('notificationUni3Rebalance', {
+        id: wallet.id,
+        position: positions[0],
+      }),
+      container.cache().promises.del(`defihelper:uni3-rebalance:${automate.id}`),
+    ]);
+  }
+
   const notRewardedPositions = positions.filter(
     ({ token0 }) =>
       new BN(token0.price.value).lt(token0.price.lower) ||
@@ -91,14 +113,6 @@ export default async (process: Process) => {
   );
   if (notRewardedPositions.length === 0) {
     return process.done();
-  }
-
-  const automate = await container.model
-    .automateContractTable()
-    .where('contractWallet', wallet.id)
-    .first();
-  if (!automate) {
-    throw new Error('Automate not found');
   }
 
   const isNotificationLocked = await container

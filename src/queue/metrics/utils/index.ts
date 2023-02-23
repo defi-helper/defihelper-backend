@@ -295,6 +295,7 @@ export async function walletMetrics(process: Process) {
       date,
     );
     if (protocol.adapter === 'uniswap3') {
+      console.log(walletAdapterData);
       await container.model.queueService().push('eventsMetricUni3WalletCreated', {
         id: metric.id,
         positions: (walletAdapterData as any).positions,
