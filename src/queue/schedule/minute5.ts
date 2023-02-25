@@ -7,6 +7,7 @@ export default async (process: Process) => {
   await Promise.all([
     queue.push('automateContractStopLossBroker'),
     queue.push('smartTradeOrderCheckBroker'),
+    queue.push('metricsUni3RebalanceBroker'),
   ]);
 
   return process.done();
