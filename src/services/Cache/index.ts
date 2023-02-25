@@ -13,6 +13,7 @@ export interface ConnectFactoryConfig {
 export interface PromisifyRedisClient extends RedisClient {
   promises: {
     get(key: string): Promise<string | null>;
+    del(key: string): Promise<number>;
     set(key: string, value: string): Promise<'OK'>;
     setex(key: string, ttl: number, value: string): Promise<string>;
   };
@@ -36,6 +37,13 @@ export function redisConnectFactory(config: ConnectFactoryConfig) {
       get(key) {
         return new Promise((resolve, reject) =>
           client.get(key, (err, result) => {
+            return err ? reject(err) : resolve(result);
+          }),
+        );
+      },
+      del(key) {
+        return new Promise((resolve, reject) =>
+          client.del(key, (err, result) => {
             return err ? reject(err) : resolve(result);
           }),
         );

@@ -8,7 +8,6 @@ import {
   NotificationType,
 } from '@models/Notification/Entity';
 import { walletBlockchainTableName, walletTableName } from '@models/Wallet/Entity';
-import dayjs from 'dayjs';
 
 interface Params {
   id: string;
@@ -58,15 +57,6 @@ export default async (process: Process) => {
     throw new Error('Automate not found');
   }
 
-  const isRebalanceEnabled = await container.model
-    .automateContractRebalanceTable()
-    .where('contract', automate.id)
-    .first()
-    .then((v) => !!v);
-  if (isRebalanceEnabled) {
-    return process.done();
-  }
-
   const pool = await container.model.contractTable().where('id', automate.contract).first();
   if (!pool) {
     throw new Error('Pool not found');
@@ -87,7 +77,7 @@ export default async (process: Process) => {
   await Promise.all([
     container.model.queueService().push('sendTelegramByContact', {
       contactId: contact.id,
-      template: 'uni3PositionWithoutReward',
+      template: 'uni3PositionRebalance',
       params: {
         name: `${pool.name} (${networkName})`,
         tokenSymbol: position.token1.symbol,
@@ -103,11 +93,6 @@ export default async (process: Process) => {
         { type: NotificationType.uni3PositionWithoutReward, payload: {} },
         NotificationStatus.processed,
       ),
-    container.cache().promises.setex(
-      `defihelper:uni3-notification:positionsWithoutReward:${wallet.id}`,
-      86400, // 1 day
-      dayjs().format('YYYY-MM-DD HH:mm:ss'),
-    ),
   ]);
 
   return process.done();
