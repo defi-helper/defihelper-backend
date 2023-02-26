@@ -52,6 +52,7 @@ export default async (process: Process) => {
       {
         topic: 'metricCurrent',
         priority: 9,
+        startAt: dayjs().add(2, 'minutes').toDate(),
       },
     ),
   ]);

@@ -6,6 +6,7 @@ import {
   walletTableName,
   WalletBlockchainType,
 } from '@models/Wallet/Entity';
+import dayjs from 'dayjs';
 
 interface PositionToken {
   address: string;
@@ -35,6 +36,7 @@ export interface Params {
 
 export default async (process: Process) => {
   const { id, positions } = process.task.params as Params;
+  const cache = container.cache().promises;
 
   const metric = await container.model.metricWalletTable().where('id', id).first();
   if (!metric) {
@@ -83,27 +85,8 @@ export default async (process: Process) => {
       );
     }
   }
-
-  const automate = await container.model
-    .automateContractTable()
-    .where('contractWallet', wallet.id)
-    .first();
-  if (!automate) {
-    throw new Error('Automate not found');
-  }
-
-  const isNewRebalance = await container
-    .cache()
-    .promises.get(`defihelper:uni3-rebalance:${automate.id}`)
-    .then((v) => v === '1');
-  if (isNewRebalance && positions.length > 0) {
-    await Promise.all([
-      container.model.queueService().push('notificationUni3Rebalance', {
-        id: wallet.id,
-        position: positions[0],
-      }),
-      container.cache().promises.del(`defihelper:uni3-rebalance:${automate.id}`),
-    ]);
+  if (positions.length === 0) {
+    return process.done();
   }
 
   const notRewardedPositions = positions.filter(
@@ -111,29 +94,85 @@ export default async (process: Process) => {
       new BN(token0.price.value).lt(token0.price.lower) ||
       new BN(token0.price.value).gt(token0.price.upper),
   );
-  if (notRewardedPositions.length === 0) {
+  // Notification of position without reward
+  if (notRewardedPositions.length > 0) {
+    const isNotificationLocked = await cache
+      .get(`defihelper:uni3-notification:positionsWithoutReward:${wallet.id}`)
+      .then((v) => v !== null);
+    if (!isNotificationLocked) {
+      await container.model.queueService().push('notificationUni3OutOfPriceRange', {
+        id: wallet.id,
+        position: notRewardedPositions[0],
+      });
+    }
+  }
+
+  const automate = await container.model
+    .automateContractTable()
+    .where('contractWallet', wallet.id)
+    .first();
+  if (!automate) {
     return process.done();
   }
+  const [position] = positions;
 
-  const isNotificationLocked = await container
-    .cache()
-    .promises.get(`defihelper:uni3-notification:positionsWithoutReward:${wallet.id}`);
-  if (!isNotificationLocked) {
-    await container.model.queueService().push('notificationUni3OutOfPriceRange', {
-      id: wallet.id,
-      position: notRewardedPositions[0],
-    });
+  const isNewRebalance = await cache
+    .get(`defihelper:uni3-rebalance:${automate.id}`)
+    .then((v) => v === '1');
+  // Notification of new rebalance
+  if (isNewRebalance) {
+    await Promise.all([
+      container.model.queueService().push('notificationUni3Rebalance', {
+        id: wallet.id,
+        position,
+      }),
+      cache.del(`defihelper:uni3-rebalance:${automate.id}`),
+    ]);
   }
 
+  if (notRewardedPositions.length === 0) {
+    await cache.del(`defihelper:uni3-rebalance:${automate.id}:throttle`);
+    return process.done();
+  }
   const rebalance = await container.model
     .automateContractRebalanceTable()
     .where('contract', automate.id)
     .first();
-  if (rebalance) {
-    await container.model.queueService().push('automateUni3Rebalance', {
-      id: automate.id,
-    });
+  if (!rebalance) {
+    return process.done();
   }
+
+  // Run rebalance
+  const priceChange = new BN(position.token0.price.value).gt(position.token0.price.upper)
+    ? new BN(position.token0.price.value)
+        .minus(position.token0.price.upper)
+        .div(position.token0.price.upper)
+    : new BN(position.token0.price.value)
+        .minus(position.token0.price.lower)
+        .div(position.token0.price.lower);
+  if (priceChange.abs().lt(0.05)) {
+    // Throttle
+    const throttleDate = await cache
+      .get(`defihelper:uni3-rebalance:${automate.id}:throttle`)
+      .then((v) => (v ? dayjs(v) : null));
+    if (!throttleDate) {
+      await cache.setex(
+        `defihelper:uni3-rebalance:${automate.id}:throttle`,
+        30 * 60, // 30 minutes
+        dayjs().add(15, 'minutes').toString(),
+      );
+      return process.done();
+    }
+    if (throttleDate.isAfter(dayjs())) {
+      return process.done();
+    }
+  }
+  await Promise.all([
+    container.model.queueService().push('automateUni3Rebalance', {
+      id: automate.id,
+    }),
+    cache.del(`defihelper:uni3-rebalance:${automate.id}:throttle`),
+  ]);
 
   return process.done();
 };
