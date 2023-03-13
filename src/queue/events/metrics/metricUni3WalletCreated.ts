@@ -62,6 +62,7 @@ export default async (process: Process) => {
         wallet,
         positions.length > 0
           ? {
+              tokenId: String(positions[0].id),
               token0Address: positions[0].token0.address.toLowerCase(),
               token0Price: positions[0].token0.price.value,
               token0PriceLower: positions[0].token0.price.lower,
@@ -72,6 +73,7 @@ export default async (process: Process) => {
               token1PriceUpper: positions[0].token1.price.upper,
             }
           : {
+              tokenId: '0',
               token0Address: '0x0000000000000000000000000000000000000000',
               token0Price: '0',
               token0PriceLower: '0',
