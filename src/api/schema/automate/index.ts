@@ -1086,9 +1086,9 @@ export const ContractUni3MetricType = new GraphQLObjectType({
     inPriceRange: {
       type: GraphQLNonNull(GraphQLBoolean),
       resolve: ({ token0Price, token0PriceLower, token0PriceUpper }) =>
-        new BN(token0Price).gt(0) &&
-        new BN(token0Price).gte(token0PriceLower) &&
-        new BN(token0Price).lte(token0PriceUpper),
+        new BN(token0Price).gt(0)
+          ? new BN(token0Price).gte(token0PriceLower) && new BN(token0Price).lte(token0PriceUpper)
+          : true,
     },
     token0Address: {
       type: GraphQLNonNull(EthereumAddressType),
