@@ -347,7 +347,7 @@ export class BlockchainContainer extends Container<Config> {
       nativeTokenPrice: coingeckoPriceFeedUSD('ethereum'),
       nativeTokenDetails: {
         decimals: 18,
-        symbol: 'OETH',
+        symbol: 'ETH',
         name: 'Optimism Ethereum',
         wrapped: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', // todo check me
       },
