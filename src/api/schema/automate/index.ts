@@ -1083,12 +1083,23 @@ export const ContractMetricType = new GraphQLObjectType({
 export const ContractUni3MetricType = new GraphQLObjectType({
   name: 'AutomateContractUni3MetricType',
   fields: {
+    tokenId: {
+      type: GraphQLString,
+      resolve: ({ tokenId }) => (typeof tokenId === 'string' && tokenId !== '0' ? tokenId : null),
+    },
+    tokenURL: {
+      type: GraphQLString,
+      resolve: ({ tokenId }) =>
+        typeof tokenId === 'string' && tokenId !== '0'
+          ? `https://app.uniswap.org/#/pool/${tokenId}`
+          : null,
+    },
     inPriceRange: {
       type: GraphQLNonNull(GraphQLBoolean),
       resolve: ({ token0Price, token0PriceLower, token0PriceUpper }) =>
-        new BN(token0Price).gt(0) &&
-        new BN(token0Price).gte(token0PriceLower) &&
-        new BN(token0Price).lte(token0PriceUpper),
+        new BN(token0Price).gt(0)
+          ? new BN(token0Price).gte(token0PriceLower) && new BN(token0Price).lte(token0PriceUpper)
+          : true,
     },
     token0Address: {
       type: GraphQLNonNull(EthereumAddressType),
@@ -1293,6 +1304,7 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
       type: GraphQLNonNull(ContractUni3MetricType),
       resolve: async (contract, args, { dataLoader }) => {
         const def = {
+          tokenId: '0',
           token0Address: '0x0000000000000000000000000000000000000000',
           token0Price: '0',
           token0PriceLower: '0',
@@ -1312,6 +1324,7 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
         if (!protocol || protocol.adapter !== 'uniswap3') return def;
 
         const {
+          tokenId,
           token0Address,
           token0Price,
           token0PriceLower,
@@ -1328,6 +1341,7 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
           })
           .then((registry) => registry?.data ?? def);
         return {
+          tokenId: tokenId ?? def.tokenId,
           token0Address: token0Address ?? def.token0Address,
           token0Price: token0Price ?? def.token0Price,
           token0PriceLower: token0PriceLower ?? def.token0PriceLower,
