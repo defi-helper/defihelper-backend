@@ -1125,6 +1125,12 @@ export const ContractUni3MetricType = new GraphQLObjectType({
     token1PriceUpper: {
       type: GraphQLNonNull(BigNumberType),
     },
+    rebalanceEnabled: {
+      type: GraphQLNonNull(GraphQLBoolean),
+    },
+    lastRebalanceAt: {
+      type: DateTimeType,
+    },
   },
 });
 
@@ -1313,6 +1319,8 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
           token1Price: '0',
           token1PriceLower: '0',
           token1PriceUpper: '0',
+          rebalanceEnabled: false,
+          lastRebalanceAt: undefined,
         };
         if (!contract.contract || !contract.contractWallet) {
           return def;
@@ -1322,6 +1330,8 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
         if (!staking) return def;
         const protocol = await dataLoader.protocol().load(staking.protocol);
         if (!protocol || protocol.adapter !== 'uniswap3') return def;
+        const rebalance = await dataLoader.automateContractRebalance().load(contract.id);
+        const lastRebalanceTx = await dataLoader.automateContractRebalance().load(contract.id);
 
         const {
           tokenId,
@@ -1350,6 +1360,8 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
           token1Price: token1Price ?? def.token1Price,
           token1PriceLower: token1PriceLower ?? def.token1PriceLower,
           token1PriceUpper: token1PriceUpper ?? def.token1PriceUpper,
+          rebalanceEnabled: !!rebalance,
+          lastRebalanceAt: lastRebalanceTx?.updatedAt,
         };
       },
     },

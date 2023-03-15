@@ -4,6 +4,8 @@ import {
   automateContractStopLossLoader,
   automateContractTriggerLoader,
   automateInvestHistoryLoader,
+  automateLastRebalanceTxLoader,
+  automateRebalanceLoader,
 } from './automate';
 import {
   contractLastMetricLoader,
@@ -99,4 +101,8 @@ export class DataLoaderContainer extends Container<{}> {
   readonly automateContractTrigger = singleton(automateContractTriggerLoader);
 
   readonly automateInvestHistory = singleton(automateInvestHistoryLoader);
+
+  readonly automateRebalance = singleton(automateRebalanceLoader);
+
+  readonly automateLastRebalanceTx = singleton(automateLastRebalanceTxLoader);
 }
