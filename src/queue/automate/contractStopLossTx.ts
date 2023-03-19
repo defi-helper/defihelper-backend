@@ -1,5 +1,6 @@
 import container from '@container';
 import { ContractStopLossStatus } from '@models/Automate/Entity';
+import { walletTableName, walletBlockchainTableName } from '@models/Wallet/Entity';
 import { Process } from '@models/Queue/Entity';
 import BN from 'bignumber.js';
 import dayjs from 'dayjs';
@@ -32,8 +33,13 @@ export default async (process: Process) => {
   }
 
   const ownerWallet = await container.model
-    .walletBlockchainTable()
-    .where('id', contract.wallet)
+    .walletTable()
+    .innerJoin(
+      walletBlockchainTableName,
+      `${walletTableName}.id`,
+      `${walletBlockchainTableName}.id`,
+    )
+    .where(`${walletTableName}.id`, contract.wallet)
     .first();
   if (!ownerWallet) {
     throw new Error('Wallet not found');
@@ -112,6 +118,7 @@ export default async (process: Process) => {
         status: ContractStopLossStatus.Completed,
         amountOut: amountOut.toString(10),
       }),
+      container.model.automateService().refundInvestHistory(contract, ownerWallet),
       container.model.queueService().push(
         'metricsWalletScanMutation',
         {
