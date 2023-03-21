@@ -71,6 +71,8 @@ export * as metricsLostMetricFiller from './metrics/lostMetricFiller';
 export * as metricsUserBroker from './metrics/userBroker';
 export * as metricsTrackingConditionsBroker from './metrics/userMetricsTrackingConditionsBroker';
 export * as metricsUserPortfolioFiller from './metrics/userPortfolioFiller';
+export * as metricsAutomateFeeApyBroker from './metrics/automateFeeApyBroker';
+export * as metricsAutomateFeeApy from './metrics/automateFeeApy';
 
 export * as metricsWalletBalancesDeBankFiller from './metrics/walletBalances/walletBalancesDeBankFiller';
 

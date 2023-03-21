@@ -1077,6 +1077,9 @@ export const ContractMetricType = new GraphQLObjectType({
         return apyBoost(blockchain, network, balance, aprYear);
       },
     },
+    aprFeeDay: {
+      type: GraphQLNonNull(GraphQLString),
+    },
   },
 });
 
@@ -1303,6 +1306,7 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
             balance: totalBalance > 0 ? totalBalance : 10000,
             aprYear: new BN(contractMetric?.data.aprYear ?? '0').toNumber(),
           },
+          aprFeeDay: walletMetric.aprFeeDay,
         };
       },
     },
