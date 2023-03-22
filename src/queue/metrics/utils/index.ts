@@ -13,8 +13,9 @@ import {
   ContractBlockchainType,
 } from '@models/Protocol/Entity';
 import { apyBoost } from '@services/RestakeStrategy';
-import BigNumber from 'bignumber.js';
+import BN from 'bignumber.js';
 import { TagType, TagPreservedName, TagTvlType } from '@models/Tag/Entity';
+import { RegistryPeriod } from '@models/Metric/Entity';
 
 async function getOrCreateToken(contract: Contract & ContractBlockchainType, address: string) {
   const addressNormalize = contract.blockchain === 'ethereum' ? address.toLowerCase() : address;
@@ -166,7 +167,7 @@ export async function contractMetrics(process: Process) {
       );
     }
 
-    const tvl = new BigNumber(contractAdapterData.metrics.tvl ?? '0');
+    const tvl = new BN(contractAdapterData.metrics.tvl ?? '0');
     let choosenTag: TagTvlType['name'] | undefined;
 
     await container.model.contractService().unlinkAllTagsByType(contract, TagType.Tvl);
@@ -288,10 +289,31 @@ export async function walletMetrics(process: Process) {
     typeof walletAdapterData.metrics === 'object' &&
     Object.keys(walletAdapterData.metrics).length > 0
   ) {
+    const currentMetric = await container.model
+      .metricWalletRegistryTable()
+      .where('contract', contract.id)
+      .where('wallet', blockchainWallet.id)
+      .where('period', RegistryPeriod.Latest)
+      .first();
+    let delta = {};
+    if (walletAdapterData.metrics.earned !== undefined) {
+      delta = {
+        deltaEarned: new BN(walletAdapterData.metrics.earned)
+          .minus(currentMetric?.data.earned ?? 0)
+          .toString(10),
+        deltaEarnedUSD: new BN(walletAdapterData.metrics.earnedUSD)
+          .minus(currentMetric?.data.earnedUSD ?? 0)
+          .toString(10),
+      };
+    }
+
     const metric = await metricService.createWallet(
       contract,
       blockchainWallet,
-      walletAdapterData.metrics,
+      {
+        ...walletAdapterData.metrics,
+        ...delta,
+      },
       date,
     );
     if (protocol.adapter === 'uniswap3') {

@@ -369,6 +369,7 @@ export const walletLastMetricLoader = () =>
       stakingUSDDayBefore: string;
       earnedUSD: string;
       earnedUSDDayBefore: string;
+      aprFeeDay: string;
     }
   >(async (walletsId) => {
     const select = container.model
@@ -388,6 +389,10 @@ export const walletLastMetricLoader = () =>
           'earnedUSD',
           `${metricWalletRegistryTableName}.data->>'earnedUSD'`,
         ])
+        .modify(QueryModify.sumMetric, [
+          'aprFeeDay',
+          `${metricWalletRegistryTableName}.data->>'aprFeeDay'`,
+        ])
         .where(`${metricWalletRegistryTableName}.period`, RegistryPeriod.Latest)
         .whereBetween(`${metricWalletRegistryTableName}.date`, [
           dayjs().add(-1, 'day').startOf('day').toDate(),
@@ -399,14 +404,16 @@ export const walletLastMetricLoader = () =>
               wallet: string;
               stakingUSD: string;
               earnedUSD: string;
+              aprFeeDay: string;
             }>,
           ) =>
             new Map(
-              rows.map(({ wallet, stakingUSD, earnedUSD }) => [
+              rows.map(({ wallet, stakingUSD, earnedUSD, aprFeeDay }) => [
                 wallet,
                 {
                   stakingUSD,
                   earnedUSD,
+                  aprFeeDay,
                 },
               ]),
             ),
@@ -450,6 +457,7 @@ export const walletLastMetricLoader = () =>
       const latest = latestMap.get(id) ?? {
         stakingUSD: '0',
         earnedUSD: '0',
+        aprFeeDay: '0',
       };
       const dayBefore = dayBeforeMap.get(id) ?? {
         stakingUSDDayBefore: '0',

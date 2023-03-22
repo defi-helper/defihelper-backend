@@ -50,6 +50,7 @@ export default async (process: Process) => {
       },
     ),
     queue.push('protocolInvestFlagResolver', {}),
+    queue.push('metricsAutomateFeeApyBroker'),
   ]);
 
   return process.done();
