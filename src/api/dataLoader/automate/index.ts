@@ -96,11 +96,12 @@ export const automateLastRebalanceTxLoader = () =>
         `${contractRebalanceTableName}.id`,
         `${contractRebalanceTxTableName}.rebalance`,
       )
-      .whereIn(`${contractRebalanceTxTableName}.contract`, contractsId)
+      .whereIn(`${contractRebalanceTableName}.contract`, contractsId)
       .where(`${contractRebalanceTxTableName}.status`, ContractRebalanceTxStatus.Completed)
-      .groupBy(`${contractRebalanceTxTableName}.contract`)
-      .orderBy(`${contractRebalanceTxTableName}.updatedAt`)
-      .limit(1)
+      .orderBy([
+        `${contractRebalanceTableName}.contract`,
+        `${contractRebalanceTxTableName}.updatedAt`,
+      ])
       .then((rows) => new Map(rows.map((tx) => [tx.contract, tx])));
 
     return contractsId.map((id) => map.get(id));
