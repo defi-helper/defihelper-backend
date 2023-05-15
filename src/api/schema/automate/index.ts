@@ -1077,6 +1077,9 @@ export const ContractMetricType = new GraphQLObjectType({
         return apyBoost(blockchain, network, balance, aprYear);
       },
     },
+    aprFeeDay: {
+      type: GraphQLNonNull(GraphQLString),
+    },
   },
 });
 
@@ -1124,6 +1127,15 @@ export const ContractUni3MetricType = new GraphQLObjectType({
     },
     token1PriceUpper: {
       type: GraphQLNonNull(BigNumberType),
+    },
+    rebalanceEnabled: {
+      type: GraphQLNonNull(GraphQLBoolean),
+    },
+    lastRebalanceTxHash: {
+      type: GraphQLString,
+    },
+    lastRebalanceAt: {
+      type: DateTimeType,
     },
   },
 });
@@ -1297,6 +1309,7 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
             balance: totalBalance > 0 ? totalBalance : 10000,
             aprYear: new BN(contractMetric?.data.aprYear ?? '0').toNumber(),
           },
+          aprFeeDay: walletMetric.aprFeeDay,
         };
       },
     },
@@ -1313,6 +1326,9 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
           token1Price: '0',
           token1PriceLower: '0',
           token1PriceUpper: '0',
+          rebalanceEnabled: false,
+          lastRebalanceTxHash: undefined,
+          lastRebalanceAt: undefined,
         };
         if (!contract.contract || !contract.contractWallet) {
           return def;
@@ -1322,6 +1338,8 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
         if (!staking) return def;
         const protocol = await dataLoader.protocol().load(staking.protocol);
         if (!protocol || protocol.adapter !== 'uniswap3') return def;
+        const rebalance = await dataLoader.automateContractRebalance().load(contract.id);
+        const lastRebalanceTx = await dataLoader.automateLastRebalanceTx().load(contract.id);
 
         const {
           tokenId,
@@ -1350,6 +1368,9 @@ export const ContractType = new GraphQLObjectType<Automate.Contract, Request>({
           token1Price: token1Price ?? def.token1Price,
           token1PriceLower: token1PriceLower ?? def.token1PriceLower,
           token1PriceUpper: token1PriceUpper ?? def.token1PriceUpper,
+          rebalanceEnabled: !!rebalance,
+          lastRebalanceTxHash: lastRebalanceTx?.tx,
+          lastRebalanceAt: lastRebalanceTx?.updatedAt,
         };
       },
     },

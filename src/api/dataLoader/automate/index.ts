@@ -2,6 +2,10 @@ import container from '@container';
 import {
   actionTableName,
   ContractRebalance,
+  contractRebalanceTableName,
+  ContractRebalanceTx,
+  ContractRebalanceTxStatus,
+  contractRebalanceTxTableName,
   ContractStopLoss,
   Trigger,
   triggerTableName,
@@ -66,4 +70,39 @@ export const automateInvestHistoryLoader = () =>
       );
 
     return contractsId.map((id) => map.get(id) ?? { amount: '0', amountUSD: '0' });
+  });
+
+export const automateRebalanceLoader = () =>
+  new DataLoader<string, ContractRebalance | undefined>(async (contractsId) => {
+    const map = await container.model
+      .automateContractRebalanceTable()
+      .whereIn('contract', contractsId)
+      .then((rows) => new Map(rows.map((rebalance) => [rebalance.contract, rebalance])));
+
+    return contractsId.map((id) => map.get(id));
+  });
+
+export const automateLastRebalanceTxLoader = () =>
+  new DataLoader<string, ContractRebalanceTx | undefined>(async (contractsId) => {
+    const map = await container.model
+      .automateContractRebalanceTxTable()
+      .distinctOn(`${contractRebalanceTableName}.contract`)
+      .column(`${contractRebalanceTxTableName}.*`)
+      .column<Array<ContractRebalanceTx & { contract: string }>>(
+        `${contractRebalanceTableName}.contract`,
+      )
+      .innerJoin(
+        contractRebalanceTableName,
+        `${contractRebalanceTableName}.id`,
+        `${contractRebalanceTxTableName}.rebalance`,
+      )
+      .whereIn(`${contractRebalanceTableName}.contract`, contractsId)
+      .where(`${contractRebalanceTxTableName}.status`, ContractRebalanceTxStatus.Completed)
+      .orderBy([
+        `${contractRebalanceTableName}.contract`,
+        `${contractRebalanceTxTableName}.updatedAt`,
+      ])
+      .then((rows) => new Map(rows.map((tx) => [tx.contract, tx])));
+
+    return contractsId.map((id) => map.get(id));
   });
