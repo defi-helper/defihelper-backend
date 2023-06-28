@@ -1,4 +1,6 @@
 import container from '@container';
+import { ContactBroker } from '@models/Notification/Entity';
+import { UserNotificationType } from '@models/UserNotification/Entity';
 import { Process } from '@models/Queue/Entity';
 
 export interface Params {
@@ -17,6 +19,11 @@ export default async (process: Process) => {
     ...user,
     isMetricsTracked: true,
   });
+  if (contact.broker === ContactBroker.Telegram) {
+    await container.model
+      .userNotificationService()
+      .enable(contact, UserNotificationType.PortfolioMetrics, '12:00');
+  }
 
   return process.done();
 };
